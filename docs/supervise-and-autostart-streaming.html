@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 11 Supervise and autostart streaming | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content="Chapter 11 Supervise and autostart streaming | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 11 Supervise and autostart streaming | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="images/cover.png" />
+  
+  <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 11 Supervise and autostart streaming | Create a cryptocurrency trading bot in Elixir" />
+  
+  
+  <meta name="twitter:image" content="images/cover.png" />
+
+<meta name="author" content="Kamil Skowron" />
+
+
+<meta name="date" content="2021-04-19" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="fine-tune-trading-strategy-per-symbol.html"/>
+<link rel="next" href="start-stop-shutdown-and-autostart-trading.html"/>
+<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code"><i class="fa fa-check"></i>Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Create a cryptocurrency trading bot in Elixir</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="supervise-and-autostart-streaming" class="section level1" number="11">
+<h1><span class="header-section-number">Chapter 11</span> Supervise and autostart streaming</h1>
+<div id="objectives-10" class="section level2" number="11.1">
+<h2><span class="header-section-number">11.1</span> Objectives</h2>
+<ul>
+<li>describe and design the required functionality</li>
+<li>register the <code>Streamer.Binance</code> processes with names</li>
+<li>set up <code>ecto</code> inside the <code>streamer</code> app</li>
+<li>create and migrate the db</li>
+<li>seed default settings</li>
+<li>implement the supervision tree and start streaming functionality</li>
+<li>implement the stop functionality</li>
+<li>implement the autostart streaming functionality</li>
+<li>test the implementation</li>
+</ul>
+</div>
+<div id="describe-and-design-the-required-functionality-2" class="section level2" number="11.2">
+<h2><span class="header-section-number">11.2</span> Describe and design the required functionality</h2>
+<p>At this moment there’s no supervision around the streamer processes, whenever an error would occur inside the <code>Streamer.Binance</code> process, it will die and never come back up.</p>
+<p>That’s less than perfect, but we can use supervisors to the rescue.</p>
+<p>We will create a new <code>Streamer.DynamicStreamerSupervisor</code> module inside our <code>streamer</code> application that will supervise the <code>Streamer.Binance</code> processes.</p>
+<p>Next, we will consider a list of functionalities that we would like it to provide:
+- start streaming. This will require a new <code>Streamer.Binance</code> process started under the
+<code>Streamer.DynamicStreamerSupervisor</code>. We will put logic responsible for starting that process inside the <code>Streamer.DynamicStreamerSupervisor</code> module.
+- stop streaming. To be able to stop the <code>Streamer.Binance</code> process streaming on a specific symbol, we will need to know that process’ PID based only on symbol string(ie. “ETHUSDT”). To make that possible, we will need to register every <code>Streamer.Binance</code> process with a name that we will be able to “reverse-engineer” based only on symbol string for example: <code>:"#{__MODULE__}-#{symbol}"</code>
+- autostart streaming. At the start of streaming on a symbol, we should persist that action as a symbol’s streaming setting inside the database. We will need to generate a new Ecto.Repo, configure, create and migrate DB (just like in the last chapter for the <code>naive</code> app) to be able to retrieve that list. We will write a logic that will fetch settings of the symbols, autostart the ones that are enabled and place all that logic inside the <code>Streamer.DynamicStreamerSupervisor</code> module. We will introduce a <a href="https://hexdocs.pm/elixir/master/Task.html">Task</a> child process that will utilize the logic from the <code>Streamer.DynamicStreamerSupervisor</code> to fetch those enabled symbols and start <code>Streamer.Binance</code> processes on startup - we will describe all of this separately in its section in this chapter.</p>
+</div>
+<div id="register-the-streamer.binance-processes-with-names" class="section level2" number="11.3">
+<h2><span class="header-section-number">11.3</span> Register the <code>Streamer.Binance</code> processes with names</h2>
+<p>To be able to perform start/stop streaming on a symbol we will first need to be able to figure out the PID of the <code>Streamer.Binance</code> process that is streaming that symbol.</p>
+<p>The first change that we need to apply will be to register <code>Streamer.Binance</code> processes with names by passing the 4th argument to the <code>WebSockex.start_link/4</code> function:</p>
+<div class="sourceCode" id="cb155"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb155-1"><a href="supervise-and-autostart-streaming.html#cb155-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
+<span id="cb155-2"><a href="supervise-and-autostart-streaming.html#cb155-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
+<span id="cb155-3"><a href="supervise-and-autostart-streaming.html#cb155-3" aria-hidden="true" tabindex="-1"></a>    lowercased_symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>downcase(symbol) <span class="co"># &lt;= separate variable</span></span>
+<span id="cb155-4"><a href="supervise-and-autostart-streaming.html#cb155-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-5"><a href="supervise-and-autostart-streaming.html#cb155-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">WebSockex</span><span class="op">.</span>start_link(</span>
+<span id="cb155-6"><a href="supervise-and-autostart-streaming.html#cb155-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{@stream_endpoint}#{</span>lowercased_symbol<span class="ot">}</span><span class="st">@trade&quot;</span>, <span class="co"># &lt;= lowercase symbol</span></span>
+<span id="cb155-7"><a href="supervise-and-autostart-streaming.html#cb155-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb155-8"><a href="supervise-and-autostart-streaming.html#cb155-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span>,</span>
+<span id="cb155-9"><a href="supervise-and-autostart-streaming.html#cb155-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># &lt;= uppercase symbol</span></span>
+<span id="cb155-10"><a href="supervise-and-autostart-streaming.html#cb155-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb155-11"><a href="supervise-and-autostart-streaming.html#cb155-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Few things worth mention here:
+- we are getting the uppercase symbol but inside the URL we need to use a lowercase symbol so we will introduce a new separate variable to be used in the URL
+- we are registering the process using the uppercase symbol so the name will remain consistent with the <code>naive</code> application’s processes
+- to register process we are sending keyword list as the 4th argument to custom <code>start_link/4</code> function of <code>WebSockex</code> module (<a href="https://github.com/Azolo/websockex/blob/master/lib/websockex.ex#L376">link to source</a> - again, no need to be afraid of reading the source code in Elixir, that’s the beauty of it)</p>
+</div>
+<div id="set-up-ecto-inside-the-streamer-app" class="section level2" number="11.4">
+<h2><span class="header-section-number">11.4</span> Set up <code>ecto</code> inside the <code>streamer</code> app</h2>
+<p>In the same fashion as in the last chapter, we will need to set up the database inside the <code>streamer</code> app. We will use the same Postgres server(docker container) that we’ve set up inside docker in the last chapter, just a separate database, so there’s no need to update the <code>docker-compose.yml</code> file.</p>
+<p>As previously the first step will be to add the <code>ecto</code> modules and Postgres related packages into <code>deps</code> inside the <code>mix.exs</code> file of the <code>streamer</code> app. Additionally, we will add the <code>binance</code> module that we will use to fetch all symbols supported by the exchange(to generate default settings as we’ve done for the <code>naive</code> application. We are unable to use the <code>BinanceMock</code> as this will cause the circular dependency [Binance Mock depends on the streamer app]):</p>
+<div class="sourceCode" id="cb156"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb156-1"><a href="supervise-and-autostart-streaming.html#cb156-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/mix.exs</span></span>
+<span id="cb156-2"><a href="supervise-and-autostart-streaming.html#cb156-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb156-3"><a href="supervise-and-autostart-streaming.html#cb156-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb156-4"><a href="supervise-and-autostart-streaming.html#cb156-4" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb156-5"><a href="supervise-and-autostart-streaming.html#cb156-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>}, <span class="co"># &lt;= used to retrieve symbols list(exchangeInfo)</span></span>
+<span id="cb156-6"><a href="supervise-and-autostart-streaming.html#cb156-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ecto_sql</span>, <span class="st">&quot;~&gt; 3.0&quot;</span>},  <span class="co"># &lt;= added dependency</span></span>
+<span id="cb156-7"><a href="supervise-and-autostart-streaming.html#cb156-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ecto_enum</span>, <span class="st">&quot;~&gt; 1.4&quot;</span>}, <span class="co"># &lt;= added dependency</span></span>
+<span id="cb156-8"><a href="supervise-and-autostart-streaming.html#cb156-8" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:jason</span>, <span class="st">&quot;~&gt; 1.2&quot;</span>},</span>
+<span id="cb156-9"><a href="supervise-and-autostart-streaming.html#cb156-9" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
+<span id="cb156-10"><a href="supervise-and-autostart-streaming.html#cb156-10" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:postgrex</span>, <span class="st">&quot;&gt;= 0.0.0&quot;</span>}, <span class="co"># &lt;= added dependency</span></span>
+<span id="cb156-11"><a href="supervise-and-autostart-streaming.html#cb156-11" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:websockex</span>, <span class="st">&quot;~&gt; 0.4.2&quot;</span>}</span>
+<span id="cb156-12"><a href="supervise-and-autostart-streaming.html#cb156-12" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb156-13"><a href="supervise-and-autostart-streaming.html#cb156-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Run <code>mix deps.get</code> to install new dependencies.</p>
+<p>We can now use <code>ecto</code> generator to add an <code>ecto</code> repository to the Streamer application:</p>
+<div class="sourceCode" id="cb157"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb157-1"><a href="supervise-and-autostart-streaming.html#cb157-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps/streamer</span>
+<span id="cb157-2"><a href="supervise-and-autostart-streaming.html#cb157-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.gen.repo <span class="at">-r</span> Streamer.Repo</span>
+<span id="cb157-3"><a href="supervise-and-autostart-streaming.html#cb157-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating lib/streamer</span>
+<span id="cb157-4"><a href="supervise-and-autostart-streaming.html#cb157-4" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating lib/streamer/repo.ex</span>
+<span id="cb157-5"><a href="supervise-and-autostart-streaming.html#cb157-5" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> updating ../../config/config.exs</span>
+<span id="cb157-6"><a href="supervise-and-autostart-streaming.html#cb157-6" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
+<p>Update the config to match access details to Postgres’ docker instance:</p>
+<div class="sourceCode" id="cb158"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb158-1"><a href="supervise-and-autostart-streaming.html#cb158-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb158-2"><a href="supervise-and-autostart-streaming.html#cb158-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,             <span class="co"># &lt;= added line </span></span>
+<span id="cb158-3"><a href="supervise-and-autostart-streaming.html#cb158-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">ecto_repos:</span> [<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span>] <span class="co"># &lt;= added line</span></span>
+<span id="cb158-4"><a href="supervise-and-autostart-streaming.html#cb158-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb158-5"><a href="supervise-and-autostart-streaming.html#cb158-5" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>, <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb158-6"><a href="supervise-and-autostart-streaming.html#cb158-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">database:</span> <span class="st">&quot;streamer&quot;</span>, <span class="co"># &lt;= database updated </span></span>
+<span id="cb158-7"><a href="supervise-and-autostart-streaming.html#cb158-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">username:</span> <span class="st">&quot;postgres&quot;</span>, <span class="co"># &lt;= username updated</span></span>
+<span id="cb158-8"><a href="supervise-and-autostart-streaming.html#cb158-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">password:</span> <span class="st">&quot;postgres&quot;</span>, <span class="co"># &lt;= password updated</span></span>
+<span id="cb158-9"><a href="supervise-and-autostart-streaming.html#cb158-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">hostname:</span> <span class="st">&quot;localhost&quot;</span></span></code></pre></div>
+<p>The last step will be to update the <code>children</code> list of the <code>Streamer.Application</code> module:</p>
+<div class="sourceCode" id="cb159"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb159-1"><a href="supervise-and-autostart-streaming.html#cb159-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
+<span id="cb159-2"><a href="supervise-and-autostart-streaming.html#cb159-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb159-3"><a href="supervise-and-autostart-streaming.html#cb159-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
+<span id="cb159-4"><a href="supervise-and-autostart-streaming.html#cb159-4" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb159-5"><a href="supervise-and-autostart-streaming.html#cb159-5" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span>, []}, <span class="co"># &lt;= repo added</span></span>
+<span id="cb159-6"><a href="supervise-and-autostart-streaming.html#cb159-6" aria-hidden="true" tabindex="-1"></a>      {</span>
+<span id="cb159-7"><a href="supervise-and-autostart-streaming.html#cb159-7" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb159-8"><a href="supervise-and-autostart-streaming.html#cb159-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>, <span class="va">adapter_name:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span><span class="cn">PG2</span></span>
+<span id="cb159-9"><a href="supervise-and-autostart-streaming.html#cb159-9" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb159-10"><a href="supervise-and-autostart-streaming.html#cb159-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb159-11"><a href="supervise-and-autostart-streaming.html#cb159-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="create-and-migrate-the-db-1" class="section level2" number="11.5">
+<h2><span class="header-section-number">11.5</span> Create and migrate the db</h2>
+<p>We can now create a new streamer database using the <code>mix</code> tool, after that we will be able to generate a migration file that will create the <code>settings</code> table:</p>
+<div class="sourceCode" id="cb160"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb160-1"><a href="supervise-and-autostart-streaming.html#cb160-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.create <span class="at">-r</span> Streamer.Repo</span>
+<span id="cb160-2"><a href="supervise-and-autostart-streaming.html#cb160-2" aria-hidden="true" tabindex="-1"></a><span class="ex">The</span> database for Streamer.Repo has been created</span>
+<span id="cb160-3"><a href="supervise-and-autostart-streaming.html#cb160-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps/streamer</span>
+<span id="cb160-4"><a href="supervise-and-autostart-streaming.html#cb160-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.gen.migration create_settings</span>
+<span id="cb160-5"><a href="supervise-and-autostart-streaming.html#cb160-5" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating priv/repo/migrations</span>
+<span id="cb160-6"><a href="supervise-and-autostart-streaming.html#cb160-6" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating priv/repo/migrations/20210203184805_create_settings.exs</span></code></pre></div>
+<p>We can safely start just with <code>id</code>, <code>symbol</code> and <code>status</code> columns, where the last one will follow the same enum idea from the previous chapter:</p>
+<div class="sourceCode" id="cb161"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb161-1"><a href="supervise-and-autostart-streaming.html#cb161-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/priv/repo/migrations/20210203184805_create_settings.exs</span></span>
+<span id="cb161-2"><a href="supervise-and-autostart-streaming.html#cb161-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span><span class="cn">Migrations</span><span class="op">.</span><span class="cn">CreateSettings</span> <span class="kw">do</span></span>
+<span id="cb161-3"><a href="supervise-and-autostart-streaming.html#cb161-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Migration</span></span>
+<span id="cb161-4"><a href="supervise-and-autostart-streaming.html#cb161-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-5"><a href="supervise-and-autostart-streaming.html#cb161-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">StreamingStatusEnum</span></span>
+<span id="cb161-6"><a href="supervise-and-autostart-streaming.html#cb161-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-7"><a href="supervise-and-autostart-streaming.html#cb161-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
+<span id="cb161-8"><a href="supervise-and-autostart-streaming.html#cb161-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">StreamingStatusEnum</span><span class="op">.</span>create_type()</span>
+<span id="cb161-9"><a href="supervise-and-autostart-streaming.html#cb161-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-10"><a href="supervise-and-autostart-streaming.html#cb161-10" aria-hidden="true" tabindex="-1"></a>    create table(<span class="va">:settings</span>, <span class="va">primary_key:</span> <span class="cn">false</span>) <span class="kw">do</span></span>
+<span id="cb161-11"><a href="supervise-and-autostart-streaming.html#cb161-11" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:id</span>, <span class="va">:uuid</span>, <span class="va">primary_key:</span> <span class="cn">true</span>)</span>
+<span id="cb161-12"><a href="supervise-and-autostart-streaming.html#cb161-12" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:symbol</span>, <span class="va">:text</span>, <span class="va">null:</span> <span class="cn">false</span>)</span>
+<span id="cb161-13"><a href="supervise-and-autostart-streaming.html#cb161-13" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:status</span>, <span class="cn">StreamingStatusEnum</span><span class="op">.</span>type(), <span class="va">default:</span> <span class="st">&quot;off&quot;</span>, <span class="va">null:</span> <span class="cn">false</span>)</span>
+<span id="cb161-14"><a href="supervise-and-autostart-streaming.html#cb161-14" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb161-15"><a href="supervise-and-autostart-streaming.html#cb161-15" aria-hidden="true" tabindex="-1"></a>      timestamps()</span>
+<span id="cb161-16"><a href="supervise-and-autostart-streaming.html#cb161-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb161-17"><a href="supervise-and-autostart-streaming.html#cb161-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-18"><a href="supervise-and-autostart-streaming.html#cb161-18" aria-hidden="true" tabindex="-1"></a>    create(unique_index(<span class="va">:settings</span>, [<span class="va">:symbol</span>]))</span>
+<span id="cb161-19"><a href="supervise-and-autostart-streaming.html#cb161-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb161-20"><a href="supervise-and-autostart-streaming.html#cb161-20" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>That finishes our work on the migration file, we need to add the <code>StreamingStatusEnum</code> in the same way as in the last chapter (create a <code>schema</code> directory inside the <code>apps/streamer/lib/streamer</code> directory and anew file called <code>streaming_status_enum.ex</code> and place below logic (defining the enum) in it:</p>
+<div class="sourceCode" id="cb162"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb162-1"><a href="supervise-and-autostart-streaming.html#cb162-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/schema/streaming_status_enum.ex</span></span>
+<span id="cb162-2"><a href="supervise-and-autostart-streaming.html#cb162-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="cn">EctoEnum</span></span>
+<span id="cb162-3"><a href="supervise-and-autostart-streaming.html#cb162-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb162-4"><a href="supervise-and-autostart-streaming.html#cb162-4" aria-hidden="true" tabindex="-1"></a>defenum(<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">StreamingStatusEnum</span>, <span class="va">:streaming_status</span>, [<span class="va">:on</span>, <span class="va">:off</span>])</span></code></pre></div>
+<p>Let’s run the migration to create the table, unique index, and the enum:</p>
+<div class="sourceCode" id="cb163"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb163-1"><a href="supervise-and-autostart-streaming.html#cb163-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.migrate</span>
+<span id="cb163-2"><a href="supervise-and-autostart-streaming.html#cb163-2" aria-hidden="true" tabindex="-1"></a><span class="ex">21:31:56.850</span> [info]  == Running 20210203184805 Streamer.Repo.Migrations.CreateSettings.change/0 forward</span>
+<span id="cb163-3"><a href="supervise-and-autostart-streaming.html#cb163-3" aria-hidden="true" tabindex="-1"></a><span class="ex">21:31:56.850</span> [info]  execute <span class="st">&quot;CREATE TYPE public.streaming_status AS ENUM (&#39;on&#39;, &#39;off&#39;)&quot;</span></span>
+<span id="cb163-4"><a href="supervise-and-autostart-streaming.html#cb163-4" aria-hidden="true" tabindex="-1"></a><span class="ex">21:31:56.851</span> [info]  create table settings</span>
+<span id="cb163-5"><a href="supervise-and-autostart-streaming.html#cb163-5" aria-hidden="true" tabindex="-1"></a><span class="ex">21:31:56.912</span> [info]  create index settings_symbol_index</span>
+<span id="cb163-6"><a href="supervise-and-autostart-streaming.html#cb163-6" aria-hidden="true" tabindex="-1"></a><span class="ex">21:31:56.932</span> [info]  == Migrated 20210203184805 in 0.0s</span></code></pre></div>
+<p>We can now create a schema file for the <code>settings</code> table. Inside the <code>/apps/streamer/lib/streamer/schema</code> directory create a file called <code>settings.ex</code>:</p>
+<div class="sourceCode" id="cb164"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb164-1"><a href="supervise-and-autostart-streaming.html#cb164-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/schema/settings.ex</span></span>
+<span id="cb164-2"><a href="supervise-and-autostart-streaming.html#cb164-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span> <span class="kw">do</span></span>
+<span id="cb164-3"><a href="supervise-and-autostart-streaming.html#cb164-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Schema</span></span>
+<span id="cb164-4"><a href="supervise-and-autostart-streaming.html#cb164-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-5"><a href="supervise-and-autostart-streaming.html#cb164-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">StreamingStatusEnum</span></span>
+<span id="cb164-6"><a href="supervise-and-autostart-streaming.html#cb164-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-7"><a href="supervise-and-autostart-streaming.html#cb164-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@primary_key</span> {<span class="va">:id</span>, <span class="va">:binary_id</span>, <span class="va">autogenerate:</span> <span class="cn">true</span>}</span>
+<span id="cb164-8"><a href="supervise-and-autostart-streaming.html#cb164-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-9"><a href="supervise-and-autostart-streaming.html#cb164-9" aria-hidden="true" tabindex="-1"></a>  schema <span class="st">&quot;settings&quot;</span> <span class="kw">do</span></span>
+<span id="cb164-10"><a href="supervise-and-autostart-streaming.html#cb164-10" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:symbol</span>, <span class="va">:string</span>)</span>
+<span id="cb164-11"><a href="supervise-and-autostart-streaming.html#cb164-11" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:status</span>, <span class="cn">StreamingStatusEnum</span>)</span>
+<span id="cb164-12"><a href="supervise-and-autostart-streaming.html#cb164-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-13"><a href="supervise-and-autostart-streaming.html#cb164-13" aria-hidden="true" tabindex="-1"></a>    timestamps()</span>
+<span id="cb164-14"><a href="supervise-and-autostart-streaming.html#cb164-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb164-15"><a href="supervise-and-autostart-streaming.html#cb164-15" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>We are now ready to query the table but first, we need to insert the default settings into the database.</p>
+</div>
+<div id="seed-default-settings" class="section level2" number="11.6">
+<h2><span class="header-section-number">11.6</span> Seed default settings</h2>
+<p>As with the settings inside the <code>naive</code> application, we will fetch all symbols from binance and bulk insert them into the database.</p>
+<p>First let’s create a new file called <code>seed_settings.exs</code> inside the <code>apps/streamer/priv</code> directory. As this file is nearly the same as the one from the last chapter I will skip the lengthy explanation - this is the script:</p>
+<div class="sourceCode" id="cb165"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb165-1"><a href="supervise-and-autostart-streaming.html#cb165-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/priv/seed_settings.exs</span></span>
+<span id="cb165-2"><a href="supervise-and-autostart-streaming.html#cb165-2" aria-hidden="true" tabindex="-1"></a><span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb165-3"><a href="supervise-and-autostart-streaming.html#cb165-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-4"><a href="supervise-and-autostart-streaming.html#cb165-4" aria-hidden="true" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Decimal</span></span>
+<span id="cb165-5"><a href="supervise-and-autostart-streaming.html#cb165-5" aria-hidden="true" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span></span>
+<span id="cb165-6"><a href="supervise-and-autostart-streaming.html#cb165-6" aria-hidden="true" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span></span>
+<span id="cb165-7"><a href="supervise-and-autostart-streaming.html#cb165-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-8"><a href="supervise-and-autostart-streaming.html#cb165-8" aria-hidden="true" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Fetching exchange info from Binance to create streaming settings&quot;</span>)</span>
+<span id="cb165-9"><a href="supervise-and-autostart-streaming.html#cb165-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-10"><a href="supervise-and-autostart-streaming.html#cb165-10" aria-hidden="true" tabindex="-1"></a>{<span class="va">:ok</span>, %{<span class="va">symbols:</span> symbols}} <span class="op">=</span> <span class="cn">Binance</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb165-11"><a href="supervise-and-autostart-streaming.html#cb165-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-12"><a href="supervise-and-autostart-streaming.html#cb165-12" aria-hidden="true" tabindex="-1"></a>timestamp <span class="op">=</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>utc_now()</span>
+<span id="cb165-13"><a href="supervise-and-autostart-streaming.html#cb165-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>truncate(<span class="va">:second</span>)</span>
+<span id="cb165-14"><a href="supervise-and-autostart-streaming.html#cb165-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-15"><a href="supervise-and-autostart-streaming.html#cb165-15" aria-hidden="true" tabindex="-1"></a>base_settings <span class="op">=</span> %{</span>
+<span id="cb165-16"><a href="supervise-and-autostart-streaming.html#cb165-16" aria-hidden="true" tabindex="-1"></a>  <span class="va">symbol:</span> <span class="st">&quot;&quot;</span>,</span>
+<span id="cb165-17"><a href="supervise-and-autostart-streaming.html#cb165-17" aria-hidden="true" tabindex="-1"></a>  <span class="va">status:</span> <span class="st">&quot;off&quot;</span>,</span>
+<span id="cb165-18"><a href="supervise-and-autostart-streaming.html#cb165-18" aria-hidden="true" tabindex="-1"></a>  <span class="va">inserted_at:</span> timestamp,</span>
+<span id="cb165-19"><a href="supervise-and-autostart-streaming.html#cb165-19" aria-hidden="true" tabindex="-1"></a>  <span class="va">updated_at:</span> timestamp</span>
+<span id="cb165-20"><a href="supervise-and-autostart-streaming.html#cb165-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb165-21"><a href="supervise-and-autostart-streaming.html#cb165-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-22"><a href="supervise-and-autostart-streaming.html#cb165-22" aria-hidden="true" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Inserting default settings for symbols&quot;</span>)</span>
+<span id="cb165-23"><a href="supervise-and-autostart-streaming.html#cb165-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-24"><a href="supervise-and-autostart-streaming.html#cb165-24" aria-hidden="true" tabindex="-1"></a>maps <span class="op">=</span> symbols</span>
+<span id="cb165-25"><a href="supervise-and-autostart-streaming.html#cb165-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>(%{base_settings <span class="op">|</span> <span class="va">symbol:</span> <span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>]}))</span>
+<span id="cb165-26"><a href="supervise-and-autostart-streaming.html#cb165-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-27"><a href="supervise-and-autostart-streaming.html#cb165-27" aria-hidden="true" tabindex="-1"></a>{count, <span class="cn">nil</span>} <span class="op">=</span> <span class="cn">Repo</span><span class="op">.</span>insert_all(<span class="cn">Settings</span>, maps)</span>
+<span id="cb165-28"><a href="supervise-and-autostart-streaming.html#cb165-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-29"><a href="supervise-and-autostart-streaming.html#cb165-29" aria-hidden="true" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Inserted settings for </span><span class="ot">#{</span>count<span class="ot">}</span><span class="st"> symbols&quot;</span>)</span></code></pre></div>
+<p>Don’t forget to run the seeding script before progressing forward:</p>
+<div class="sourceCode" id="cb166"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb166-1"><a href="supervise-and-autostart-streaming.html#cb166-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps/streamer</span>
+<span id="cb166-2"><a href="supervise-and-autostart-streaming.html#cb166-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix run priv/seed_settings.exs</span>
+<span id="cb166-3"><a href="supervise-and-autostart-streaming.html#cb166-3" aria-hidden="true" tabindex="-1"></a><span class="ex">22:03:46.675</span> [info]  Fetching exchange info from Binance to create streaming settings</span>
+<span id="cb166-4"><a href="supervise-and-autostart-streaming.html#cb166-4" aria-hidden="true" tabindex="-1"></a><span class="ex">22:03:51.386</span> [info]  Inserting default settings for symbols</span>
+<span id="cb166-5"><a href="supervise-and-autostart-streaming.html#cb166-5" aria-hidden="true" tabindex="-1"></a><span class="ex">22:03:51.448</span> [info]  Inserted settings for 1277 symbols</span></code></pre></div>
+</div>
+<div id="implement-the-supervision-tree-and-start-streaming-functionality" class="section level2" number="11.7">
+<h2><span class="header-section-number">11.7</span> Implement the supervision tree and start streaming functionality</h2>
+<p>Let’s start by creating a new file called <code>dynamic_streamer_supervisor.ex</code> inside the <code>/apps/streamer/lib/streamer</code> directory. Let’s start with a default implementation from the <a href="https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors">docs</a> (updated with correct module and process names):</p>
+<div class="sourceCode" id="cb167"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb167-1"><a href="supervise-and-autostart-streaming.html#cb167-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb167-2"><a href="supervise-and-autostart-streaming.html#cb167-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span> <span class="kw">do</span></span>
+<span id="cb167-3"><a href="supervise-and-autostart-streaming.html#cb167-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">DynamicSupervisor</span></span>
+<span id="cb167-4"><a href="supervise-and-autostart-streaming.html#cb167-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb167-5"><a href="supervise-and-autostart-streaming.html#cb167-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(init_arg) <span class="kw">do</span></span>
+<span id="cb167-6"><a href="supervise-and-autostart-streaming.html#cb167-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_link(<span class="cn">__MODULE__</span>, init_arg, <span class="va">name:</span> <span class="cn">__MODULE__</span>)</span>
+<span id="cb167-7"><a href="supervise-and-autostart-streaming.html#cb167-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb167-8"><a href="supervise-and-autostart-streaming.html#cb167-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb167-9"><a href="supervise-and-autostart-streaming.html#cb167-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(_init_arg) <span class="kw">do</span></span>
+<span id="cb167-10"><a href="supervise-and-autostart-streaming.html#cb167-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DynamicSupervisor</span><span class="op">.</span>init(<span class="va">strategy:</span> <span class="va">:one_for_one</span>)</span>
+<span id="cb167-11"><a href="supervise-and-autostart-streaming.html#cb167-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb167-12"><a href="supervise-and-autostart-streaming.html#cb167-12" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>Next, we will add the <code>start_streaming/1</code> function at the bottom of the <code>Streamer.DynamicStreamerSupervisor</code> module:</p>
+<div class="sourceCode" id="cb168"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb168-1"><a href="supervise-and-autostart-streaming.html#cb168-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb168-2"><a href="supervise-and-autostart-streaming.html#cb168-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb168-3"><a href="supervise-and-autostart-streaming.html#cb168-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_streaming(symbol) <span class="kw">when</span> is_binary(symbol) <span class="kw">do</span></span>
+<span id="cb168-4"><a href="supervise-and-autostart-streaming.html#cb168-4" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
+<span id="cb168-5"><a href="supervise-and-autostart-streaming.html#cb168-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb168-6"><a href="supervise-and-autostart-streaming.html#cb168-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> get_pid(symbol) <span class="kw">do</span></span>
+<span id="cb168-7"><a href="supervise-and-autostart-streaming.html#cb168-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb168-8"><a href="supervise-and-autostart-streaming.html#cb168-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb168-9"><a href="supervise-and-autostart-streaming.html#cb168-9" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;on&quot;</span>)</span>
+<span id="cb168-10"><a href="supervise-and-autostart-streaming.html#cb168-10" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _pid} <span class="op">=</span> start_streamer(symbol)</span>
+<span id="cb168-11"><a href="supervise-and-autostart-streaming.html#cb168-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb168-12"><a href="supervise-and-autostart-streaming.html#cb168-12" aria-hidden="true" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
+<span id="cb168-13"><a href="supervise-and-autostart-streaming.html#cb168-13" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span>)</span>
+<span id="cb168-14"><a href="supervise-and-autostart-streaming.html#cb168-14" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;on&quot;</span>)</span>
+<span id="cb168-15"><a href="supervise-and-autostart-streaming.html#cb168-15" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, pid}</span>
+<span id="cb168-16"><a href="supervise-and-autostart-streaming.html#cb168-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb168-17"><a href="supervise-and-autostart-streaming.html#cb168-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>To unpack above - we are checking is there a streamer process already running for the passed symbol and based on the result of that check, we either start the new streaming process(and update the symbol’s settings) or just update the symbol’s settings.</p>
+<p>Inside the <code>start_streaming/1</code> function, we are using 3 helper functions that we need to add at the bottom of the file:</p>
+<div class="sourceCode" id="cb169"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb169-1"><a href="supervise-and-autostart-streaming.html#cb169-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb169-2"><a href="supervise-and-autostart-streaming.html#cb169-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> get_pid(symbol) <span class="kw">do</span></span>
+<span id="cb169-3"><a href="supervise-and-autostart-streaming.html#cb169-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Process</span><span class="op">.</span>whereis(:<span class="st">&quot;Elixir.Streamer.Binance-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb169-4"><a href="supervise-and-autostart-streaming.html#cb169-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb169-5"><a href="supervise-and-autostart-streaming.html#cb169-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-6"><a href="supervise-and-autostart-streaming.html#cb169-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> update_streaming_status(symbol, status)</span>
+<span id="cb169-7"><a href="supervise-and-autostart-streaming.html#cb169-7" aria-hidden="true" tabindex="-1"></a>       <span class="kw">when</span> is_binary(symbol) <span class="kw">and</span> is_binary(status) <span class="kw">do</span></span>
+<span id="cb169-8"><a href="supervise-and-autostart-streaming.html#cb169-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>get_by(<span class="cn">Settings</span>, <span class="va">symbol:</span> symbol)</span>
+<span id="cb169-9"><a href="supervise-and-autostart-streaming.html#cb169-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Changeset</span><span class="op">.</span>change(%{<span class="va">status:</span> status})</span>
+<span id="cb169-10"><a href="supervise-and-autostart-streaming.html#cb169-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Repo</span><span class="op">.</span>update()</span>
+<span id="cb169-11"><a href="supervise-and-autostart-streaming.html#cb169-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb169-12"><a href="supervise-and-autostart-streaming.html#cb169-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-13"><a href="supervise-and-autostart-streaming.html#cb169-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> start_streamer(symbol) <span class="kw">do</span></span>
+<span id="cb169-14"><a href="supervise-and-autostart-streaming.html#cb169-14" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child(</span>
+<span id="cb169-15"><a href="supervise-and-autostart-streaming.html#cb169-15" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span>,</span>
+<span id="cb169-16"><a href="supervise-and-autostart-streaming.html#cb169-16" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span>, symbol}</span>
+<span id="cb169-17"><a href="supervise-and-autostart-streaming.html#cb169-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb169-18"><a href="supervise-and-autostart-streaming.html#cb169-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The above functions are quite self-explanatory, <code>get_pid/1</code> is a convenience wrapper, <code>update_streaming_status/2</code> will update the status field for the passed symbol, <code>start_streamer/1</code> will instruct the <code>Streamer.DynamicStreamerSupervisor</code> to start a new <code>Streamer.Binance</code> process with symbol passed as the first argument.</p>
+<p>The last step to get the above function to work(and future ones in this module) would be to add an <code>require</code>, an <code>import</code> and a few <code>alias</code>es at the top of the module:</p>
+<div class="sourceCode" id="cb170"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb170-1"><a href="supervise-and-autostart-streaming.html#cb170-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb170-2"><a href="supervise-and-autostart-streaming.html#cb170-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb170-3"><a href="supervise-and-autostart-streaming.html#cb170-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb170-4"><a href="supervise-and-autostart-streaming.html#cb170-4" aria-hidden="true" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Query</span>, <span class="va">only:</span> [<span class="va">from:</span> <span class="dv">2</span>]</span>
+<span id="cb170-5"><a href="supervise-and-autostart-streaming.html#cb170-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb170-6"><a href="supervise-and-autostart-streaming.html#cb170-6" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span></span>
+<span id="cb170-7"><a href="supervise-and-autostart-streaming.html#cb170-7" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span></span></code></pre></div>
+<p>As we added a new <code>start_streaming/1</code> logic inside the <code>Streamer.DynamicStreamerSupervisor</code>, we need to replace the <code>start_streaming/1</code> implementation inside the <code>Streamer</code> module:</p>
+<div class="sourceCode" id="cb171"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb171-1"><a href="supervise-and-autostart-streaming.html#cb171-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer.ex</span></span>
+<span id="cb171-2"><a href="supervise-and-autostart-streaming.html#cb171-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb171-3"><a href="supervise-and-autostart-streaming.html#cb171-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span></span>
+<span id="cb171-4"><a href="supervise-and-autostart-streaming.html#cb171-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb171-5"><a href="supervise-and-autostart-streaming.html#cb171-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defdelegate</span> start_streaming(symbol), <span class="va">to:</span> <span class="cn">DynamicStreamerSupervisor</span></span></code></pre></div>
+<p>As we don’t need to put any logic inside the <code>Streamer.start_streaming/1</code> function, we can just delegate the call straight to the <code>Streamer.DynamicStreamerSupervisor</code> module.</p>
+<p>The last step will be to append the <code>Streamer.DynamicStreamSupervisor</code> to the <code>children</code> list of the <code>Streamer.Application</code>:</p>
+<div class="sourceCode" id="cb172"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb172-1"><a href="supervise-and-autostart-streaming.html#cb172-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
+<span id="cb172-2"><a href="supervise-and-autostart-streaming.html#cb172-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
+<span id="cb172-3"><a href="supervise-and-autostart-streaming.html#cb172-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb172-4"><a href="supervise-and-autostart-streaming.html#cb172-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb172-5"><a href="supervise-and-autostart-streaming.html#cb172-5" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span>, []}</span>
+<span id="cb172-6"><a href="supervise-and-autostart-streaming.html#cb172-6" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div>
+<p>At this moment our supervision tree already works and all streamer processes are being monitored by the <code>Streamer.DynamicStreamerSupervisor</code>:</p>
+<div class="figure">
+<img src="images/chapter_11_03_first_sup_tree.png" alt="" />
+<p class="caption">DynamicStreamerSupervisor with two <em>named</em> streamers</p>
+</div>
+</div>
+<div id="implement-the-stop-functionality" class="section level2" number="11.8">
+<h2><span class="header-section-number">11.8</span> Implement the stop functionality</h2>
+<p>As we can see, we are now registering the <code>Streamer.Binance</code> processes with names that contain their symbols. We will be able to retrieve PIDs of those registered processes just by simply passing the symbol string(ie. “ETHUSDT”) into <code>get_pid/1</code>, which will allow us to then request termination of those processes by the <code>Streamer.DynamicStreamerSupervisor</code>.</p>
+<p>Let’s write a <code>stop_streaming/1</code> logic inside the <code>Streamer.DynamicStreamerSupervisor</code> module(put it above first private function):</p>
+<div class="sourceCode" id="cb173"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb173-1"><a href="supervise-and-autostart-streaming.html#cb173-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb173-2"><a href="supervise-and-autostart-streaming.html#cb173-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> stop_streaming(symbol) <span class="kw">when</span> is_binary(symbol) <span class="kw">do</span></span>
+<span id="cb173-3"><a href="supervise-and-autostart-streaming.html#cb173-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
+<span id="cb173-4"><a href="supervise-and-autostart-streaming.html#cb173-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-5"><a href="supervise-and-autostart-streaming.html#cb173-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> get_pid(symbol) <span class="kw">do</span></span>
+<span id="cb173-6"><a href="supervise-and-autostart-streaming.html#cb173-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb173-7"><a href="supervise-and-autostart-streaming.html#cb173-7" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span>)</span>
+<span id="cb173-8"><a href="supervise-and-autostart-streaming.html#cb173-8" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;off&quot;</span>)</span>
+<span id="cb173-9"><a href="supervise-and-autostart-streaming.html#cb173-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-10"><a href="supervise-and-autostart-streaming.html#cb173-10" aria-hidden="true" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
+<span id="cb173-11"><a href="supervise-and-autostart-streaming.html#cb173-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Stopping streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb173-12"><a href="supervise-and-autostart-streaming.html#cb173-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-13"><a href="supervise-and-autostart-streaming.html#cb173-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">:ok</span> <span class="op">=</span></span>
+<span id="cb173-14"><a href="supervise-and-autostart-streaming.html#cb173-14" aria-hidden="true" tabindex="-1"></a>          <span class="cn">DynamicSupervisor</span><span class="op">.</span>terminate_child(</span>
+<span id="cb173-15"><a href="supervise-and-autostart-streaming.html#cb173-15" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span>,</span>
+<span id="cb173-16"><a href="supervise-and-autostart-streaming.html#cb173-16" aria-hidden="true" tabindex="-1"></a>            pid</span>
+<span id="cb173-17"><a href="supervise-and-autostart-streaming.html#cb173-17" aria-hidden="true" tabindex="-1"></a>          )</span>
+<span id="cb173-18"><a href="supervise-and-autostart-streaming.html#cb173-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-19"><a href="supervise-and-autostart-streaming.html#cb173-19" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;off&quot;</span>)</span>
+<span id="cb173-20"><a href="supervise-and-autostart-streaming.html#cb173-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb173-21"><a href="supervise-and-autostart-streaming.html#cb173-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p><code>stop_streaming/1</code> looks very similar to <code>start_streaming/1</code>, we are checking is there already a <code>Streamer.Binance</code> process registered for that symbol, and we either ask the <code>Streamer.DynamicStreamerSupervisor</code> to terminate it for us (using the <code>DynamicSupervisor.terminate_child/2</code> function + update the status) or just update the status to be <code>off</code>.</p>
+<p>We need to update the <code>Streamer</code> module to provide the interface to stop streaming on a symbol:</p>
+<div class="sourceCode" id="cb174"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb174-1"><a href="supervise-and-autostart-streaming.html#cb174-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer.ex</span></span>
+<span id="cb174-2"><a href="supervise-and-autostart-streaming.html#cb174-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb174-3"><a href="supervise-and-autostart-streaming.html#cb174-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defdelegate</span> stop_streaming(symbol), <span class="va">to:</span> <span class="cn">DynamicStreamerSupervisor</span></span>
+<span id="cb174-4"><a href="supervise-and-autostart-streaming.html#cb174-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="implement-the-autostart-streaming-functionality" class="section level2" number="11.9">
+<h2><span class="header-section-number">11.9</span> Implement the autostart streaming functionality</h2>
+<p>Currently, whenever we will shutdown the elixir app, settings persist in the database but streamers are not started on the next init.</p>
+<p>To fix this, we will add <code>autostart_streaming/0</code> inside the <code>Streamer.DynamicStreamerSupervisor</code>.</p>
+<p>Note: It very important to differentiate between module and process. We will put our autostarting logic inside the <em>module</em> but the <code>Streamer.DynamicStreamerSupervisor</code> <em>process</em> won’t run it.</p>
+<p>We will introduce a new <a href="https://hexdocs.pm/elixir/master/Task.html">Task</a> process that will execute all the autostarting logic.</p>
+<p>That will cover the problem of the Supervisor executing too much business logic (as the Task will execute it), but how will we supervise them together?
+At init both will start, the <code>Streamer.DynamicStreamerSupervisor</code> first and then Task will ask it to start multiple children and that will work fine. The problem occurs when the <code>Streamer.DynamicStreamerSupervisor</code> would die because of any reason. Currently, it’s supervised using the <code>one_for_one</code> strategy(and the <code>Task</code> would be as well) which means that it will get started again by the <code>Streamer.Application</code> process but at that moment the “autostarting” <code>Task</code> won’t be there anymore to start streaming on all enabled symbols.</p>
+<p>We can clearly see that whenever the <code>Streamer.DynamicStreamerSupervisor</code> will die it needs to be started again <em>together</em> with the “autostart” <code>Task</code> and this won’t fit our current <code>Streamer.Application</code>’s strategy.</p>
+<p>In cases like those, a new level of supervision needs to be introduced that will have a different supervision strategy for those “coupled” processes. We will rename the process name of the <code>Streamer.Application</code> (which is currently registered as <code>Streamer.Supervisor</code>) to <code>Streamer.Application</code>. Then we will introduce the new <code>Streamer.Supervisor</code> module and register it under the same name. We will attach both <code>Streamer.DynamicStreamerSupervisor</code> and Task to the <code>Streamer.Supervisor</code> and assign it with the <code>rest_for_one</code> strategy which will restart the Task whenever <code>Streamer.DynamicStreamerSupervisor</code> would die:</p>
+<div class="figure">
+<img src="images/chapter_11_04_new_sup_tree.png" alt="" />
+<p class="caption">Updated supervision tree with additional superviser and renamed Application process</p>
+</div>
+<p>Let’s start by creating the <code>autostart_streaming/0</code> functionality inside the <code>Streamer.DynamicStreamerSupervisor</code>:</p>
+<div class="sourceCode" id="cb175"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb175-1"><a href="supervise-and-autostart-streaming.html#cb175-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb175-2"><a href="supervise-and-autostart-streaming.html#cb175-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb175-3"><a href="supervise-and-autostart-streaming.html#cb175-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below after the `init/1` function</span></span>
+<span id="cb175-4"><a href="supervise-and-autostart-streaming.html#cb175-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> autostart_streaming() <span class="kw">do</span></span>
+<span id="cb175-5"><a href="supervise-and-autostart-streaming.html#cb175-5" aria-hidden="true" tabindex="-1"></a>    fetch_symbols_to_stream()</span>
+<span id="cb175-6"><a href="supervise-and-autostart-streaming.html#cb175-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>start_streaming<span class="op">/</span><span class="dv">1</span>)</span>
+<span id="cb175-7"><a href="supervise-and-autostart-streaming.html#cb175-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb175-8"><a href="supervise-and-autostart-streaming.html#cb175-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb175-9"><a href="supervise-and-autostart-streaming.html#cb175-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and this at the end of the module</span></span>
+<span id="cb175-10"><a href="supervise-and-autostart-streaming.html#cb175-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbols_to_stream() <span class="kw">do</span></span>
+<span id="cb175-11"><a href="supervise-and-autostart-streaming.html#cb175-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>all(</span>
+<span id="cb175-12"><a href="supervise-and-autostart-streaming.html#cb175-12" aria-hidden="true" tabindex="-1"></a>      from(s <span class="kw">in</span> <span class="cn">Settings</span>,</span>
+<span id="cb175-13"><a href="supervise-and-autostart-streaming.html#cb175-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">where:</span> s<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;on&quot;</span>,</span>
+<span id="cb175-14"><a href="supervise-and-autostart-streaming.html#cb175-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">select:</span> s<span class="op">.</span>symbol</span>
+<span id="cb175-15"><a href="supervise-and-autostart-streaming.html#cb175-15" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb175-16"><a href="supervise-and-autostart-streaming.html#cb175-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb175-17"><a href="supervise-and-autostart-streaming.html#cb175-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p><code>autostart_streaming/0</code> function fetches all symbols from the <code>settings</code> table with <code>status == "on"</code> then it passes them one by one into the <code>start_streaming/1</code> function using <code>Enum.map/2</code>.</p>
+<p>We can now focus on referring to the above autostarting logic inside the new supervisor that we will create now. Let’s start by creating a new file called <code>supervisor.ex</code> inside the <code>/apps/streamer/lib/streamer/</code> directory and fill it with default <a href="https://hexdocs.pm/elixir/master/Supervisor.html#module-module-based-supervisors">Supervisor</a> implementation:</p>
+<div class="sourceCode" id="cb176"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb176-1"><a href="supervise-and-autostart-streaming.html#cb176-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/supervisor.ex</span></span>
+<span id="cb176-2"><a href="supervise-and-autostart-streaming.html#cb176-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Supervisor</span> <span class="kw">do</span> <span class="co"># &lt;= updated module name</span></span>
+<span id="cb176-3"><a href="supervise-and-autostart-streaming.html#cb176-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Supervisor</span></span>
+<span id="cb176-4"><a href="supervise-and-autostart-streaming.html#cb176-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-5"><a href="supervise-and-autostart-streaming.html#cb176-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(init_arg) <span class="kw">do</span></span>
+<span id="cb176-6"><a href="supervise-and-autostart-streaming.html#cb176-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>start_link(<span class="cn">__MODULE__</span>, init_arg, <span class="va">name:</span> <span class="cn">__MODULE__</span>)</span>
+<span id="cb176-7"><a href="supervise-and-autostart-streaming.html#cb176-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb176-8"><a href="supervise-and-autostart-streaming.html#cb176-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-9"><a href="supervise-and-autostart-streaming.html#cb176-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(_init_arg) <span class="kw">do</span></span>
+<span id="cb176-10"><a href="supervise-and-autostart-streaming.html#cb176-10" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb176-11"><a href="supervise-and-autostart-streaming.html#cb176-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-12"><a href="supervise-and-autostart-streaming.html#cb176-12" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb176-13"><a href="supervise-and-autostart-streaming.html#cb176-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-14"><a href="supervise-and-autostart-streaming.html#cb176-14" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>init(children, <span class="va">strategy:</span> <span class="va">:one_for_one</span>)</span>
+<span id="cb176-15"><a href="supervise-and-autostart-streaming.html#cb176-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb176-16"><a href="supervise-and-autostart-streaming.html#cb176-16" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>We can now update the strategy to <code>rest_for_one</code>:</p>
+<div class="sourceCode" id="cb177"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb177-1"><a href="supervise-and-autostart-streaming.html#cb177-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/supervisor.ex</span></span>
+<span id="cb177-2"><a href="supervise-and-autostart-streaming.html#cb177-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(_init_arg) <span class="kw">do</span></span>
+<span id="cb177-3"><a href="supervise-and-autostart-streaming.html#cb177-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb177-4"><a href="supervise-and-autostart-streaming.html#cb177-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>init(children, <span class="va">strategy:</span> <span class="va">:rest_for_one</span>) <span class="co"># &lt;= strategy updated</span></span>
+<span id="cb177-5"><a href="supervise-and-autostart-streaming.html#cb177-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The last step inside our new supervisor will be to add 2 children: <code>Streamer.DynamicStreamerSupervisor</code> and <code>Task</code> (that will autostart the symbol streamers):</p>
+<div class="sourceCode" id="cb178"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb178-1"><a href="supervise-and-autostart-streaming.html#cb178-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/supervisor.ex</span></span>
+<span id="cb178-2"><a href="supervise-and-autostart-streaming.html#cb178-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(_init_arg) <span class="kw">do</span></span>
+<span id="cb178-3"><a href="supervise-and-autostart-streaming.html#cb178-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb178-4"><a href="supervise-and-autostart-streaming.html#cb178-4" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span>, []},</span>
+<span id="cb178-5"><a href="supervise-and-autostart-streaming.html#cb178-5" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Task</span>,</span>
+<span id="cb178-6"><a href="supervise-and-autostart-streaming.html#cb178-6" aria-hidden="true" tabindex="-1"></a>       <span class="kw">fn</span> <span class="op">-&gt;</span></span>
+<span id="cb178-7"><a href="supervise-and-autostart-streaming.html#cb178-7" aria-hidden="true" tabindex="-1"></a>         <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span><span class="op">.</span>autostart_streaming()</span>
+<span id="cb178-8"><a href="supervise-and-autostart-streaming.html#cb178-8" aria-hidden="true" tabindex="-1"></a>       <span class="kw">end</span>}</span>
+<span id="cb178-9"><a href="supervise-and-autostart-streaming.html#cb178-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb178-10"><a href="supervise-and-autostart-streaming.html#cb178-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb178-11"><a href="supervise-and-autostart-streaming.html#cb178-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Final update in this chapter will be to replace the <code>Streamer.DynamicStreamerSupervisor</code> as one of the children inside the <code>Streamer.Application</code> module and update the name that application process registers under:</p>
+<div class="sourceCode" id="cb179"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb179-1"><a href="supervise-and-autostart-streaming.html#cb179-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
+<span id="cb179-2"><a href="supervise-and-autostart-streaming.html#cb179-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb179-3"><a href="supervise-and-autostart-streaming.html#cb179-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb179-4"><a href="supervise-and-autostart-streaming.html#cb179-4" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span>, []},</span>
+<span id="cb179-5"><a href="supervise-and-autostart-streaming.html#cb179-5" aria-hidden="true" tabindex="-1"></a>      {</span>
+<span id="cb179-6"><a href="supervise-and-autostart-streaming.html#cb179-6" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb179-7"><a href="supervise-and-autostart-streaming.html#cb179-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>, <span class="va">adapter_name:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span><span class="cn">PG2</span></span>
+<span id="cb179-8"><a href="supervise-and-autostart-streaming.html#cb179-8" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="cb179-9"><a href="supervise-and-autostart-streaming.html#cb179-9" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Supervisor</span>, []} <span class="co"># &lt;= updated supervisor</span></span>
+<span id="cb179-10"><a href="supervise-and-autostart-streaming.html#cb179-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb179-11"><a href="supervise-and-autostart-streaming.html#cb179-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb179-12"><a href="supervise-and-autostart-streaming.html#cb179-12" aria-hidden="true" tabindex="-1"></a>    opts <span class="op">=</span> [<span class="va">strategy:</span> <span class="va">:one_for_one</span>, <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Application</span>] <span class="co"># &lt;= updated name</span></span>
+<span id="cb179-13"><a href="supervise-and-autostart-streaming.html#cb179-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="test-the-implementation-3" class="section level2" number="11.10">
+<h2><span class="header-section-number">11.10</span> Test the implementation</h2>
+<p>Let’s start an <code>iex</code> session and call the <code>start_streaming/1</code> function twice for two different symbols and then exit using double Ctrl+c:</p>
+<div class="sourceCode" id="cb180"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb180-1"><a href="supervise-and-autostart-streaming.html#cb180-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb180-2"><a href="supervise-and-autostart-streaming.html#cb180-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb180-3"><a href="supervise-and-autostart-streaming.html#cb180-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;ethusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb180-4"><a href="supervise-and-autostart-streaming.html#cb180-4" aria-hidden="true" tabindex="-1"></a><span class="ex">18:51:39.809</span> [info]  Starting streaming on ETHUSDT</span>
+<span id="cb180-5"><a href="supervise-and-autostart-streaming.html#cb180-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.370.0&gt;}</span></span>
+<span id="cb180-6"><a href="supervise-and-autostart-streaming.html#cb180-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;neousdt&quot;</span><span class="kw">)</span></span>
+<span id="cb180-7"><a href="supervise-and-autostart-streaming.html#cb180-7" aria-hidden="true" tabindex="-1"></a><span class="ex">18:51:47.288</span> [info]  Starting streaming on NEOUSDT</span>
+<span id="cb180-8"><a href="supervise-and-autostart-streaming.html#cb180-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.377.0&gt;}</span></span></code></pre></div>
+<p>Now, open a <em>new</em> <code>iex</code> session and look at the output:</p>
+<div class="sourceCode" id="cb181"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb181-1"><a href="supervise-and-autostart-streaming.html#cb181-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb181-2"><a href="supervise-and-autostart-streaming.html#cb181-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb181-3"><a href="supervise-and-autostart-streaming.html#cb181-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> </span>
+<span id="cb181-4"><a href="supervise-and-autostart-streaming.html#cb181-4" aria-hidden="true" tabindex="-1"></a><span class="ex">18:53:48.920</span> [info]  Starting streaming on ETHUSDT</span>
+<span id="cb181-5"><a href="supervise-and-autostart-streaming.html#cb181-5" aria-hidden="true" tabindex="-1"></a><span class="ex">18:53:50.306</span> [info]  Starting streaming on NEOUSDT</span></code></pre></div>
+<p>We can also confirm that streamer processes are there by using <code>:observer.start()</code>:</p>
+<div class="figure">
+<img src="images/chapter_11_05_finished_tree.png" alt="" />
+<p class="caption">Updated supervision tree with two autostarted streamers and new supervisor</p>
+</div>
+<p>Inside the same <code>iex</code> session run the following:</p>
+<div class="sourceCode" id="cb182"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb182-1"><a href="supervise-and-autostart-streaming.html#cb182-1" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">5</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.stop_streaming<span class="kw">(</span><span class="st">&quot;neousdt&quot;</span><span class="kw">)</span> </span>
+<span id="cb182-2"><a href="supervise-and-autostart-streaming.html#cb182-2" aria-hidden="true" tabindex="-1"></a><span class="ex">18:57:37.205</span> [info]  Stopping streaming on NEOUSDT</span>
+<span id="cb182-3"><a href="supervise-and-autostart-streaming.html#cb182-3" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span></span>
+<span id="cb182-4"><a href="supervise-and-autostart-streaming.html#cb182-4" aria-hidden="true" tabindex="-1"></a> <span class="ex">%Streamer.Schema.Settings{</span></span>
+<span id="cb182-5"><a href="supervise-and-autostart-streaming.html#cb182-5" aria-hidden="true" tabindex="-1"></a>   <span class="ex">...</span></span>
+<span id="cb182-6"><a href="supervise-and-autostart-streaming.html#cb182-6" aria-hidden="true" tabindex="-1"></a> <span class="er">}}</span></span>
+<span id="cb182-7"><a href="supervise-and-autostart-streaming.html#cb182-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">6</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.stop_streaming<span class="kw">(</span><span class="st">&quot;ethusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb182-8"><a href="supervise-and-autostart-streaming.html#cb182-8" aria-hidden="true" tabindex="-1"></a><span class="ex">18:57:51.553</span> [info]  Stopping streaming on ETHUSDT</span>
+<span id="cb182-9"><a href="supervise-and-autostart-streaming.html#cb182-9" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span></span>
+<span id="cb182-10"><a href="supervise-and-autostart-streaming.html#cb182-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">%Streamer.Schema.Settings{</span></span>
+<span id="cb182-11"><a href="supervise-and-autostart-streaming.html#cb182-11" aria-hidden="true" tabindex="-1"></a>   <span class="ex">...</span></span>
+<span id="cb182-12"><a href="supervise-and-autostart-streaming.html#cb182-12" aria-hidden="true" tabindex="-1"></a> <span class="er">}}</span></span></code></pre></div>
+<p>Stop the <code>iex</code> session and start new one - streamers shouldn’t be autostarted any more.</p>
+<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_11">Github</a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="fine-tune-trading-strategy-per-symbol.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="start-stop-shutdown-and-autostart-trading.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir/edit/master/11-supervise-and-autostart-trading.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["create-a-cryptocurrency-trading-bot-in-elixir.pdf", "create-a-cryptocurrency-trading-bot-in-elixir.epub"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

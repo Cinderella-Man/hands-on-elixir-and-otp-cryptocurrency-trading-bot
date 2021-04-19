@@ -1,0 +1,184 @@
+# Introduce a trader budget and calculating the quantity
+
+## Objectives
+
+- fetch step_size
+- append budget and step_size to the `Trader`'s state compiled by the `Leader`
+- append budget and step_size to the `Trader`'s state
+- calculate quantity
+
+## Fetch `step_size`
+
+In 2nd chapter we hardcoded `quantity` to 100, it's time to refactor that. We will need `step_size` information from the Binance which we are
+already retrieving together with `tick_size` in the `exchangeInfo` call(but not getting it out from the response). So we will rename the `fetch_tick_size/1` function to `fetch_symbol_filters/1` which will allow us to return multiple filters(`tick_size` and `step_size`) from that function.
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/leader.ex
+  ...
+  defp fetch_symbol_settings(symbol) do
+    symbol_filters = fetch_symbol_filters(symbol) # <= updated fetch_tick_size
+    
+    Map.merge(
+      %{
+        chunks: 1,
+        budget: 20,
+        buy_down_interval: Decimal.new("0.0001"),
+        # -0.12% for quick testing
+        profit_interval: Decimal.new("-0.0012")
+      },
+      symbol_filters
+    )
+  end
+
+  defp fetch_symbol_filters(symbol) do  # <= updated fetch_tick_size
+    symbol_filters =
+      @binance_client.get_exchange_info()
+      |> elem(1)
+      |> Map.get(:symbols)
+      |> Enum.find(&(&1["symbol"] == symbol))
+      |> Map.get("filters")
+
+    tick_size =
+      symbol_filters
+      |> Enum.find(&(&1["filterType"] == "PRICE_FILTER"))
+      |> Map.get("tickSize")
+      |> Decimal.new()
+
+    step_size =
+      symbol_filters
+      |> Enum.find(&(&1["filterType"] == "LOT_SIZE"))
+      |> Map.get("stepSize")
+      |> Decimal.new()
+
+    %{
+      tick_size: tick_size,
+      step_size: step_size
+    }
+  end
+```
+
+Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a `budget`(#2) which will be shared across all traders of the symbol. Also, we don't need to assign `tick_size` here as it's part of the settings that are merged.
+
+## Append `budget` and `step_size` to the `Trader`'s state inside the `Leader` 
+
+The `budget` needs to be added to the `%State{}`(`step_size` will be automatically passed on by `struct/2`) of the trader inside `fresh_trader_state/1`(where we initialize the state of traders). Before we will assign it we need to divide it by number of chunks as each trader gets only a chunk of the budget:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/leader.ex
+  defp fresh_trader_state(settings) do
+    %{
+      struct(Trader.State, settings) |
+      budget: D.div(settings.budget, settings.chunks)
+    }
+  end
+```
+
+In the code above we are using the `Decimal` module(aliased as `D`) to calculate the budget - we need to alias it at the top of `Naive.Leader`'s file: 
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/lib/naive/leader.ex
+defmodule Naive.Leader do
+  use GenServer
+
+  alias Decimal, as: D # <= add this line
+  alias Naive.Trader
+  ...
+```
+
+## Append `budget` and `step_size` to the `Trader`'s state
+
+We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struct:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/trader.ex
+  ...
+  defmodule State do
+    @enforce_keys [
+      :symbol,
+      :budget, # <= add this line
+      :buy_down_interval,
+      :profit_interval,
+      :tick_size,
+      :step_size # <= add this line and comma above
+    ]
+    defstruct [
+      :symbol,
+      :budget, # <= add this line
+      :buy_order,
+      :sell_order,
+      :buy_down_interval,
+      :profit_interval,
+      :tick_size,
+      :step_size # <= add this line and comma above
+    ]
+  end
+  ...
+```
+
+## Calculate quantity
+
+Jumping back to the `handle_info/2` where the `Naive.Trader` places a buy order, we need to pattern match on the `step_size` and `budget` then we will be able to swap hardcoded quantity with result of calling the `calculate_quantity/3` function:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/trader.ex
+  ...
+  def handle_info(
+        %TradeEvent{price: price},
+        %State{
+          symbol: symbol,
+          budget: budget, # <= add this line
+          buy_order: nil,
+          buy_down_interval: buy_down_interval,
+          tick_size: tick_size,
+          step_size: step_size # <= add this line
+        } = state
+      ) do
+    ...
+    quantity = calculate_quantity(budget, price, step_size)
+    ...
+```
+
+To calculate quantity we will just divide the `budget` by the `price` with a caveat that it's possible (as with calculating the price) that it's not a legal quantity value as it needs to be divisiable by `step_size`:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/trader.ex
+  # add below at the bottom of the file
+  ...
+  defp calculate_quantity(budget, price, step_size) do
+    price = D.from_float(price)
+
+    # not necessarily legal quantity
+    exact_target_quantity = D.div(budget, price)
+
+    D.to_float(
+      D.mult(
+        D.div_int(exact_target_quantity, step),
+        step
+      )
+    )
+  end
+```
+
+### IEx testing
+
+That finishes the `quantity`(and `budget`) implementation, we will jump into iex session to see how it works.
+
+First, start the streaming and trading on the same symbol and moment later you should see variable amount of quantity that more or less uses full allowed budget:
+
+```{r, engine = 'bash', eval = FALSE}
+$ iex -S mix
+...
+iex(1)> Streamer.start_streaming("XRPUSDT")
+{:ok, #PID<0.313.0>}
+iex(2)> Naive.start_trading("XRPUSDT")
+21:16:14.829 [info]  Starting new supervision tree to trade on XRPUSDT
+21:16:16.755 [info]  Initializing new trader for XRPUSDT
+21:16:20.009 [info]  Placing BUY order for XRPUSDT @ 0.29506, quantity: 67.7
+21:16:23.456 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29529, quantity: 67.7
+```
+
+As we can see our `Naive.Trader` process is now buying and selling based on passed budget.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+Source code for this chapter can be found at [Github](https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_07)

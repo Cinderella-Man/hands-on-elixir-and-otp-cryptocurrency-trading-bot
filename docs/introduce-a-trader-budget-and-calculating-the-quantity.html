@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 7 Introduce a trader budget and calculating the quantity | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content="Chapter 7 Introduce a trader budget and calculating the quantity | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="images/cover.png" />
+  
+  <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Create a cryptocurrency trading bot in Elixir" />
+  
+  
+  <meta name="twitter:image" content="images/cover.png" />
+
+<meta name="author" content="Kamil Skowron" />
+
+
+<meta name="date" content="2021-04-19" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"/>
+<link rel="next" href="add-support-for-multiple-transactions-per-order.html"/>
+<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code"><i class="fa fa-check"></i>Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Create a cryptocurrency trading bot in Elixir</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="introduce-a-trader-budget-and-calculating-the-quantity" class="section level1" number="7">
+<h1><span class="header-section-number">Chapter 7</span> Introduce a trader budget and calculating the quantity</h1>
+<div id="objectives-6" class="section level2" number="7.1">
+<h2><span class="header-section-number">7.1</span> Objectives</h2>
+<ul>
+<li>fetch step_size</li>
+<li>append budget and step_size to the <code>Trader</code>’s state compiled by the <code>Leader</code></li>
+<li>append budget and step_size to the <code>Trader</code>’s state</li>
+<li>calculate quantity</li>
+</ul>
+</div>
+<div id="fetch-step_size" class="section level2" number="7.2">
+<h2><span class="header-section-number">7.2</span> Fetch <code>step_size</code></h2>
+<p>In 2nd chapter we hardcoded <code>quantity</code> to 100, it’s time to refactor that. We will need <code>step_size</code> information from the Binance which we are
+already retrieving together with <code>tick_size</code> in the <code>exchangeInfo</code> call(but not getting it out from the response). So we will rename the <code>fetch_tick_size/1</code> function to <code>fetch_symbol_filters/1</code> which will allow us to return multiple filters(<code>tick_size</code> and <code>step_size</code>) from that function.</p>
+<div class="sourceCode" id="cb98"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb98-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb98-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb98-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
+<span id="cb98-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-4" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span> fetch_symbol_filters(symbol) <span class="co"># &lt;= updated fetch_tick_size</span></span>
+<span id="cb98-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb98-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
+<span id="cb98-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-7" aria-hidden="true" tabindex="-1"></a>      %{</span>
+<span id="cb98-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">1</span>,</span>
+<span id="cb98-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">20</span>,</span>
+<span id="cb98-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.0001&quot;</span>),</span>
+<span id="cb98-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing</span></span>
+<span id="cb98-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;-0.0012&quot;</span>)</span>
+<span id="cb98-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-13" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="cb98-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-14" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb98-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb98-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb98-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters(symbol) <span class="kw">do</span>  <span class="co"># &lt;= updated fetch_tick_size</span></span>
+<span id="cb98-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-19" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
+<span id="cb98-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-20" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb98-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-21" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
+<span id="cb98-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-22" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
+<span id="cb98-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-23" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
+<span id="cb98-24"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
+<span id="cb98-25"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-26"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-26" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
+<span id="cb98-27"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-27" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb98-28"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-28" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
+<span id="cb98-29"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-29" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
+<span id="cb98-30"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-30" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Decimal</span><span class="op">.</span>new()</span>
+<span id="cb98-31"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-32"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-32" aria-hidden="true" tabindex="-1"></a>    step_size <span class="op">=</span></span>
+<span id="cb98-33"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-33" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb98-34"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-34" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span>))</span>
+<span id="cb98-35"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-35" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;stepSize&quot;</span>)</span>
+<span id="cb98-36"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Decimal</span><span class="op">.</span>new()</span>
+<span id="cb98-37"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-38"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-38" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb98-39"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-39" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size,</span>
+<span id="cb98-40"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-40" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
+<span id="cb98-41"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-41" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb98-42"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a <code>budget</code>(#2) which will be shared across all traders of the symbol. Also, we don’t need to assign <code>tick_size</code> here as it’s part of the settings that are merged.</p>
+</div>
+<div id="append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="section level2" number="7.3">
+<h2><span class="header-section-number">7.3</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></h2>
+<p>The <code>budget</code> needs to be added to the <code>%State{}</code>(<code>step_size</code> will be automatically passed on by <code>struct/2</code>) of the trader inside <code>fresh_trader_state/1</code>(where we initialize the state of traders). Before we will assign it we need to divide it by number of chunks as each trader gets only a chunk of the budget:</p>
+<div class="sourceCode" id="cb99"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb99-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb99-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
+<span id="cb99-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb99-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-4" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings) <span class="op">|</span></span>
+<span id="cb99-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks)</span>
+<span id="cb99-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-6" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb99-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>In the code above we are using the <code>Decimal</code> module(aliased as <code>D</code>) to calculate the budget - we need to alias it at the top of <code>Naive.Leader</code>’s file:</p>
+<div class="sourceCode" id="cb100"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb100-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb100-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
+<span id="cb100-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
+<span id="cb100-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D <span class="co"># &lt;= add this line</span></span>
+<span id="cb100-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-6" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
+<span id="cb100-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="append-budget-and-step_size-to-the-traders-state" class="section level2" number="7.4">
+<h2><span class="header-section-number">7.4</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</h2>
+<p>We need to add both <code>budget</code> and <code>step_size</code> to the <code>Naive.Trader</code>’s state struct:</p>
+<div class="sourceCode" id="cb101"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb101-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb101-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb101-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb101-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
+<span id="cb101-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb101-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb101-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
+<span id="cb101-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb101-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
+<span id="cb101-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
+<span id="cb101-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-11" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb101-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
+<span id="cb101-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb101-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb101-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
+<span id="cb101-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
+<span id="cb101-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
+<span id="cb101-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb101-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
+<span id="cb101-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
+<span id="cb101-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-21" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb101-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb101-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-23" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="calculate-quantity" class="section level2" number="7.5">
+<h2><span class="header-section-number">7.5</span> Calculate quantity</h2>
+<p>Jumping back to the <code>handle_info/2</code> where the <code>Naive.Trader</code> places a buy order, we need to pattern match on the <code>step_size</code> and <code>budget</code> then we will be able to swap hardcoded quantity with result of calling the <code>calculate_quantity/3</code> function:</p>
+<div class="sourceCode" id="cb102"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb102-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb102-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb102-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb102-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="va">price:</span> price},</span>
+<span id="cb102-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-5" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb102-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-6" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
+<span id="cb102-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">budget:</span> budget, <span class="co"># &lt;= add this line</span></span>
+<span id="cb102-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb102-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-9" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_down_interval:</span> buy_down_interval,</span>
+<span id="cb102-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size,</span>
+<span id="cb102-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">step_size:</span> step_size <span class="co"># &lt;= add this line</span></span>
+<span id="cb102-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-12" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb102-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-13" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb102-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb102-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-15" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> calculate_quantity(budget, price, step_size)</span>
+<span id="cb102-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<p>To calculate quantity we will just divide the <code>budget</code> by the <code>price</code> with a caveat that it’s possible (as with calculating the price) that it’s not a legal quantity value as it needs to be divisiable by <code>step_size</code>:</p>
+<div class="sourceCode" id="cb103"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb103-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb103-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below at the bottom of the file</span></span>
+<span id="cb103-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb103-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_quantity(budget, price, step_size) <span class="kw">do</span></span>
+<span id="cb103-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-5" aria-hidden="true" tabindex="-1"></a>    price <span class="op">=</span> D<span class="op">.</span>from_float(price)</span>
+<span id="cb103-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># not necessarily legal quantity</span></span>
+<span id="cb103-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-8" aria-hidden="true" tabindex="-1"></a>    exact_target_quantity <span class="op">=</span> D<span class="op">.</span>div(budget, price)</span>
+<span id="cb103-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-10" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_float(</span>
+<span id="cb103-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-11" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
+<span id="cb103-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-12" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(exact_target_quantity, step),</span>
+<span id="cb103-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-13" aria-hidden="true" tabindex="-1"></a>        step</span>
+<span id="cb103-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-14" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb103-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb103-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div id="iex-testing-2" class="section level3" number="7.5.1">
+<h3><span class="header-section-number">7.5.1</span> IEx testing</h3>
+<p>That finishes the <code>quantity</code>(and <code>budget</code>) implementation, we will jump into iex session to see how it works.</p>
+<p>First, start the streaming and trading on the same symbol and moment later you should see variable amount of quantity that more or less uses full allowed budget:</p>
+<div class="sourceCode" id="cb104"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb104-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb104-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb104-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb104-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.313.0&gt;}</span></span>
+<span id="cb104-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb104-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-6" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:14.829</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
+<span id="cb104-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:16.755</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb104-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-8" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:20.009</span> [info]  Placing BUY order for XRPUSDT @ 0.29506, quantity: 67.7</span>
+<span id="cb104-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:23.456</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29529, quantity: 67.7</span></code></pre></div>
+<p>As we can see our <code>Naive.Trader</code> process is now buying and selling based on passed budget.</p>
+<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_07">Github</a></p>
+
+</div>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="add-support-for-multiple-transactions-per-order.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir/edit/master/07-introduce-budget-and-quantity.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["create-a-cryptocurrency-trading-bot-in-elixir.pdf", "create-a-cryptocurrency-trading-bot-in-elixir.epub"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

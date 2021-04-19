@@ -1,0 +1,145 @@
+--- 
+title: "Create a cryptocurrency trading bot in Elixir"
+author: "Kamil Skowron"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+link-citations: yes
+github-repo: frathon/create-a-cryptocurrency-trading-bot-in-elixir
+description: ""
+graphics: yes
+nocite: '@*'
+cover-image: images/cover.png
+---
+
+# Welcome 👋 {-}
+
+This website is the home of *Create a cryptocurrency trading bot in Elixir* book.
+
+Are you looking for a real-world Elixir/OTP project to gain hands-on experience/solidify your Elixir/OTP knowledge? You are in the right place! This book will take you on a journey to create a cryptocurrency trading bot in Elixir. You will be able to see first-hand, how complex systems are designed and developed as we will build them together!
+
+<img src="images/cover.png" width="250" height="324" alt="The book cover" align="right" style="margin: 0 1em 0 1em"/>
+
+**Note**: This book was published at some moment via Leanpub, but to keep it up to date as well as publicly available for people that can't afford to pay for it, it's available here free of charge.
+
+Knowledge is power and should be shared equally 🙏
+
+This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Please consider supporting this book and my other work via [GitHub sponsors](https://github.com/sponsors/frathon) program(it supports both one-off payments as well as "monthly" plans).
+
+## Limit of Liability/Disclaimer of Warranty {-}
+
+**THIS BOOK IS NOT A FINANCIAL ADVICE**
+
+THE SOFTWARE/BOOK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE/BOOK OR THE USE OR OTHER DEALINGS IN THE SOFTWARE/BOOK.
+
+## Contributing / Errata {-}
+
+The book is written using [R Markdown](http://rmarkdown.rstudio.com/)(it's a very similar syntax to the GitHub markdown but allows way more features including inline HTML etc) and converted to final form (for example PDF) using the [bookdown](https://www.bookdown.org/) app. This means that editing a chapter is as simple as editing the markdown for that chapter - there is even an edit button at the top of the page to do exactly that. I would love to follow the standard process of forking, making changes, opening PR, merging, and releasing a new version of the book. I invite people to open issues as well with suggestions.
+
+## Preface {-}
+
+In recent years [Elixir](https://elixir-lang.org/) programming language gained a lot of interest in the industry.
+
+Its unmatched parallelization capabilities are unique and powerful, making it a great candidate for highly concurrent systems like the ones trading assets on exchanges.
+
+In this book, we will go through the development process of a cryptocurrency trading bot in Elixir. We will start grounds up and chapter by chapter progress with the implementation ending up with a fully fledged *naive* trading strategy. We will be designing process supervision trees, describing why specific decisions were taken and how will they impact the system going forward.
+
+By any stretch of the imagination, I don't believe that "this is *the only* way"(nor even the best way) to create a cryptocurrency trading bot in Elixir. This book focuses more on building a real-life project and iterating over it, taking decisions on the way as it would happen in a real work environment. There are parts that will be "perfect" the first time around, but there are also others, where we will take compromises to "get it to working" and then when the time is right, we will refactor them as we will gain a better understanding of the domain problem.
+
+## Who this book is for {-}
+
+This book will be a great resource for everyone that already knows the basics of Elixir and wants to get a feel of how developing a non-trivial system looks like using it.
+
+Readers do not need deep knowledge about cryptocurrencies to follow along as I will shy away from crypto / trading jargon as well as will explain it whenever it's unavoidable.
+
+**This is not a book focused on trading strategies, neither it's financial advice to trade at all.** The main focus of this book is to showcase how the implementation of even complex problems can be achieved in Elixir by simple processes working together in a orchestrated manner.
+
+**The strategy described in this book is naive and most probably will end up losing money**, but that's not the point of this book. **As we will build up the strategy we will face a spectrum of problems that developers face at work. It's a great primer if you want to get your first "project" behind your belt**.
+
+So, if you've already gone through the motions and learned Elixir and OTP but still feel like you need to get your hands dirty with a "real problem" to "make it stick", this book is for you.
+
+## What this book covers {-}
+
+This book is a loosely written representation of "[Create a cryptocurrency trading bot in Elixir](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ)" video course released on YouTube.
+
+It's still an ongoing production and will be continued in the upcoming months, at this moment it contains:
+
+* Chapter 1 - Stream live crypto prices from Binance WSS
+
+Stream live cryptocurrency prices (trade events) from the Binance exchange. Starting grounds up, we will create a new umbrella project and a `streamer` application inside it. The streamer application will use a Websocket client called `WebSockex` to establish a connection with the Binance API and receive a live feed. After receiving the event as JSON string, we will decode it using the `jason` library and convert it to our own data struct. At the end of the chapter, we will see decoded trade events being logged to the terminal.
+
+* Chapter 2 - Create a naive trading strategy - single trader without supervision
+
+In this chapter we will create our first *naive* trading strategy. We will create another application inside our umbrella called `naive`. We will put data streamed to our `streamer` application to good use by sending it over to the `naive` application. We will start with a very basic solution consisting of single process called `trader` that will utilize the `GenServer` behaviour. It will allow us to go through the full trading cycle and will give us something that "works".
+
+* Chapter 3 - Introduce PubSub as a communication method
+
+To allow our trading strategy to scale to multiple parallel traders, we need to find a way to distribute the latest prices (trade events) to those multiple traders. We will introduce PubSub to broadcast messages from the streamer(s) to the trader(s). PubSub will allow us to break hardcoded references between applications in our umbrella and that will become a pattern that we will utilize moving forward.
+
+* Chapter 4 - Mock the Binance API
+
+Besides historical prices (trade events), to perform backtesting, we need to be able to mock placing orders and get trade events back as they are filled. In this chapter we will focus on developing the solution that will allow our trader to "trade" without contacting the Binance exchange(for people without Binance accounts), it will also allow us to backtest our trading strategy.
+
+* Chapter 5 - Enable parallel trading on multiple symbols
+
+Our basic strategy implementation from the last chapter is definitely too basic to be used in a "production environment" - it can't be neither scaled nor it is fault-tolerant. In this chapter, we will upgrade our naive strategy to be more resilient. This will require a supervision tree to be created and will allow us to see different supervision strategies in action and understand the motivation behind using and stacking them.
+
+* Chapter 6 - Introduce a `buy_down_interval` to make a single trader more profitable
+
+At this moment our `Naive.Trader` implementation will blindly place a buy order at the price of the last trade event. Whenever the `Naive.Trader` process will finish trade, a new `Naive.Trader` process will be started and it will end up placing a buy order at the same price as the price of the previous sell order. This will cost us double the fee without gaining any advantage and would cause further complications down the line so we will introduce a `buy_down_interval` which will allow the `Naive.Trader` processes to place buy order below the current trade event's price.
+
+* Chapter 7 - Introduce a trader budget and calculating the quantity
+
+Since the second chapter our `Naive.Trader` processes are placing orders with a hardcoded quantity of 100. In this chapter, we will introduce a budget that will be evenly split between the `Naive.Trader` processes using chunks. We will utilize that budget to calculate quantity (to be able to do that we need to fetch further `step_size` information from the Binance API) 
+
+* Chapter 8 - Add support for multiple transactions per order
+
+Our `Naive.Trader` implementation assumes that our orders will be filled within a single transaction, but this isn't always the case. In this chapter, we will discuss how could we implement the support for multiple transactions per order and race conditions that could occur between the bot and the Binance API.
+
+* Chapter 9 - Run multiple traders in parallel
+
+With PubSub, supervision tree, buy down and budget in place we can progress with scaling the number of traders. This will require further improvements to our trading strategy like introducing a `rebuy_interval`. At the end of this chapter our trading strategy will be able to start and run multiple traders in parallel.
+
+* Chapter 10 - Fine-tune trading strategy per symbol
+
+Currently naive strategy works based on settings hardcoded in the `leader` module. To allow for fine-tunning the naive trading strategy per symbol we will introduce a new database together with table that will store trading settings.
+
+* Chapter 11 - Supervise and autostart streaming
+
+In the last chapter we introduced a new database inside the `naive` application to store default settings, in this chapter we will do the same for the `streamer` application. Inside the settings there will be a `status` flag that will allow us to implement the autostarting functionality on initialization using Task abstracting
+
+* Chapter 12 - Start, stop, shutdown and autostart trading
+
+To follow up after autostarting streaming we will apply the same trick to the trading supervision tree using Task abstraction. We will need to introduce new supervision level to achieve correct supervision strategy.
+
+* Chapter 13 - Abstract duplicated supervision code
+
+As both the `naive` and the `streamer` application contain almost the same copy-pasted code that allows us to start, stop and autostart workers. We will look into how could we abstract the common parts of that implementation to a single module. We will venture into utilizing the `__using__` macro to get rid of the boilerplate.
+
+* Chapter 14 - Store trade events and orders inside the database
+
+To be able to backtest the trading strategy, we need to have historical prices (trade events) and list of orders that were placed stored in the database, which will be the focus of this chapter. At this moment, the latest prices (trade events) are broadcasted to PubSub topic and traders are subscribing to it. We will create a new application called `data_warehouse` inside our umbrella that will be responsible for subscribing to the same PubSub topics and storing incoming prices (trade events) in the Postgres database. We will update the `Naive.Trader` module to broadcast orders as traders will place them.
+
+Then we will move on to adding supervision similar to the one from the `naive` and the `streamer` applications but this time we will show how we could avoid using both common module and macros by utilizing the `Registry` module. 
+
+* Chapter 15 - Backtest trading strategy
+
+In this chapter, we will be backtesting our trading strategy by developing a publisher inside the DataWarehouse application. It will stream trade events from the database to broadcast them to the `TRADE_EVENTS:#{symbol}` PubSub topic. It will use the same topic as data would be streamed directly from the Binance. From the trader's perspective, it won't any difference and will cause normal trading activity that will be stored inside the database to be analyzed later.
+
+## Source code {-}
+
+The source code for this book is hosted on Github:
+
+https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code
+
+Final code of each chapter has it's own branch.
+
+```{r include=FALSE}
+# automatically create a bib database for R packages
+knitr::write_bib(c(
+  .packages(), 'bookdown', 'knitr', 'rmarkdown'
+), 'packages.bib')
+```

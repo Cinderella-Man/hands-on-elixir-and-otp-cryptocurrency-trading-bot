@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content="Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="images/cover.png" />
+  
+  <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir" />
+  
+  
+  <meta name="twitter:image" content="images/cover.png" />
+
+<meta name="author" content="Kamil Skowron" />
+
+
+<meta name="date" content="2021-04-19" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="store-trade-events-and-orders-inside-the-database.html"/>
+
+<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code"><i class="fa fa-check"></i>Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Create a cryptocurrency trading bot in Elixir</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="backtest-trading-strategy" class="section level1" number="15">
+<h1><span class="header-section-number">Chapter 15</span> Backtest trading strategy</h1>
+<div id="objectives-14" class="section level2" number="15.1">
+<h2><span class="header-section-number">15.1</span> Objectives</h2>
+<ul>
+<li>overview of requirements</li>
+<li>implement the storing task</li>
+<li>test the backtesting</li>
+</ul>
+</div>
+<div id="overview-of-requirements-2" class="section level2" number="15.2">
+<h2><span class="header-section-number">15.2</span> Overview of requirements</h2>
+<p>In the last chapter, we started storing trade events and orders in the database which will be crucial for backtesting, which we will focus on in this chapter.</p>
+<p>Backtesting is a procedure of running historical data through the system and observing how our strategy would perform as if we would run it “in the past”. Backtesting works on assumption that the market will behave in a similar fashion in the future as it was in the past.</p>
+<p>At this moment we are receiving the trade events from the Binance through WebSocket. The <code>Streamer.Binance</code> process is handling those messages by parsing them from JSON string to map, then converting them to structs and broadcasting them to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic. The <code>Naive.Trader</code> subscribes to the <code>TRADE_EVENTS:#{symbol}</code> topic and takes decisions based on incoming data. As it places buy and sell orders it broadcasts them to the <code>ORDERS:#{symbol}</code> PubSub topic. The <code>DataWarehouse.Subscriber.Worker</code> processes subscribe to both trade events and orders topics and store incoming data inside the database - we can visualize that flow like that:</p>
+<div class="figure">
+<img src="images/chapter_14_02_current_pubsub.png" alt="" />
+<p class="caption">Normal broadcast/subscribe flow</p>
+</div>
+<p>To backtest we can substitute the <code>Streamer.Binance</code> process with a <code>Task</code> that will <code>stream</code> trade events’ data from the database and broadcasts it to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic(the same topic as the <code>Streamer.Binance</code> process).</p>
+<p>From the perspective of the <code>Naive.Trader</code> it <em>does not</em> make any difference who is broadcasting those trade events. This should be a clear indication of the value of publish/subscribe model that we implemented from the beginning. It allows us to swap producer and consumers freely to backtest our trading strategies:</p>
+<div class="figure">
+<img src="images/chapter_14_03_backtest_pubsub.png" alt="" />
+<p class="caption">Task feeds the stream of data from the database straight to the PubSub topic</p>
+</div>
+</div>
+<div id="implement-the-storing-task" class="section level2" number="15.3">
+<h2><span class="header-section-number">15.3</span> Implement the storing task</h2>
+<p>We will start by creating a new file called <code>publisher.ex</code> inside the <code>apps/data_warehouse/lib/data_warehouse</code> directory. We will start by implementing the basic <code>Task</code> behavior:</p>
+<div class="sourceCode" id="cb292"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb292-1"><a href="backtest-trading-strategy.html#cb292-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
+<span id="cb292-2"><a href="backtest-trading-strategy.html#cb292-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Publisher</span> <span class="kw">do</span></span>
+<span id="cb292-3"><a href="backtest-trading-strategy.html#cb292-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Task</span></span>
+<span id="cb292-4"><a href="backtest-trading-strategy.html#cb292-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb292-5"><a href="backtest-trading-strategy.html#cb292-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(arg) <span class="kw">do</span></span>
+<span id="cb292-6"><a href="backtest-trading-strategy.html#cb292-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Task</span><span class="op">.</span>start_link(<span class="cn">__MODULE__</span>, <span class="va">:run</span>, [arg])</span>
+<span id="cb292-7"><a href="backtest-trading-strategy.html#cb292-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb292-8"><a href="backtest-trading-strategy.html#cb292-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb292-9"><a href="backtest-trading-strategy.html#cb292-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> run(arg) <span class="kw">do</span></span>
+<span id="cb292-10"><a href="backtest-trading-strategy.html#cb292-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ...</span></span>
+<span id="cb292-11"><a href="backtest-trading-strategy.html#cb292-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb292-12"><a href="backtest-trading-strategy.html#cb292-12" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>To be able to query the database we will import <code>Ecto</code> and require <code>Logger</code> for logging:</p>
+<div class="sourceCode" id="cb293"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb293-1"><a href="backtest-trading-strategy.html#cb293-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
+<span id="cb293-2"><a href="backtest-trading-strategy.html#cb293-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb293-3"><a href="backtest-trading-strategy.html#cb293-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Query</span>, <span class="va">only:</span> [<span class="va">from:</span> <span class="dv">2</span>]</span>
+<span id="cb293-4"><a href="backtest-trading-strategy.html#cb293-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb293-5"><a href="backtest-trading-strategy.html#cb293-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb293-6"><a href="backtest-trading-strategy.html#cb293-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>We can now modify the <code>run/1</code> function to expect specific <code>type</code>, <code>symbol</code>, <code>from</code>, <code>to</code> and <code>interval</code>:</p>
+<div class="sourceCode" id="cb294"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb294-1"><a href="backtest-trading-strategy.html#cb294-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex  </span></span>
+<span id="cb294-2"><a href="backtest-trading-strategy.html#cb294-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb294-3"><a href="backtest-trading-strategy.html#cb294-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> run(%{</span>
+<span id="cb294-4"><a href="backtest-trading-strategy.html#cb294-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">type:</span> <span class="va">:trade_events</span>,</span>
+<span id="cb294-5"><a href="backtest-trading-strategy.html#cb294-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,</span>
+<span id="cb294-6"><a href="backtest-trading-strategy.html#cb294-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">from:</span> from,</span>
+<span id="cb294-7"><a href="backtest-trading-strategy.html#cb294-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">to:</span> to,</span>
+<span id="cb294-8"><a href="backtest-trading-strategy.html#cb294-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">interval:</span> interval</span>
+<span id="cb294-9"><a href="backtest-trading-strategy.html#cb294-9" aria-hidden="true" tabindex="-1"></a>      }) <span class="kw">do</span></span>
+<span id="cb294-10"><a href="backtest-trading-strategy.html#cb294-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span>  </span></code></pre></div>
+<p>Inside the body of the <code>run/1</code> function, the first we will convert <code>from</code> and <code>to</code> Unix timestamps by using private helper functions:</p>
+<div class="sourceCode" id="cb295"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb295-1"><a href="backtest-trading-strategy.html#cb295-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex  </span></span>
+<span id="cb295-2"><a href="backtest-trading-strategy.html#cb295-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb295-3"><a href="backtest-trading-strategy.html#cb295-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> run(%{</span>
+<span id="cb295-4"><a href="backtest-trading-strategy.html#cb295-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb295-5"><a href="backtest-trading-strategy.html#cb295-5" aria-hidden="true" tabindex="-1"></a>      }) <span class="kw">do</span></span>
+<span id="cb295-6"><a href="backtest-trading-strategy.html#cb295-6" aria-hidden="true" tabindex="-1"></a>    from_ts <span class="op">=</span></span>
+<span id="cb295-7"><a href="backtest-trading-strategy.html#cb295-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>from<span class="ot">}</span><span class="st">T00:00:00.000Z&quot;</span></span>
+<span id="cb295-8"><a href="backtest-trading-strategy.html#cb295-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms()</span>
+<span id="cb295-9"><a href="backtest-trading-strategy.html#cb295-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb295-10"><a href="backtest-trading-strategy.html#cb295-10" aria-hidden="true" tabindex="-1"></a>    to_ts <span class="op">=</span></span>
+<span id="cb295-11"><a href="backtest-trading-strategy.html#cb295-11" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>to<span class="ot">}</span><span class="st">T23:59:59.000Z&quot;</span></span>
+<span id="cb295-12"><a href="backtest-trading-strategy.html#cb295-12" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms()</span>
+<span id="cb295-13"><a href="backtest-trading-strategy.html#cb295-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb295-14"><a href="backtest-trading-strategy.html#cb295-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb295-15"><a href="backtest-trading-strategy.html#cb295-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_to_ms(iso8601DateString) <span class="kw">do</span></span>
+<span id="cb295-16"><a href="backtest-trading-strategy.html#cb295-16" aria-hidden="true" tabindex="-1"></a>    iso8601DateString</span>
+<span id="cb295-17"><a href="backtest-trading-strategy.html#cb295-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>from_iso8601!()</span>
+<span id="cb295-18"><a href="backtest-trading-strategy.html#cb295-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>from_naive!(<span class="st">&quot;Etc/UTC&quot;</span>)</span>
+<span id="cb295-19"><a href="backtest-trading-strategy.html#cb295-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>to_unix()</span>
+<span id="cb295-20"><a href="backtest-trading-strategy.html#cb295-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Kernel</span><span class="op">.*</span>(<span class="dv">1000</span>)</span>
+<span id="cb295-21"><a href="backtest-trading-strategy.html#cb295-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Next, we will select data from the database but because of possibly hundreds of thousands of rows being selected and because we are broadcasting them to the PubSub every x ms it could take a substantial amount of time to <code>broadcast</code> all of them. Instead of <code>select</code>ing data and storing all of it in the memory, we will use <code>Repo.stream/1</code> function to keep <code>broadcast</code>ing it on the go. Additionally, we will add <code>index</code> to the data to be able to log info messages every 10k messages. The last thing that we need to define will be the timeout value - the default value is 5 seconds and we will change it to <code>:infinity</code>:</p>
+<div class="sourceCode" id="cb296"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb296-1"><a href="backtest-trading-strategy.html#cb296-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
+<span id="cb296-2"><a href="backtest-trading-strategy.html#cb296-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> run(%{</span>
+<span id="cb296-3"><a href="backtest-trading-strategy.html#cb296-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb296-4"><a href="backtest-trading-strategy.html#cb296-4" aria-hidden="true" tabindex="-1"></a>      }) <span class="kw">do</span></span>
+<span id="cb296-5"><a href="backtest-trading-strategy.html#cb296-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb296-6"><a href="backtest-trading-strategy.html#cb296-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb296-7"><a href="backtest-trading-strategy.html#cb296-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span>transaction(</span>
+<span id="cb296-8"><a href="backtest-trading-strategy.html#cb296-8" aria-hidden="true" tabindex="-1"></a>      <span class="kw">fn</span> <span class="op">-&gt;</span></span>
+<span id="cb296-9"><a href="backtest-trading-strategy.html#cb296-9" aria-hidden="true" tabindex="-1"></a>        from(te <span class="kw">in</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span>,</span>
+<span id="cb296-10"><a href="backtest-trading-strategy.html#cb296-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">where:</span></span>
+<span id="cb296-11"><a href="backtest-trading-strategy.html#cb296-11" aria-hidden="true" tabindex="-1"></a>            te<span class="op">.</span>symbol <span class="op">==</span> <span class="op">^</span>symbol <span class="kw">and</span></span>
+<span id="cb296-12"><a href="backtest-trading-strategy.html#cb296-12" aria-hidden="true" tabindex="-1"></a>              te<span class="op">.</span>trade_time <span class="op">&gt;=</span> <span class="op">^</span>from_ts <span class="kw">and</span></span>
+<span id="cb296-13"><a href="backtest-trading-strategy.html#cb296-13" aria-hidden="true" tabindex="-1"></a>              te<span class="op">.</span>trade_time <span class="op">&lt;</span> <span class="op">^</span>to_ts,</span>
+<span id="cb296-14"><a href="backtest-trading-strategy.html#cb296-14" aria-hidden="true" tabindex="-1"></a>          <span class="va">order_by:</span> te<span class="op">.</span>trade_time</span>
+<span id="cb296-15"><a href="backtest-trading-strategy.html#cb296-15" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb296-16"><a href="backtest-trading-strategy.html#cb296-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span>stream()</span>
+<span id="cb296-17"><a href="backtest-trading-strategy.html#cb296-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>with_index()</span>
+<span id="cb296-18"><a href="backtest-trading-strategy.html#cb296-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="kw">fn</span> {row, index} <span class="op">-&gt;</span></span>
+<span id="cb296-19"><a href="backtest-trading-strategy.html#cb296-19" aria-hidden="true" tabindex="-1"></a>          <span class="va">:timer</span><span class="op">.</span>sleep(interval)</span>
+<span id="cb296-20"><a href="backtest-trading-strategy.html#cb296-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb296-21"><a href="backtest-trading-strategy.html#cb296-21" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> rem(index, <span class="dv">10_000</span>) <span class="op">==</span> <span class="dv">0</span> <span class="kw">do</span></span>
+<span id="cb296-22"><a href="backtest-trading-strategy.html#cb296-22" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Publisher broadcasted </span><span class="ot">#{</span>index<span class="ot">}</span><span class="st"> events&quot;</span>)</span>
+<span id="cb296-23"><a href="backtest-trading-strategy.html#cb296-23" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
+<span id="cb296-24"><a href="backtest-trading-strategy.html#cb296-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb296-25"><a href="backtest-trading-strategy.html#cb296-25" aria-hidden="true" tabindex="-1"></a>          publishTradeEvent(row)</span>
+<span id="cb296-26"><a href="backtest-trading-strategy.html#cb296-26" aria-hidden="true" tabindex="-1"></a>        <span class="kw">end</span>)</span>
+<span id="cb296-27"><a href="backtest-trading-strategy.html#cb296-27" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span>,</span>
+<span id="cb296-28"><a href="backtest-trading-strategy.html#cb296-28" aria-hidden="true" tabindex="-1"></a>      <span class="va">timeout:</span> <span class="va">:infinity</span></span>
+<span id="cb296-29"><a href="backtest-trading-strategy.html#cb296-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb296-30"><a href="backtest-trading-strategy.html#cb296-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb296-31"><a href="backtest-trading-strategy.html#cb296-31" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Publisher finished streaming trade events&quot;</span>)</span>
+<span id="cb296-32"><a href="backtest-trading-strategy.html#cb296-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Finally, the above code uses the <code>publishTradeEvent/1</code> helper function which converts DataWarehouse’s TradeEvent to the Stremer’s TradeEvent to broadcast the same structs as the <code>streamer</code> application:</p>
+<div class="sourceCode" id="cb297"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb297-1"><a href="backtest-trading-strategy.html#cb297-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
+<span id="cb297-2"><a href="backtest-trading-strategy.html#cb297-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb297-3"><a href="backtest-trading-strategy.html#cb297-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> publishTradeEvent(%<span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event) <span class="kw">do</span></span>
+<span id="cb297-4"><a href="backtest-trading-strategy.html#cb297-4" aria-hidden="true" tabindex="-1"></a>    new_trade_event <span class="op">=</span></span>
+<span id="cb297-5"><a href="backtest-trading-strategy.html#cb297-5" aria-hidden="true" tabindex="-1"></a>      struct(</span>
+<span id="cb297-6"><a href="backtest-trading-strategy.html#cb297-6" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>,</span>
+<span id="cb297-7"><a href="backtest-trading-strategy.html#cb297-7" aria-hidden="true" tabindex="-1"></a>        trade_event <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>to_list()</span>
+<span id="cb297-8"><a href="backtest-trading-strategy.html#cb297-8" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb297-9"><a href="backtest-trading-strategy.html#cb297-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb297-10"><a href="backtest-trading-strategy.html#cb297-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
+<span id="cb297-11"><a href="backtest-trading-strategy.html#cb297-11" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb297-12"><a href="backtest-trading-strategy.html#cb297-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb297-13"><a href="backtest-trading-strategy.html#cb297-13" aria-hidden="true" tabindex="-1"></a>      new_trade_event</span>
+<span id="cb297-14"><a href="backtest-trading-strategy.html#cb297-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb297-15"><a href="backtest-trading-strategy.html#cb297-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>This finishes our implementation - we should be able to stream trade events from the database to the PubSub using the above Task which we will do below.</p>
+</div>
+<div id="test-the-backtesting" class="section level2" number="15.4">
+<h2><span class="header-section-number">15.4</span> Test the backtesting</h2>
+<p>For consistency and ease of testing/use, I prepared an compressed single data of trade events for XRPUSDT(2019-06-03). We can download that file from GitHub using <code>wget</code>:</p>
+<div class="sourceCode" id="cb298"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb298-1"><a href="backtest-trading-strategy.html#cb298-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd /tmp</span>
+<span id="cb298-2"><a href="backtest-trading-strategy.html#cb298-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> wget https://github.com/Cinderella-Man/binance-trade-events/raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz</span></code></pre></div>
+<p>We can now uncompress the archive and load those trade events into our database:</p>
+<div class="sourceCode" id="cb299"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb299-1"><a href="backtest-trading-strategy.html#cb299-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> gunzip XRPUSDT-2019-06-03.csv.gz</span>
+<span id="cb299-2"><a href="backtest-trading-strategy.html#cb299-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> PGPASSWORD=postgres psql <span class="at">-Upostgres</span> <span class="at">-h</span> localhost <span class="at">-ddata_warehouse</span>  <span class="at">-c</span> <span class="st">&quot;\COPY trade_events FROM &#39;/tmp/XRPUSDT-2019-06-03.csv&#39; WITH (FORMAT csv, delimiter &#39;;&#39;);&quot;</span></span>
+<span id="cb299-3"><a href="backtest-trading-strategy.html#cb299-3" aria-hidden="true" tabindex="-1"></a><span class="ex">COPY</span> 206115</span></code></pre></div>
+<p>The number after the word <code>COPY</code> in the response indicates the number of rows that got copied into the database.</p>
+<p>We can now give it a try and run full backtesting but first let’s clean the orders table:</p>
+<div class="sourceCode" id="cb300"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb300-1"><a href="backtest-trading-strategy.html#cb300-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span></span>
+<span id="cb300-2"><a href="backtest-trading-strategy.html#cb300-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Password</span> for user postgres: </span>
+<span id="cb300-3"><a href="backtest-trading-strategy.html#cb300-3" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb300-4"><a href="backtest-trading-strategy.html#cb300-4" aria-hidden="true" tabindex="-1"></a><span class="va">postgres=</span># <span class="ex">\c</span> data_warehouse</span>
+<span id="cb300-5"><a href="backtest-trading-strategy.html#cb300-5" aria-hidden="true" tabindex="-1"></a><span class="ex">You</span> are now connected to database <span class="st">&quot;data_warehouse&quot;</span> as user <span class="st">&quot;postgres&quot;</span>.</span>
+<span id="cb300-6"><a href="backtest-trading-strategy.html#cb300-6" aria-hidden="true" tabindex="-1"></a><span class="va">data_warehouse=</span># <span class="ex">DELETE</span> FROM orders<span class="kw">;</span></span>
+<span id="cb300-7"><a href="backtest-trading-strategy.html#cb300-7" aria-hidden="true" tabindex="-1"></a><span class="ex">DELETE</span> ...</span></code></pre></div>
+<p>We can now start a new iex session where we will start trading(the <code>naive</code> application) as well as storing orders(the <code>data_warehouse</code> application) and instead of starting the <code>Streamer.Binance</code> worker we will start the <code>DataWarehouse.Publisher</code> task with arguments matching the imported day and symbol:</p>
+<div class="sourceCode" id="cb301"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb301-1"><a href="backtest-trading-strategy.html#cb301-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb301-2"><a href="backtest-trading-strategy.html#cb301-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb301-3"><a href="backtest-trading-strategy.html#cb301-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.start_storing<span class="kw">(</span><span class="st">&quot;ORDERS&quot;</span><span class="ex">,</span> <span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span>      </span>
+<span id="cb301-4"><a href="backtest-trading-strategy.html#cb301-4" aria-hidden="true" tabindex="-1"></a><span class="ex">19:17:59.596</span> [info]  Starting storing data from ORDERS:XRPUSDT topic</span>
+<span id="cb301-5"><a href="backtest-trading-strategy.html#cb301-5" aria-hidden="true" tabindex="-1"></a><span class="ex">19:17:59.632</span> [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT</span>
+<span id="cb301-6"><a href="backtest-trading-strategy.html#cb301-6" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.417.0&gt;}</span></span>
+<span id="cb301-7"><a href="backtest-trading-strategy.html#cb301-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb301-8"><a href="backtest-trading-strategy.html#cb301-8" aria-hidden="true" tabindex="-1"></a><span class="ex">19:18:16.293</span> [info]  Starting Elixir.Naive.SymbolSupervisor worker for XRPUSDT</span>
+<span id="cb301-9"><a href="backtest-trading-strategy.html#cb301-9" aria-hidden="true" tabindex="-1"></a><span class="ex">19:18:16.332</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
+<span id="cb301-10"><a href="backtest-trading-strategy.html#cb301-10" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.419.0&gt;}</span></span>
+<span id="cb301-11"><a href="backtest-trading-strategy.html#cb301-11" aria-hidden="true" tabindex="-1"></a><span class="ex">19:18:18.327</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="cf">for</span> XRPUSDT</span>
+<span id="cb301-12"><a href="backtest-trading-strategy.html#cb301-12" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.Publisher.start_link<span class="kw">(</span><span class="ex">%{type:</span> :trade_events,  symbol: <span class="st">&quot;XRPUSDT&quot;</span>,  from: <span class="st">&quot;2019-06-02&quot;</span>,  to: <span class="st">&quot;2019-06-04&quot;</span>,  interval: 5}<span class="kw">)</span> </span>
+<span id="cb301-13"><a href="backtest-trading-strategy.html#cb301-13" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.428.0&gt;}</span></span>
+<span id="cb301-14"><a href="backtest-trading-strategy.html#cb301-14" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.532</span> [info]  Publisher broadcasted 0 events</span>
+<span id="cb301-15"><a href="backtest-trading-strategy.html#cb301-15" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.534</span> [info]  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for XRPUSDT @ 0.44391, quantity: 450.5</span>
+<span id="cb301-16"><a href="backtest-trading-strategy.html#cb301-16" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.749</span> [info]  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for XRPUSDT @ 0.44426, quantity: 450.5.</span>
+<span id="cb301-17"><a href="backtest-trading-strategy.html#cb301-17" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb301-18"><a href="backtest-trading-strategy.html#cb301-18" aria-hidden="true" tabindex="-1"></a><span class="ex">19:20:07.568</span> [info]  Publisher broadcasted 10000 events</span>
+<span id="cb301-19"><a href="backtest-trading-strategy.html#cb301-19" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb301-20"><a href="backtest-trading-strategy.html#cb301-20" aria-hidden="true" tabindex="-1"></a><span class="ex">19:21:07.571</span> [info]  Publisher broadcasted 20000 events</span>
+<span id="cb301-21"><a href="backtest-trading-strategy.html#cb301-21" aria-hidden="true" tabindex="-1"></a><span class="ex">19:22:07.576</span> [info]  Publisher broadcasted 30000 events</span>
+<span id="cb301-22"><a href="backtest-trading-strategy.html#cb301-22" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb301-23"><a href="backtest-trading-strategy.html#cb301-23" aria-hidden="true" tabindex="-1"></a><span class="ex">19:39:07.875</span> [info]  Publisher broadcasted 200000 events</span>
+<span id="cb301-24"><a href="backtest-trading-strategy.html#cb301-24" aria-hidden="true" tabindex="-1"></a><span class="ex">19:39:44.576</span> [info]  Publisher finished streaming trade events</span></code></pre></div>
+<p>From the above log, we can see that it took about 20 minutes to run 206k records through the system(a lot of that time[17+ minutes] was indeed the 5ms <code>sleep</code>).</p>
+<p>After the streaming finished we can check out the orders table inside the database to figure out how many trades we made and what income have they generated.</p>
+<div class="sourceCode" id="cb302"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb302-1"><a href="backtest-trading-strategy.html#cb302-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span>    </span>
+<span id="cb302-2"><a href="backtest-trading-strategy.html#cb302-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Password</span> for user postgres: </span>
+<span id="cb302-3"><a href="backtest-trading-strategy.html#cb302-3" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb302-4"><a href="backtest-trading-strategy.html#cb302-4" aria-hidden="true" tabindex="-1"></a><span class="va">postgres=</span># <span class="ex">\c</span> data_warehouse</span>
+<span id="cb302-5"><a href="backtest-trading-strategy.html#cb302-5" aria-hidden="true" tabindex="-1"></a><span class="ex">You</span> are now connected to database <span class="st">&quot;data_warehouse&quot;</span> as user <span class="st">&quot;postgres&quot;</span>.</span>
+<span id="cb302-6"><a href="backtest-trading-strategy.html#cb302-6" aria-hidden="true" tabindex="-1"></a><span class="va">data_warehouse=</span># <span class="ex">SELECT</span> COUNT<span class="er">(</span><span class="ex">*</span><span class="kw">)</span> <span class="ex">FROM</span> orders<span class="kw">;</span></span>
+<span id="cb302-7"><a href="backtest-trading-strategy.html#cb302-7" aria-hidden="true" tabindex="-1"></a> <span class="ex">count</span> </span>
+<span id="cb302-8"><a href="backtest-trading-strategy.html#cb302-8" aria-hidden="true" tabindex="-1"></a><span class="ex">-------</span></span>
+<span id="cb302-9"><a href="backtest-trading-strategy.html#cb302-9" aria-hidden="true" tabindex="-1"></a>   <span class="ex">224</span></span>
+<span id="cb302-10"><a href="backtest-trading-strategy.html#cb302-10" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">1</span> row<span class="kw">)</span></span></code></pre></div>
+<p>By looking at the orders we can figure out some performance metrics but that’s less than perfect to get answers to simple questions like “what’s the performance of my strategy?”. We will address that and other concerns in future chapters.</p>
+<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_15">Github</a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="store-trade-events-and-orders-inside-the-database.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir/edit/master/15-backtest-trading-strategy.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["create-a-cryptocurrency-trading-bot-in-elixir.pdf", "create-a-cryptocurrency-trading-bot-in-elixir.epub"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

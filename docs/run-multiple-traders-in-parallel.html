@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="images/cover.png" />
+  
+  <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
+  
+  
+  <meta name="twitter:image" content="images/cover.png" />
+
+<meta name="author" content="Kamil Skowron" />
+
+
+<meta name="date" content="2021-04-19" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="add-support-for-multiple-transactions-per-order.html"/>
+<link rel="next" href="fine-tune-trading-strategy-per-symbol.html"/>
+<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code"><i class="fa fa-check"></i>Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Create a cryptocurrency trading bot in Elixir</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="run-multiple-traders-in-parallel" class="section level1" number="9">
+<h1><span class="header-section-number">Chapter 9</span> Run multiple traders in parallel</h1>
+<div id="objectives-8" class="section level2" number="9.1">
+<h2><span class="header-section-number">9.1</span> Objectives</h2>
+<ul>
+<li>describe and design the required functionality</li>
+<li>implement rebuy in the <code>Naive.Trader</code></li>
+<li>implement rebuy in the <code>Naive.Leader</code></li>
+<li>improve logs by assigning ids to traders</li>
+</ul>
+</div>
+<div id="describe-and-design-the-required-functionality" class="section level2" number="9.2">
+<h2><span class="header-section-number">9.2</span> Describe and design the required functionality</h2>
+<p>At this moment, inside the <code>Naive.Leader</code> we have a silly code that
+starts all of the traders at the same moment:</p>
+<div class="sourceCode" id="cb112"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb112-1"><a href="run-multiple-traders-in-parallel.html#cb112-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb112-2"><a href="run-multiple-traders-in-parallel.html#cb112-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb112-3"><a href="run-multiple-traders-in-parallel.html#cb112-3" aria-hidden="true" tabindex="-1"></a>    traders <span class="op">=</span></span>
+<span id="cb112-4"><a href="run-multiple-traders-in-parallel.html#cb112-4" aria-hidden="true" tabindex="-1"></a>      <span class="kw">for</span> _i <span class="op">&lt;-</span> <span class="dv">1</span><span class="op">..</span>settings<span class="op">.</span>chunks,</span>
+<span id="cb112-5"><a href="run-multiple-traders-in-parallel.html#cb112-5" aria-hidden="true" tabindex="-1"></a>          <span class="kw">do</span>: start_new_trader(trader_state)</span>
+<span id="cb112-6"><a href="run-multiple-traders-in-parallel.html#cb112-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<p>All the changes we made in this episode will enable us to fix.</p>
+<p>Let’s say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
+<div class="figure">
+<img src="images/chapter_09_01_single_trader.png" alt="" />
+<p class="caption">Single trader</p>
+</div>
+<p>We will implement additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after buy order has been filled. Whenever price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
+<div class="figure">
+<img src="images/chapter_09_02_multi_traders.png" alt="" />
+<p class="caption">Multiple traders</p>
+</div>
+<p>The <code>Naive.Leader</code> keeps track of how many <code>Naive.Trader</code>s are running and needs to honor the number of <code>chunks</code> set up in the settings (one chunk == one trader).</p>
+<p>To stop the <code>Naive.Trader</code>s from continuously notifying about a drop in the price we will also introduce a boolean flag that will track has the <code>Naive.Leader</code> been already notified.</p>
+</div>
+<div id="implement-rebuy-inside-naive.trader" class="section level2" number="9.3">
+<h2><span class="header-section-number">9.3</span> Implement rebuy inside <code>Naive.Trader</code></h2>
+<p>We will start by adding the <code>rebuy_interval</code> and the <code>rebuy_notified</code> to trader’s state:</p>
+<div class="sourceCode" id="cb113"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb113-1"><a href="run-multiple-traders-in-parallel.html#cb113-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb113-2"><a href="run-multiple-traders-in-parallel.html#cb113-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb113-3"><a href="run-multiple-traders-in-parallel.html#cb113-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb113-4"><a href="run-multiple-traders-in-parallel.html#cb113-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
+<span id="cb113-5"><a href="run-multiple-traders-in-parallel.html#cb113-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb113-6"><a href="run-multiple-traders-in-parallel.html#cb113-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>,</span>
+<span id="cb113-7"><a href="run-multiple-traders-in-parallel.html#cb113-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
+<span id="cb113-8"><a href="run-multiple-traders-in-parallel.html#cb113-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb113-9"><a href="run-multiple-traders-in-parallel.html#cb113-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy_interval</span>, <span class="co"># &lt;= add this field</span></span>
+<span id="cb113-10"><a href="run-multiple-traders-in-parallel.html#cb113-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy_notified</span>, <span class="co"># &lt;= add this field</span></span>
+<span id="cb113-11"><a href="run-multiple-traders-in-parallel.html#cb113-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
+<span id="cb113-12"><a href="run-multiple-traders-in-parallel.html#cb113-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span></span>
+<span id="cb113-13"><a href="run-multiple-traders-in-parallel.html#cb113-13" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb113-14"><a href="run-multiple-traders-in-parallel.html#cb113-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
+<span id="cb113-15"><a href="run-multiple-traders-in-parallel.html#cb113-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb113-16"><a href="run-multiple-traders-in-parallel.html#cb113-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>,</span>
+<span id="cb113-17"><a href="run-multiple-traders-in-parallel.html#cb113-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
+<span id="cb113-18"><a href="run-multiple-traders-in-parallel.html#cb113-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
+<span id="cb113-19"><a href="run-multiple-traders-in-parallel.html#cb113-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
+<span id="cb113-20"><a href="run-multiple-traders-in-parallel.html#cb113-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb113-21"><a href="run-multiple-traders-in-parallel.html#cb113-21" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy_interval</span>, <span class="co"># &lt;= add this field</span></span>
+<span id="cb113-22"><a href="run-multiple-traders-in-parallel.html#cb113-22" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy_notified</span>, <span class="co"># &lt;= add this field</span></span>
+<span id="cb113-23"><a href="run-multiple-traders-in-parallel.html#cb113-23" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
+<span id="cb113-24"><a href="run-multiple-traders-in-parallel.html#cb113-24" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span></span>
+<span id="cb113-25"><a href="run-multiple-traders-in-parallel.html#cb113-25" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb113-26"><a href="run-multiple-traders-in-parallel.html#cb113-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Rebuy logic should be placed almost as last callback just before the one that ignores all events. We will need to retrieve the current <code>price</code> and <code>buy_price</code> and confirm that we didn’t notify the leader yet(<code>rebuy_notified</code> flag):</p>
+<div class="sourceCode" id="cb114"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb114-1"><a href="run-multiple-traders-in-parallel.html#cb114-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb114-2"><a href="run-multiple-traders-in-parallel.html#cb114-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb114-3"><a href="run-multiple-traders-in-parallel.html#cb114-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sell filled callback here</span></span>
+<span id="cb114-4"><a href="run-multiple-traders-in-parallel.html#cb114-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb114-5"><a href="run-multiple-traders-in-parallel.html#cb114-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb114-6"><a href="run-multiple-traders-in-parallel.html#cb114-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb114-7"><a href="run-multiple-traders-in-parallel.html#cb114-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">price:</span> current_price</span>
+<span id="cb114-8"><a href="run-multiple-traders-in-parallel.html#cb114-8" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb114-9"><a href="run-multiple-traders-in-parallel.html#cb114-9" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb114-10"><a href="run-multiple-traders-in-parallel.html#cb114-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
+<span id="cb114-11"><a href="run-multiple-traders-in-parallel.html#cb114-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb114-12"><a href="run-multiple-traders-in-parallel.html#cb114-12" aria-hidden="true" tabindex="-1"></a>            <span class="va">price:</span> buy_price</span>
+<span id="cb114-13"><a href="run-multiple-traders-in-parallel.html#cb114-13" aria-hidden="true" tabindex="-1"></a>          },</span>
+<span id="cb114-14"><a href="run-multiple-traders-in-parallel.html#cb114-14" aria-hidden="true" tabindex="-1"></a>          <span class="va">rebuy_interval:</span> rebuy_interval,</span>
+<span id="cb114-15"><a href="run-multiple-traders-in-parallel.html#cb114-15" aria-hidden="true" tabindex="-1"></a>          <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb114-16"><a href="run-multiple-traders-in-parallel.html#cb114-16" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb114-17"><a href="run-multiple-traders-in-parallel.html#cb114-17" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb114-18"><a href="run-multiple-traders-in-parallel.html#cb114-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-19"><a href="run-multiple-traders-in-parallel.html#cb114-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb114-20"><a href="run-multiple-traders-in-parallel.html#cb114-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-21"><a href="run-multiple-traders-in-parallel.html#cb114-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># catch all callback here</span></span></code></pre></div>
+<p>We need to calculate is the current price below the rebuy interval. If yes we will notify the leader and update the boolean flag. We will abstract calculation to separate function(for readability) that we will write below:</p>
+<div class="sourceCode" id="cb115"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb115-1"><a href="run-multiple-traders-in-parallel.html#cb115-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb115-2"><a href="run-multiple-traders-in-parallel.html#cb115-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># body of the above callback</span></span>
+<span id="cb115-3"><a href="run-multiple-traders-in-parallel.html#cb115-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> trigger_rebuy?(buy_price, current_price, rebuy_interval) <span class="kw">do</span></span>
+<span id="cb115-4"><a href="run-multiple-traders-in-parallel.html#cb115-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Rebuy triggered for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader&quot;</span>)</span>
+<span id="cb115-5"><a href="run-multiple-traders-in-parallel.html#cb115-5" aria-hidden="true" tabindex="-1"></a>      new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">rebuy_notified:</span> <span class="cn">true</span>}</span>
+<span id="cb115-6"><a href="run-multiple-traders-in-parallel.html#cb115-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:rebuy_triggered</span>, new_state)</span>
+<span id="cb115-7"><a href="run-multiple-traders-in-parallel.html#cb115-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:noreply</span>, new_state}</span>
+<span id="cb115-8"><a href="run-multiple-traders-in-parallel.html#cb115-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb115-9"><a href="run-multiple-traders-in-parallel.html#cb115-9" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:noreply</span>, state}</span>
+<span id="cb115-10"><a href="run-multiple-traders-in-parallel.html#cb115-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
+<p>As mentioned before, we will set the <code>rebuy_notified</code> boolean flag to true and notify the leader using the <code>notify</code> function with dedicated atom.</p>
+<p>At the bottom of the module we need to add <code>trigger_rebuy?</code> helper function:</p>
+<div class="sourceCode" id="cb116"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb116-1"><a href="run-multiple-traders-in-parallel.html#cb116-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb116-2"><a href="run-multiple-traders-in-parallel.html#cb116-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bottom of the module</span></span>
+<span id="cb116-3"><a href="run-multiple-traders-in-parallel.html#cb116-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> trigger_rebuy?(buy_price, current_price, rebuy_interval) <span class="kw">do</span></span>
+<span id="cb116-4"><a href="run-multiple-traders-in-parallel.html#cb116-4" aria-hidden="true" tabindex="-1"></a>    current_price <span class="op">=</span> D<span class="op">.</span>new(current_price)</span>
+<span id="cb116-5"><a href="run-multiple-traders-in-parallel.html#cb116-5" aria-hidden="true" tabindex="-1"></a>    buy_price <span class="op">=</span> D<span class="op">.</span>new(buy_price)</span>
+<span id="cb116-6"><a href="run-multiple-traders-in-parallel.html#cb116-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-7"><a href="run-multiple-traders-in-parallel.html#cb116-7" aria-hidden="true" tabindex="-1"></a>    rebuy_price <span class="op">=</span></span>
+<span id="cb116-8"><a href="run-multiple-traders-in-parallel.html#cb116-8" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>sub(</span>
+<span id="cb116-9"><a href="run-multiple-traders-in-parallel.html#cb116-9" aria-hidden="true" tabindex="-1"></a>        buy_price,</span>
+<span id="cb116-10"><a href="run-multiple-traders-in-parallel.html#cb116-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>mult(buy_price, rebuy_interval)</span>
+<span id="cb116-11"><a href="run-multiple-traders-in-parallel.html#cb116-11" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb116-12"><a href="run-multiple-traders-in-parallel.html#cb116-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-13"><a href="run-multiple-traders-in-parallel.html#cb116-13" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>lt?(current_price, rebuy_price)</span>
+<span id="cb116-14"><a href="run-multiple-traders-in-parallel.html#cb116-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="implement-rebuy-in-the-naive.leader" class="section level2" number="9.4">
+<h2><span class="header-section-number">9.4</span> Implement rebuy in the <code>Naive.Leader</code></h2>
+<p>Moving on to the <code>Naive.Leader</code> module, we can get update starting of the traders automatically by the leader to starting just one inside <code>handle_continue</code>:</p>
+<div class="sourceCode" id="cb117"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb117-1"><a href="run-multiple-traders-in-parallel.html#cb117-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb117-2"><a href="run-multiple-traders-in-parallel.html#cb117-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_continue(<span class="va">:start_traders</span>, %{<span class="va">symbol:</span> symbol} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb117-3"><a href="run-multiple-traders-in-parallel.html#cb117-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb117-4"><a href="run-multiple-traders-in-parallel.html#cb117-4" aria-hidden="true" tabindex="-1"></a>    traders <span class="op">=</span> [start_new_trader(trader_state)] <span class="co"># &lt;= updated part</span></span>
+<span id="cb117-5"><a href="run-multiple-traders-in-parallel.html#cb117-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-6"><a href="run-multiple-traders-in-parallel.html#cb117-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb117-7"><a href="run-multiple-traders-in-parallel.html#cb117-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We will need to add a new clause of <code>notify</code> function that will handle the rebuy scenario:</p>
+<div class="sourceCode" id="cb118"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb118-1"><a href="run-multiple-traders-in-parallel.html#cb118-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb118-2"><a href="run-multiple-traders-in-parallel.html#cb118-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below current `notify` function</span></span>
+<span id="cb118-3"><a href="run-multiple-traders-in-parallel.html#cb118-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> notify(<span class="va">:rebuy_triggered</span>, trader_state) <span class="kw">do</span></span>
+<span id="cb118-4"><a href="run-multiple-traders-in-parallel.html#cb118-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>call(</span>
+<span id="cb118-5"><a href="run-multiple-traders-in-parallel.html#cb118-5" aria-hidden="true" tabindex="-1"></a>      :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>trader_state<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb118-6"><a href="run-multiple-traders-in-parallel.html#cb118-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:rebuy_triggered</span>, trader_state}</span>
+<span id="cb118-7"><a href="run-multiple-traders-in-parallel.html#cb118-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb118-8"><a href="run-multiple-traders-in-parallel.html#cb118-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We need to add a new <code>handle_call</code> function that will start new traders only when there are still chunks available(enforce the maximum number of parallel
+traders) - let’s start with a header:</p>
+<div class="sourceCode" id="cb119"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb119-1"><a href="run-multiple-traders-in-parallel.html#cb119-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb119-2"><a href="run-multiple-traders-in-parallel.html#cb119-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this one after :update_trader_state handle_call</span></span>
+<span id="cb119-3"><a href="run-multiple-traders-in-parallel.html#cb119-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb119-4"><a href="run-multiple-traders-in-parallel.html#cb119-4" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:rebuy_triggered</span>, new_trader_state},</span>
+<span id="cb119-5"><a href="run-multiple-traders-in-parallel.html#cb119-5" aria-hidden="true" tabindex="-1"></a>        {trader_pid, _},</span>
+<span id="cb119-6"><a href="run-multiple-traders-in-parallel.html#cb119-6" aria-hidden="true" tabindex="-1"></a>        %{<span class="va">traders:</span> traders, <span class="va">symbol:</span> symbol, <span class="va">settings:</span> settings} <span class="op">=</span> state</span>
+<span id="cb119-7"><a href="run-multiple-traders-in-parallel.html#cb119-7" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb119-8"><a href="run-multiple-traders-in-parallel.html#cb119-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-9"><a href="run-multiple-traders-in-parallel.html#cb119-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>There are few important details to make note of:
+- we need trader’s pid to be able to find it details inside the list of traders
+- we need settings to cofirm number of chunks to be able to limit maximum number of parallel traders</p>
+<p>Moving on to the body of our callback. As with other ones, we will check can we find trader inside list of traders and based on that we will either start another one(if we didn’t reach the limit of chunks) or ignore it:</p>
+<div class="sourceCode" id="cb120"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb120-1"><a href="run-multiple-traders-in-parallel.html#cb120-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb120-2"><a href="run-multiple-traders-in-parallel.html#cb120-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># body of our callback</span></span>
+<span id="cb120-3"><a href="run-multiple-traders-in-parallel.html#cb120-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
+<span id="cb120-4"><a href="run-multiple-traders-in-parallel.html#cb120-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb120-5"><a href="run-multiple-traders-in-parallel.html#cb120-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Rebuy triggered by trader that leader is not aware of&quot;</span>)</span>
+<span id="cb120-6"><a href="run-multiple-traders-in-parallel.html#cb120-6" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, state}</span>
+<span id="cb120-7"><a href="run-multiple-traders-in-parallel.html#cb120-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-8"><a href="run-multiple-traders-in-parallel.html#cb120-8" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
+<span id="cb120-9"><a href="run-multiple-traders-in-parallel.html#cb120-9" aria-hidden="true" tabindex="-1"></a>        traders <span class="op">=</span></span>
+<span id="cb120-10"><a href="run-multiple-traders-in-parallel.html#cb120-10" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> settings<span class="op">.</span>chunks <span class="op">==</span> length(traders) <span class="kw">do</span></span>
+<span id="cb120-11"><a href="run-multiple-traders-in-parallel.html#cb120-11" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;All traders already started for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb120-12"><a href="run-multiple-traders-in-parallel.html#cb120-12" aria-hidden="true" tabindex="-1"></a>            traders</span>
+<span id="cb120-13"><a href="run-multiple-traders-in-parallel.html#cb120-13" aria-hidden="true" tabindex="-1"></a>          <span class="cf">else</span></span>
+<span id="cb120-14"><a href="run-multiple-traders-in-parallel.html#cb120-14" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb120-15"><a href="run-multiple-traders-in-parallel.html#cb120-15" aria-hidden="true" tabindex="-1"></a>            [start_new_trader(fresh_trader_state(settings)) <span class="op">|</span> traders]</span>
+<span id="cb120-16"><a href="run-multiple-traders-in-parallel.html#cb120-16" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
+<span id="cb120-17"><a href="run-multiple-traders-in-parallel.html#cb120-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-18"><a href="run-multiple-traders-in-parallel.html#cb120-18" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
+<span id="cb120-19"><a href="run-multiple-traders-in-parallel.html#cb120-19" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
+<span id="cb120-20"><a href="run-multiple-traders-in-parallel.html#cb120-20" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb120-21"><a href="run-multiple-traders-in-parallel.html#cb120-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-22"><a href="run-multiple-traders-in-parallel.html#cb120-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span> new_traders}}</span>
+<span id="cb120-23"><a href="run-multiple-traders-in-parallel.html#cb120-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
+<p>In above code we need to remember to update the state of the trader that triggered the rebuy inside the <code>traders</code> list as well as add state of a new trader to that list.</p>
+<p>As with other setting we will hardcode the <code>rebuy_interval</code>(inside the <code>fetch_symbol_settings</code> function) and assign them to
+trader’s state(inside the <code>fresh_trader_state</code> function):</p>
+<div class="sourceCode" id="cb121"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb121-1"><a href="run-multiple-traders-in-parallel.html#cb121-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb121-2"><a href="run-multiple-traders-in-parallel.html#cb121-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
+<span id="cb121-3"><a href="run-multiple-traders-in-parallel.html#cb121-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb121-4"><a href="run-multiple-traders-in-parallel.html#cb121-4" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings)</span>
+<span id="cb121-5"><a href="run-multiple-traders-in-parallel.html#cb121-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks),</span>
+<span id="cb121-6"><a href="run-multiple-traders-in-parallel.html#cb121-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_notified:</span> <span class="cn">false</span> <span class="co"># &lt;= add this line</span></span>
+<span id="cb121-7"><a href="run-multiple-traders-in-parallel.html#cb121-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb121-8"><a href="run-multiple-traders-in-parallel.html#cb121-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb121-9"><a href="run-multiple-traders-in-parallel.html#cb121-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-10"><a href="run-multiple-traders-in-parallel.html#cb121-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
+<span id="cb121-11"><a href="run-multiple-traders-in-parallel.html#cb121-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb121-12"><a href="run-multiple-traders-in-parallel.html#cb121-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-13"><a href="run-multiple-traders-in-parallel.html#cb121-13" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
+<span id="cb121-14"><a href="run-multiple-traders-in-parallel.html#cb121-14" aria-hidden="true" tabindex="-1"></a>      %{</span>
+<span id="cb121-15"><a href="run-multiple-traders-in-parallel.html#cb121-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb121-16"><a href="run-multiple-traders-in-parallel.html#cb121-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">5</span>, <span class="co"># &lt;= update to 5 parallel traders max</span></span>
+<span id="cb121-17"><a href="run-multiple-traders-in-parallel.html#cb121-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;100&quot;</span>), <span class="co"># &lt;= update this line</span></span>
+<span id="cb121-18"><a href="run-multiple-traders-in-parallel.html#cb121-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb121-19"><a href="run-multiple-traders-in-parallel.html#cb121-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;-0.0012&quot;</span>),</span>
+<span id="cb121-20"><a href="run-multiple-traders-in-parallel.html#cb121-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.001&quot;</span>) <span class="co"># &lt;= add this line</span></span>
+<span id="cb121-21"><a href="run-multiple-traders-in-parallel.html#cb121-21" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="cb121-22"><a href="run-multiple-traders-in-parallel.html#cb121-22" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb121-23"><a href="run-multiple-traders-in-parallel.html#cb121-23" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb121-24"><a href="run-multiple-traders-in-parallel.html#cb121-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We also update the <code>chunks</code> and the <code>budget</code> to allow our strategy to start up to 5 parallel traders with a budget of 20 USDT each(100/5) as Binance has minimal order requirement at about $15(when using the <code>BinanceMock</code> this doesn’t really matter).</p>
+</div>
+<div id="improve-logs-by-assigning-ids-to-traders" class="section level2" number="9.5">
+<h2><span class="header-section-number">9.5</span> Improve logs by assigning ids to traders</h2>
+<p>The final change will be to add an <code>id</code> to trader’s state so we can use it inside log messages to give us meaningful data about what’s going on(otherwise we won’t be able to tell which message was logged by which trader).</p>
+<p>First let’s add the <code>id</code> into the <code>Naive.Leader</code>’s fresh_trader_state as it will be defined per trader:</p>
+<div class="sourceCode" id="cb122"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb122-1"><a href="run-multiple-traders-in-parallel.html#cb122-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb122-2"><a href="run-multiple-traders-in-parallel.html#cb122-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
+<span id="cb122-3"><a href="run-multiple-traders-in-parallel.html#cb122-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb122-4"><a href="run-multiple-traders-in-parallel.html#cb122-4" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings)</span>
+<span id="cb122-5"><a href="run-multiple-traders-in-parallel.html#cb122-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="va">id:</span> <span class="va">:os</span><span class="op">.</span>system_time(<span class="va">:millisecond</span>), <span class="co"># &lt;= add this line</span></span>
+<span id="cb122-6"><a href="run-multiple-traders-in-parallel.html#cb122-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks),</span>
+<span id="cb122-7"><a href="run-multiple-traders-in-parallel.html#cb122-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb122-8"><a href="run-multiple-traders-in-parallel.html#cb122-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb122-9"><a href="run-multiple-traders-in-parallel.html#cb122-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now we can move on to the <code>Naive.Trader</code> and add it to the <code>%State{}</code> struct as well as we will modify every callback to include that id inside log messages:</p>
+<div class="sourceCode" id="cb123"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb123-1"><a href="run-multiple-traders-in-parallel.html#cb123-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb123-2"><a href="run-multiple-traders-in-parallel.html#cb123-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb123-3"><a href="run-multiple-traders-in-parallel.html#cb123-3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
+<span id="cb123-4"><a href="run-multiple-traders-in-parallel.html#cb123-4" aria-hidden="true" tabindex="-1"></a>      <span class="va">:id</span>,</span>
+<span id="cb123-5"><a href="run-multiple-traders-in-parallel.html#cb123-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb123-6"><a href="run-multiple-traders-in-parallel.html#cb123-6" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb123-7"><a href="run-multiple-traders-in-parallel.html#cb123-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
+<span id="cb123-8"><a href="run-multiple-traders-in-parallel.html#cb123-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:id</span>,</span>
+<span id="cb123-9"><a href="run-multiple-traders-in-parallel.html#cb123-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb123-10"><a href="run-multiple-traders-in-parallel.html#cb123-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb123-11"><a href="run-multiple-traders-in-parallel.html#cb123-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb123-12"><a href="run-multiple-traders-in-parallel.html#cb123-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-13"><a href="run-multiple-traders-in-parallel.html#cb123-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb123-14"><a href="run-multiple-traders-in-parallel.html#cb123-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-15"><a href="run-multiple-traders-in-parallel.html#cb123-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%<span class="cn">State</span>{<span class="va">id:</span> id, <span class="va">symbol:</span> symbol} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb123-16"><a href="run-multiple-traders-in-parallel.html#cb123-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb123-17"><a href="run-multiple-traders-in-parallel.html#cb123-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-18"><a href="run-multiple-traders-in-parallel.html#cb123-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb123-19"><a href="run-multiple-traders-in-parallel.html#cb123-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-20"><a href="run-multiple-traders-in-parallel.html#cb123-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb123-21"><a href="run-multiple-traders-in-parallel.html#cb123-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb123-22"><a href="run-multiple-traders-in-parallel.html#cb123-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-23"><a href="run-multiple-traders-in-parallel.html#cb123-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb123-24"><a href="run-multiple-traders-in-parallel.html#cb123-24" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="va">price:</span> price},</span>
+<span id="cb123-25"><a href="run-multiple-traders-in-parallel.html#cb123-25" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb123-26"><a href="run-multiple-traders-in-parallel.html#cb123-26" aria-hidden="true" tabindex="-1"></a>          <span class="va">id:</span> id,</span>
+<span id="cb123-27"><a href="run-multiple-traders-in-parallel.html#cb123-27" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb123-28"><a href="run-multiple-traders-in-parallel.html#cb123-28" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb123-29"><a href="run-multiple-traders-in-parallel.html#cb123-29" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb123-30"><a href="run-multiple-traders-in-parallel.html#cb123-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb123-31"><a href="run-multiple-traders-in-parallel.html#cb123-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-32"><a href="run-multiple-traders-in-parallel.html#cb123-32" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(</span>
+<span id="cb123-33"><a href="run-multiple-traders-in-parallel.html#cb123-33" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;The trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) is placing a BUY order &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb123-34"><a href="run-multiple-traders-in-parallel.html#cb123-34" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb123-35"><a href="run-multiple-traders-in-parallel.html#cb123-35" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb123-36"><a href="run-multiple-traders-in-parallel.html#cb123-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-37"><a href="run-multiple-traders-in-parallel.html#cb123-37" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb123-38"><a href="run-multiple-traders-in-parallel.html#cb123-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb123-39"><a href="run-multiple-traders-in-parallel.html#cb123-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-40"><a href="run-multiple-traders-in-parallel.html#cb123-40" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb123-41"><a href="run-multiple-traders-in-parallel.html#cb123-41" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb123-42"><a href="run-multiple-traders-in-parallel.html#cb123-42" aria-hidden="true" tabindex="-1"></a>          <span class="va">buyer_order_id:</span> order_id</span>
+<span id="cb123-43"><a href="run-multiple-traders-in-parallel.html#cb123-43" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb123-44"><a href="run-multiple-traders-in-parallel.html#cb123-44" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb123-45"><a href="run-multiple-traders-in-parallel.html#cb123-45" aria-hidden="true" tabindex="-1"></a>          <span class="va">id:</span> id,</span>
+<span id="cb123-46"><a href="run-multiple-traders-in-parallel.html#cb123-46" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb123-47"><a href="run-multiple-traders-in-parallel.html#cb123-47" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb123-48"><a href="run-multiple-traders-in-parallel.html#cb123-48" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb123-49"><a href="run-multiple-traders-in-parallel.html#cb123-49" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb123-50"><a href="run-multiple-traders-in-parallel.html#cb123-50" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(</span>
+<span id="cb123-51"><a href="run-multiple-traders-in-parallel.html#cb123-51" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;The trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) is placing a SELL order for &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb123-52"><a href="run-multiple-traders-in-parallel.html#cb123-52" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>sell_price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">.&quot;</span></span>
+<span id="cb123-53"><a href="run-multiple-traders-in-parallel.html#cb123-53" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb123-54"><a href="run-multiple-traders-in-parallel.html#cb123-54" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb123-55"><a href="run-multiple-traders-in-parallel.html#cb123-55" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Trader&#39;s(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st"> </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> BUY order got partially filled&quot;</span>)</span>
+<span id="cb123-56"><a href="run-multiple-traders-in-parallel.html#cb123-56" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb123-57"><a href="run-multiple-traders-in-parallel.html#cb123-57" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb123-58"><a href="run-multiple-traders-in-parallel.html#cb123-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-59"><a href="run-multiple-traders-in-parallel.html#cb123-59" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb123-60"><a href="run-multiple-traders-in-parallel.html#cb123-60" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb123-61"><a href="run-multiple-traders-in-parallel.html#cb123-61" aria-hidden="true" tabindex="-1"></a>          <span class="va">seller_order_id:</span> order_id</span>
+<span id="cb123-62"><a href="run-multiple-traders-in-parallel.html#cb123-62" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb123-63"><a href="run-multiple-traders-in-parallel.html#cb123-63" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb123-64"><a href="run-multiple-traders-in-parallel.html#cb123-64" aria-hidden="true" tabindex="-1"></a>          <span class="va">id:</span> id,</span>
+<span id="cb123-65"><a href="run-multiple-traders-in-parallel.html#cb123-65" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb123-66"><a href="run-multiple-traders-in-parallel.html#cb123-66" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb123-67"><a href="run-multiple-traders-in-parallel.html#cb123-67" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb123-68"><a href="run-multiple-traders-in-parallel.html#cb123-68" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb123-69"><a href="run-multiple-traders-in-parallel.html#cb123-69" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) finished trade cycle for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb123-70"><a href="run-multiple-traders-in-parallel.html#cb123-70" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb123-71"><a href="run-multiple-traders-in-parallel.html#cb123-71" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Trader&#39;s(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st"> </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> SELL order got partially filled&quot;</span>)      <span class="op">...</span></span>
+<span id="cb123-72"><a href="run-multiple-traders-in-parallel.html#cb123-72" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb123-73"><a href="run-multiple-traders-in-parallel.html#cb123-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-74"><a href="run-multiple-traders-in-parallel.html#cb123-74" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb123-75"><a href="run-multiple-traders-in-parallel.html#cb123-75" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb123-76"><a href="run-multiple-traders-in-parallel.html#cb123-76" aria-hidden="true" tabindex="-1"></a>          <span class="va">price:</span> current_price</span>
+<span id="cb123-77"><a href="run-multiple-traders-in-parallel.html#cb123-77" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb123-78"><a href="run-multiple-traders-in-parallel.html#cb123-78" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb123-79"><a href="run-multiple-traders-in-parallel.html#cb123-79" aria-hidden="true" tabindex="-1"></a>          <span class="va">id:</span> id,</span>
+<span id="cb123-80"><a href="run-multiple-traders-in-parallel.html#cb123-80" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb123-81"><a href="run-multiple-traders-in-parallel.html#cb123-81" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb123-82"><a href="run-multiple-traders-in-parallel.html#cb123-82" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb123-83"><a href="run-multiple-traders-in-parallel.html#cb123-83" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb123-84"><a href="run-multiple-traders-in-parallel.html#cb123-84" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Rebuy triggered for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> by the trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">)&quot;</span>)</span>
+<span id="cb123-85"><a href="run-multiple-traders-in-parallel.html#cb123-85" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb123-86"><a href="run-multiple-traders-in-parallel.html#cb123-86" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>That finishes the implementation part - we should now be able to test the implementation and see dynamically growing number of traders for our strategy based on price movement.</p>
+</div>
+<div id="test-the-implementation-2" class="section level2" number="9.6">
+<h2><span class="header-section-number">9.6</span> Test the implementation</h2>
+<p>Let’s start an iEx the session and open the <code>:observer</code>(inside go to “Applications” tab and click on <code>naive</code> from the list of the left) so we will be able to see how the number of traders is growing as well as PIDs are changing which means that they are finishing the full trades:</p>
+<div class="sourceCode" id="cb124"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb124-1"><a href="run-multiple-traders-in-parallel.html#cb124-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb124-2"><a href="run-multiple-traders-in-parallel.html#cb124-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb124-3"><a href="run-multiple-traders-in-parallel.html#cb124-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> :observer.start<span class="kw">()</span></span>
+<span id="cb124-4"><a href="run-multiple-traders-in-parallel.html#cb124-4" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb124-5"><a href="run-multiple-traders-in-parallel.html#cb124-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;HNTUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb124-6"><a href="run-multiple-traders-in-parallel.html#cb124-6" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:05.018</span> [info]  The trader<span class="er">(</span><span class="ex">1616754009963</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.175, quantity: 2.446</span>
+<span id="cb124-7"><a href="run-multiple-traders-in-parallel.html#cb124-7" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:11.665</span> [info]  Rebuy triggered for HNTUSDT by the trader<span class="er">(</span><span class="ex">1616754009963</span><span class="kw">)</span></span>
+<span id="cb124-8"><a href="run-multiple-traders-in-parallel.html#cb124-8" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:11.665</span> [info]  Starting new trader for HNTUSDT</span>
+<span id="cb124-9"><a href="run-multiple-traders-in-parallel.html#cb124-9" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:11.665</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754131665</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-10"><a href="run-multiple-traders-in-parallel.html#cb124-10" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:11.665</span> [info]  The trader<span class="er">(</span><span class="ex">1616754009963</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for HNTUSDT @ 8.181, quantity: 2.446.</span>
+<span id="cb124-11"><a href="run-multiple-traders-in-parallel.html#cb124-11" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:11.665</span> [info]  The trader<span class="er">(</span><span class="ex">1616754131665</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.157, quantity: 2.451</span>
+<span id="cb124-12"><a href="run-multiple-traders-in-parallel.html#cb124-12" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:58.339</span> [info]  Trader<span class="er">(</span><span class="ex">1616754009963</span><span class="kw">)</span> <span class="ex">finished</span> trade cycle for HNTUSDT</span>
+<span id="cb124-13"><a href="run-multiple-traders-in-parallel.html#cb124-13" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:58.339</span> [info]  HNTUSDT trader finished trade <span class="at">-</span> restarting</span>
+<span id="cb124-14"><a href="run-multiple-traders-in-parallel.html#cb124-14" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:58.339</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754178339</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-15"><a href="run-multiple-traders-in-parallel.html#cb124-15" aria-hidden="true" tabindex="-1"></a><span class="ex">10:22:58.339</span> [info]  The trader<span class="er">(</span><span class="ex">1616754178339</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.212, quantity: 2.435</span>
+<span id="cb124-16"><a href="run-multiple-traders-in-parallel.html#cb124-16" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:13.232</span> [info]  Rebuy triggered for HNTUSDT by the trader<span class="er">(</span><span class="ex">1616754178339</span><span class="kw">)</span></span>
+<span id="cb124-17"><a href="run-multiple-traders-in-parallel.html#cb124-17" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:13.232</span> [info]  Starting new trader for HNTUSDT</span>
+<span id="cb124-18"><a href="run-multiple-traders-in-parallel.html#cb124-18" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:13.232</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754193232</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-19"><a href="run-multiple-traders-in-parallel.html#cb124-19" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:13.232</span> [info]  The trader<span class="er">(</span><span class="ex">1616754178339</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for HNTUSDT @ 8.218, quantity: 2.435.</span>
+<span id="cb124-20"><a href="run-multiple-traders-in-parallel.html#cb124-20" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:31.120</span> [info]  The trader<span class="er">(</span><span class="ex">1616754193232</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.194, quantity: 2.44</span>
+<span id="cb124-21"><a href="run-multiple-traders-in-parallel.html#cb124-21" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:31.121</span> [info]  Trader<span class="er">(</span><span class="ex">1616754178339</span><span class="kw">)</span> <span class="ex">finished</span> trade cycle for HNTUSDT</span>
+<span id="cb124-22"><a href="run-multiple-traders-in-parallel.html#cb124-22" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:31.122</span> [info]  HNTUSDT trader finished trade <span class="at">-</span> restarting</span>
+<span id="cb124-23"><a href="run-multiple-traders-in-parallel.html#cb124-23" aria-hidden="true" tabindex="-1"></a><span class="ex">10:23:31.122</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754211122</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-24"><a href="run-multiple-traders-in-parallel.html#cb124-24" aria-hidden="true" tabindex="-1"></a><span class="ex">10:24:31.891</span> [info]  The trader<span class="er">(</span><span class="ex">1616754211122</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.198, quantity: 2.439</span>
+<span id="cb124-25"><a href="run-multiple-traders-in-parallel.html#cb124-25" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.155</span> [info]  The trader<span class="er">(</span><span class="ex">1616754211122</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for HNTUSDT @ 8.204, quantity: 2.439.</span>
+<span id="cb124-26"><a href="run-multiple-traders-in-parallel.html#cb124-26" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.155</span> [info]  The trader<span class="er">(</span><span class="ex">1616754193232</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for HNTUSDT @ 8.2, quantity: 2.44.</span>
+<span id="cb124-27"><a href="run-multiple-traders-in-parallel.html#cb124-27" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.155</span> [info]  Rebuy triggered for HNTUSDT by the trader<span class="er">(</span><span class="ex">1616754211122</span><span class="kw">)</span></span>
+<span id="cb124-28"><a href="run-multiple-traders-in-parallel.html#cb124-28" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.155</span> [info]  Starting new trader for HNTUSDT</span>
+<span id="cb124-29"><a href="run-multiple-traders-in-parallel.html#cb124-29" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754324155</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-30"><a href="run-multiple-traders-in-parallel.html#cb124-30" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  Rebuy triggered for HNTUSDT by the trader<span class="er">(</span><span class="ex">1616754193232</span><span class="kw">)</span></span>
+<span id="cb124-31"><a href="run-multiple-traders-in-parallel.html#cb124-31" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  The trader<span class="er">(</span><span class="ex">1616754324155</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.183, quantity: 2.444</span>
+<span id="cb124-32"><a href="run-multiple-traders-in-parallel.html#cb124-32" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  Starting new trader for HNTUSDT</span>
+<span id="cb124-33"><a href="run-multiple-traders-in-parallel.html#cb124-33" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754324156</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT </span>
+<span id="cb124-34"><a href="run-multiple-traders-in-parallel.html#cb124-34" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  The trader<span class="er">(</span><span class="ex">1616754324156</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.176, quantity: 2.446</span>
+<span id="cb124-35"><a href="run-multiple-traders-in-parallel.html#cb124-35" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:24.156</span> [info]  The trader<span class="er">(</span><span class="ex">1616754324155</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for HNTUSDT @ 8.189, quantity: 2.444.</span>
+<span id="cb124-36"><a href="run-multiple-traders-in-parallel.html#cb124-36" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.527</span> [info]  Trader<span class="er">(</span><span class="ex">1616754324155</span><span class="kw">)</span> <span class="ex">finished</span> trade cycle for HNTUSDT</span>
+<span id="cb124-37"><a href="run-multiple-traders-in-parallel.html#cb124-37" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.528</span> [info]  HNTUSDT trader finished trade <span class="at">-</span> restarting</span>
+<span id="cb124-38"><a href="run-multiple-traders-in-parallel.html#cb124-38" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.528</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754337528</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-39"><a href="run-multiple-traders-in-parallel.html#cb124-39" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.528</span> [info]  The trader<span class="er">(</span><span class="ex">1616754337528</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.192, quantity: 2.441</span>
+<span id="cb124-40"><a href="run-multiple-traders-in-parallel.html#cb124-40" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.530</span> [info]  Trader<span class="er">(</span><span class="ex">1616754211122</span><span class="kw">)</span> <span class="ex">finished</span> trade cycle for HNTUSDT</span>
+<span id="cb124-41"><a href="run-multiple-traders-in-parallel.html#cb124-41" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.530</span> [info]  Trader<span class="er">(</span><span class="ex">1616754193232</span><span class="kw">)</span> <span class="ex">finished</span> trade cycle for HNTUSDT</span>
+<span id="cb124-42"><a href="run-multiple-traders-in-parallel.html#cb124-42" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.530</span> [info]  HNTUSDT trader finished trade <span class="at">-</span> restarting</span>
+<span id="cb124-43"><a href="run-multiple-traders-in-parallel.html#cb124-43" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.530</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754337530</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-44"><a href="run-multiple-traders-in-parallel.html#cb124-44" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.530</span> [info]  HNTUSDT trader finished trade <span class="at">-</span> restarting</span>
+<span id="cb124-45"><a href="run-multiple-traders-in-parallel.html#cb124-45" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:37.530</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1616754337530</span><span class="kw">)</span> <span class="cf">for</span> HNTUSDT</span>
+<span id="cb124-46"><a href="run-multiple-traders-in-parallel.html#cb124-46" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:40.015</span> [info]  Rebuy triggered for HNTUSDT by the trader<span class="er">(</span><span class="ex">1616754337528</span><span class="kw">)</span></span>
+<span id="cb124-47"><a href="run-multiple-traders-in-parallel.html#cb124-47" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:40.015</span> [info]  The trader<span class="er">(</span><span class="ex">1616754337530</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for HNTUSDT @ 8.179, quantity: 2.445</span>
+<span id="cb124-48"><a href="run-multiple-traders-in-parallel.html#cb124-48" aria-hidden="true" tabindex="-1"></a><span class="ex">10:25:40.015</span> [info]  All traders already started for HNTUSDT</span></code></pre></div>
+<p>And our observer shows the following:</p>
+<div class="figure">
+<img src="images/chapter_09_supervision_tree.png" alt="" />
+<p class="caption">Observer shows 5 parallel traders</p>
+</div>
+<p>We can clearly see that our strategy dynamically scaled from 1 to 5 parallel traders and they were going through different trading steps without any problems - I think that’s really cool to see and it wasn’t difficult to achieve in Elixir.</p>
+<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_09">Github</a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="add-support-for-multiple-transactions-per-order.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="fine-tune-trading-strategy-per-symbol.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir/edit/master/09-run-multiple-parallel-traders.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["create-a-cryptocurrency-trading-bot-in-elixir.pdf", "create-a-cryptocurrency-trading-bot-in-elixir.epub"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

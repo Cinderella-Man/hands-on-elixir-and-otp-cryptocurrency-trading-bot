@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="images/cover.png" />
+  
+  <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
+  
+  
+  <meta name="twitter:image" content="images/cover.png" />
+
+<meta name="author" content="Kamil Skowron" />
+
+
+<meta name="date" content="2021-04-19" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="introduce-pubsub-as-a-communication-method.html"/>
+<link rel="next" href="enable-parallel-trading-on-multiple-symbols.html"/>
+<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code"><i class="fa fa-check"></i>Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Create a cryptocurrency trading bot in Elixir</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="mock-the-binance-api" class="section level1" number="4">
+<h1><span class="header-section-number">Chapter 4</span> Mock the Binance API</h1>
+<div id="objectives-3" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> Objectives</h2>
+<ul>
+<li>design the binance mock application</li>
+<li>create a new app</li>
+<li>implement getting exchange info</li>
+<li>implement placing buy and sell orders</li>
+<li>implement callback for incoming trade events</li>
+<li>upgrade trader and config</li>
+<li>test the implementation</li>
+</ul>
+</div>
+<div id="design-1" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Design</h2>
+<p>First, let’s start with the current state:</p>
+<div class="figure">
+<img src="images/chapter_04_01_current_state.png" alt="" />
+<p class="caption">Current state of affairs</p>
+</div>
+<p>Currently our trader is using the <code>Binance</code> module to place buy/sell
+orders and get exchange info.
+The <code>get_exchange_info/0</code> function doesn’t require a Binance account as it’s a publicly available information so we can call the <code>Binance</code> lib directly from our module.
+The remaining ones(buying/selling) require <code>Binance</code> account and some coins/token inside it’s wallet. We need to mock those inside our module.</p>
+<p>We will update the trader to fetch the Binance’s module name from the config:</p>
+<div class="figure">
+<img src="images/chapter_04_02_proposal.png" alt="" />
+<p class="caption">Binance client dictated by config</p>
+</div>
+<p>We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
+It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that’s why BinanceMock will also need to broadcast fake events to the “TRADE_EVENTS:#{symbol}” PubSub topic so the trader will pick them up:</p>
+<div class="figure">
+<img src="images/chapter_04_03_proposal_pubsub.png" alt="" />
+<p class="caption">BinanceMock needs to broadcast fake trade events back to the PubSub</p>
+</div>
+<p>When exactly should we broadcast those fake trade events? Well, the best thing
+that we can do is make <code>BinanceMock</code> process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:</p>
+<div class="figure">
+<img src="images/chapter_04_04_explenation.png" alt="" />
+<p class="caption">When to send fake trade events</p>
+</div>
+<p>Starting from the arrow on the left, our naive strategy will place an order at the current price.
+In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price <em>below</em> the buy order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
+Trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
+Similarly to the buy order, BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with the price <em>above</em> the sell order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.</p>
+<p>Enough theory for now, let’s get our hands dirty with some coding</p>
+</div>
+<div id="create-binancemock-app" class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> Create “BinanceMock” app</h2>
+<p>We will start by creating a new supervised app called <code>BinanceMock</code>:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="mock-the-binance-api.html#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps</span>
+<span id="cb49-2"><a href="mock-the-binance-api.html#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix new binance_mock <span class="at">--sup</span></span></code></pre></div>
+<p>The next step will be to update the <code>BinanceMock</code> module to be a GenServer.</p>
+<p>We will utilize:
+* the <code>Decimal</code> module for comparing the prices
+* the <code>Logger</code> module to log</p>
+<p>As well as we will define internal <code>%State{}</code> struct that will hold:
+- map called <code>order_books</code> for each traded symbol
+- list of symbols that mock subscribed to
+- last generated id - for consistent generating of unique ids for fake trade events</p>
+<p><code>order_books</code> map will consist of <code>:"#{symbol}</code> =&gt; <code>%OrderBook{}</code>. We will define the <code>%OrderBook{}</code> struct as 3 lists <code>buy_side</code>, <code>sell_side</code> and <code>historical</code>:</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb50-1"><a href="mock-the-binance-api.html#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb50-2"><a href="mock-the-binance-api.html#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">BinanceMock</span> <span class="kw">do</span></span>
+<span id="cb50-3"><a href="mock-the-binance-api.html#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
+<span id="cb50-4"><a href="mock-the-binance-api.html#cb50-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-5"><a href="mock-the-binance-api.html#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D</span>
+<span id="cb50-6"><a href="mock-the-binance-api.html#cb50-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-7"><a href="mock-the-binance-api.html#cb50-7" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb50-8"><a href="mock-the-binance-api.html#cb50-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-9"><a href="mock-the-binance-api.html#cb50-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb50-10"><a href="mock-the-binance-api.html#cb50-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="va">order_books:</span> %{}, <span class="va">subscriptions:</span> [], <span class="va">fake_order_id:</span> <span class="dv">1</span></span>
+<span id="cb50-11"><a href="mock-the-binance-api.html#cb50-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb50-12"><a href="mock-the-binance-api.html#cb50-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-13"><a href="mock-the-binance-api.html#cb50-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">OrderBook</span> <span class="kw">do</span></span>
+<span id="cb50-14"><a href="mock-the-binance-api.html#cb50-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="va">buy_side:</span> [], <span class="va">sell_side:</span> [], <span class="va">historical:</span> []</span>
+<span id="cb50-15"><a href="mock-the-binance-api.html#cb50-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span>  </span>
+<span id="cb50-16"><a href="mock-the-binance-api.html#cb50-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-17"><a href="mock-the-binance-api.html#cb50-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(_args) <span class="kw">do</span></span>
+<span id="cb50-18"><a href="mock-the-binance-api.html#cb50-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(<span class="cn">__MODULE__</span>, <span class="cn">nil</span>, <span class="va">name:</span> <span class="cn">__MODULE__</span>)</span>
+<span id="cb50-19"><a href="mock-the-binance-api.html#cb50-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb50-20"><a href="mock-the-binance-api.html#cb50-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-21"><a href="mock-the-binance-api.html#cb50-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(_args) <span class="kw">do</span></span>
+<span id="cb50-22"><a href="mock-the-binance-api.html#cb50-22" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %<span class="cn">State</span>{}}</span>
+<span id="cb50-23"><a href="mock-the-binance-api.html#cb50-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb50-24"><a href="mock-the-binance-api.html#cb50-24" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="implement-getting-exchange-info" class="section level2" number="4.4">
+<h2><span class="header-section-number">4.4</span> Implement getting exchange info</h2>
+<p>As it was mentioned before, to retrieve exchange info we can just call Binance’s function directly as it’s a publicly avaiable information:</p>
+<div class="sourceCode" id="cb51"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb51-1"><a href="mock-the-binance-api.html#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb51-2"><a href="mock-the-binance-api.html#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_exchange_info() <span class="kw">do</span></span>
+<span id="cb51-3"><a href="mock-the-binance-api.html#cb51-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Binance</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb51-4"><a href="mock-the-binance-api.html#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="implement-placing-buy-and-sell-orders" class="section level2" number="4.5">
+<h2><span class="header-section-number">4.5</span> Implement placing buy and sell orders</h2>
+<p>For buy and sell limit orders we will write a helper function as the logic is
+the same for both order sides:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb52-1"><a href="mock-the-binance-api.html#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb52-2"><a href="mock-the-binance-api.html#cb52-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_buy(symbol, quantity, price, <span class="st">&quot;GTC&quot;</span>) <span class="kw">do</span></span>
+<span id="cb52-3"><a href="mock-the-binance-api.html#cb52-3" aria-hidden="true" tabindex="-1"></a>    order_limit(symbol, quantity, price, <span class="st">&quot;BUY&quot;</span>)</span>
+<span id="cb52-4"><a href="mock-the-binance-api.html#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb52-5"><a href="mock-the-binance-api.html#cb52-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-6"><a href="mock-the-binance-api.html#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_sell(symbol, quantity, price, <span class="st">&quot;GTC&quot;</span>) <span class="kw">do</span></span>
+<span id="cb52-7"><a href="mock-the-binance-api.html#cb52-7" aria-hidden="true" tabindex="-1"></a>    order_limit(symbol, quantity, price, <span class="st">&quot;SELL&quot;</span>)</span>
+<span id="cb52-8"><a href="mock-the-binance-api.html#cb52-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The “order_limit” helper function will:
+- ensure that quantity and price are float values as the <code>Binance</code> module accepts both strings and floats
+- generate a fake order based on symbol, quantity, price, and side
+- cast a message to the BinanceMock process to add the fake order
+- return with a tuple with <code>%OrderResponse{}</code> struct to be consistent with the Binance module:</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb53-1"><a href="mock-the-binance-api.html#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb53-2"><a href="mock-the-binance-api.html#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
+<span id="cb53-3"><a href="mock-the-binance-api.html#cb53-3" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> <span class="cn">Float</span><span class="op">.</span>parse(<span class="st">&quot;</span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span>) <span class="op">|&gt;</span> elem(<span class="dv">0</span>)</span>
+<span id="cb53-4"><a href="mock-the-binance-api.html#cb53-4" aria-hidden="true" tabindex="-1"></a>    price <span class="op">=</span> <span class="cn">Float</span><span class="op">.</span>parse(<span class="st">&quot;</span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">&quot;</span>) <span class="op">|&gt;</span> elem(<span class="dv">0</span>)</span>
+<span id="cb53-5"><a href="mock-the-binance-api.html#cb53-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-6"><a href="mock-the-binance-api.html#cb53-6" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span></span>
+<span id="cb53-7"><a href="mock-the-binance-api.html#cb53-7" aria-hidden="true" tabindex="-1"></a>      fake_order <span class="op">=</span></span>
+<span id="cb53-8"><a href="mock-the-binance-api.html#cb53-8" aria-hidden="true" tabindex="-1"></a>      generate_fake_order(</span>
+<span id="cb53-9"><a href="mock-the-binance-api.html#cb53-9" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
+<span id="cb53-10"><a href="mock-the-binance-api.html#cb53-10" aria-hidden="true" tabindex="-1"></a>        quantity,</span>
+<span id="cb53-11"><a href="mock-the-binance-api.html#cb53-11" aria-hidden="true" tabindex="-1"></a>        price,</span>
+<span id="cb53-12"><a href="mock-the-binance-api.html#cb53-12" aria-hidden="true" tabindex="-1"></a>        side</span>
+<span id="cb53-13"><a href="mock-the-binance-api.html#cb53-13" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb53-14"><a href="mock-the-binance-api.html#cb53-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-15"><a href="mock-the-binance-api.html#cb53-15" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>cast(</span>
+<span id="cb53-16"><a href="mock-the-binance-api.html#cb53-16" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb53-17"><a href="mock-the-binance-api.html#cb53-17" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:add_order</span>, fake_order}</span>
+<span id="cb53-18"><a href="mock-the-binance-api.html#cb53-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb53-19"><a href="mock-the-binance-api.html#cb53-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-20"><a href="mock-the-binance-api.html#cb53-20" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, convert_order_to_order_response(fake_order)}</span>
+<span id="cb53-21"><a href="mock-the-binance-api.html#cb53-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We can now move on to the implementation of the <code>handle_cast/2</code> callback to <code>:add_order</code> to the order book for the symbol from the order.
+It needs to do two things:
+- subscribe to the <code>TRADE_EVENTS:#{symbol}</code> topic for the symbol from
+the order
+- add the order to the correct order book</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb54-1"><a href="mock-the-binance-api.html#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb54-2"><a href="mock-the-binance-api.html#cb54-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
+<span id="cb54-3"><a href="mock-the-binance-api.html#cb54-3" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:add_order</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order},</span>
+<span id="cb54-4"><a href="mock-the-binance-api.html#cb54-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb54-5"><a href="mock-the-binance-api.html#cb54-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">order_books:</span> order_books,</span>
+<span id="cb54-6"><a href="mock-the-binance-api.html#cb54-6" aria-hidden="true" tabindex="-1"></a>          <span class="va">subscriptions:</span> subscriptions</span>
+<span id="cb54-7"><a href="mock-the-binance-api.html#cb54-7" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb54-8"><a href="mock-the-binance-api.html#cb54-8" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb54-9"><a href="mock-the-binance-api.html#cb54-9" aria-hidden="true" tabindex="-1"></a>    new_subscriptions <span class="op">=</span> subscribe_to_topic(symbol, subscriptions)</span>
+<span id="cb54-10"><a href="mock-the-binance-api.html#cb54-10" aria-hidden="true" tabindex="-1"></a>    updated_order_books <span class="op">=</span> add_order(order, order_books)</span>
+<span id="cb54-11"><a href="mock-the-binance-api.html#cb54-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-12"><a href="mock-the-binance-api.html#cb54-12" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb54-13"><a href="mock-the-binance-api.html#cb54-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:noreply</span>,</span>
+<span id="cb54-14"><a href="mock-the-binance-api.html#cb54-14" aria-hidden="true" tabindex="-1"></a>      %{</span>
+<span id="cb54-15"><a href="mock-the-binance-api.html#cb54-15" aria-hidden="true" tabindex="-1"></a>        state</span>
+<span id="cb54-16"><a href="mock-the-binance-api.html#cb54-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">|</span> <span class="va">order_books:</span> updated_order_books,</span>
+<span id="cb54-17"><a href="mock-the-binance-api.html#cb54-17" aria-hidden="true" tabindex="-1"></a>          <span class="va">subscriptions:</span> new_subscriptions</span>
+<span id="cb54-18"><a href="mock-the-binance-api.html#cb54-18" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb54-19"><a href="mock-the-binance-api.html#cb54-19" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb54-20"><a href="mock-the-binance-api.html#cb54-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We will start with the implementation of <code>subscribe_to_topic/2</code> function. We need to make sure that the symbol is uppercase’d as well as check have we already subscribed to that topic. Otherwise, we can safely use the PubSub module to subscribe to the <code>TRADE_EVENTS:#{symbol}</code> topic for this symbol.
+We need to remember to append the symbol to the list of subscription and return the updated list:</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb55-1"><a href="mock-the-binance-api.html#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb55-2"><a href="mock-the-binance-api.html#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> subscribe_to_topic(symbol, subscriptions) <span class="kw">do</span></span>
+<span id="cb55-3"><a href="mock-the-binance-api.html#cb55-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
+<span id="cb55-4"><a href="mock-the-binance-api.html#cb55-4" aria-hidden="true" tabindex="-1"></a>    stream_name <span class="op">=</span> <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb55-5"><a href="mock-the-binance-api.html#cb55-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-6"><a href="mock-the-binance-api.html#cb55-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>member?(subscriptions, symbol) <span class="kw">do</span></span>
+<span id="cb55-7"><a href="mock-the-binance-api.html#cb55-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">false</span> <span class="op">-&gt;</span></span>
+<span id="cb55-8"><a href="mock-the-binance-api.html#cb55-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>debug(<span class="st">&quot;BinanceMock subscribing to </span><span class="ot">#{</span>stream_name<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb55-9"><a href="mock-the-binance-api.html#cb55-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-10"><a href="mock-the-binance-api.html#cb55-10" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
+<span id="cb55-11"><a href="mock-the-binance-api.html#cb55-11" aria-hidden="true" tabindex="-1"></a>          <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb55-12"><a href="mock-the-binance-api.html#cb55-12" aria-hidden="true" tabindex="-1"></a>          stream_name</span>
+<span id="cb55-13"><a href="mock-the-binance-api.html#cb55-13" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb55-14"><a href="mock-the-binance-api.html#cb55-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-15"><a href="mock-the-binance-api.html#cb55-15" aria-hidden="true" tabindex="-1"></a>        [symbol <span class="op">|</span> subscriptions]</span>
+<span id="cb55-16"><a href="mock-the-binance-api.html#cb55-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-17"><a href="mock-the-binance-api.html#cb55-17" aria-hidden="true" tabindex="-1"></a>      _ <span class="op">-&gt;</span></span>
+<span id="cb55-18"><a href="mock-the-binance-api.html#cb55-18" aria-hidden="true" tabindex="-1"></a>        subscriptions</span>
+<span id="cb55-19"><a href="mock-the-binance-api.html#cb55-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb55-20"><a href="mock-the-binance-api.html#cb55-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Next, time for implementation of <code>add_order</code> function. First, we need to get the order book for the symbol of the order. Depends on the side of the order we will update either <code>buy_side</code> or <code>sell_side</code> list remembering that both sides are sorted. We are sorting them so we can easily grab all orders that should be filled whenever trade event arrived, this will become clearer as we will write a handle callback for incoming trade events:</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb56-1"><a href="mock-the-binance-api.html#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb56-2"><a href="mock-the-binance-api.html#cb56-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> add_order(</span>
+<span id="cb56-3"><a href="mock-the-binance-api.html#cb56-3" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order,</span>
+<span id="cb56-4"><a href="mock-the-binance-api.html#cb56-4" aria-hidden="true" tabindex="-1"></a>         order_books</span>
+<span id="cb56-5"><a href="mock-the-binance-api.html#cb56-5" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb56-6"><a href="mock-the-binance-api.html#cb56-6" aria-hidden="true" tabindex="-1"></a>    order_book <span class="op">=</span></span>
+<span id="cb56-7"><a href="mock-the-binance-api.html#cb56-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Map</span><span class="op">.</span>get(</span>
+<span id="cb56-8"><a href="mock-the-binance-api.html#cb56-8" aria-hidden="true" tabindex="-1"></a>        order_books,</span>
+<span id="cb56-9"><a href="mock-the-binance-api.html#cb56-9" aria-hidden="true" tabindex="-1"></a>        :<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb56-10"><a href="mock-the-binance-api.html#cb56-10" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">OrderBook</span>{}</span>
+<span id="cb56-11"><a href="mock-the-binance-api.html#cb56-11" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb56-12"><a href="mock-the-binance-api.html#cb56-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-13"><a href="mock-the-binance-api.html#cb56-13" aria-hidden="true" tabindex="-1"></a>    order_book <span class="op">=</span></span>
+<span id="cb56-14"><a href="mock-the-binance-api.html#cb56-14" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> order<span class="op">.</span>side <span class="op">==</span> <span class="st">&quot;SELL&quot;</span> <span class="kw">do</span></span>
+<span id="cb56-15"><a href="mock-the-binance-api.html#cb56-15" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Map</span><span class="op">.</span>replace!(</span>
+<span id="cb56-16"><a href="mock-the-binance-api.html#cb56-16" aria-hidden="true" tabindex="-1"></a>          order_book,</span>
+<span id="cb56-17"><a href="mock-the-binance-api.html#cb56-17" aria-hidden="true" tabindex="-1"></a>          <span class="va">:sell_side</span>,</span>
+<span id="cb56-18"><a href="mock-the-binance-api.html#cb56-18" aria-hidden="true" tabindex="-1"></a>          [order <span class="op">|</span> order_book<span class="op">.</span>sell_side]</span>
+<span id="cb56-19"><a href="mock-the-binance-api.html#cb56-19" aria-hidden="true" tabindex="-1"></a>          <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>sort(<span class="op">&amp;</span>D<span class="op">.</span>lt?(D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">2</span><span class="op">.</span>price)))</span>
+<span id="cb56-20"><a href="mock-the-binance-api.html#cb56-20" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb56-21"><a href="mock-the-binance-api.html#cb56-21" aria-hidden="true" tabindex="-1"></a>      <span class="cf">else</span></span>
+<span id="cb56-22"><a href="mock-the-binance-api.html#cb56-22" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Map</span><span class="op">.</span>replace!(</span>
+<span id="cb56-23"><a href="mock-the-binance-api.html#cb56-23" aria-hidden="true" tabindex="-1"></a>          order_book,</span>
+<span id="cb56-24"><a href="mock-the-binance-api.html#cb56-24" aria-hidden="true" tabindex="-1"></a>          <span class="va">:buy_side</span>,</span>
+<span id="cb56-25"><a href="mock-the-binance-api.html#cb56-25" aria-hidden="true" tabindex="-1"></a>          [order <span class="op">|</span> order_book<span class="op">.</span>buy_side]</span>
+<span id="cb56-26"><a href="mock-the-binance-api.html#cb56-26" aria-hidden="true" tabindex="-1"></a>          <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>sort(<span class="op">&amp;</span>D<span class="op">.</span>gt?(D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">2</span><span class="op">.</span>price)))</span>
+<span id="cb56-27"><a href="mock-the-binance-api.html#cb56-27" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb56-28"><a href="mock-the-binance-api.html#cb56-28" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span></span>
+<span id="cb56-29"><a href="mock-the-binance-api.html#cb56-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-30"><a href="mock-the-binance-api.html#cb56-30" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>put(order_books, :<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>, order_book)</span>
+<span id="cb56-31"><a href="mock-the-binance-api.html#cb56-31" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now we need to follow up and implement the functions that we referred to
+previously - those are <code>generate_fake_order</code> and <code>convert_order_to_order_response</code>.</p>
+<p>Starting with the <code>generate_fake_orders</code>, it’s a function that takes a symbol, quantity, price and side and based on those values returns a <code>Binance.Order</code> struct. To return the struct we will need to generate a unique id for each faked order - this is where <code>fake_order_id</code> will be used(callback implemented later). This way we will be able to run tests multiple times using the BinanceMock and always get the same ids:</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb57-1"><a href="mock-the-binance-api.html#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb57-2"><a href="mock-the-binance-api.html#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> generate_fake_order(symbol, quantity, price, side)</span>
+<span id="cb57-3"><a href="mock-the-binance-api.html#cb57-3" aria-hidden="true" tabindex="-1"></a>       <span class="kw">when</span> is_binary(symbol) <span class="kw">and</span></span>
+<span id="cb57-4"><a href="mock-the-binance-api.html#cb57-4" aria-hidden="true" tabindex="-1"></a>              is_float(quantity) <span class="kw">and</span></span>
+<span id="cb57-5"><a href="mock-the-binance-api.html#cb57-5" aria-hidden="true" tabindex="-1"></a>              is_float(price) <span class="kw">and</span></span>
+<span id="cb57-6"><a href="mock-the-binance-api.html#cb57-6" aria-hidden="true" tabindex="-1"></a>              (side <span class="op">==</span> <span class="st">&quot;BUY&quot;</span> <span class="kw">or</span> side <span class="op">==</span> <span class="st">&quot;SELL&quot;</span>) <span class="kw">do</span></span>
+<span id="cb57-7"><a href="mock-the-binance-api.html#cb57-7" aria-hidden="true" tabindex="-1"></a>    current_timestamp <span class="op">=</span> <span class="va">:os</span><span class="op">.</span>system_time(<span class="va">:millisecond</span>)</span>
+<span id="cb57-8"><a href="mock-the-binance-api.html#cb57-8" aria-hidden="true" tabindex="-1"></a>    order_id <span class="op">=</span> <span class="cn">GenServer</span><span class="op">.</span>call(<span class="cn">__MODULE__</span>, <span class="va">:generate_id</span>)</span>
+<span id="cb57-9"><a href="mock-the-binance-api.html#cb57-9" aria-hidden="true" tabindex="-1"></a>    client_order_id <span class="op">=</span> <span class="va">:crypto</span><span class="op">.</span>hash(<span class="va">:md5</span>, <span class="st">&quot;</span><span class="ot">#{</span>order_id<span class="ot">}</span><span class="st">&quot;</span>) <span class="op">|&gt;</span> <span class="cn">Base</span><span class="op">.</span>encode16()</span>
+<span id="cb57-10"><a href="mock-the-binance-api.html#cb57-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-11"><a href="mock-the-binance-api.html#cb57-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span><span class="op">.</span>new(%{</span>
+<span id="cb57-12"><a href="mock-the-binance-api.html#cb57-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
+<span id="cb57-13"><a href="mock-the-binance-api.html#cb57-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">order_id:</span> order_id,</span>
+<span id="cb57-14"><a href="mock-the-binance-api.html#cb57-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">client_order_id:</span> client_order_id,</span>
+<span id="cb57-15"><a href="mock-the-binance-api.html#cb57-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> <span class="cn">Float</span><span class="op">.</span>to_string(price),</span>
+<span id="cb57-16"><a href="mock-the-binance-api.html#cb57-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">orig_qty:</span> <span class="cn">Float</span><span class="op">.</span>to_string(quantity),</span>
+<span id="cb57-17"><a href="mock-the-binance-api.html#cb57-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">executed_qty:</span> <span class="st">&quot;0.00000000&quot;</span>,</span>
+<span id="cb57-18"><a href="mock-the-binance-api.html#cb57-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">cummulative_quote_qty:</span> <span class="st">&quot;0.00000000&quot;</span>,</span>
+<span id="cb57-19"><a href="mock-the-binance-api.html#cb57-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">status:</span> <span class="st">&quot;NEW&quot;</span>,</span>
+<span id="cb57-20"><a href="mock-the-binance-api.html#cb57-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">time_in_force:</span> <span class="st">&quot;GTC&quot;</span>,</span>
+<span id="cb57-21"><a href="mock-the-binance-api.html#cb57-21" aria-hidden="true" tabindex="-1"></a>      <span class="va">type:</span> <span class="st">&quot;LIMIT&quot;</span>,</span>
+<span id="cb57-22"><a href="mock-the-binance-api.html#cb57-22" aria-hidden="true" tabindex="-1"></a>      <span class="va">side:</span> side,</span>
+<span id="cb57-23"><a href="mock-the-binance-api.html#cb57-23" aria-hidden="true" tabindex="-1"></a>      <span class="va">stop_price:</span> <span class="st">&quot;0.00000000&quot;</span>,</span>
+<span id="cb57-24"><a href="mock-the-binance-api.html#cb57-24" aria-hidden="true" tabindex="-1"></a>      <span class="va">iceberg_qty:</span> <span class="st">&quot;0.00000000&quot;</span>,</span>
+<span id="cb57-25"><a href="mock-the-binance-api.html#cb57-25" aria-hidden="true" tabindex="-1"></a>      <span class="va">time:</span> current_timestamp,</span>
+<span id="cb57-26"><a href="mock-the-binance-api.html#cb57-26" aria-hidden="true" tabindex="-1"></a>      <span class="va">update_time:</span> current_timestamp,</span>
+<span id="cb57-27"><a href="mock-the-binance-api.html#cb57-27" aria-hidden="true" tabindex="-1"></a>      <span class="va">is_working:</span> <span class="cn">true</span></span>
+<span id="cb57-28"><a href="mock-the-binance-api.html#cb57-28" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb57-29"><a href="mock-the-binance-api.html#cb57-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We can now focus on converting the <code>Binance.Order</code> to the <code>Binance.OrderResponse</code> struct. As <code>Binance.Order</code> struct contains almost all of the same fields that the <code>Binance.OrderResponse</code> struct, we can use <code>struct</code> function without exclanation mark to ignore all additional fields. The only field that has different name is <code>transact_time</code> field which is called <code>time</code> in the <code>Binance.Order</code> struct - we can fix that separetely:</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb58-1"><a href="mock-the-binance-api.html#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb58-2"><a href="mock-the-binance-api.html#cb58-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_order_response(%<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order) <span class="kw">do</span></span>
+<span id="cb58-3"><a href="mock-the-binance-api.html#cb58-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb58-4"><a href="mock-the-binance-api.html#cb58-4" aria-hidden="true" tabindex="-1"></a>      struct(</span>
+<span id="cb58-5"><a href="mock-the-binance-api.html#cb58-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>,</span>
+<span id="cb58-6"><a href="mock-the-binance-api.html#cb58-6" aria-hidden="true" tabindex="-1"></a>        order <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>to_list()</span>
+<span id="cb58-7"><a href="mock-the-binance-api.html#cb58-7" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb58-8"><a href="mock-the-binance-api.html#cb58-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="va">transact_time:</span> order<span class="op">.</span>time</span>
+<span id="cb58-9"><a href="mock-the-binance-api.html#cb58-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb58-10"><a href="mock-the-binance-api.html#cb58-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Last function to finish support for placing buy and sell orders is to add a callback that will iterate the fake order id and return it:</p>
+<div class="sourceCode" id="cb59"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb59-1"><a href="mock-the-binance-api.html#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb59-2"><a href="mock-the-binance-api.html#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb59-3"><a href="mock-the-binance-api.html#cb59-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">:generate_id</span>,</span>
+<span id="cb59-4"><a href="mock-the-binance-api.html#cb59-4" aria-hidden="true" tabindex="-1"></a>        _from,</span>
+<span id="cb59-5"><a href="mock-the-binance-api.html#cb59-5" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{<span class="va">fake_order_id:</span> id} <span class="op">=</span> state</span>
+<span id="cb59-6"><a href="mock-the-binance-api.html#cb59-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb59-7"><a href="mock-the-binance-api.html#cb59-7" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, id <span class="op">+</span> <span class="dv">1</span>, %{state <span class="op">|</span> <span class="va">fake_order_id:</span> id <span class="op">+</span> <span class="dv">1</span>}}</span>
+<span id="cb59-8"><a href="mock-the-binance-api.html#cb59-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="implement-order-retrival" class="section level2" number="4.6">
+<h2><span class="header-section-number">4.6</span> Implement order retrival</h2>
+<p>We can now move on to retrieving the orders. First, we need to add an interface function that will call our BinanceMock genserver:</p>
+<div class="sourceCode" id="cb60"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb60-1"><a href="mock-the-binance-api.html#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb60-2"><a href="mock-the-binance-api.html#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_order(symbol, time, order_id) <span class="kw">do</span></span>
+<span id="cb60-3"><a href="mock-the-binance-api.html#cb60-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>call(</span>
+<span id="cb60-4"><a href="mock-the-binance-api.html#cb60-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb60-5"><a href="mock-the-binance-api.html#cb60-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:get_order</span>, symbol, time, order_id}</span>
+<span id="cb60-6"><a href="mock-the-binance-api.html#cb60-6" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb60-7"><a href="mock-the-binance-api.html#cb60-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The callback itself is pretty straightforward. We will need to get order book for passed symbol. As we don’t know the order’s side, we will concat all 3 lists(buy_side, sell_side and historical) and try to find an order that will
+match passed symbol, time and order_id:</p>
+<div class="sourceCode" id="cb61"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb61-1"><a href="mock-the-binance-api.html#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb61-2"><a href="mock-the-binance-api.html#cb61-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb61-3"><a href="mock-the-binance-api.html#cb61-3" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:get_order</span>, symbol, time, order_id},</span>
+<span id="cb61-4"><a href="mock-the-binance-api.html#cb61-4" aria-hidden="true" tabindex="-1"></a>        _from,</span>
+<span id="cb61-5"><a href="mock-the-binance-api.html#cb61-5" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{<span class="va">order_books:</span> order_books} <span class="op">=</span> state</span>
+<span id="cb61-6"><a href="mock-the-binance-api.html#cb61-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb61-7"><a href="mock-the-binance-api.html#cb61-7" aria-hidden="true" tabindex="-1"></a>    order_book <span class="op">=</span></span>
+<span id="cb61-8"><a href="mock-the-binance-api.html#cb61-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Map</span><span class="op">.</span>get(</span>
+<span id="cb61-9"><a href="mock-the-binance-api.html#cb61-9" aria-hidden="true" tabindex="-1"></a>        order_books,</span>
+<span id="cb61-10"><a href="mock-the-binance-api.html#cb61-10" aria-hidden="true" tabindex="-1"></a>        :<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb61-11"><a href="mock-the-binance-api.html#cb61-11" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">OrderBook</span>{}</span>
+<span id="cb61-12"><a href="mock-the-binance-api.html#cb61-12" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb61-13"><a href="mock-the-binance-api.html#cb61-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-14"><a href="mock-the-binance-api.html#cb61-14" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span></span>
+<span id="cb61-15"><a href="mock-the-binance-api.html#cb61-15" aria-hidden="true" tabindex="-1"></a>      (order_book<span class="op">.</span>buy_side <span class="op">++</span></span>
+<span id="cb61-16"><a href="mock-the-binance-api.html#cb61-16" aria-hidden="true" tabindex="-1"></a>         order_book<span class="op">.</span>sell_side <span class="op">++</span></span>
+<span id="cb61-17"><a href="mock-the-binance-api.html#cb61-17" aria-hidden="true" tabindex="-1"></a>         order_book<span class="op">.</span>historical)</span>
+<span id="cb61-18"><a href="mock-the-binance-api.html#cb61-18" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(</span>
+<span id="cb61-19"><a href="mock-the-binance-api.html#cb61-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>symbol <span class="op">==</span> symbol <span class="kw">and</span></span>
+<span id="cb61-20"><a href="mock-the-binance-api.html#cb61-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>time <span class="op">==</span> time <span class="kw">and</span></span>
+<span id="cb61-21"><a href="mock-the-binance-api.html#cb61-21" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>order_id <span class="op">==</span> order_id)</span>
+<span id="cb61-22"><a href="mock-the-binance-api.html#cb61-22" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb61-23"><a href="mock-the-binance-api.html#cb61-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-24"><a href="mock-the-binance-api.html#cb61-24" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, {<span class="va">:ok</span>, result}, state}</span>
+<span id="cb61-25"><a href="mock-the-binance-api.html#cb61-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="implement-callback-for-incoming-trade-events" class="section level2" number="4.7">
+<h2><span class="header-section-number">4.7</span> Implement callback for incoming trade events</h2>
+<p>Finally, we need to handle incoming trade events(streamed from the PubSub topic). We need to implement a callback that will:
+- get the order book for the symbol from the trade event
+- use the <code>take_while/2</code> function on the buy orders with prices that are <em>greater</em> than the current price - we can update their status to filled.
+- use the <code>take_while/2</code> function again, this time to sell orders with prices <em>less</em> than the current price, we will also update their statuses to filled.
+- concat both lists of filled orders, convert them to trade events and broadcast them to the PubSub’s TRADE_EVENTS topic.
+- remove the filled orders from buy and sell lists and put them into the historical list.</p>
+<p>Here we can clearly see the benefit of sorting the lists, we can use functions like <code>take_while/2</code> and <code>drop/2</code> instead of <code>filter/2</code>
+and <code>reject/2</code>(later ones will go through whole lists which could become a bottleneck when multiple open orders would be active):</p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb62-1"><a href="mock-the-binance-api.html#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb62-2"><a href="mock-the-binance-api.html#cb62-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb62-3"><a href="mock-the-binance-api.html#cb62-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event,</span>
+<span id="cb62-4"><a href="mock-the-binance-api.html#cb62-4" aria-hidden="true" tabindex="-1"></a>        %{<span class="va">order_books:</span> order_books} <span class="op">=</span> state</span>
+<span id="cb62-5"><a href="mock-the-binance-api.html#cb62-5" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb62-6"><a href="mock-the-binance-api.html#cb62-6" aria-hidden="true" tabindex="-1"></a>    order_book <span class="op">=</span></span>
+<span id="cb62-7"><a href="mock-the-binance-api.html#cb62-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Map</span><span class="op">.</span>get(</span>
+<span id="cb62-8"><a href="mock-the-binance-api.html#cb62-8" aria-hidden="true" tabindex="-1"></a>        order_books,</span>
+<span id="cb62-9"><a href="mock-the-binance-api.html#cb62-9" aria-hidden="true" tabindex="-1"></a>        :<span class="st">&quot;</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb62-10"><a href="mock-the-binance-api.html#cb62-10" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">OrderBook</span>{}</span>
+<span id="cb62-11"><a href="mock-the-binance-api.html#cb62-11" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb62-12"><a href="mock-the-binance-api.html#cb62-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-13"><a href="mock-the-binance-api.html#cb62-13" aria-hidden="true" tabindex="-1"></a>    filled_buy_orders <span class="op">=</span></span>
+<span id="cb62-14"><a href="mock-the-binance-api.html#cb62-14" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>buy_side</span>
+<span id="cb62-15"><a href="mock-the-binance-api.html#cb62-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>take_while(<span class="op">&amp;</span>D<span class="op">.</span>lt?(D<span class="op">.</span>new(trade_event<span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price)))</span>
+<span id="cb62-16"><a href="mock-the-binance-api.html#cb62-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="st">&quot;FILLED&quot;</span>))</span>
+<span id="cb62-17"><a href="mock-the-binance-api.html#cb62-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-18"><a href="mock-the-binance-api.html#cb62-18" aria-hidden="true" tabindex="-1"></a>    filled_sell_orders <span class="op">=</span></span>
+<span id="cb62-19"><a href="mock-the-binance-api.html#cb62-19" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>sell_side</span>
+<span id="cb62-20"><a href="mock-the-binance-api.html#cb62-20" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>take_while(<span class="op">&amp;</span>D<span class="op">.</span>gt?(D<span class="op">.</span>new(trade_event<span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price)))</span>
+<span id="cb62-21"><a href="mock-the-binance-api.html#cb62-21" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="st">&quot;FILLED&quot;</span>))</span>
+<span id="cb62-22"><a href="mock-the-binance-api.html#cb62-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-23"><a href="mock-the-binance-api.html#cb62-23" aria-hidden="true" tabindex="-1"></a>    (filled_buy_orders <span class="op">++</span> filled_sell_orders)</span>
+<span id="cb62-24"><a href="mock-the-binance-api.html#cb62-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>convert_order_to_event(<span class="op">&amp;</span><span class="dv">1</span>, trade_event<span class="op">.</span>event_time))</span>
+<span id="cb62-25"><a href="mock-the-binance-api.html#cb62-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>broadcast_trade_event<span class="op">/</span><span class="dv">1</span>)</span>
+<span id="cb62-26"><a href="mock-the-binance-api.html#cb62-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-27"><a href="mock-the-binance-api.html#cb62-27" aria-hidden="true" tabindex="-1"></a>    remaining_buy_orders <span class="op">=</span></span>
+<span id="cb62-28"><a href="mock-the-binance-api.html#cb62-28" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>buy_side</span>
+<span id="cb62-29"><a href="mock-the-binance-api.html#cb62-29" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>drop(length(filled_buy_orders))</span>
+<span id="cb62-30"><a href="mock-the-binance-api.html#cb62-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-31"><a href="mock-the-binance-api.html#cb62-31" aria-hidden="true" tabindex="-1"></a>    remaining_sell_orders <span class="op">=</span></span>
+<span id="cb62-32"><a href="mock-the-binance-api.html#cb62-32" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>sell_side</span>
+<span id="cb62-33"><a href="mock-the-binance-api.html#cb62-33" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>drop(length(filled_sell_orders))</span>
+<span id="cb62-34"><a href="mock-the-binance-api.html#cb62-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-35"><a href="mock-the-binance-api.html#cb62-35" aria-hidden="true" tabindex="-1"></a>    order_books <span class="op">=</span></span>
+<span id="cb62-36"><a href="mock-the-binance-api.html#cb62-36" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Map</span><span class="op">.</span>replace!(</span>
+<span id="cb62-37"><a href="mock-the-binance-api.html#cb62-37" aria-hidden="true" tabindex="-1"></a>        order_books,</span>
+<span id="cb62-38"><a href="mock-the-binance-api.html#cb62-38" aria-hidden="true" tabindex="-1"></a>        :<span class="st">&quot;</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb62-39"><a href="mock-the-binance-api.html#cb62-39" aria-hidden="true" tabindex="-1"></a>        %{</span>
+<span id="cb62-40"><a href="mock-the-binance-api.html#cb62-40" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_side:</span> remaining_buy_orders,</span>
+<span id="cb62-41"><a href="mock-the-binance-api.html#cb62-41" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_side:</span> remaining_sell_orders,</span>
+<span id="cb62-42"><a href="mock-the-binance-api.html#cb62-42" aria-hidden="true" tabindex="-1"></a>          <span class="va">historical:</span></span>
+<span id="cb62-43"><a href="mock-the-binance-api.html#cb62-43" aria-hidden="true" tabindex="-1"></a>            filled_buy_orders <span class="op">++</span></span>
+<span id="cb62-44"><a href="mock-the-binance-api.html#cb62-44" aria-hidden="true" tabindex="-1"></a>              filled_sell_orders <span class="op">++</span></span>
+<span id="cb62-45"><a href="mock-the-binance-api.html#cb62-45" aria-hidden="true" tabindex="-1"></a>              order_book<span class="op">.</span>historical</span>
+<span id="cb62-46"><a href="mock-the-binance-api.html#cb62-46" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb62-47"><a href="mock-the-binance-api.html#cb62-47" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb62-48"><a href="mock-the-binance-api.html#cb62-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-49"><a href="mock-the-binance-api.html#cb62-49" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">order_books:</span> order_books}}</span>
+<span id="cb62-50"><a href="mock-the-binance-api.html#cb62-50" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Inside the callback we referred to two new functions that we will implement now(<code>convert_order_to_event</code> and <code>broadcast_trade_event</code>).</p>
+<p>Starting with the <code>convert_order_to_event</code> function, it will simply return a new <code>Streamer.Binance.TradeEvent</code> struct filled with data. An interesting thing to observe here is that again all values are predicatable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behaviour between runs:</p>
+<div class="sourceCode" id="cb63"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb63-1"><a href="mock-the-binance-api.html#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb63-2"><a href="mock-the-binance-api.html#cb63-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_event(%<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order, time) <span class="kw">do</span></span>
+<span id="cb63-3"><a href="mock-the-binance-api.html#cb63-3" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{</span>
+<span id="cb63-4"><a href="mock-the-binance-api.html#cb63-4" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_type:</span> order<span class="op">.</span>type,</span>
+<span id="cb63-5"><a href="mock-the-binance-api.html#cb63-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
+<span id="cb63-6"><a href="mock-the-binance-api.html#cb63-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> order<span class="op">.</span>symbol,</span>
+<span id="cb63-7"><a href="mock-the-binance-api.html#cb63-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_id:</span> <span class="cn">Integer</span><span class="op">.</span>floor_div(time, <span class="dv">1000</span>),</span>
+<span id="cb63-8"><a href="mock-the-binance-api.html#cb63-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> order<span class="op">.</span>price,</span>
+<span id="cb63-9"><a href="mock-the-binance-api.html#cb63-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> order<span class="op">.</span>orig_qty,</span>
+<span id="cb63-10"><a href="mock-the-binance-api.html#cb63-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> order<span class="op">.</span>order_id,</span>
+<span id="cb63-11"><a href="mock-the-binance-api.html#cb63-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> order<span class="op">.</span>order_id,</span>
+<span id="cb63-12"><a href="mock-the-binance-api.html#cb63-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
+<span id="cb63-13"><a href="mock-the-binance-api.html#cb63-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
+<span id="cb63-14"><a href="mock-the-binance-api.html#cb63-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb63-15"><a href="mock-the-binance-api.html#cb63-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Broadcasting trade event to PubSub will be the last function that will finish
+the implementation of <code>BinanceMock</code> for now. It’s important to upcase the symbol as we want to be sure that we will match the topic name which is case-sensitive:</p>
+<div class="sourceCode" id="cb64"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb64-1"><a href="mock-the-binance-api.html#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb64-2"><a href="mock-the-binance-api.html#cb64-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> broadcast_trade_event(%<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event) <span class="kw">do</span></span>
+<span id="cb64-3"><a href="mock-the-binance-api.html#cb64-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(trade_event<span class="op">.</span>symbol)</span>
+<span id="cb64-4"><a href="mock-the-binance-api.html#cb64-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-5"><a href="mock-the-binance-api.html#cb64-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
+<span id="cb64-6"><a href="mock-the-binance-api.html#cb64-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb64-7"><a href="mock-the-binance-api.html#cb64-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb64-8"><a href="mock-the-binance-api.html#cb64-8" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
+<span id="cb64-9"><a href="mock-the-binance-api.html#cb64-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb64-10"><a href="mock-the-binance-api.html#cb64-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>That finishes the <code>BinanceMock</code> implementation. Now, we need to add it to
+the children list of the application so it starts automatically:</p>
+<div class="sourceCode" id="cb65"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb65-1"><a href="mock-the-binance-api.html#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock/application.ex</span></span>
+<span id="cb65-2"><a href="mock-the-binance-api.html#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb65-3"><a href="mock-the-binance-api.html#cb65-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
+<span id="cb65-4"><a href="mock-the-binance-api.html#cb65-4" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb65-5"><a href="mock-the-binance-api.html#cb65-5" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">BinanceMock</span>, []}</span>
+<span id="cb65-6"><a href="mock-the-binance-api.html#cb65-6" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb65-7"><a href="mock-the-binance-api.html#cb65-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb65-8"><a href="mock-the-binance-api.html#cb65-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb65-9"><a href="mock-the-binance-api.html#cb65-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="upgrade-trader-and-config" class="section level2" number="4.8">
+<h2><span class="header-section-number">4.8</span> Upgrade trader and config</h2>
+<p>We can move on to the <code>Naive.Trader</code> module where we will add an attribute which will point to the Binance client dictated by config:</p>
+<div class="sourceCode" id="cb66"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb66-1"><a href="mock-the-binance-api.html#cb66-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb66-2"><a href="mock-the-binance-api.html#cb66-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:naive</span>, <span class="va">:binance_client</span>)</span></code></pre></div>
+<p>We need to replace all direct calls to the <code>Binance</code> module for calls to the <code>@binance_client</code> attribute inside the <code>Naive.Trader</code>:</p>
+<div class="sourceCode" id="cb67"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb67-1"><a href="mock-the-binance-api.html#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb67-2"><a href="mock-the-binance-api.html#cb67-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-3"><a href="mock-the-binance-api.html#cb67-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb67-4"><a href="mock-the-binance-api.html#cb67-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span><span class="op">.</span>order_limit_buy(</span>
+<span id="cb67-5"><a href="mock-the-binance-api.html#cb67-5" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb67-6"><a href="mock-the-binance-api.html#cb67-6" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span><span class="op">.</span>order_limit_sell</span>
+<span id="cb67-7"><a href="mock-the-binance-api.html#cb67-7" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb67-8"><a href="mock-the-binance-api.html#cb67-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb67-9"><a href="mock-the-binance-api.html#cb67-9" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<p>As the <code>Naive.Trader</code> is now relying on the config to specify which Binance client should they use, we need to add it to the config:</p>
+<div class="sourceCode" id="cb68"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb68-1"><a href="mock-the-binance-api.html#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb68-2"><a href="mock-the-binance-api.html#cb68-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-3"><a href="mock-the-binance-api.html#cb68-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb68-4"><a href="mock-the-binance-api.html#cb68-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">binance_client:</span> <span class="cn">BinanceMock</span></span></code></pre></div>
+<p>Last modification to our system will be to modify the <code>mix.exs</code> of the <code>binance_mock</code> app to list all deps required for it to work:</p>
+<div class="sourceCode" id="cb69"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb69-1"><a href="mock-the-binance-api.html#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/mix.exs</span></span>
+<span id="cb69-2"><a href="mock-the-binance-api.html#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb69-3"><a href="mock-the-binance-api.html#cb69-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb69-4"><a href="mock-the-binance-api.html#cb69-4" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb69-5"><a href="mock-the-binance-api.html#cb69-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb69-6"><a href="mock-the-binance-api.html#cb69-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:decimal</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
+<span id="cb69-7"><a href="mock-the-binance-api.html#cb69-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
+<span id="cb69-8"><a href="mock-the-binance-api.html#cb69-8" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:streamer</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}</span>
+<span id="cb69-9"><a href="mock-the-binance-api.html#cb69-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb69-10"><a href="mock-the-binance-api.html#cb69-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb69-11"><a href="mock-the-binance-api.html#cb69-11" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<p>We also add <code>:binance_mock</code> to the list of deps of the <code>naive</code> app(as the Naive app will use either <code>Binance</code> or <code>BinanceMock</code> to “trade”):</p>
+<div class="sourceCode" id="cb70"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb70-1"><a href="mock-the-binance-api.html#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/mix.exs</span></span>
+<span id="cb70-2"><a href="mock-the-binance-api.html#cb70-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb70-3"><a href="mock-the-binance-api.html#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb70-4"><a href="mock-the-binance-api.html#cb70-4" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb70-5"><a href="mock-the-binance-api.html#cb70-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb70-6"><a href="mock-the-binance-api.html#cb70-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance_mock</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}</span>
+<span id="cb70-7"><a href="mock-the-binance-api.html#cb70-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb70-8"><a href="mock-the-binance-api.html#cb70-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb70-9"><a href="mock-the-binance-api.html#cb70-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb70-10"><a href="mock-the-binance-api.html#cb70-10" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+</div>
+<div id="test-the-implementation" class="section level2" number="4.9">
+<h2><span class="header-section-number">4.9</span> Test the implementation</h2>
+<p>We can now see the BinanceMock in action. First, we will start an iex session and double check that BinanceMock process is alive.</p>
+<div class="sourceCode" id="cb71"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb71-1"><a href="mock-the-binance-api.html#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb71-2"><a href="mock-the-binance-api.html#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb71-3"><a href="mock-the-binance-api.html#cb71-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Process.whereis<span class="kw">(</span><span class="ex">BinanceMock</span><span class="kw">)</span></span>
+<span id="cb71-4"><a href="mock-the-binance-api.html#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="co">#PID&lt;0.320.0&gt; # &lt;- confirms that BinanceMock process is alive</span></span>
+<span id="cb71-5"><a href="mock-the-binance-api.html#cb71-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb71-6"><a href="mock-the-binance-api.html#cb71-6" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.332.0&gt;}</span></span>
+<span id="cb71-7"><a href="mock-the-binance-api.html#cb71-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: Decimal.new<span class="er">(</span><span class="st">&quot;-0.001&quot;</span><span class="kw">)</span><span class="er">}</span><span class="kw">)</span></span>
+<span id="cb71-8"><a href="mock-the-binance-api.html#cb71-8" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:39.232</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb71-9"><a href="mock-the-binance-api.html#cb71-9" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.318.0&gt;}</span></span>
+<span id="cb71-10"><a href="mock-the-binance-api.html#cb71-10" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:40.826</span> [info]  Placing BUY order for XRPUSDT @ 0.29520000, quantity: 100</span>
+<span id="cb71-11"><a href="mock-the-binance-api.html#cb71-11" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:44.569</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549<span class="er">)</span><span class="ex">,</span> quantity: 100.0</span>
+<span id="cb71-12"><a href="mock-the-binance-api.html#cb71-12" aria-hidden="true" tabindex="-1"></a><span class="ex">00:20:09.391</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
+<p>As config already points to it so we can continue as previously by starting the streaming and trading on the symbol. The trader is using the <code>BinanceMock</code> and it looks like everything works as it would be dealing with a real exchange.</p>
+<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_04">Github</a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="introduce-pubsub-as-a-communication-method.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="enable-parallel-trading-on-multiple-symbols.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir/edit/master/04-mock-binance-api.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["create-a-cryptocurrency-trading-bot-in-elixir.pdf", "create-a-cryptocurrency-trading-bot-in-elixir.epub"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>
