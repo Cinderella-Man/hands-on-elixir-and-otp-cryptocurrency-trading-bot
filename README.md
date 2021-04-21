@@ -16,7 +16,7 @@ Knowledge is power and should be shared equally 🙏
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
-**Please consider supporting this book and my other work via the **[**GitHub Sponsors**](https://github.com/sponsors/frathon) **program**(it supports both one-off payments as well as "monthly" plans).
+**Please consider supporting this book and my other work via the** [**GitHub Sponsors**](https://github.com/sponsors/frathon) **program**(it supports both one-off payments as well as "monthly" plans).
 
 ## Limit of Liability/Disclaimer of Warranty
 
