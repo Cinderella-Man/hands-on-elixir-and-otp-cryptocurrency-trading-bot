@@ -7745,7 +7745,7 @@ We can now modify the \texttt{run/1} function to expect specific \texttt{type}, 
 \end{Highlighting}
 \end{Shaded}
 
-Inside the body of the \texttt{run/1} function, the first we will convert \texttt{from} and \texttt{to} Unix timestamps by using private helper functions:
+Inside the body of the \texttt{run/1} function, first, we will convert \texttt{from} and \texttt{to} Unix timestamps by using private helper functions as well as make sure that the passed symbol is uppercase:
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -7754,6 +7754,8 @@ Inside the body of the \texttt{run/1} function, the first we will convert \textt
   \KeywordTok{def}\NormalTok{ run(\%\{}
         \OperatorTok{...}
 \NormalTok{      \}) }\KeywordTok{do}
+\NormalTok{    symbol }\OperatorTok{=} \ConstantTok{String}\OperatorTok{.}\NormalTok{upcase(symbol)}
+
 \NormalTok{    from\_ts }\OperatorTok{=}
       \StringTok{"}\OtherTok{\#\{}\NormalTok{from}\OtherTok{\}}\StringTok{T00:00:00.000Z"}
       \OperatorTok{|\textgreater{}}\NormalTok{ convert\_to\_ms()}

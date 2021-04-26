@@ -403,28 +403,30 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb294-8"><a href="backtest-trading-strategy.html#cb294-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">interval:</span> interval</span>
 <span id="cb294-9"><a href="backtest-trading-strategy.html#cb294-9" aria-hidden="true" tabindex="-1"></a>      }) <span class="kw">do</span></span>
 <span id="cb294-10"><a href="backtest-trading-strategy.html#cb294-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span>  </span></code></pre></div>
-<p>Inside the body of the <code>run/1</code> function, the first we will convert <code>from</code> and <code>to</code> Unix timestamps by using private helper functions:</p>
+<p>Inside the body of the <code>run/1</code> function, first, we will convert <code>from</code> and <code>to</code> Unix timestamps by using private helper functions as well as make sure that the passed symbol is uppercase:</p>
 <div class="sourceCode" id="cb295"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb295-1"><a href="backtest-trading-strategy.html#cb295-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex  </span></span>
 <span id="cb295-2"><a href="backtest-trading-strategy.html#cb295-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb295-3"><a href="backtest-trading-strategy.html#cb295-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> run(%{</span>
 <span id="cb295-4"><a href="backtest-trading-strategy.html#cb295-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
 <span id="cb295-5"><a href="backtest-trading-strategy.html#cb295-5" aria-hidden="true" tabindex="-1"></a>      }) <span class="kw">do</span></span>
-<span id="cb295-6"><a href="backtest-trading-strategy.html#cb295-6" aria-hidden="true" tabindex="-1"></a>    from_ts <span class="op">=</span></span>
-<span id="cb295-7"><a href="backtest-trading-strategy.html#cb295-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>from<span class="ot">}</span><span class="st">T00:00:00.000Z&quot;</span></span>
-<span id="cb295-8"><a href="backtest-trading-strategy.html#cb295-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms()</span>
-<span id="cb295-9"><a href="backtest-trading-strategy.html#cb295-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb295-10"><a href="backtest-trading-strategy.html#cb295-10" aria-hidden="true" tabindex="-1"></a>    to_ts <span class="op">=</span></span>
-<span id="cb295-11"><a href="backtest-trading-strategy.html#cb295-11" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>to<span class="ot">}</span><span class="st">T23:59:59.000Z&quot;</span></span>
-<span id="cb295-12"><a href="backtest-trading-strategy.html#cb295-12" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms()</span>
-<span id="cb295-13"><a href="backtest-trading-strategy.html#cb295-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb295-14"><a href="backtest-trading-strategy.html#cb295-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb295-15"><a href="backtest-trading-strategy.html#cb295-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_to_ms(iso8601DateString) <span class="kw">do</span></span>
-<span id="cb295-16"><a href="backtest-trading-strategy.html#cb295-16" aria-hidden="true" tabindex="-1"></a>    iso8601DateString</span>
-<span id="cb295-17"><a href="backtest-trading-strategy.html#cb295-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>from_iso8601!()</span>
-<span id="cb295-18"><a href="backtest-trading-strategy.html#cb295-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>from_naive!(<span class="st">&quot;Etc/UTC&quot;</span>)</span>
-<span id="cb295-19"><a href="backtest-trading-strategy.html#cb295-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>to_unix()</span>
-<span id="cb295-20"><a href="backtest-trading-strategy.html#cb295-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Kernel</span><span class="op">.*</span>(<span class="dv">1000</span>)</span>
-<span id="cb295-21"><a href="backtest-trading-strategy.html#cb295-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb295-6"><a href="backtest-trading-strategy.html#cb295-6" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
+<span id="cb295-7"><a href="backtest-trading-strategy.html#cb295-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb295-8"><a href="backtest-trading-strategy.html#cb295-8" aria-hidden="true" tabindex="-1"></a>    from_ts <span class="op">=</span></span>
+<span id="cb295-9"><a href="backtest-trading-strategy.html#cb295-9" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>from<span class="ot">}</span><span class="st">T00:00:00.000Z&quot;</span></span>
+<span id="cb295-10"><a href="backtest-trading-strategy.html#cb295-10" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms()</span>
+<span id="cb295-11"><a href="backtest-trading-strategy.html#cb295-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb295-12"><a href="backtest-trading-strategy.html#cb295-12" aria-hidden="true" tabindex="-1"></a>    to_ts <span class="op">=</span></span>
+<span id="cb295-13"><a href="backtest-trading-strategy.html#cb295-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>to<span class="ot">}</span><span class="st">T23:59:59.000Z&quot;</span></span>
+<span id="cb295-14"><a href="backtest-trading-strategy.html#cb295-14" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms()</span>
+<span id="cb295-15"><a href="backtest-trading-strategy.html#cb295-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb295-16"><a href="backtest-trading-strategy.html#cb295-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb295-17"><a href="backtest-trading-strategy.html#cb295-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_to_ms(iso8601DateString) <span class="kw">do</span></span>
+<span id="cb295-18"><a href="backtest-trading-strategy.html#cb295-18" aria-hidden="true" tabindex="-1"></a>    iso8601DateString</span>
+<span id="cb295-19"><a href="backtest-trading-strategy.html#cb295-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>from_iso8601!()</span>
+<span id="cb295-20"><a href="backtest-trading-strategy.html#cb295-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>from_naive!(<span class="st">&quot;Etc/UTC&quot;</span>)</span>
+<span id="cb295-21"><a href="backtest-trading-strategy.html#cb295-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>to_unix()</span>
+<span id="cb295-22"><a href="backtest-trading-strategy.html#cb295-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Kernel</span><span class="op">.*</span>(<span class="dv">1000</span>)</span>
+<span id="cb295-23"><a href="backtest-trading-strategy.html#cb295-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Next, we will select data from the database but because of possibly hundreds of thousands of rows being selected and because we are broadcasting them to the PubSub every x ms it could take a substantial amount of time to <code>broadcast</code> all of them. Instead of <code>select</code>ing data and storing all of it in the memory, we will use <code>Repo.stream/1</code> function to keep <code>broadcast</code>ing it on the go. Additionally, we will add <code>index</code> to the data to be able to log info messages every 10k messages. The last thing that we need to define will be the timeout value - the default value is 5 seconds and we will change it to <code>:infinity</code>:</p>
 <div class="sourceCode" id="cb296"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb296-1"><a href="backtest-trading-strategy.html#cb296-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
 <span id="cb296-2"><a href="backtest-trading-strategy.html#cb296-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> run(%{</span>
