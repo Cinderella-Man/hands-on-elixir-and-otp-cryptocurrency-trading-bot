@@ -35,10 +35,8 @@ The first change that we need to apply will be to register `Streamer.Binance` pr
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
   def start_link(symbol) do
-    lowercased_symbol = String.downcase(symbol) # <= separate variable
-
     WebSockex.start_link(
-      "#{@stream_endpoint}#{lowercased_symbol}@trade", # <= lowercase symbol
+      "#{@stream_endpoint}#{String.downcase(symbol)}@trade", # <= lowercase symbol
       __MODULE__,
       nil,
       name: :"#{__MODULE__}-#{symbol}" # <= uppercase symbol
@@ -269,8 +267,6 @@ Next, we will add the `start_streaming/1` function at the bottom of the `Streame
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
   ...
   def start_streaming(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-    
     case get_pid(symbol) do
       nil ->
         Logger.info("Starting streaming on #{symbol}")
@@ -331,7 +327,11 @@ As we added a new `start_streaming/1` logic inside the `Streamer.DynamicStreamer
   ...
   alias Streamer.DynamicStreamerSupervisor
 
-  defdelegate start_streaming(symbol), to: DynamicStreamerSupervisor
+  def start_streaming(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicStreamerSupervisor.start_streaming()
+  end
 ```
 
 As we don't need to put any logic inside the `Streamer.start_streaming/1` function, we can just delegate the call straight to the `Streamer.DynamicStreamerSupervisor` module.
@@ -360,8 +360,6 @@ Let's write a `stop_streaming/1` logic inside the `Streamer.DynamicStreamerSuper
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
   def stop_streaming(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case get_pid(symbol) do
       nil ->
         Logger.warn("Streaming on #{symbol} already stopped")
@@ -388,7 +386,11 @@ We need to update the `Streamer` module to provide the interface to stop streami
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer.ex
   ...
-  defdelegate stop_streaming(symbol), to: DynamicStreamerSupervisor
+  def stop_streaming(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicStreamerSupervisor.stop_streaming()
+  end
   ...
 ```
 

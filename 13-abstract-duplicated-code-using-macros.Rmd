@@ -105,8 +105,6 @@ The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
   def start_worker(symbol) when is_binary(symbol) do # <= updated name
-    symbol = String.upcase(symbol)
-
     case get_pid(symbol) do
       nil ->
         Logger.info("Starting trading of #{symbol}")
@@ -147,8 +145,6 @@ Last function to rename in this module will be the `stop_trading/1` to `stop_wor
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
   def stop_worker(symbol) when is_binary(symbol) do # <= updated name
-    symbol = String.upcase(symbol)
-
     case get_pid(symbol) do
       nil ->
         Logger.warn("Trading on #{symbol} already stopped")
@@ -209,8 +205,6 @@ We also need to update the `shutdown_trading/1` function as we removed all the p
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   def shutdown_worker(symbol) when is_binary(symbol) do # <= updated name
-    symbol = String.upcase(symbol)
-
     case Core.ServiceSupervisor.get_pid(symbol) do # <= module added
       nil ->
         Logger.warn("Trading on #{symbol} already stopped")
@@ -283,9 +277,23 @@ Last step will be to update interface of the `naive` application:
 # /apps/naive/lib/naive.ex
   alias Naive.DynamicSymbolSupervisor
 
-  defdelegate start_trading(symbol), to: DynamicSymbolSupervisor, as: :start_worker
-  defdelegate stop_trading(symbol), to: DynamicSymbolSupervisor, as: :stop_worker
-  defdelegate shutdown_trading(symbol), to: DynamicSymbolSupervisor, as: :shutdown_worker
+  def start_trading(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicSymbolSupervisor.start_worker()
+  end
+
+  def stop_trading(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicSymbolSupervisor.stop_worker()
+  end
+
+  def shutdown_trading(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicSymbolSupervisor.shutdown_worker()
+  end
 ```
 
 Believe it or not, but at this moment(ignoring all of the warnings because we created a circular dependency between the `core` and the `naive` applications - which we will fix in the next steps) our application *runs* just fine! We are able to start and stop trading, autostarting works as well.
@@ -465,8 +473,6 @@ Let's look at updated functions:
   # module and worker_module args added vvvv
   def start_worker(symbol, repo, schema, module, worker_module)
       when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case get_pid(worker_module, symbol) do # <= worker_module passed
       nil ->
         Logger.info("Starting #{worker_module} worker for #{symbol}") # <= dynamic text
@@ -483,8 +489,6 @@ Let's look at updated functions:
   # module and worker_module added as args vvvv
   def stop_worker(symbol, repo, schema, module, worker_module)
       when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case get_pid(worker_module, symbol) do # <= worker_module passed
       nil ->
         Logger.warn("#{worker_module} worker for #{symbol} already stopped") # <= dynamic text
@@ -582,8 +586,6 @@ That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` modul
   end
 
   def shutdown_worker(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case Core.ServiceSupervisor.get_pid(Naive.SymbolSupervisor, symbol) do # <= arg added
       nil ->
         Logger.warn("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped") # <= updated
@@ -818,8 +820,6 @@ As those will get compiled and "pasted" into the `Naive.DynamicSymbolSupervisor`
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   def shutdown_worker(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case get_pid(symbol) do # <= macro provided function
       nil ->
         Logger.warn("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
@@ -951,8 +951,17 @@ As well as main `Streamer` module needs to forward calls instead of delegating:
   # /apps/streamer/lib/streamer.ex
   alias Streamer.DynamicStreamerSupervisor
 
-  defdelegate start_streaming(symbol), to: DynamicStreamerSupervisor, as: :start_worker
-  defdelegate stop_streaming(symbol), to: DynamicStreamerSupervisor, as: :stop_worker
+  def start_streaming(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicStreamerSupervisor.start_worker()
+  end
+
+  def stop_streaming(symbol) do
+    symbol
+    |> String.upcase()
+    |> DynamicStreamerSupervisor.stop_worker()
+  end
 ```
 
 We can run a quick test to confirm that indeed everything works as expected:

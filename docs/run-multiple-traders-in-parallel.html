@@ -24,7 +24,6 @@
 <meta name="author" content="Kamil Skowron" />
 
 
-<meta name="date" content="2021-04-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -368,15 +367,15 @@ starts all of the traders at the same moment:</p>
 <span id="cb112-6"><a href="run-multiple-traders-in-parallel.html#cb112-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>All the changes we made in this episode will enable us to fix.</p>
 <p>Let’s say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
-<div class="figure">
-<img src="images/chapter_09_01_single_trader.png" alt="" />
-<p class="caption">Single trader</p>
-</div>
+<center>
+<img src="images/chapter_09_01_single_trader.png">
+</center>
+<p><br/></p>
 <p>We will implement additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after buy order has been filled. Whenever price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
-<div class="figure">
-<img src="images/chapter_09_02_multi_traders.png" alt="" />
-<p class="caption">Multiple traders</p>
-</div>
+<center>
+<img src="images/chapter_09_02_multi_traders.png">
+</center>
+<p><br/></p>
 <p>The <code>Naive.Leader</code> keeps track of how many <code>Naive.Trader</code>s are running and needs to honor the number of <code>chunks</code> set up in the settings (one chunk == one trader).</p>
 <p>To stop the <code>Naive.Trader</code>s from continuously notifying about a drop in the price we will also introduce a boolean flag that will track has the <code>Naive.Leader</code> been already notified.</p>
 </div>
@@ -501,20 +500,20 @@ traders) - let’s start with a header:</p>
 <span id="cb120-6"><a href="run-multiple-traders-in-parallel.html#cb120-6" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, state}</span>
 <span id="cb120-7"><a href="run-multiple-traders-in-parallel.html#cb120-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb120-8"><a href="run-multiple-traders-in-parallel.html#cb120-8" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
-<span id="cb120-9"><a href="run-multiple-traders-in-parallel.html#cb120-9" aria-hidden="true" tabindex="-1"></a>        traders <span class="op">=</span></span>
-<span id="cb120-10"><a href="run-multiple-traders-in-parallel.html#cb120-10" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> settings<span class="op">.</span>chunks <span class="op">==</span> length(traders) <span class="kw">do</span></span>
-<span id="cb120-11"><a href="run-multiple-traders-in-parallel.html#cb120-11" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;All traders already started for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb120-12"><a href="run-multiple-traders-in-parallel.html#cb120-12" aria-hidden="true" tabindex="-1"></a>            traders</span>
-<span id="cb120-13"><a href="run-multiple-traders-in-parallel.html#cb120-13" aria-hidden="true" tabindex="-1"></a>          <span class="cf">else</span></span>
-<span id="cb120-14"><a href="run-multiple-traders-in-parallel.html#cb120-14" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb120-15"><a href="run-multiple-traders-in-parallel.html#cb120-15" aria-hidden="true" tabindex="-1"></a>            [start_new_trader(fresh_trader_state(settings)) <span class="op">|</span> traders]</span>
-<span id="cb120-16"><a href="run-multiple-traders-in-parallel.html#cb120-16" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
-<span id="cb120-17"><a href="run-multiple-traders-in-parallel.html#cb120-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb120-18"><a href="run-multiple-traders-in-parallel.html#cb120-18" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
-<span id="cb120-19"><a href="run-multiple-traders-in-parallel.html#cb120-19" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
-<span id="cb120-20"><a href="run-multiple-traders-in-parallel.html#cb120-20" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb120-9"><a href="run-multiple-traders-in-parallel.html#cb120-9" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
+<span id="cb120-10"><a href="run-multiple-traders-in-parallel.html#cb120-10" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
+<span id="cb120-11"><a href="run-multiple-traders-in-parallel.html#cb120-11" aria-hidden="true" tabindex="-1"></a>        updated_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb120-12"><a href="run-multiple-traders-in-parallel.html#cb120-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-13"><a href="run-multiple-traders-in-parallel.html#cb120-13" aria-hidden="true" tabindex="-1"></a>        updated_traders <span class="op">=</span></span>
+<span id="cb120-14"><a href="run-multiple-traders-in-parallel.html#cb120-14" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> settings<span class="op">.</span>chunks <span class="op">==</span> length(traders) <span class="kw">do</span></span>
+<span id="cb120-15"><a href="run-multiple-traders-in-parallel.html#cb120-15" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;All traders already started for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb120-16"><a href="run-multiple-traders-in-parallel.html#cb120-16" aria-hidden="true" tabindex="-1"></a>            updated_traders</span>
+<span id="cb120-17"><a href="run-multiple-traders-in-parallel.html#cb120-17" aria-hidden="true" tabindex="-1"></a>          <span class="cf">else</span></span>
+<span id="cb120-18"><a href="run-multiple-traders-in-parallel.html#cb120-18" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb120-19"><a href="run-multiple-traders-in-parallel.html#cb120-19" aria-hidden="true" tabindex="-1"></a>            [start_new_trader(fresh_trader_state(settings)) <span class="op">|</span> updated_traders]</span>
+<span id="cb120-20"><a href="run-multiple-traders-in-parallel.html#cb120-20" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
 <span id="cb120-21"><a href="run-multiple-traders-in-parallel.html#cb120-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb120-22"><a href="run-multiple-traders-in-parallel.html#cb120-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span> new_traders}}</span>
+<span id="cb120-22"><a href="run-multiple-traders-in-parallel.html#cb120-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span> updated_traders}}</span>
 <span id="cb120-23"><a href="run-multiple-traders-in-parallel.html#cb120-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
 <p>In above code we need to remember to update the state of the trader that triggered the rebuy inside the <code>traders</code> list as well as add state of a new trader to that list.</p>
 <p>As with other setting we will hardcode the <code>rebuy_interval</code>(inside the <code>fetch_symbol_settings</code> function) and assign them to

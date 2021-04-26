@@ -24,7 +24,6 @@
 <meta name="author" content="Kamil Skowron" />
 
 
-<meta name="date" content="2021-04-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -682,29 +681,29 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb199-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-11" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, state}</span>
 <span id="cb199-12"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb199-13"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-13" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
-<span id="cb199-14"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-14" aria-hidden="true" tabindex="-1"></a>        traders <span class="op">=</span></span>
-<span id="cb199-15"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-15" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> settings<span class="op">.</span>chunks <span class="op">==</span> length(traders) <span class="kw">do</span></span>
-<span id="cb199-16"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-16" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;All traders already started for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb199-17"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-17" aria-hidden="true" tabindex="-1"></a>            traders</span>
-<span id="cb199-18"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-18" aria-hidden="true" tabindex="-1"></a>          <span class="cf">else</span></span>
-<span id="cb199-19"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-19" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> settings<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;shutdown&quot;</span> <span class="kw">do</span> <span class="co"># &lt;= refactored code</span></span>
-<span id="cb199-20"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-20" aria-hidden="true" tabindex="-1"></a>              <span class="cn">Logger</span><span class="op">.</span>warn(</span>
-<span id="cb199-21"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-21" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;The leader won&#39;t start a new trader on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
-<span id="cb199-22"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-22" aria-hidden="true" tabindex="-1"></a>                  <span class="st">&quot;as symbol is in shutdown state(rebuy triggered)&quot;</span></span>
-<span id="cb199-23"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-23" aria-hidden="true" tabindex="-1"></a>              )</span>
-<span id="cb199-24"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb199-25"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-25" aria-hidden="true" tabindex="-1"></a>              traders</span>
-<span id="cb199-26"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span></span>
-<span id="cb199-27"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-27" aria-hidden="true" tabindex="-1"></a>              <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb199-28"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-28" aria-hidden="true" tabindex="-1"></a>              [start_new_trader(fresh_trader_state(settings)) <span class="op">|</span> traders]</span>
-<span id="cb199-29"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-29" aria-hidden="true" tabindex="-1"></a>            <span class="kw">end</span></span>
-<span id="cb199-30"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-30" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
-<span id="cb199-31"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb199-32"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-32" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
-<span id="cb199-33"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-33" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
-<span id="cb199-34"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-34" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb199-14"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-14" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
+<span id="cb199-15"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-15" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
+<span id="cb199-16"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-16" aria-hidden="true" tabindex="-1"></a>        updated_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb199-17"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb199-18"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-18" aria-hidden="true" tabindex="-1"></a>        updated_traders <span class="op">=</span></span>
+<span id="cb199-19"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-19" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> settings<span class="op">.</span>chunks <span class="op">==</span> length(traders) <span class="kw">do</span></span>
+<span id="cb199-20"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-20" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;All traders already started for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb199-21"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-21" aria-hidden="true" tabindex="-1"></a>            updated_traders</span>
+<span id="cb199-22"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-22" aria-hidden="true" tabindex="-1"></a>          <span class="cf">else</span></span>
+<span id="cb199-23"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> settings<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;shutdown&quot;</span> <span class="kw">do</span></span>
+<span id="cb199-24"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-24" aria-hidden="true" tabindex="-1"></a>              <span class="cn">Logger</span><span class="op">.</span>warn(</span>
+<span id="cb199-25"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-25" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;The leader won&#39;t start a new trader on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb199-26"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-26" aria-hidden="true" tabindex="-1"></a>                  <span class="st">&quot;as symbol is in the &#39;shutdown&#39; state&quot;</span></span>
+<span id="cb199-27"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-27" aria-hidden="true" tabindex="-1"></a>              )</span>
+<span id="cb199-28"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb199-29"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-29" aria-hidden="true" tabindex="-1"></a>              updated_traders</span>
+<span id="cb199-30"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-30" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span></span>
+<span id="cb199-31"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-31" aria-hidden="true" tabindex="-1"></a>              <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb199-32"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-32" aria-hidden="true" tabindex="-1"></a>              [start_new_trader(fresh_trader_state(settings)) <span class="op">|</span> updated_traders]</span>
+<span id="cb199-33"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-33" aria-hidden="true" tabindex="-1"></a>            <span class="kw">end</span></span>
+<span id="cb199-34"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-34" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
 <span id="cb199-35"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb199-36"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-36" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span> new_traders}}</span>
+<span id="cb199-36"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-36" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span> updated_traders}}</span>
 <span id="cb199-37"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb199-38"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb199-39"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-39" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>

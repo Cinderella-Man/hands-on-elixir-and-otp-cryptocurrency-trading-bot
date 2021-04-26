@@ -24,7 +24,6 @@
 <meta name="author" content="Kamil Skowron" />
 
 
-<meta name="date" content="2021-04-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -359,22 +358,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="issue-with-the-current-implementation" class="section level2" number="8.2">
 <h2><span class="header-section-number">8.2</span> Issue with the current implementation</h2>
 <p>Currently, <code>Naive.Trader</code> process is placing a buy order and it’s assuming that it will be filled by a <em>single</em> opposite sell order(we are pattern matching on quantity to confirm that):</p>
-<div class="figure">
-<img src="images/chapter_08_01_single_transaction.png" alt="" />
-<p class="caption">Single transaction fills order</p>
-</div>
+<center>
+<img src="images/chapter_08_01_single_transaction.png">
+</center>
+<p><br/></p>
 <p>Here we can see our buy order for 1000 units(on the left) and other trader’s sell order(on the right) for 1000 units. This(order fully filled in single transaction) is a case most of the time but it’s not ALWAYS the case.</p>
 <p>Sometimes our order will be filled by two or more transactions:</p>
-<div class="figure">
-<img src="images/chapter_08_02_multiple_transactions_per_order.png" alt="" />
-<p class="caption">Multiple transactions fills order</p>
-</div>
+<center>
+<img src="images/chapter_08_02_multiple_transactions_per_order.png">
+</center>
+<p><br/></p>
 <p>The easiest and the safest way to check has this event filled our order fully is to fetch our order again from Binance at the moment when trade event filling our order arrives.</p>
 <p>Problem with this approach is that sometimes we will run into a race condition:</p>
-<div class="figure">
-<img src="images/chapter_08_03_race_condition_timeline.png" alt="" />
-<p class="caption">Race condition timeline - two sell orders</p>
-</div>
+<center>
+<img src="images/chapter_08_03_race_condition_timeline.png">
+</center>
+<p><br/></p>
 <p>From the left, first, we are sending a buy order for quantity 1000 to the Binance. It hangs for a while until it gets filled by 2 transactions that happened very quickly. Quickly enough for us to receive both messages almost in the same moment.</p>
 <p>When our bot will handle the first one it will fetch our the buy order which is already filled. It will cause the trader to place a sell order but then the there’s another trade event waiting in the message box. It will be handled by another callback that will again fetch order and place another sell order to be placed and that’s obviously not correct.</p>
 <p>What we need to do is to update the status of the buy order after the first fetch(if it’s filled) so when second trade event arrives we will ignore it(this will require additional callback).</p>

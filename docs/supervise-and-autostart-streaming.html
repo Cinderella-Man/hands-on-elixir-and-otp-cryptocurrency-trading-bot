@@ -24,7 +24,6 @@
 <meta name="author" content="Kamil Skowron" />
 
 
-<meta name="date" content="2021-04-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -378,15 +377,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>The first change that we need to apply will be to register <code>Streamer.Binance</code> processes with names by passing the 4th argument to the <code>WebSockex.start_link/4</code> function:</p>
 <div class="sourceCode" id="cb155"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb155-1"><a href="supervise-and-autostart-streaming.html#cb155-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
 <span id="cb155-2"><a href="supervise-and-autostart-streaming.html#cb155-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
-<span id="cb155-3"><a href="supervise-and-autostart-streaming.html#cb155-3" aria-hidden="true" tabindex="-1"></a>    lowercased_symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>downcase(symbol) <span class="co"># &lt;= separate variable</span></span>
-<span id="cb155-4"><a href="supervise-and-autostart-streaming.html#cb155-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb155-5"><a href="supervise-and-autostart-streaming.html#cb155-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">WebSockex</span><span class="op">.</span>start_link(</span>
-<span id="cb155-6"><a href="supervise-and-autostart-streaming.html#cb155-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{@stream_endpoint}#{</span>lowercased_symbol<span class="ot">}</span><span class="st">@trade&quot;</span>, <span class="co"># &lt;= lowercase symbol</span></span>
-<span id="cb155-7"><a href="supervise-and-autostart-streaming.html#cb155-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
-<span id="cb155-8"><a href="supervise-and-autostart-streaming.html#cb155-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span>,</span>
-<span id="cb155-9"><a href="supervise-and-autostart-streaming.html#cb155-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># &lt;= uppercase symbol</span></span>
-<span id="cb155-10"><a href="supervise-and-autostart-streaming.html#cb155-10" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb155-11"><a href="supervise-and-autostart-streaming.html#cb155-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb155-3"><a href="supervise-and-autostart-streaming.html#cb155-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">WebSockex</span><span class="op">.</span>start_link(</span>
+<span id="cb155-4"><a href="supervise-and-autostart-streaming.html#cb155-4" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{@stream_endpoint}#{</span><span class="cn">String</span><span class="op">.</span>downcase(symbol)<span class="ot">}</span><span class="st">@trade&quot;</span>, <span class="co"># &lt;= lowercase symbol</span></span>
+<span id="cb155-5"><a href="supervise-and-autostart-streaming.html#cb155-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb155-6"><a href="supervise-and-autostart-streaming.html#cb155-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span>,</span>
+<span id="cb155-7"><a href="supervise-and-autostart-streaming.html#cb155-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># &lt;= uppercase symbol</span></span>
+<span id="cb155-8"><a href="supervise-and-autostart-streaming.html#cb155-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb155-9"><a href="supervise-and-autostart-streaming.html#cb155-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Few things worth mention here:
 - we are getting the uppercase symbol but inside the URL we need to use a lowercase symbol so we will introduce a new separate variable to be used in the URL
 - we are registering the process using the uppercase symbol so the name will remain consistent with the <code>naive</code> application’s processes
@@ -559,20 +556,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb168"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb168-1"><a href="supervise-and-autostart-streaming.html#cb168-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
 <span id="cb168-2"><a href="supervise-and-autostart-streaming.html#cb168-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb168-3"><a href="supervise-and-autostart-streaming.html#cb168-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_streaming(symbol) <span class="kw">when</span> is_binary(symbol) <span class="kw">do</span></span>
-<span id="cb168-4"><a href="supervise-and-autostart-streaming.html#cb168-4" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
-<span id="cb168-5"><a href="supervise-and-autostart-streaming.html#cb168-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb168-6"><a href="supervise-and-autostart-streaming.html#cb168-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> get_pid(symbol) <span class="kw">do</span></span>
-<span id="cb168-7"><a href="supervise-and-autostart-streaming.html#cb168-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb168-8"><a href="supervise-and-autostart-streaming.html#cb168-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb168-9"><a href="supervise-and-autostart-streaming.html#cb168-9" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;on&quot;</span>)</span>
-<span id="cb168-10"><a href="supervise-and-autostart-streaming.html#cb168-10" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _pid} <span class="op">=</span> start_streamer(symbol)</span>
-<span id="cb168-11"><a href="supervise-and-autostart-streaming.html#cb168-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb168-12"><a href="supervise-and-autostart-streaming.html#cb168-12" aria-hidden="true" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
-<span id="cb168-13"><a href="supervise-and-autostart-streaming.html#cb168-13" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span>)</span>
-<span id="cb168-14"><a href="supervise-and-autostart-streaming.html#cb168-14" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;on&quot;</span>)</span>
-<span id="cb168-15"><a href="supervise-and-autostart-streaming.html#cb168-15" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, pid}</span>
-<span id="cb168-16"><a href="supervise-and-autostart-streaming.html#cb168-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb168-17"><a href="supervise-and-autostart-streaming.html#cb168-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb168-4"><a href="supervise-and-autostart-streaming.html#cb168-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> get_pid(symbol) <span class="kw">do</span></span>
+<span id="cb168-5"><a href="supervise-and-autostart-streaming.html#cb168-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb168-6"><a href="supervise-and-autostart-streaming.html#cb168-6" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb168-7"><a href="supervise-and-autostart-streaming.html#cb168-7" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;on&quot;</span>)</span>
+<span id="cb168-8"><a href="supervise-and-autostart-streaming.html#cb168-8" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _pid} <span class="op">=</span> start_streamer(symbol)</span>
+<span id="cb168-9"><a href="supervise-and-autostart-streaming.html#cb168-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb168-10"><a href="supervise-and-autostart-streaming.html#cb168-10" aria-hidden="true" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
+<span id="cb168-11"><a href="supervise-and-autostart-streaming.html#cb168-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span>)</span>
+<span id="cb168-12"><a href="supervise-and-autostart-streaming.html#cb168-12" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;on&quot;</span>)</span>
+<span id="cb168-13"><a href="supervise-and-autostart-streaming.html#cb168-13" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, pid}</span>
+<span id="cb168-14"><a href="supervise-and-autostart-streaming.html#cb168-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb168-15"><a href="supervise-and-autostart-streaming.html#cb168-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>To unpack above - we are checking is there a streamer process already running for the passed symbol and based on the result of that check, we either start the new streaming process(and update the symbol’s settings) or just update the symbol’s settings.</p>
 <p>Inside the <code>start_streaming/1</code> function, we are using 3 helper functions that we need to add at the bottom of the file:</p>
 <div class="sourceCode" id="cb169"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb169-1"><a href="supervise-and-autostart-streaming.html#cb169-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
@@ -607,7 +602,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb171-2"><a href="supervise-and-autostart-streaming.html#cb171-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb171-3"><a href="supervise-and-autostart-streaming.html#cb171-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span></span>
 <span id="cb171-4"><a href="supervise-and-autostart-streaming.html#cb171-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb171-5"><a href="supervise-and-autostart-streaming.html#cb171-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defdelegate</span> start_streaming(symbol), <span class="va">to:</span> <span class="cn">DynamicStreamerSupervisor</span></span></code></pre></div>
+<span id="cb171-5"><a href="supervise-and-autostart-streaming.html#cb171-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_streaming(symbol) <span class="kw">do</span></span>
+<span id="cb171-6"><a href="supervise-and-autostart-streaming.html#cb171-6" aria-hidden="true" tabindex="-1"></a>    symbol</span>
+<span id="cb171-7"><a href="supervise-and-autostart-streaming.html#cb171-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">String</span><span class="op">.</span>upcase()</span>
+<span id="cb171-8"><a href="supervise-and-autostart-streaming.html#cb171-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DynamicStreamerSupervisor</span><span class="op">.</span>start_streaming()</span>
+<span id="cb171-9"><a href="supervise-and-autostart-streaming.html#cb171-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>As we don’t need to put any logic inside the <code>Streamer.start_streaming/1</code> function, we can just delegate the call straight to the <code>Streamer.DynamicStreamerSupervisor</code> module.</p>
 <p>The last step will be to append the <code>Streamer.DynamicStreamSupervisor</code> to the <code>children</code> list of the <code>Streamer.Application</code>:</p>
 <div class="sourceCode" id="cb172"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb172-1"><a href="supervise-and-autostart-streaming.html#cb172-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
@@ -628,31 +627,33 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Let’s write a <code>stop_streaming/1</code> logic inside the <code>Streamer.DynamicStreamerSupervisor</code> module(put it above first private function):</p>
 <div class="sourceCode" id="cb173"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb173-1"><a href="supervise-and-autostart-streaming.html#cb173-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
 <span id="cb173-2"><a href="supervise-and-autostart-streaming.html#cb173-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> stop_streaming(symbol) <span class="kw">when</span> is_binary(symbol) <span class="kw">do</span></span>
-<span id="cb173-3"><a href="supervise-and-autostart-streaming.html#cb173-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
-<span id="cb173-4"><a href="supervise-and-autostart-streaming.html#cb173-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb173-5"><a href="supervise-and-autostart-streaming.html#cb173-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> get_pid(symbol) <span class="kw">do</span></span>
-<span id="cb173-6"><a href="supervise-and-autostart-streaming.html#cb173-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb173-7"><a href="supervise-and-autostart-streaming.html#cb173-7" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span>)</span>
-<span id="cb173-8"><a href="supervise-and-autostart-streaming.html#cb173-8" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;off&quot;</span>)</span>
-<span id="cb173-9"><a href="supervise-and-autostart-streaming.html#cb173-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb173-10"><a href="supervise-and-autostart-streaming.html#cb173-10" aria-hidden="true" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
-<span id="cb173-11"><a href="supervise-and-autostart-streaming.html#cb173-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Stopping streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb173-12"><a href="supervise-and-autostart-streaming.html#cb173-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb173-13"><a href="supervise-and-autostart-streaming.html#cb173-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">:ok</span> <span class="op">=</span></span>
-<span id="cb173-14"><a href="supervise-and-autostart-streaming.html#cb173-14" aria-hidden="true" tabindex="-1"></a>          <span class="cn">DynamicSupervisor</span><span class="op">.</span>terminate_child(</span>
-<span id="cb173-15"><a href="supervise-and-autostart-streaming.html#cb173-15" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span>,</span>
-<span id="cb173-16"><a href="supervise-and-autostart-streaming.html#cb173-16" aria-hidden="true" tabindex="-1"></a>            pid</span>
-<span id="cb173-17"><a href="supervise-and-autostart-streaming.html#cb173-17" aria-hidden="true" tabindex="-1"></a>          )</span>
-<span id="cb173-18"><a href="supervise-and-autostart-streaming.html#cb173-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb173-19"><a href="supervise-and-autostart-streaming.html#cb173-19" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;off&quot;</span>)</span>
-<span id="cb173-20"><a href="supervise-and-autostart-streaming.html#cb173-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb173-21"><a href="supervise-and-autostart-streaming.html#cb173-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb173-3"><a href="supervise-and-autostart-streaming.html#cb173-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> get_pid(symbol) <span class="kw">do</span></span>
+<span id="cb173-4"><a href="supervise-and-autostart-streaming.html#cb173-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb173-5"><a href="supervise-and-autostart-streaming.html#cb173-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span>)</span>
+<span id="cb173-6"><a href="supervise-and-autostart-streaming.html#cb173-6" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;off&quot;</span>)</span>
+<span id="cb173-7"><a href="supervise-and-autostart-streaming.html#cb173-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-8"><a href="supervise-and-autostart-streaming.html#cb173-8" aria-hidden="true" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
+<span id="cb173-9"><a href="supervise-and-autostart-streaming.html#cb173-9" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Stopping streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb173-10"><a href="supervise-and-autostart-streaming.html#cb173-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-11"><a href="supervise-and-autostart-streaming.html#cb173-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">:ok</span> <span class="op">=</span></span>
+<span id="cb173-12"><a href="supervise-and-autostart-streaming.html#cb173-12" aria-hidden="true" tabindex="-1"></a>          <span class="cn">DynamicSupervisor</span><span class="op">.</span>terminate_child(</span>
+<span id="cb173-13"><a href="supervise-and-autostart-streaming.html#cb173-13" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Streamer</span><span class="op">.</span><span class="cn">DynamicStreamerSupervisor</span>,</span>
+<span id="cb173-14"><a href="supervise-and-autostart-streaming.html#cb173-14" aria-hidden="true" tabindex="-1"></a>            pid</span>
+<span id="cb173-15"><a href="supervise-and-autostart-streaming.html#cb173-15" aria-hidden="true" tabindex="-1"></a>          )</span>
+<span id="cb173-16"><a href="supervise-and-autostart-streaming.html#cb173-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb173-17"><a href="supervise-and-autostart-streaming.html#cb173-17" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_streaming_status(symbol, <span class="st">&quot;off&quot;</span>)</span>
+<span id="cb173-18"><a href="supervise-and-autostart-streaming.html#cb173-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb173-19"><a href="supervise-and-autostart-streaming.html#cb173-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p><code>stop_streaming/1</code> looks very similar to <code>start_streaming/1</code>, we are checking is there already a <code>Streamer.Binance</code> process registered for that symbol, and we either ask the <code>Streamer.DynamicStreamerSupervisor</code> to terminate it for us (using the <code>DynamicSupervisor.terminate_child/2</code> function + update the status) or just update the status to be <code>off</code>.</p>
 <p>We need to update the <code>Streamer</code> module to provide the interface to stop streaming on a symbol:</p>
 <div class="sourceCode" id="cb174"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb174-1"><a href="supervise-and-autostart-streaming.html#cb174-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer.ex</span></span>
 <span id="cb174-2"><a href="supervise-and-autostart-streaming.html#cb174-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb174-3"><a href="supervise-and-autostart-streaming.html#cb174-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defdelegate</span> stop_streaming(symbol), <span class="va">to:</span> <span class="cn">DynamicStreamerSupervisor</span></span>
-<span id="cb174-4"><a href="supervise-and-autostart-streaming.html#cb174-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<span id="cb174-3"><a href="supervise-and-autostart-streaming.html#cb174-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> stop_streaming(symbol) <span class="kw">do</span></span>
+<span id="cb174-4"><a href="supervise-and-autostart-streaming.html#cb174-4" aria-hidden="true" tabindex="-1"></a>    symbol</span>
+<span id="cb174-5"><a href="supervise-and-autostart-streaming.html#cb174-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">String</span><span class="op">.</span>upcase()</span>
+<span id="cb174-6"><a href="supervise-and-autostart-streaming.html#cb174-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DynamicStreamerSupervisor</span><span class="op">.</span>stop_streaming()</span>
+<span id="cb174-7"><a href="supervise-and-autostart-streaming.html#cb174-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb174-8"><a href="supervise-and-autostart-streaming.html#cb174-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 </div>
 <div id="implement-the-autostart-streaming-functionality" class="section level2" number="11.9">
 <h2><span class="header-section-number">11.9</span> Implement the autostart streaming functionality</h2>

@@ -9,19 +9,28 @@
 
 First, let's look at the current situation:
 
-![Current situation](images/chapter_03_01_current_situation.png)
+<center>
+  <img src="images/chapter_03_01_current_situation.png" width="350">
+</center>
+<br/>
 
 We started with the Binance streamer calling the `send_event/1` function on the `Naive` module. The `Naive` module then calls the trader process using the GenServer's `cast/2` function(via it's registered name).
 
 Next step in the process of extending our trading strategy will be to scale it to run multiple `Naive.Trader` processes in parallel. To be able to do that we will need to remove the option to register the `trader` process with a name(as only one process can be registered under single name).
 
-![Multiple traders can't have the same process names](images/chapter_03_02_current_situation_failed.png)
+<center>
+  <img src="images/chapter_03_02_current_situation_failed.png" width="350">
+</center>
+<br/>
 
 The second issue with that design was the fact that the `Streamer` needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.
 
 To fix those issues we will invert the design and introduce a PubSub mechanism:
 
-![PubSub introduced to invert the dependency and enable multiple parallel traders](images/chapter_03_03_phoenix_pubsub.png)
+<center>
+  <img src="images/chapter_03_03_phoenix_pubsub.png" width="350">
+</center>
+<br/>
 
 The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
 There's no coupling between the `Streamer` and `Naive` app any more.
@@ -29,11 +38,16 @@ There's no coupling between the `Streamer` and `Naive` app any more.
 We can now introduce multiple traders that will subscribe to the topic and
 they will receive messages from the PubSub:
 
-![Multiple traders subscribing to PubSub](images/chapter_03_04_naive_trader_group.png)
+<center>
+  <img src="images/chapter_03_04_naive_trader_group.png" width="800">
+</center>
+<br/>
 
 Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:
 
-![Multiple subscribers including traders and other processes](images/chapter_03_05_other_services.png)
+<center>
+  <img src="images/chapter_03_05_other_services.png" width="800">
+</center>
 
 ## Implementation
 

@@ -66,7 +66,7 @@ We can now modify the `run/1` function to expect specific `type`, `symbol`, `fro
     ...  
 ```
 
-Inside the body of the `run/1` function, the first we will convert `from` and `to` Unix timestamps by using private helper functions:
+Inside the body of the `run/1` function, first, we will convert `from` and `to` Unix timestamps by using private helper functions as well as make sure that the passed symbol is uppercase:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex  
@@ -74,6 +74,8 @@ Inside the body of the `run/1` function, the first we will convert `from` and `t
   def run(%{
         ...
       }) do
+    symbol = String.upcase(symbol)
+
     from_ts =
       "#{from}T00:00:00.000Z"
       |> convert_to_ms()

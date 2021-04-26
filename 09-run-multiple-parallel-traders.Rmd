@@ -25,11 +25,17 @@ All the changes we made in this episode will enable us to fix.
 
 Let's say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:
 
-![Single trader](images/chapter_09_01_single_trader.png)
+<center>
+  <img src="images/chapter_09_01_single_trader.png">
+</center>
+<br/>
 
 We will implement additional trade event callback inside the `Naive.Trader` that will keep checking the price after buy order has been filled. Whenever price drops below the `buy_order`'s `price` by `rebuy_interval` we will notify the `Naive.Leader` to start the new `Naive.Trader` process:
 
-![Multiple traders](images/chapter_09_02_multi_traders.png)
+<center>
+  <img src="images/chapter_09_02_multi_traders.png">
+</center>
+<br/>
 
 The `Naive.Leader` keeps track of how many `Naive.Trader`s are running and needs to honor the number of `chunks` set up in the settings (one chunk == one trader).
 
@@ -187,20 +193,20 @@ Moving on to the body of our callback. As with other ones, we will check can we 
         {:reply, :ok, state}
 
       index ->
-        traders =
-          if settings.chunks == length(traders) do
-            Logger.info("All traders already started for #{symbol}")
-            traders
-          else
-            Logger.info("Starting new trader for #{symbol}")
-            [start_new_trader(fresh_trader_state(settings)) | traders]
-          end
-
         old_trader_data = Enum.at(traders, index)
         new_trader_data = %{old_trader_data | :state => new_trader_state}
-        new_traders = List.replace_at(traders, index, new_trader_data)
+        updated_traders = List.replace_at(traders, index, new_trader_data)
 
-        {:reply, :ok, %{state | :traders => new_traders}}
+        updated_traders =
+          if settings.chunks == length(traders) do
+            Logger.info("All traders already started for #{symbol}")
+            updated_traders
+          else
+            Logger.info("Starting new trader for #{symbol}")
+            [start_new_trader(fresh_trader_state(settings)) | updated_traders]
+          end
+
+        {:reply, :ok, %{state | :traders => updated_traders}}
     end
 ```
 

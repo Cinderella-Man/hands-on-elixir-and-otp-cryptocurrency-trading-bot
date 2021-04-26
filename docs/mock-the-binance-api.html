@@ -24,7 +24,6 @@
 <meta name="author" content="Kamil Skowron" />
 
 
-<meta name="date" content="2021-04-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -362,31 +361,31 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="design-1" class="section level2" number="4.2">
 <h2><span class="header-section-number">4.2</span> Design</h2>
 <p>First, let’s start with the current state:</p>
-<div class="figure">
-<img src="images/chapter_04_01_current_state.png" alt="" />
-<p class="caption">Current state of affairs</p>
-</div>
+<center>
+<img src="images/chapter_04_01_current_state.png" width="350">
+</center>
+<p><br/></p>
 <p>Currently our trader is using the <code>Binance</code> module to place buy/sell
 orders and get exchange info.
 The <code>get_exchange_info/0</code> function doesn’t require a Binance account as it’s a publicly available information so we can call the <code>Binance</code> lib directly from our module.
 The remaining ones(buying/selling) require <code>Binance</code> account and some coins/token inside it’s wallet. We need to mock those inside our module.</p>
 <p>We will update the trader to fetch the Binance’s module name from the config:</p>
-<div class="figure">
-<img src="images/chapter_04_02_proposal.png" alt="" />
-<p class="caption">Binance client dictated by config</p>
-</div>
+<center>
+<img src="images/chapter_04_02_proposal.png" width="800">
+</center>
+<p><br/></p>
 <p>We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
 It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that’s why BinanceMock will also need to broadcast fake events to the “TRADE_EVENTS:#{symbol}” PubSub topic so the trader will pick them up:</p>
-<div class="figure">
-<img src="images/chapter_04_03_proposal_pubsub.png" alt="" />
-<p class="caption">BinanceMock needs to broadcast fake trade events back to the PubSub</p>
-</div>
+<center>
+<img src="images/chapter_04_03_proposal_pubsub.png" width="800">
+</center>
+<p><br/></p>
 <p>When exactly should we broadcast those fake trade events? Well, the best thing
 that we can do is make <code>BinanceMock</code> process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:</p>
-<div class="figure">
-<img src="images/chapter_04_04_explenation.png" alt="" />
-<p class="caption">When to send fake trade events</p>
-</div>
+<center>
+<img src="images/chapter_04_04_explenation.png" width="650">
+</center>
+<p><br/></p>
 <p>Starting from the arrow on the left, our naive strategy will place an order at the current price.
 In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price <em>below</em> the buy order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
 Trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
@@ -726,17 +725,16 @@ and <code>reject/2</code>(later ones will go through whole lists which could bec
 <span id="cb63-14"><a href="mock-the-binance-api.html#cb63-14" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb63-15"><a href="mock-the-binance-api.html#cb63-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Broadcasting trade event to PubSub will be the last function that will finish
-the implementation of <code>BinanceMock</code> for now. It’s important to upcase the symbol as we want to be sure that we will match the topic name which is case-sensitive:</p>
+the implementation of <code>BinanceMock</code> for now. It’s safe to assume that the incoming
+symbol will be uppercased as it comes from the exchange (the symbol is part of the topic name which is case-sensitive):</p>
 <div class="sourceCode" id="cb64"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb64-1"><a href="mock-the-binance-api.html#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb64-2"><a href="mock-the-binance-api.html#cb64-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> broadcast_trade_event(%<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event) <span class="kw">do</span></span>
-<span id="cb64-3"><a href="mock-the-binance-api.html#cb64-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(trade_event<span class="op">.</span>symbol)</span>
-<span id="cb64-4"><a href="mock-the-binance-api.html#cb64-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb64-5"><a href="mock-the-binance-api.html#cb64-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
-<span id="cb64-6"><a href="mock-the-binance-api.html#cb64-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb64-7"><a href="mock-the-binance-api.html#cb64-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb64-8"><a href="mock-the-binance-api.html#cb64-8" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
-<span id="cb64-9"><a href="mock-the-binance-api.html#cb64-9" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb64-10"><a href="mock-the-binance-api.html#cb64-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb64-3"><a href="mock-the-binance-api.html#cb64-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
+<span id="cb64-4"><a href="mock-the-binance-api.html#cb64-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb64-5"><a href="mock-the-binance-api.html#cb64-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb64-6"><a href="mock-the-binance-api.html#cb64-6" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
+<span id="cb64-7"><a href="mock-the-binance-api.html#cb64-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb64-8"><a href="mock-the-binance-api.html#cb64-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>That finishes the <code>BinanceMock</code> implementation. Now, we need to add it to
 the children list of the application so it starts automatically:</p>
 <div class="sourceCode" id="cb65"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb65-1"><a href="mock-the-binance-api.html#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock/application.ex</span></span>
