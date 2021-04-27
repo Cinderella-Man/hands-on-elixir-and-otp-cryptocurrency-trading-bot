@@ -445,7 +445,7 @@ symbol will be uppercased as it comes from the exchange (the symbol is part of t
   defp broadcast_trade_event(%Streamer.Binance.TradeEvent{} = trade_event) do
     Phoenix.PubSub.broadcast(
       Streamer.PubSub,
-      "TRADE_EVENTS:#{symbol}",
+      "TRADE_EVENTS:#{trade_event.symbol}",
       trade_event
     )
   end
