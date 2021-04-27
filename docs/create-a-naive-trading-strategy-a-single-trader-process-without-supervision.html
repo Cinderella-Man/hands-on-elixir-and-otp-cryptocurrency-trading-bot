@@ -17,7 +17,7 @@
 
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Chapter 2 Create a naive trading strategy - a single trader process without supervision | Create a cryptocurrency trading bot in Elixir" />
-  
+  <meta name="twitter:site" content="@kamilskowron" />
   
   <meta name="twitter:image" content="images/cover.png" />
 
@@ -59,6 +59,9 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+</style>
 
 
 <style type="text/css">
@@ -211,14 +214,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<li class="chapter" data-level="6" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
 <ul>
-<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
-<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
-<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
-<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<li class="chapter" data-level="6.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
 <ul>
-<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
@@ -464,9 +467,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="how-trading-strategy-will-work" class="section level2" number="2.3">
 <h2><span class="header-section-number">2.3</span> How trading strategy will work?</h2>
 <p>Our trader process has an internal state that will serve as a indicator where in the trade cycle is it. The following diagram shows 3 possible trader states that trader will progress through from left to right:</p>
-<center>
-<img src="images/chapter_02_01_trader_states.png" width="700">
-</center>
+<p><img src="images/chapter_02_01_trader_states.png" /></p>
 <p>Our trader will be receiving trade events sequentially and take decisions
 based on it’s own state and trade event’s contents.</p>
 <p>We will focus on a trader in 3 different states:

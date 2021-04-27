@@ -17,7 +17,7 @@
 
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
-  
+  <meta name="twitter:site" content="@kamilskowron" />
   
   <meta name="twitter:image" content="images/cover.png" />
 
@@ -59,6 +59,9 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+</style>
 
 
 <style type="text/css">
@@ -211,14 +214,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> # Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<li class="chapter" data-level="6" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
 <ul>
-<li class="chapter" data-level="6.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
-<li class="chapter" data-level="6.2" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
-<li class="chapter" data-level="6.3" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
-<li class="chapter" data-level="6.4" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<li class="chapter" data-level="6.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
 <ul>
-<li class="chapter" data-level="6.4.1" data-path="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="chapter-6-introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
@@ -367,15 +370,9 @@ starts all of the traders at the same moment:</p>
 <span id="cb112-6"><a href="run-multiple-traders-in-parallel.html#cb112-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>All the changes we made in this episode will enable us to fix.</p>
 <p>Let’s say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
-<center>
-<img src="images/chapter_09_01_single_trader.png">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_09_01_single_trader.png" /></p>
 <p>We will implement additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after buy order has been filled. Whenever price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
-<center>
-<img src="images/chapter_09_02_multi_traders.png">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_09_02_multi_traders.png" /></p>
 <p>The <code>Naive.Leader</code> keeps track of how many <code>Naive.Trader</code>s are running and needs to honor the number of <code>chunks</code> set up in the settings (one chunk == one trader).</p>
 <p>To stop the <code>Naive.Trader</code>s from continuously notifying about a drop in the price we will also introduce a boolean flag that will track has the <code>Naive.Leader</code> been already notified.</p>
 </div>
