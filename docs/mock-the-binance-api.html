@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir</title>
-  <meta name="description" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
+  <title> Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content=" Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:title" content=" Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="images/cover.png" />
@@ -16,8 +16,8 @@
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
-  
+  <meta name="twitter:title" content=" Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="twitter:site" content="@kamilskowron" />
   
   <meta name="twitter:image" content="images/cover.png" />
 
@@ -59,6 +59,9 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+</style>
 
 
 <style type="text/css">
@@ -345,7 +348,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
             <section class="normal" id="section-">
 <div id="mock-the-binance-api" class="section level1" number="4">
-<h1><span class="header-section-number">Chapter 4</span> Mock the Binance API</h1>
+<h1><span class="header-section-number"> Chapter 4</span> Mock the Binance API</h1>
 <div id="objectives-3" class="section level2" number="4.1">
 <h2><span class="header-section-number">4.1</span> Objectives</h2>
 <ul>
@@ -361,31 +364,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="design-1" class="section level2" number="4.2">
 <h2><span class="header-section-number">4.2</span> Design</h2>
 <p>First, let’s start with the current state:</p>
-<center>
-<img src="images/chapter_04_01_current_state.png" width="350">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_04_01_current_state.png" /></p>
 <p>Currently our trader is using the <code>Binance</code> module to place buy/sell
 orders and get exchange info.
 The <code>get_exchange_info/0</code> function doesn’t require a Binance account as it’s a publicly available information so we can call the <code>Binance</code> lib directly from our module.
 The remaining ones(buying/selling) require <code>Binance</code> account and some coins/token inside it’s wallet. We need to mock those inside our module.</p>
 <p>We will update the trader to fetch the Binance’s module name from the config:</p>
-<center>
-<img src="images/chapter_04_02_proposal.png" width="800">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_04_02_proposal.png" /></p>
 <p>We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
 It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that’s why BinanceMock will also need to broadcast fake events to the “TRADE_EVENTS:#{symbol}” PubSub topic so the trader will pick them up:</p>
-<center>
-<img src="images/chapter_04_03_proposal_pubsub.png" width="800">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_04_03_proposal_pubsub.png" /></p>
 <p>When exactly should we broadcast those fake trade events? Well, the best thing
 that we can do is make <code>BinanceMock</code> process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:</p>
-<center>
-<img src="images/chapter_04_04_explenation.png" width="650">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_04_04_explenation.png" /></p>
 <p>Starting from the arrow on the left, our naive strategy will place an order at the current price.
 In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price <em>below</em> the buy order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
 Trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.

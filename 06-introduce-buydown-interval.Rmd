@@ -9,10 +9,7 @@
 
 ## Why we need to buy below the current price? Feature overview
 
-<center>
-  <img src="images/chapter_06_01_current_buy_price.png">
-</center>
-<br/>
+![](images/chapter_06_01_current_buy_price.png)
 
 The `Naive.Trader` process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when buy order gets filled, it places sell order which later also gets filled.
 
@@ -22,10 +19,7 @@ We can see that there's a problem here as we just paid a fee twice(once for sell
 
 The solution is to be more clever about our buy order's price. The idea is simple, instead of placing a new buy order at the current price(price from the last TradeEvent), we will introduce a `buy_down_interval`:
 
-<center>
-  <img src="images/chapter_06_02_rebuy_expl.png">
-</center>
-<br/>
+![](images/chapter_06_02_rebuy_expl.png)
 
 So every new `Naive.Trader` process as it receives first trade event, trader will take it's price and will calculate an decreased price by using the `buy_down_interval` value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.
 

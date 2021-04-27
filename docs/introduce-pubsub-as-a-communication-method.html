@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir</title>
-  <meta name="description" content="Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
+  <title> Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content=" Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:title" content=" Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="images/cover.png" />
@@ -16,8 +16,8 @@
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
-  
+  <meta name="twitter:title" content=" Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="twitter:site" content="@kamilskowron" />
   
   <meta name="twitter:image" content="images/cover.png" />
 
@@ -59,6 +59,9 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+</style>
 
 
 <style type="text/css">
@@ -345,7 +348,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
             <section class="normal" id="section-">
 <div id="introduce-pubsub-as-a-communication-method" class="section level1" number="3">
-<h1><span class="header-section-number">Chapter 3</span> Introduce PubSub as a communication method</h1>
+<h1><span class="header-section-number"> Chapter 3</span> Introduce PubSub as a communication method</h1>
 <div id="objectives-2" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Objectives</h2>
 <ul>
@@ -356,34 +359,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="design" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Design</h2>
 <p>First, let’s look at the current situation:</p>
-<center>
-<img src="images/chapter_03_01_current_situation.png" width="350">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_03_01_current_situation.png" /></p>
 <p>We started with the Binance streamer calling the <code>send_event/1</code> function on the <code>Naive</code> module. The <code>Naive</code> module then calls the trader process using the GenServer’s <code>cast/2</code> function(via it’s registered name).</p>
 <p>Next step in the process of extending our trading strategy will be to scale it to run multiple <code>Naive.Trader</code> processes in parallel. To be able to do that we will need to remove the option to register the <code>trader</code> process with a name(as only one process can be registered under single name).</p>
-<center>
-<img src="images/chapter_03_02_current_situation_failed.png" width="350">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_03_02_current_situation_failed.png" /></p>
 <p>The second issue with that design was the fact that the <code>Streamer</code> needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.</p>
 <p>To fix those issues we will invert the design and introduce a PubSub mechanism:</p>
-<center>
-<img src="images/chapter_03_03_phoenix_pubsub.png" width="350">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_03_03_phoenix_pubsub.png" /></p>
 <p>The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
 There’s no coupling between the <code>Streamer</code> and <code>Naive</code> app any more.</p>
 <p>We can now introduce multiple traders that will subscribe to the topic and
 they will receive messages from the PubSub:</p>
-<center>
-<img src="images/chapter_03_04_naive_trader_group.png" width="800">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_03_04_naive_trader_group.png" /></p>
 <p>Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:</p>
-<center>
-<img src="images/chapter_03_05_other_services.png" width="800">
-</center>
+<p><img src="images/chapter_03_05_other_services.png" /></p>
 </div>
 <div id="implementation" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Implementation</h2>

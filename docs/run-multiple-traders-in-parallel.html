@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir</title>
-  <meta name="description" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
+  <title> Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir</title>
+  <meta name="description" content=" Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
+  <meta property="og:title" content=" Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="images/cover.png" />
@@ -16,8 +16,8 @@
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
-  
+  <meta name="twitter:title" content=" Chapter 9 Run multiple traders in parallel | Create a cryptocurrency trading bot in Elixir" />
+  <meta name="twitter:site" content="@kamilskowron" />
   
   <meta name="twitter:image" content="images/cover.png" />
 
@@ -59,6 +59,9 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+</style>
 
 
 <style type="text/css">
@@ -345,7 +348,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
             <section class="normal" id="section-">
 <div id="run-multiple-traders-in-parallel" class="section level1" number="9">
-<h1><span class="header-section-number">Chapter 9</span> Run multiple traders in parallel</h1>
+<h1><span class="header-section-number"> Chapter 9</span> Run multiple traders in parallel</h1>
 <div id="objectives-8" class="section level2" number="9.1">
 <h2><span class="header-section-number">9.1</span> Objectives</h2>
 <ul>
@@ -367,15 +370,9 @@ starts all of the traders at the same moment:</p>
 <span id="cb112-6"><a href="run-multiple-traders-in-parallel.html#cb112-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>All the changes we made in this episode will enable us to fix.</p>
 <p>Let’s say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
-<center>
-<img src="images/chapter_09_01_single_trader.png">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_09_01_single_trader.png" /></p>
 <p>We will implement additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after buy order has been filled. Whenever price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
-<center>
-<img src="images/chapter_09_02_multi_traders.png">
-</center>
-<p><br/></p>
+<p><img src="images/chapter_09_02_multi_traders.png" /></p>
 <p>The <code>Naive.Leader</code> keeps track of how many <code>Naive.Trader</code>s are running and needs to honor the number of <code>chunks</code> set up in the settings (one chunk == one trader).</p>
 <p>To stop the <code>Naive.Trader</code>s from continuously notifying about a drop in the price we will also introduce a boolean flag that will track has the <code>Naive.Leader</code> been already notified.</p>
 </div>

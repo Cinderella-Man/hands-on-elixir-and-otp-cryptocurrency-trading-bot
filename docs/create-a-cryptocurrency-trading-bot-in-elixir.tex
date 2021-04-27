@@ -3,7 +3,7 @@
 \PassOptionsToPackage{hyphens}{url}
 %
 \documentclass[
-]{book}
+  oneside]{book}
 \usepackage{amsmath,amssymb}
 \usepackage{lmodern}
 \usepackage{ifxetex,ifluatex}
@@ -41,6 +41,7 @@
   hidelinks,
   pdfcreator={LaTeX via pandoc}}
 \urlstyle{same} % disable monospaced font for URLs
+\usepackage[left=3cm, right=3cm, top=2.5cm, bottom=2.5cm]{geometry}
 \usepackage{color}
 \usepackage{fancyvrb}
 \newcommand{\VerbBar}{|}
@@ -108,14 +109,7 @@
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{5}
-\usepackage{booktabs}
-\usepackage{amsthm}
-\makeatletter
-\def\thm@space@setup{%
-  \thm@preskip=8pt plus 2pt minus 4pt
-  \thm@postskip=\thm@preskip
-}
-\makeatother
+% sample comment
 \ifluatex
   \usepackage{selnolig}  % disable illegal ligatures
 \fi
@@ -148,6 +142,8 @@ This book is based on \href{https://www.youtube.com/watch?v=wVYIx7M6o28\&list=PL
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International \href{https://creativecommons.org/licenses/by-nc-sa/4.0/}{CC BY-NC-SA 4.0}.
 
 \textbf{To get notified about updates} to this book just ``watch'' the \href{https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir}{source code's repository} and don't forget to leave a ⭐:
+
+\includegraphics{images/watch_book_howto.png}
 
 \hypertarget{limit-of-liabilitydisclaimer-of-warranty}{%
 \section*{Limit of Liability/Disclaimer of Warranty}\label{limit-of-liabilitydisclaimer-of-warranty}}
@@ -967,6 +963,8 @@ We are using \texttt{get\_exchange\_info/0} to fetch list of symbols, that we wi
 
 Our trader process has an internal state that will serve as a indicator where in the trade cycle is it. The following diagram shows 3 possible trader states that trader will progress through from left to right:
 
+\includegraphics{images/chapter_02_01_trader_states.png}
+
 Our trader will be receiving trade events sequentially and take decisions
 based on it's own state and trade event's contents.
 
@@ -1288,13 +1286,19 @@ Source code for this chapter can be found at \href{https://github.com/frathon/cr
 
 First, let's look at the current situation:
 
+\includegraphics{images/chapter_03_01_current_situation.png}
+
 We started with the Binance streamer calling the \texttt{send\_event/1} function on the \texttt{Naive} module. The \texttt{Naive} module then calls the trader process using the GenServer's \texttt{cast/2} function(via it's registered name).
 
 Next step in the process of extending our trading strategy will be to scale it to run multiple \texttt{Naive.Trader} processes in parallel. To be able to do that we will need to remove the option to register the \texttt{trader} process with a name(as only one process can be registered under single name).
 
+\includegraphics{images/chapter_03_02_current_situation_failed.png}
+
 The second issue with that design was the fact that the \texttt{Streamer} needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.
 
 To fix those issues we will invert the design and introduce a PubSub mechanism:
+
+\includegraphics{images/chapter_03_03_phoenix_pubsub.png}
 
 The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
 There's no coupling between the \texttt{Streamer} and \texttt{Naive} app any more.
@@ -1302,7 +1306,11 @@ There's no coupling between the \texttt{Streamer} and \texttt{Naive} app any mor
 We can now introduce multiple traders that will subscribe to the topic and
 they will receive messages from the PubSub:
 
+\includegraphics{images/chapter_03_04_naive_trader_group.png}
+
 Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:
+
+\includegraphics{images/chapter_03_05_other_services.png}
 
 \hypertarget{implementation}{%
 \section{Implementation}\label{implementation}}
@@ -1438,6 +1446,8 @@ Source code for this chapter can be found at \href{https://github.com/frathon/cr
 
 First, let's start with the current state:
 
+\includegraphics{images/chapter_04_01_current_state.png}
+
 Currently our trader is using the \texttt{Binance} module to place buy/sell
 orders and get exchange info.
 The \texttt{get\_exchange\_info/0} function doesn't require a Binance account as it's a publicly available information so we can call the \texttt{Binance} lib directly from our module.
@@ -1445,11 +1455,17 @@ The remaining ones(buying/selling) require \texttt{Binance} account and some coi
 
 We will update the trader to fetch the Binance's module name from the config:
 
+\includegraphics{images/chapter_04_02_proposal.png}
+
 We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
 It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that's why BinanceMock will also need to broadcast fake events to the ``TRADE\_EVENTS:\#\{symbol\}'' PubSub topic so the trader will pick them up:
 
+\includegraphics{images/chapter_04_03_proposal_pubsub.png}
+
 When exactly should we broadcast those fake trade events? Well, the best thing
 that we can do is make \texttt{BinanceMock} process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:
+
+\includegraphics{images/chapter_04_04_explenation.png}
 
 Starting from the arrow on the left, our naive strategy will place an order at the current price.
 In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price \emph{below} the buy order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
@@ -2046,15 +2062,21 @@ Source code for this chapter can be found at \href{https://github.com/frathon/cr
 
 In the second chapter we implemented a basic trader which goes through the trading cycle. Inside iEx session we were starting the \texttt{Naive.Trader} process using \texttt{start\_link/1} function:
 
+\includegraphics{images/chapter_05_01_current_state.png}
+
 \texttt{GenServer.start\_link/3} creates a link between IEx's process and new \texttt{Naive.Trader} process. Whenever trader terminates(either finishes the trading cycle or there was an error), new one won't get started as there's no supervision at all.
 
 We can do much better than that with a a little bit of help from Elixir and OTP.
 
 Let's introduce a supervisor above our trader process. It will start a new trader process whenever previous one finished/crashed:
 
+\includegraphics{images/chapter_05_02_supervise_the_trader.png}
+
 This looks much better but there are few problems with it. So, when the trader will start to place orders it will be in \emph{some} state(it will hold buy/sell orders) that the supervisor won't be aware of. In case of trader crashing, the supervisor will start a new trader \emph{without} any knowledge of possibly placed orders or any other information from the state(it will be started with a ``fresh'' state).
 
 To fix that we need to keep a copy of the trader's state outside of the trader process - that's why we will introduce a new server called \texttt{Naive.Leader} that will keep track of traders' data:
+
+\includegraphics{images/chapter_05_03_leader_added.png}
 
 The \texttt{Naive.Leader} will become the interface to start new \emph{traders}. It will call the \texttt{start\_child/1} function of the Supervisor, then consequently \texttt{DynamicTraderSupervisor} will call the \texttt{start\_link/1} function of our \texttt{Naive.Trader} module.
 
@@ -2066,7 +2088,11 @@ This setup will also allow us to start and supervise multiple traders for a sing
 
 For each symbol that we will be trading on we need a above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an \texttt{Naive.SymbolSupervisor} that will start both \texttt{Naive.Leader} and `Naive.Dynamic:
 
+\includegraphics{images/chapter_05_04_symbol_sup.png}
+
 We will need multiple symbol supervisors, one for each symbol that we would like to trade on. As with traders, they will be dynamically started on demand, this should give us a hint that we need another dynamic supervisor that will supervise symbol supervisors and will be direct child of our \texttt{Naive.Supervisor}(\texttt{Naive.Application} module):
+
+\includegraphics{images/chapter_05_05_full.png}
 
 You could ask yourself why we don't need some additional server to track which symbols are traded at the moment (in the same way as \texttt{Naive.Leader} tracks \texttt{Naive.Trader}s). The answer is that we don't need to track them as we register all \texttt{Naive.SymbolSupervisor}s with a name containing symbol that they trade on. This way we will always be able to refer to them by registered name instead of pids/refs.
 
@@ -2606,6 +2632,8 @@ Source code for this chapter can be found at \href{https://github.com/frathon/cr
 \hypertarget{why-we-need-to-buy-below-the-current-price-feature-overview}{%
 \section{Why we need to buy below the current price? Feature overview}\label{why-we-need-to-buy-below-the-current-price-feature-overview}}
 
+\includegraphics{images/chapter_06_01_current_buy_price.png}
+
 The \texttt{Naive.Trader} process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when buy order gets filled, it places sell order which later also gets filled.
 
 The Trader A exits and a new trader B is started which again immediately places a buy order \emph{at the same price} as the previous trader just sold. When this gets filled sell order get's placed and loop continues on and on.
@@ -2613,6 +2641,8 @@ The Trader A exits and a new trader B is started which again immediately places 
 We can see that there's a problem here as we just paid a fee twice(once for selling by the Trader A and once for buying by the Trader B) without really gaining anything(the Trader A could just hold the currency and could simply cash in on double profit in this specific situation).
 
 The solution is to be more clever about our buy order's price. The idea is simple, instead of placing a new buy order at the current price(price from the last TradeEvent), we will introduce a \texttt{buy\_down\_interval}:
+
+\includegraphics{images/chapter_06_02_rebuy_expl.png}
 
 So every new \texttt{Naive.Trader} process as it receives first trade event, trader will take it's price and will calculate an decreased price by using the \texttt{buy\_down\_interval} value(for example 0.005 would be 0.5\%) and place a buy order at that calculated price.
 
@@ -2997,13 +3027,19 @@ Source code for this chapter can be found at \href{https://github.com/frathon/cr
 
 Currently, \texttt{Naive.Trader} process is placing a buy order and it's assuming that it will be filled by a \emph{single} opposite sell order(we are pattern matching on quantity to confirm that):
 
+\includegraphics{images/chapter_08_01_single_transaction.png}
+
 Here we can see our buy order for 1000 units(on the left) and other trader's sell order(on the right) for 1000 units. This(order fully filled in single transaction) is a case most of the time but it's not ALWAYS the case.
 
 Sometimes our order will be filled by two or more transactions:
 
+\includegraphics{images/chapter_08_02_multiple_transactions_per_order.png}
+
 The easiest and the safest way to check has this event filled our order fully is to fetch our order again from Binance at the moment when trade event filling our order arrives.
 
 Problem with this approach is that sometimes we will run into a race condition:
+
+\includegraphics{images/chapter_08_03_race_condition_timeline.png}
 
 From the left, first, we are sending a buy order for quantity 1000 to the Binance. It hangs for a while until it gets filled by 2 transactions that happened very quickly. Quickly enough for us to receive both messages almost in the same moment.
 
@@ -3252,7 +3288,11 @@ All the changes we made in this episode will enable us to fix.
 
 Let's say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:
 
+\includegraphics{images/chapter_09_01_single_trader.png}
+
 We will implement additional trade event callback inside the \texttt{Naive.Trader} that will keep checking the price after buy order has been filled. Whenever price drops below the \texttt{buy\_order}'s \texttt{price} by \texttt{rebuy\_interval} we will notify the \texttt{Naive.Leader} to start the new \texttt{Naive.Trader} process:
+
+\includegraphics{images/chapter_09_02_multi_traders.png}
 
 The \texttt{Naive.Leader} keeps track of how many \texttt{Naive.Trader}s are running and needs to honor the number of \texttt{chunks} set up in the settings (one chunk == one trader).
 

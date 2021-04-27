@@ -25,17 +25,11 @@ All the changes we made in this episode will enable us to fix.
 
 Let's say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:
 
-<center>
-  <img src="images/chapter_09_01_single_trader.png">
-</center>
-<br/>
+![](images/chapter_09_01_single_trader.png)
 
 We will implement additional trade event callback inside the `Naive.Trader` that will keep checking the price after buy order has been filled. Whenever price drops below the `buy_order`'s `price` by `rebuy_interval` we will notify the `Naive.Leader` to start the new `Naive.Trader` process:
 
-<center>
-  <img src="images/chapter_09_02_multi_traders.png">
-</center>
-<br/>
+![](images/chapter_09_02_multi_traders.png)
 
 The `Naive.Leader` keeps track of how many `Naive.Trader`s are running and needs to honor the number of `chunks` set up in the settings (one chunk == one trader).
 

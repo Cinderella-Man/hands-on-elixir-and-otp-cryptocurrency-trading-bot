@@ -11,28 +11,19 @@
 
 Currently, `Naive.Trader` process is placing a buy order and it's assuming that it will be filled by a *single* opposite sell order(we are pattern matching on quantity to confirm that):
 
-<center>
-  <img src="images/chapter_08_01_single_transaction.png">
-</center>
-<br/>
+![](images/chapter_08_01_single_transaction.png)
 
 Here we can see our buy order for 1000 units(on the left) and other trader's sell order(on the right) for 1000 units. This(order fully filled in single transaction) is a case most of the time but it's not ALWAYS the case.
 
 Sometimes our order will be filled by two or more transactions:
 
-<center>
-  <img src="images/chapter_08_02_multiple_transactions_per_order.png">
-</center>
-<br/>
+![](images/chapter_08_02_multiple_transactions_per_order.png)
 
 The easiest and the safest way to check has this event filled our order fully is to fetch our order again from Binance at the moment when trade event filling our order arrives.
 
 Problem with this approach is that sometimes we will run into a race condition:
 
-<center>
-  <img src="images/chapter_08_03_race_condition_timeline.png">
-</center>
-<br/>
+![](images/chapter_08_03_race_condition_timeline.png)
 
 From the left, first, we are sending a buy order for quantity 1000 to the Binance. It hangs for a while until it gets filled by 2 transactions that happened very quickly. Quickly enough for us to receive both messages almost in the same moment.
 
