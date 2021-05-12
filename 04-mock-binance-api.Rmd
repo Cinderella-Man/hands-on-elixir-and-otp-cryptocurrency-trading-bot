@@ -97,7 +97,7 @@ As it was mentioned before, to retrieve exchange info we can just call Binance's
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
-  def get_exchange_info() do
+  def get_exchange_info do
     Binance.get_exchange_info()
   end
 ```
@@ -386,7 +386,7 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
 
     (filled_buy_orders ++ filled_sell_orders)
     |> Enum.map(&convert_order_to_event(&1, trade_event.event_time))
-    |> Enum.map(&broadcast_trade_event/1)
+    |> Enum.each(&broadcast_trade_event/1)
 
     remaining_buy_orders =
       order_book.buy_side
@@ -472,7 +472,7 @@ We can move on to the `Naive.Trader` module where we will add an attribute which
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
-  @binance_client Application.get_env(:naive, :binance_client)
+  @binance_client Application.compile_env(:naive, :binance_client)
 ```
 
 We need to replace all direct calls to the `Binance` module for calls to the `@binance_client` attribute inside the `Naive.Trader`:

@@ -419,13 +419,13 @@ Let's start by creating the `autostart_streaming/0` functionality inside the `St
   # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
 
   # add below after the `init/1` function
-  def autostart_streaming() do
+  def autostart_streaming do
     fetch_symbols_to_stream()
     |> Enum.map(&start_streaming/1)
   end
 
   # and this at the end of the module
-  defp fetch_symbols_to_stream() do
+  defp fetch_symbols_to_stream do
     Repo.all(
       from(s in Settings,
         where: s.status == "on",

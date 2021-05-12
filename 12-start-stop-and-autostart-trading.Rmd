@@ -210,7 +210,7 @@ Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSym
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
   # add the below function after the `init/1` function
-  def autostart_trading() do
+  def autostart_trading do
     fetch_symbols_to_trade()
     |> Enum.map(&start_trading/1)
   end
@@ -218,7 +218,7 @@ Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSym
   ...
 
   # and this helper at the end of the module
-  defp fetch_symbols_to_trade() do
+  defp fetch_symbols_to_trade do
     Repo.all(
       from(s in Settings,
         where: s.status == "on",

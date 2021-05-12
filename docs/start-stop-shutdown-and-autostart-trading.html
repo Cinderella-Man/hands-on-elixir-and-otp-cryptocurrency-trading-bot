@@ -525,7 +525,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb192"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb192-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/dynamic_symbol_supervisor.ex</span></span>
 <span id="cb192-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb192-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add the below function after the `init/1` function</span></span>
-<span id="cb192-4"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> autostart_trading() <span class="kw">do</span></span>
+<span id="cb192-4"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> autostart_trading <span class="kw">do</span></span>
 <span id="cb192-5"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-5" aria-hidden="true" tabindex="-1"></a>    fetch_symbols_to_trade()</span>
 <span id="cb192-6"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>start_trading<span class="op">/</span><span class="dv">1</span>)</span>
 <span id="cb192-7"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
@@ -533,7 +533,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb192-9"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb192-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb192-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and this helper at the end of the module</span></span>
-<span id="cb192-12"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbols_to_trade() <span class="kw">do</span></span>
+<span id="cb192-12"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbols_to_trade <span class="kw">do</span></span>
 <span id="cb192-13"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-13" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>all(</span>
 <span id="cb192-14"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-14" aria-hidden="true" tabindex="-1"></a>      from(s <span class="kw">in</span> <span class="cn">Settings</span>,</span>
 <span id="cb192-15"><a href="start-stop-shutdown-and-autostart-trading.html#cb192-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">where:</span> s<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;on&quot;</span>,</span>

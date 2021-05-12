@@ -51,7 +51,7 @@ The first step in our refactoring process will be to move(cut) all of the functi
 # /apps/core/lib/core/service_supervisor.ex
 defmodule Core.ServiceSupervisor do
 
-  def autostart_trading() do
+  def autostart_trading do
     ...
   end
 
@@ -76,7 +76,7 @@ defmodule Core.ServiceSupervisor do
     ...
   end
 
-  defp fetch_symbols_to_trade() do
+  defp fetch_symbols_to_trade do
     ...
   end
 end
@@ -89,7 +89,7 @@ Starting with `autostart_trading/0` we can rename it to `autostart_workers/0`:
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
   ...
-  def autostart_workers() do     # <= updated function name
+  def autostart_workers do       # <= updated function name
     fetch_symbols_to_start()     # <= updated function name
     |> Enum.map(&start_worker/1) # <= updated function name
   end
@@ -125,7 +125,7 @@ The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
 
   ...
 
-  defp fetch_symbols_to_start() do # <= updated name
+  defp fetch_symbols_to_start do # <= updated name
     ...
   end  
 ```
@@ -187,7 +187,7 @@ Let's reimplement more generic versions of those functions as just simple calls 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
-  def autostart_workers() do
+  def autostart_workers do
     Core.ServiceSupervisor.autostart_workers()
   end
 
@@ -312,7 +312,7 @@ Moving on to full generalization of the `Core.ServiceSupervisor` module. We will
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
-  def fetch_symbols_to_start() do
+  def fetch_symbols_to_start do
     Repo.all(
       from(s in Settings,
         where: s.status == "on",
@@ -355,7 +355,7 @@ Going even further down the line, `autostart_workers/0` is referenced by the `au
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
-  def autostart_workers() do
+  def autostart_workers do
     Core.ServiceSupervisor.autostart_workers(
       Naive.Repo,           # <= new value passed
       Naive.Schema.Settings # <= new value passed
@@ -556,7 +556,7 @@ That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` modul
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
-  def autostart_workers() do
+  def autostart_workers do
     Core.ServiceSupervisor.autostart_workers(
       Naive.Repo,
       Naive.Schema.Settings,
@@ -675,7 +675,7 @@ At this moment we can use those *dynamic* values to generate code that will be s
 
 ```{r, engine = 'elixir', eval = FALSE}
       # sample moved code from the `Naive.DynamicSymbolSupervisor` module
-      def autostart_workers() do
+      def autostart_workers do
           Core.ServiceSupervisor.autostart_workers(
           Naive.Repo,
           Naive.Schema.Settings,
@@ -689,7 +689,7 @@ to:
 
 ```{r, engine = 'elixir', eval = FALSE}
       # updated code that will become part of the `__using__/1` macro
-      def autostart_workers() do
+      def autostart_workers do
         Core.ServiceSupervisor.autostart_workers(
           unquote(repo),
           unquote(schema),
@@ -703,7 +703,7 @@ in the end generated code that will be "pasted" to the `Naive.DynamicSymbolSuper
 
 ```{r, engine = 'elixir', eval = FALSE}
     # compiled code attached to the `Naive.DynamicSymbolSupervisor` module
-    def autostart_workers() do
+    def autostart_workers do
       Core.ServiceSupervisor.autostart_workers(
         Naive.Repo,
         Naive.Schema.Settings,
@@ -729,7 +729,7 @@ We can apply that to all of the passed variables inside the `autostart_workers/0
     quote location: :keep do
       use DynamicSupervisor
 
-      def autostart_workers() do
+      def autostart_workers do
         Core.ServiceSupervisor.autostart_workers(
           unquote(repo),
           unquote(schema),
@@ -748,7 +748,7 @@ You can think about the above macro that it will substitute the `unquote(..)` pa
   # will be "pasted" to the `Naive.DynamicSymbolSupervisor` module
   use DynamicSupervisor
 
-  def autostart_workers() do
+  def autostart_workers do
     Core.ServiceSupervisor.autostart_workers(
       Naive.Repo,
       Naive.Schema.Settings,
