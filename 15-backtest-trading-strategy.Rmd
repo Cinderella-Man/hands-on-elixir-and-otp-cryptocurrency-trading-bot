@@ -151,6 +151,16 @@ Finally, the above code uses the `publishTradeEvent/1` helper function which con
   end
 ```
 
+We also need to remember about keeping the interface tidy so we will add `publish_data` to the `DataWarehouse` module:
+
+```{r, engine = 'elixir', eval = FALSE}
+...
+  def publish_data(args) do
+    DataWarehouse.Publisher.start_link(args)
+  end
+...
+```
+
 This finishes our implementation - we should be able to stream trade events from the database to the PubSub using the above Task which we will do below.
 
 ## Test the backtesting
@@ -198,7 +208,7 @@ iex(2)> Naive.start_trading("XRPUSDT")
 19:18:16.332 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.419.0>}
 19:18:18.327 [info]  Initializing new trader(1615288698325) for XRPUSDT
-iex(3)> DataWarehouse.Publisher.start_link(%{type: :trade_events,  symbol: "XRPUSDT",  from: "2019-06-02",  to: "2019-06-04",  interval: 5}) 
+iex(3)> DataWarehouse.publish_data(%{type: :trade_events,  symbol: "XRPUSDT",  from: "2019-06-02",  to: "2019-06-04",  interval: 5})
 {:ok, #PID<0.428.0>}
 19:19:07.532 [info]  Publisher broadcasted 0 events
 19:19:07.534 [info]  The trader(1615288698325) is placing a BUY order for XRPUSDT @ 0.44391, quantity: 450.5
