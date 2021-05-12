@@ -676,13 +676,13 @@ At init both will start, the <code>Streamer.DynamicStreamerSupervisor</code> fir
 <div class="sourceCode" id="cb175"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb175-1"><a href="supervise-and-autostart-streaming.html#cb175-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
 <span id="cb175-2"><a href="supervise-and-autostart-streaming.html#cb175-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb175-3"><a href="supervise-and-autostart-streaming.html#cb175-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below after the `init/1` function</span></span>
-<span id="cb175-4"><a href="supervise-and-autostart-streaming.html#cb175-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> autostart_streaming() <span class="kw">do</span></span>
+<span id="cb175-4"><a href="supervise-and-autostart-streaming.html#cb175-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> autostart_streaming <span class="kw">do</span></span>
 <span id="cb175-5"><a href="supervise-and-autostart-streaming.html#cb175-5" aria-hidden="true" tabindex="-1"></a>    fetch_symbols_to_stream()</span>
 <span id="cb175-6"><a href="supervise-and-autostart-streaming.html#cb175-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>start_streaming<span class="op">/</span><span class="dv">1</span>)</span>
 <span id="cb175-7"><a href="supervise-and-autostart-streaming.html#cb175-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb175-8"><a href="supervise-and-autostart-streaming.html#cb175-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb175-9"><a href="supervise-and-autostart-streaming.html#cb175-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and this at the end of the module</span></span>
-<span id="cb175-10"><a href="supervise-and-autostart-streaming.html#cb175-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbols_to_stream() <span class="kw">do</span></span>
+<span id="cb175-10"><a href="supervise-and-autostart-streaming.html#cb175-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbols_to_stream <span class="kw">do</span></span>
 <span id="cb175-11"><a href="supervise-and-autostart-streaming.html#cb175-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>all(</span>
 <span id="cb175-12"><a href="supervise-and-autostart-streaming.html#cb175-12" aria-hidden="true" tabindex="-1"></a>      from(s <span class="kw">in</span> <span class="cn">Settings</span>,</span>
 <span id="cb175-13"><a href="supervise-and-autostart-streaming.html#cb175-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">where:</span> s<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;on&quot;</span>,</span>

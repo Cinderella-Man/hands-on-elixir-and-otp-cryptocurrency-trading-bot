@@ -426,7 +426,7 @@ Similarly to the buy order, BinanceMock will keep on waiting until a trade event
 <h2><span class="header-section-number">4.4</span> Implement getting exchange info</h2>
 <p>As it was mentioned before, to retrieve exchange info we can just call Binance’s function directly as it’s a publicly avaiable information:</p>
 <div class="sourceCode" id="cb51"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb51-1"><a href="mock-the-binance-api.html#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
-<span id="cb51-2"><a href="mock-the-binance-api.html#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_exchange_info() <span class="kw">do</span></span>
+<span id="cb51-2"><a href="mock-the-binance-api.html#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_exchange_info <span class="kw">do</span></span>
 <span id="cb51-3"><a href="mock-the-binance-api.html#cb51-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Binance</span><span class="op">.</span>get_exchange_info()</span>
 <span id="cb51-4"><a href="mock-the-binance-api.html#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 </div>
@@ -672,7 +672,7 @@ and <code>reject/2</code>(later ones will go through whole lists which could bec
 <span id="cb62-22"><a href="mock-the-binance-api.html#cb62-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-23"><a href="mock-the-binance-api.html#cb62-23" aria-hidden="true" tabindex="-1"></a>    (filled_buy_orders <span class="op">++</span> filled_sell_orders)</span>
 <span id="cb62-24"><a href="mock-the-binance-api.html#cb62-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>convert_order_to_event(<span class="op">&amp;</span><span class="dv">1</span>, trade_event<span class="op">.</span>event_time))</span>
-<span id="cb62-25"><a href="mock-the-binance-api.html#cb62-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>broadcast_trade_event<span class="op">/</span><span class="dv">1</span>)</span>
+<span id="cb62-25"><a href="mock-the-binance-api.html#cb62-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>each(<span class="op">&amp;</span>broadcast_trade_event<span class="op">/</span><span class="dv">1</span>)</span>
 <span id="cb62-26"><a href="mock-the-binance-api.html#cb62-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-27"><a href="mock-the-binance-api.html#cb62-27" aria-hidden="true" tabindex="-1"></a>    remaining_buy_orders <span class="op">=</span></span>
 <span id="cb62-28"><a href="mock-the-binance-api.html#cb62-28" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>buy_side</span>
@@ -742,7 +742,7 @@ the children list of the application so it starts automatically:</p>
 <h2><span class="header-section-number">4.8</span> Upgrade trader and config</h2>
 <p>We can move on to the <code>Naive.Trader</code> module where we will add an attribute which will point to the Binance client dictated by config:</p>
 <div class="sourceCode" id="cb66"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb66-1"><a href="mock-the-binance-api.html#cb66-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb66-2"><a href="mock-the-binance-api.html#cb66-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:naive</span>, <span class="va">:binance_client</span>)</span></code></pre></div>
+<span id="cb66-2"><a href="mock-the-binance-api.html#cb66-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:naive</span>, <span class="va">:binance_client</span>)</span></code></pre></div>
 <p>We need to replace all direct calls to the <code>Binance</code> module for calls to the <code>@binance_client</code> attribute inside the <code>Naive.Trader</code>:</p>
 <div class="sourceCode" id="cb67"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb67-1"><a href="mock-the-binance-api.html#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb67-2"><a href="mock-the-binance-api.html#cb67-2" aria-hidden="true" tabindex="-1"></a></span>

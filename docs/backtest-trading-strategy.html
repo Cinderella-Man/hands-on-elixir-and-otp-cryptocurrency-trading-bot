@@ -455,7 +455,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb296-22"><a href="backtest-trading-strategy.html#cb296-22" aria-hidden="true" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Publisher broadcasted </span><span class="ot">#{</span>index<span class="ot">}</span><span class="st"> events&quot;</span>)</span>
 <span id="cb296-23"><a href="backtest-trading-strategy.html#cb296-23" aria-hidden="true" tabindex="-1"></a>          <span class="kw">end</span></span>
 <span id="cb296-24"><a href="backtest-trading-strategy.html#cb296-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb296-25"><a href="backtest-trading-strategy.html#cb296-25" aria-hidden="true" tabindex="-1"></a>          publishTradeEvent(row)</span>
+<span id="cb296-25"><a href="backtest-trading-strategy.html#cb296-25" aria-hidden="true" tabindex="-1"></a>          publish_trade_event(row)</span>
 <span id="cb296-26"><a href="backtest-trading-strategy.html#cb296-26" aria-hidden="true" tabindex="-1"></a>        <span class="kw">end</span>)</span>
 <span id="cb296-27"><a href="backtest-trading-strategy.html#cb296-27" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span>,</span>
 <span id="cb296-28"><a href="backtest-trading-strategy.html#cb296-28" aria-hidden="true" tabindex="-1"></a>      <span class="va">timeout:</span> <span class="va">:infinity</span></span>
@@ -463,10 +463,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb296-30"><a href="backtest-trading-strategy.html#cb296-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb296-31"><a href="backtest-trading-strategy.html#cb296-31" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Publisher finished streaming trade events&quot;</span>)</span>
 <span id="cb296-32"><a href="backtest-trading-strategy.html#cb296-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Finally, the above code uses the <code>publishTradeEvent/1</code> helper function which converts DataWarehouse’s TradeEvent to the Stremer’s TradeEvent to broadcast the same structs as the <code>streamer</code> application:</p>
+<p>Finally, the above code uses the <code>publish_trade_event/1</code> helper function which converts DataWarehouse’s TradeEvent to the Stremer’s TradeEvent to broadcast the same structs as the <code>streamer</code> application:</p>
 <div class="sourceCode" id="cb297"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb297-1"><a href="backtest-trading-strategy.html#cb297-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
 <span id="cb297-2"><a href="backtest-trading-strategy.html#cb297-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb297-3"><a href="backtest-trading-strategy.html#cb297-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> publishTradeEvent(%<span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event) <span class="kw">do</span></span>
+<span id="cb297-3"><a href="backtest-trading-strategy.html#cb297-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> publish_trade_event(%<span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event) <span class="kw">do</span></span>
 <span id="cb297-4"><a href="backtest-trading-strategy.html#cb297-4" aria-hidden="true" tabindex="-1"></a>    new_trade_event <span class="op">=</span></span>
 <span id="cb297-5"><a href="backtest-trading-strategy.html#cb297-5" aria-hidden="true" tabindex="-1"></a>      struct(</span>
 <span id="cb297-6"><a href="backtest-trading-strategy.html#cb297-6" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>,</span>

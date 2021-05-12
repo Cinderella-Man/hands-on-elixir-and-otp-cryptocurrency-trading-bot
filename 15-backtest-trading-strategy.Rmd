@@ -121,7 +121,7 @@ Next, we will select data from the database but because of possibly hundreds of 
             Logger.info("Publisher broadcasted #{index} events")
           end
 
-          publishTradeEvent(row)
+          publish_trade_event(row)
         end)
       end,
       timeout: :infinity
@@ -131,12 +131,12 @@ Next, we will select data from the database but because of possibly hundreds of 
   end
 ```
 
-Finally, the above code uses the `publishTradeEvent/1` helper function which converts DataWarehouse's TradeEvent to the Stremer's TradeEvent to broadcast the same structs as the `streamer` application: 
+Finally, the above code uses the `publish_trade_event/1` helper function which converts DataWarehouse's TradeEvent to the Stremer's TradeEvent to broadcast the same structs as the `streamer` application:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex
   ...
-  defp publishTradeEvent(%DataWarehouse.Schema.TradeEvent{} = trade_event) do
+  defp publish_trade_event(%DataWarehouse.Schema.TradeEvent{} = trade_event) do
     new_trade_event =
       struct(
         Streamer.Binance.TradeEvent,
