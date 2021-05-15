@@ -35,6 +35,11 @@ The first change that we need to apply will be to register `Streamer.Binance` pr
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
   def start_link(symbol) do
+    Logger.info(
+      "Binance streamer is connecting to websocket " <>
+        "stream for #{symbol} trade events"
+    )
+
     WebSockex.start_link(
       "#{@stream_endpoint}#{String.downcase(symbol)}@trade", # <= lowercase symbol
       __MODULE__,
