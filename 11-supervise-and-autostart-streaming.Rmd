@@ -21,6 +21,7 @@ That's less than perfect, but we can use supervisors to the rescue.
 We will create a new `Streamer.DynamicStreamerSupervisor` module inside our `streamer` application that will supervise the `Streamer.Binance` processes.
 
 Next, we will consider a list of functionalities that we would like it to provide:
+
 - start streaming. This will require a new `Streamer.Binance` process started under the
 `Streamer.DynamicStreamerSupervisor`. We will put logic responsible for starting that process inside the `Streamer.DynamicStreamerSupervisor` module.
 - stop streaming. To be able to stop the `Streamer.Binance` process streaming on a specific symbol, we will need to know that process' PID based only on symbol string(ie. "ETHUSDT"). To make that possible, we will need to register every `Streamer.Binance` process with a name that we will be able to "reverse-engineer" based only on symbol string for example: `:"#{__MODULE__}-#{symbol}"`
@@ -50,6 +51,7 @@ The first change that we need to apply will be to register `Streamer.Binance` pr
 ```
 
 Few things worth mention here:
+
 - we are getting the uppercase symbol but inside the URL we need to use a lowercase symbol so we will introduce a new separate variable to be used in the URL
 - we are registering the process using the uppercase symbol so the name will remain consistent with the `naive` application's processes
 - to register process we are sending keyword list as the 4th argument to custom `start_link/4` function of `WebSockex` module ([link to source](https://github.com/Azolo/websockex/blob/master/lib/websockex.ex#L376) - again, no need to be afraid of reading the source code in Elixir, that's the beauty of it)
@@ -170,14 +172,16 @@ Let's run the migration to create the table, unique index, and the enum:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.migrate
-21:31:56.850 [info]  == Running 20210203184805 Streamer.Repo.Migrations.CreateSettings.change/0 forward
+21:31:56.850 [info]  == Running 20210203184805
+Streamer.Repo.Migrations.CreateSettings.change/0 forward
 21:31:56.850 [info]  execute "CREATE TYPE public.streaming_status AS ENUM ('on', 'off')"
 21:31:56.851 [info]  create table settings
 21:31:56.912 [info]  create index settings_symbol_index
 21:31:56.932 [info]  == Migrated 20210203184805 in 0.0s
 ```
 
-We can now create a schema file for the `settings` table. Inside the `/apps/streamer/lib/streamer/schema` directory create a file called `settings.ex`:
+We can now create a schema file for the `settings` table. Inside the                                  
+`/apps/streamer/lib/streamer/schema` directory create a file called `settings.ex`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/schema/settings.ex
@@ -249,7 +253,8 @@ $ mix run priv/seed_settings.exs
 
 ## Implement the supervision tree and start streaming functionality
 
-Let's start by creating a new file called `dynamic_streamer_supervisor.ex` inside the `/apps/streamer/lib/streamer` directory. Let's start with a default implementation from the [docs](https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors) (updated with correct module and process names):
+Let's start by creating a new file called `dynamic_streamer_supervisor.ex` inside the                          
+`/apps/streamer/lib/streamer` directory. Let's start with a default implementation from the [docs](https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors) (updated with correct module and process names):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -266,7 +271,8 @@ defmodule Streamer.DynamicStreamerSupervisor do
 end
 ```
 
-Next, we will add the `start_streaming/1` function at the bottom of the `Streamer.DynamicStreamerSupervisor` module:
+Next, we will add the `start_streaming/1` function at the bottom of the                     
+`Streamer.DynamicStreamerSupervisor` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -311,7 +317,8 @@ Inside the `start_streaming/1` function, we are using 3 helper functions that we
   end
 ```
 
-The above functions are quite self-explanatory, `get_pid/1` is a convenience wrapper, `update_streaming_status/2` will update the status field for the passed symbol, `start_streamer/1` will instruct the `Streamer.DynamicStreamerSupervisor` to start a new `Streamer.Binance` process with symbol passed as the first argument.
+The above functions are quite self-explanatory, `get_pid/1` is a convenience wrapper,                  
+`update_streaming_status/2` will update the status field for the passed symbol, `start_streamer/1` will instruct the `Streamer.DynamicStreamerSupervisor` to start a new `Streamer.Binance` process with symbol passed as the first argument.
 
 The last step to get the above function to work(and future ones in this module) would be to add an `require`, an `import` and a few `alias`es at the top of the module:
 
@@ -354,7 +361,9 @@ The last step will be to append the `Streamer.DynamicStreamSupervisor` to the `c
 
 At this moment our supervision tree already works and all streamer processes are being monitored by the `Streamer.DynamicStreamerSupervisor`:
 
-![DynamicStreamerSupervisor with two *named* streamers](images/chapter_11_03_first_sup_tree.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_11_03_first_sup_tree.png")
+```
 
 ## Implement the stop functionality
 
@@ -384,7 +393,9 @@ Let's write a `stop_streaming/1` logic inside the `Streamer.DynamicStreamerSuper
   end
 ```
 
-`stop_streaming/1` looks very similar to `start_streaming/1`, we are checking is there already a `Streamer.Binance` process registered for that symbol, and we either ask the `Streamer.DynamicStreamerSupervisor` to terminate it for us (using the `DynamicSupervisor.terminate_child/2` function + update the status) or just update the status to be `off`.
+`stop_streaming/1` looks very similar to `start_streaming/1`, we are checking is there already a `Streamer.Binance` process registered for that symbol, and we either ask the                       
+`Streamer.DynamicStreamerSupervisor` to terminate it for us (using the                        
+`DynamicSupervisor.terminate_child/2` function + update the status) or just update the status to be `off`.
 
 We need to update the `Streamer` module to provide the interface to stop streaming on a symbol:
 
@@ -414,11 +425,15 @@ At init both will start, the `Streamer.DynamicStreamerSupervisor` first and then
 
 We can clearly see that whenever the `Streamer.DynamicStreamerSupervisor` will die it needs to be started again *together* with the "autostart" `Task` and this won't fit our current `Streamer.Application`'s strategy.
 
-In cases like those, a new level of supervision needs to be introduced that will have a different supervision strategy for those "coupled" processes. We will rename the process name of the `Streamer.Application` (which is currently registered as `Streamer.Supervisor`) to `Streamer.Application`. Then we will introduce the new `Streamer.Supervisor` module and register it under the same name. We will attach both `Streamer.DynamicStreamerSupervisor` and Task to the `Streamer.Supervisor` and assign it with the `rest_for_one` strategy  which will restart the Task whenever `Streamer.DynamicStreamerSupervisor` would die:
+In cases like those, a new level of supervision needs to be introduced that will have a different supervision strategy for those "coupled" processes. We will rename the process name of the `Streamer.Application` (which is currently registered as `Streamer.Supervisor`) to `Streamer.Application`. Then we will introduce the new `Streamer.Supervisor` module and register it under the same name. We will attach both `Streamer.DynamicStreamerSupervisor` and Task to the `Streamer.Supervisor` and assign it with the `rest_for_one` strategy  which will restart the Task whenever           
+`Streamer.DynamicStreamerSupervisor` would die:
 
-![Updated supervision tree with additional superviser and renamed Application process](images/chapter_11_04_new_sup_tree.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_11_04_new_sup_tree.png")
+```
 
-Let's start by creating the `autostart_streaming/0` functionality inside the `Streamer.DynamicStreamerSupervisor`:
+Let's start by creating the `autostart_streaming/0` functionality inside the                         
+`Streamer.DynamicStreamerSupervisor`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -507,6 +522,8 @@ Final update in this chapter will be to replace the `Streamer.DynamicStreamerSup
     ...
 ```
 
+\newpage
+
 ## Test the implementation
 
 Let's start an `iex` session and call the `start_streaming/1` function twice for two different symbols and then exit using double Ctrl+c:
@@ -534,7 +551,9 @@ iex(1)>
 
 We can also confirm that streamer processes are there by using `:observer.start()`:
 
-![Updated supervision tree with two autostarted streamers and new supervisor](images/chapter_11_05_finished_tree.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_11_05_finished_tree.png")
+```
 
 Inside the same `iex` session run the following:
 

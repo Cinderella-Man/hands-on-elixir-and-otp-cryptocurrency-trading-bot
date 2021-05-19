@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 14 Store trade events and orders inside the database | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 14 Store trade events and orders inside the database | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 14 Store trade events and orders inside the database | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 14 Store trade events and orders inside the database | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="abstract-duplicated-supervision-code.html"/>
 <link rel="next" href="backtest-trading-strategy.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -465,7 +465,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>We added the additional <code>id</code> field to easily identify each trade event and our timestamps for monitoring.</p>
 <p>Let’s run the migration so it will create a new <code>trade_events</code> table for us:</p>
 <div class="sourceCode" id="cb259"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb259-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb259-1" aria-hidden="true" tabindex="-1"></a>$ mix ecto<span class="op">.</span>migrate</span></code></pre></div>
-<p>The next step will be to create a new directory called <code>schema</code> inside the <code>apps/data_warehouse/lib/data_warehouse</code> directory. Inside it, we need to create a new schema file called <code>trade_event.ex</code>. We can copy across the same columns from the migration straight to schema:</p>
+<p>The next step will be to create a new directory called <code>schema</code> inside the<br />
+<code>apps/data_warehouse/lib/data_warehouse</code> directory. Inside it, we need to create a new schema file called <code>trade_event.ex</code>. We can copy across the same columns from the migration straight to schema:</p>
 <div class="sourceCode" id="cb260"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb260-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb260-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/schema/trade_event.ex</span></span>
 <span id="cb260-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb260-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span> <span class="kw">do</span></span>
 <span id="cb260-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb260-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Schema</span></span>
@@ -498,7 +499,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb261-7"><a href="store-trade-events-and-orders-inside-the-database.html#cb261-7" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb261-8"><a href="store-trade-events-and-orders-inside-the-database.html#cb261-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>We will implement a <code>subscriber</code> process that will be given a PubSub topic and it will store incoming data inside the database.</p>
-<p>Let’s start by creating a new folder called <code>subscriber</code> inside the <code>apps/data_warehouse/lib/data_warehouse</code> directory together with a new file called <code>worker.ex</code> inside it:</p>
+<p>Let’s start by creating a new folder called <code>subscriber</code> inside the<br />
+<code>apps/data_warehouse/lib/data_warehouse</code> directory together with a new file called <code>worker.ex</code> inside it:</p>
 <div class="sourceCode" id="cb262"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb262-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb262-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex</span></span>
 <span id="cb262-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb262-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Subscriber</span><span class="op">.</span><span class="cn">Worker</span> <span class="kw">do</span></span>
 <span id="cb262-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb262-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
@@ -616,6 +618,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb268-25"><a href="store-trade-events-and-orders-inside-the-database.html#cb268-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb268-26"><a href="store-trade-events-and-orders-inside-the-database.html#cb268-26" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>We updated all of the shortened names like <code>orig_qty</code> to full names like <code>original_quantity</code>.</p>
+<div style="page-break-after: always;"></div>
 <p>Let’s run the migration so it will create a new <code>orders</code> table for us:</p>
 <div class="sourceCode" id="cb269"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb269-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb269-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.migrate</span></code></pre></div>
 <p>We can copy the above fields list to create a schema module. First, let’s create a new file called <code>order.ex</code> inside the <code>apps/data_warehouse/lib/data_warehouse/schema</code> directory:</p>
@@ -743,14 +746,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb274-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.Subscriber.Worker.start_link<span class="kw">(</span><span class="st">&quot;ORDERS:NEOUSDT&quot;</span><span class="kw">)</span></span>
 <span id="cb274-4"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-4" aria-hidden="true" tabindex="-1"></a><span class="ex">22:37:43.043</span> [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT</span>
 <span id="cb274-5"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.400.0&gt;}</span></span>
-<span id="cb274-6"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;NEOUSDT&quot;</span><span class="kw">)</span>                                        <span class="ex">22:38:39.741</span> [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT</span>
-<span id="cb274-7"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-7" aria-hidden="true" tabindex="-1"></a><span class="ex">22:38:39.832</span> [info]  Starting new supervision tree to trade on NEOUSDT</span>
-<span id="cb274-8"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.402.0&gt;}</span></span>
-<span id="cb274-9"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-9" aria-hidden="true" tabindex="-1"></a><span class="ex">22:38:41.654</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1614119921653</span><span class="kw">)</span> <span class="cf">for</span> NEOUSDT</span>
-<span id="cb274-10"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-10" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;NEOUSDT&quot;</span><span class="kw">)</span>                                   <span class="ex">22:39:23.786</span> [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT</span>
-<span id="cb274-11"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-11" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.412.0&gt;}</span></span>
-<span id="cb274-12"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-12" aria-hidden="true" tabindex="-1"></a><span class="ex">22:39:27.187</span> [info]  The trader<span class="er">(</span><span class="ex">1614119921653</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for NEOUSDT @ 37.549, quantity: 5.326</span>
-<span id="cb274-13"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-13" aria-hidden="true" tabindex="-1"></a><span class="ex">22:39:27.449</span> [info]  The trader<span class="er">(</span><span class="ex">1614119921653</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for NEOUSDT @ 37.578, quantity: 5.326.</span></code></pre></div>
+<span id="cb274-6"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;NEOUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb274-7"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-7" aria-hidden="true" tabindex="-1"></a><span class="ex">22:38:39.741</span> [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT</span>
+<span id="cb274-8"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-8" aria-hidden="true" tabindex="-1"></a><span class="ex">22:38:39.832</span> [info]  Starting new supervision tree to trade on NEOUSDT</span>
+<span id="cb274-9"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-9" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.402.0&gt;}</span></span>
+<span id="cb274-10"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-10" aria-hidden="true" tabindex="-1"></a><span class="ex">22:38:41.654</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1614119921653</span><span class="kw">)</span> <span class="cf">for</span> NEOUSDT</span>
+<span id="cb274-11"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-11" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;NEOUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb274-12"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-12" aria-hidden="true" tabindex="-1"></a><span class="ex">22:39:23.786</span> [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT</span>
+<span id="cb274-13"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-13" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.412.0&gt;}</span></span>
+<span id="cb274-14"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-14" aria-hidden="true" tabindex="-1"></a><span class="ex">22:39:27.187</span> [info]  The trader<span class="er">(</span><span class="ex">1614119921653</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for NEOUSDT @ 37.549,</span>
+<span id="cb274-15"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-15" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 5.326</span>
+<span id="cb274-16"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-16" aria-hidden="true" tabindex="-1"></a><span class="ex">22:39:27.449</span> [info]  The trader<span class="er">(</span><span class="ex">1614119921653</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for NEOUSDT @ 37.578,</span>
+<span id="cb274-17"><a href="store-trade-events-and-orders-inside-the-database.html#cb274-17" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 5.326.</span></code></pre></div>
 <p>At this moment inside the DataWarehouse’s database we should see orders:</p>
 <div class="sourceCode" id="cb275"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb275-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb275-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span></span>
 <span id="cb275-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb275-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Password</span> for user postgres: </span>
@@ -835,8 +842,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb277-19"><a href="store-trade-events-and-orders-inside-the-database.html#cb277-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb277-20"><a href="store-trade-events-and-orders-inside-the-database.html#cb277-20" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>Both schema and enum will be almost identical to the ones from the <code>streamer</code> application - we can simply copy those files and apply basic tweaks like updating the namespace:</p>
-<div class="sourceCode" id="cb278"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb278-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb278-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cp apps/streamer/lib/streamer/schema/settings.ex apps/data_warehouse/lib/data_warehouse/schema/subscriber_settings.ex</span>
-<span id="cb278-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb278-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cp apps/streamer/lib/streamer/schema/streaming_status_enum.ex apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex</span></code></pre></div>
+<div class="sourceCode" id="cb278"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb278-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb278-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cp apps/streamer/lib/streamer/schema/settings.ex <span class="dt">\</span></span>
+<span id="cb278-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb278-2" aria-hidden="true" tabindex="-1"></a>apps/data_warehouse/lib/data_warehouse/schema/subscriber_settings.ex</span>
+<span id="cb278-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb278-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cp apps/streamer/lib/streamer/schema/streaming_status_enum.ex <span class="dt">\</span></span>
+<span id="cb278-4"><a href="store-trade-events-and-orders-inside-the-database.html#cb278-4" aria-hidden="true" tabindex="-1"></a>apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex</span></code></pre></div>
 <p>Remember about updating the <code>symbol</code> column to <code>topic</code> as well as table name inside the <code>DataWarehouse.Schema.SubscriberSettings</code>:</p>
 <div class="sourceCode" id="cb279"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb279-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb279-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/schema/subscriber_settings.ex</span></span>
 <span id="cb279-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb279-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">SubscriberSettings</span> <span class="kw">do</span></span>
@@ -867,17 +876,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>We can now focus on drafting a supervision tree for the <code>data_warehouse</code> application. At this moment we have only the <code>DataWarehouse.Subscriber.Worker</code> and the <code>DataWarehouse.Application</code> modules.</p>
 <p>As it was with the case of <code>naive</code> and <code>streamer</code> applications, we will need an additional level of supervision to cater for “autostarting” <code>Task</code> as well as, in the case of the <code>data_warehouse</code> application the <code>Registry</code>.</p>
 <p>The full supervision tree will look as follows:</p>
-<div class="figure">
-<img src="images/chapter_14_01_sup_diagram.png" alt="" />
-<p class="caption">Supervision tree with Registry</p>
-</div>
+<p><img src="images/chapter_14_01_sup_diagram.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>Everything looks very similar to the supervision tree that we created in the <code>streamer</code> and the <code>naive</code> applications but there’s an additional <code>Registry</code> that is supervised by the <code>SubscriberSupervisior</code> process.</p>
 <p>The idea is that inside the <code>Worker</code> module’s <code>start_link/1</code> we will register worker processes using <a href="https://hexdocs.pm/elixir/master/GenServer.html#module-name-registration">:via</a> tuple. Internally, GenServer will utilize <code>Registry</code>’s functions like <code>register_name/2</code> to add process to the registry under the <code>topic</code> string. This way we will be able to retrieve pids assigned to topics using those topic strings instead of registering each worker process with an atom name.</p>
 <p>Just as previously the <code>DynamicSupervisor</code> will be in charge of the supervising the <code>Worker</code> processes and it won’t be even aware that we are using the <code>Registry</code> to keep track of <code>topic =&gt; pid</code> association.</p>
 </div>
 <div id="create-the-datawarehouse.subscriber.dynamicsupervisor-module" class="section level3" number="14.7.3">
 <h3><span class="header-section-number">14.7.3</span> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</h3>
-<p>Let’s start by creating a new file called <code>dynamic_supervisor.ex</code> inside the <code>apps/data_warehouse/lib/data_warehouse/subscriber</code> directory and put default dynamic supervisor implementation inside:</p>
+<p>Let’s start by creating a new file called <code>dynamic_supervisor.ex</code> inside the<br />
+<code>apps/data_warehouse/lib/data_warehouse/subscriber</code> directory and put default dynamic supervisor implementation inside:</p>
 <div class="sourceCode" id="cb282"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb282-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb282-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex</span></span>
 <span id="cb282-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb282-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Subscriber</span><span class="op">.</span><span class="cn">DynamicSupervisor</span> <span class="kw">do</span></span>
 <span id="cb282-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb282-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">DynamicSupervisor</span></span>
@@ -922,6 +929,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb284-17"><a href="store-trade-events-and-orders-inside-the-database.html#cb284-17" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb284-18"><a href="store-trade-events-and-orders-inside-the-database.html#cb284-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We can see that we are querying the database for list of <code>topic</code>s(not symbols) and we are calling <code>start_child/2</code> for each results.</p>
+<div style="page-break-after: always;"></div>
 <p>The <code>start_worker/1</code> is where the <code>Registry</code> will shine as we won’t need to check is there already a process running for that topic - we can leave that check to the <code>Registry</code>. If there’s process already running for that topic it will just return a tuple starting with <code>:error</code> atom:</p>
 <div class="sourceCode" id="cb285"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb285-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb285-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex</span></span>
 <span id="cb285-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb285-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -959,10 +967,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb286-13"><a href="store-trade-events-and-orders-inside-the-database.html#cb286-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb286-14"><a href="store-trade-events-and-orders-inside-the-database.html#cb286-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>That is a full implementation of the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module and it’s almost as slim as one from the last chapter where we leveraged macros to achieve that lightness. Using the <code>Registry</code> is the preferred way to manage a list of identifiable processes. We won’t run into an issue of overusing the atoms(as they are not garbage collected, we could hit that limit sooner or later).</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="register-worker-processes-using-via" class="section level3" number="14.7.4">
 <h3><span class="header-section-number">14.7.4</span> Register Worker processes using :via</h3>
-<p>The above <code>DynamicSupervisor</code> module assumes that Workers are registered inside the <code>Registry</code> - to make this happen we will need to update the <code>start_link/1</code> function of the <code>DataWarehouse.Subscriber.Worker</code> module:</p>
+<p>The above <code>DynamicSupervisor</code> module assumes that Workers are registered inside the <code>Registry</code> - to make this happen we will need to update the <code>start_link/1</code> function of the<br />
+<code>DataWarehouse.Subscriber.Worker</code> module:</p>
 <div class="sourceCode" id="cb287"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb287-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb287-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex</span></span>
 <span id="cb287-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb287-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb287-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb287-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(topic) <span class="kw">do</span></span>
@@ -1011,7 +1021,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="link-the-subscribersupervisor-to-the-application" class="section level3" number="14.7.6">
 <h3><span class="header-section-number">14.7.6</span> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></h3>
-<p>We need to update the <code>DataWarehouse.Application</code> module to start our new <code>DataWarehouse.SubscriberSupervisor</code> process as well as register itself under name matching to its module(just for consistency with other applications):</p>
+<p>We need to update the <code>DataWarehouse.Application</code> module to start our new<br />
+<code>DataWarehouse.SubscriberSupervisor</code> process as well as register itself under name matching to its module(just for consistency with other applications):</p>
 <div class="sourceCode" id="cb289"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb289-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb289-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/application.ex</span></span>
 <span id="cb289-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb289-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb289-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb289-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
@@ -1097,7 +1108,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb291-42"><a href="store-trade-events-and-orders-inside-the-database.html#cb291-42" aria-hidden="true" tabindex="-1"></a><span class="fu">true</span></span>
 <span id="cb291-43"><a href="store-trade-events-and-orders-inside-the-database.html#cb291-43" aria-hidden="true" tabindex="-1"></a><span class="ex">16:43:40.812</span> [info]  DataWarehouse worker is subscribing to ORDERS:NEOUSDT</span></code></pre></div>
 <p>As we can see even this simple implementation handles starting, autostarting and stopping. It also gracefully handles starting workers when one is already running as well as stopping when there none running.</p>
-<p>As a challenge, you could update the <code>naive</code> and the <code>streamer</code> application to use <code>Registry</code> and remove <code>Core.ServiceSupervisor</code> module as it was superseded by the above solution.</p>
+<p>As a challenge, you could update the <code>naive</code> and the <code>streamer</code> application to use the <code>Registry</code> and remove <code>Core.ServiceSupervisor</code> module as it was superseded by the above solution - here’s the <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/pull/7">link to PR</a>(pull request) that sums up the required changes.</p>
 <p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_14">Github</a></p>
 
@@ -1133,6 +1144,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

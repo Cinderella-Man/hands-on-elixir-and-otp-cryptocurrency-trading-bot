@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="enable-parallel-trading-on-multiple-symbols.html"/>
 <link rel="next" href="introduce-a-trader-budget-and-calculating-the-quantity.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -360,18 +360,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="why-we-need-to-buy-below-the-current-price-feature-overview" class="section level2" number="6.2">
 <h2><span class="header-section-number">6.2</span> Why we need to buy below the current price? Feature overview</h2>
-<p><img src="images/chapter_06_01_current_buy_price.png" /></p>
+<p><img src="images/chapter_06_01_current_buy_price.png" width="50%" style="display: block; margin: auto;" /></p>
 <p>The <code>Naive.Trader</code> process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when buy order gets filled, it places sell order which later also gets filled.</p>
 <p>The Trader A exits and a new trader B is started which again immediately places a buy order <em>at the same price</em> as the previous trader just sold. When this gets filled sell order get’s placed and loop continues on and on.</p>
 <p>We can see that there’s a problem here as we just paid a fee twice(once for selling by the Trader A and once for buying by the Trader B) without really gaining anything(the Trader A could just hold the currency and could simply cash in on double profit in this specific situation).</p>
 <p>The solution is to be more clever about our buy order’s price. The idea is simple, instead of placing a new buy order at the current price(price from the last TradeEvent), we will introduce a <code>buy_down_interval</code>:</p>
-<p><img src="images/chapter_06_02_rebuy_expl.png" /></p>
+<p><img src="images/chapter_06_02_rebuy_expl.png" width="50%" style="display: block; margin: auto;" /></p>
 <p>So every new <code>Naive.Trader</code> process as it receives first trade event, trader will take it’s price and will calculate an decreased price by using the <code>buy_down_interval</code> value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.</p>
 <p>When looking at the chart above we can figure out that <code>buy_down_interval</code> should never be smaller than double the fee(at the moment of writting transaction fee is 0.1%) that you are paying per transaction.</p>
 </div>
 <div id="naive.trader-implementation" class="section level2" number="6.3">
 <h2><span class="header-section-number">6.3</span> <code>Naive.Trader</code> implementation</h2>
 <p>Let’s open the <code>Naive.Trader</code> module’s file(<code>/apps/naive/lib/naive/trader.ex</code>) and add <code>buy_down_interval</code> to it’s state:</p>
+<div style="page-break-after: always;"></div>
 <div class="sourceCode" id="cb92"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb92-1"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb92-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb92-2"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb92-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb92-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb92-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
@@ -503,6 +504,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

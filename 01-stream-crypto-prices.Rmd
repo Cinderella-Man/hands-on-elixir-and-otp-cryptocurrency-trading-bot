@@ -29,6 +29,8 @@ mix new streamer --sup
 
 To establish a connection to Binance API's stream, we will need to use a WebSocket client. The module that we will use is called [WebSockex](https://github.com/Azolo/websockex). Scrolling down to the `Installation` section inside module's readme on Github, we are instructed what dependency we need to add to our project.
 
+\newpage
+
 We will append `:websockex` to the `deps` function inside the `mix.exs` file of the `streamer` application:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -82,9 +84,9 @@ Next, let's look up what URL should we use to connect to Binance's API. Binance 
 
 Scrolling down we can see the `General WSS information` section where 3 important pieces of information are listed:
 
-> The base endpoint is: wss://stream.binance.com:9443
-> Raw streams are accessed at /ws/<streamName>
-> All symbols for streams are lowercase
+* The base endpoint is: `wss://stream.binance.com:9443`
+* Raw streams are accessed at `/ws/<streamName>`
+* All symbols for streams are *lowercase*
 
 We can see that the full endpoint for raw streams(we will be using a "raw" stream) will be `wss://stream.binance.com:9443/ws/` with stream name at the end (together with lowercased symbol).
 
@@ -133,8 +135,12 @@ $ iex -S mix
 ...
 iex(1)> Streamer.Binance.start_link("xrpusdt")
 {:ok, #PID<0.335.0>}
-Received Message - Type: :text -- Message: "{\"e\":\"trade\",\"E\":1603226394741,\"s\":\"XRPUSDT\",\"t\":74608889,\"p\":\"0.24373000\",\"q\":\"200.00000000\",\"b\":948244411,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
-Received Message - Type: :text -- Message: "{\"e\":\"trade\",\"E\":1603226394741,\"s\":\"XRPUSDT\",\"t\":74608890,\"p\":\"0.24372000\",\"q\":\"143.20000000\",\"b\":948244412,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
+Received Message - Type: :text -- Message: "{\"e\":\"trade\", \"E\":1603226394741,
+  \"s\":\"XRPUSDT\",\"t\":74608889,\"p\":\"0.24373000\",\"q\":\"200.00000000\",
+  \"b\":948244411,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
+Received Message - Type: :text -- Message: "{\"e\":\"trade\",\"E\":1603226394741,
+  \"s\":\"XRPUSDT\",\"t\":74608890,\"p\":\"0.24372000\",\"q\":\"143.20000000\",
+  \"b\":948244412,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
 ```
 
 We can see the messages logged above because we copied the sample implementation from [WebSockex's readme](https://github.com/Azolo/websockex) where `handle_frame/2` function uses `IO.puts/1` to print out all incoming data. The lesson here is that every incoming message from Binance will cause the `handle_frame/2` callback to be called with the message and the process' state.
@@ -263,7 +269,7 @@ Our new module will hold all the trade event's information but we will also use 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance/trade_event.ex
 defmodule Streamer.Binance.TradeEvent do
-    defstruct []
+  defstruct []
 end
 ```
 
@@ -285,7 +291,7 @@ We can refer to [Binance's docs](https://github.com/binance/binance-spot-api-doc
 }
 ```
 
-Let's copy them across and convert the comments to update the `defstruct` inside the 
+Let's copy them across and convert the comments to update the `defstruct` inside the    
 `Streamer.Binance.TradeEvent` module's struct to following:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -348,6 +354,8 @@ end
 ```
 
 The final version of the `Streamer.Binance` module should look like [this](https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex).
+
+\newpage
 
 Last step will be to add the `Logger` configuration into main `config/config.exs` file. We will set the `Logger` level to `:debug` for a moment to be able to see incoming trade events:
 

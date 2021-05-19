@@ -11,21 +11,29 @@
 
 In the second chapter we implemented a basic trader which goes through the trading cycle. Inside iEx session we were starting the `Naive.Trader` process using `start_link/1` function:
 
-![](images/chapter_05_01_current_state.png)
+```{r, fig.align="center", out.width="40%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_01_current_state.png")
+```
 
 `GenServer.start_link/3` creates a link between IEx's process and new `Naive.Trader` process. Whenever trader terminates(either finishes the trading cycle or there was an error), new one won't get started as there's no supervision at all.
 
 We can do much better than that with a a little bit of help from Elixir and OTP.
 
+\newpage
+
 Let's introduce a supervisor above our trader process. It will start a new trader process whenever previous one finished/crashed:
 
-![](images/chapter_05_02_supervise_the_trader.png)
+```{r, fig.align="center", out.width="40%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_02_supervise_the_trader.png")
+```
 
 This looks much better but there are few problems with it. So, when the trader will start to place orders it will be in *some* state(it will hold buy/sell orders) that the supervisor won't be aware of. In case of trader crashing, the supervisor will start a new trader *without* any knowledge of possibly placed orders or any other information from the state(it will be started with a "fresh" state).
 
 To fix that we need to keep a copy of the trader's state outside of the trader process - that's why we will introduce a new server called `Naive.Leader` that will keep track of traders' data:
 
-![](images/chapter_05_03_leader_added.png)
+```{r, fig.align="center", out.width="70%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_03_leader_added.png")
+```
 
 The `Naive.Leader` will become the interface to start new *traders*. It will call the `start_child/1` function of the Supervisor, then consequently `DynamicTraderSupervisor` will call the `start_link/1` function of our `Naive.Trader` module.
 
@@ -35,13 +43,20 @@ As trader state will get updated, it will notify the leader about it's new state
 
 This setup will also allow us to start and supervise multiple traders for a single symbol which our naive strategy will require in the future(next chapter).
 
+\newpage
+
 For each symbol that we will be trading on we need a above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an `Naive.SymbolSupervisor` that will start both `Naive.Leader` and `Naive.Dynamic:
 
-![](images/chapter_05_04_symbol_sup.png)
+```{r, fig.align="center", out.width="70%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_04_symbol_sup.png")
+```
+
 
 We will need multiple symbol supervisors, one for each symbol that we would like to trade on. As with traders, they will be dynamically started on demand, this should give us a hint that we need another dynamic supervisor that will supervise symbol supervisors and will be direct child of our `Naive.Supervisor`(`Naive.Application` module):
 
-![](images/chapter_05_05_full.png)
+```{r, fig.align="center", out.width="70%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_05_full.png")
+```
 
 You could ask yourself why we don't need some additional server to track which symbols are traded at the moment (in the same way as `Naive.Leader` tracks `Naive.Trader`s). The answer is that we don't need to track them as we register all `Naive.SymbolSupervisor`s with a name containing symbol that they trade on. This way we will always be able to refer to them by registered name instead of pids/refs.
 
@@ -75,7 +90,8 @@ Let's start by adding a `Naive.DynamicSymbolSupervisor` and a server to the chil
 
 ### Add interface method
 
-We will now add an interface method to the `Naive` module that will instruct `Naive.DynamicSymbolSupervisor` to start `Naive.SymbolSupervisor`(to be implemented next) as it's child:
+We will now add an interface method to the `Naive` module that will instruct                            
+`Naive.DynamicSymbolSupervisor` to start `Naive.SymbolSupervisor`(to be implemented next) as it's child:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -89,6 +105,8 @@ We will now add an interface method to the `Naive` module that will instruct `Na
       )
   end
 ```
+
+\newpage
 
 ## Implement `Naive.SymbolSupervisor`
 
@@ -133,6 +151,8 @@ We registered the `Naive.SymbolSupervisor` processes with names, which will help
 
 As mentioned previously whenever either the `Naive.Leader` or `Naive.DynamicSymbolSupervisor-#{symbol}` would crash we would like to kill the other child process as we won't be able to recover the state - it's just easier to init both again.
 
+\newpage
+
 ## Implement `Naive.Leader`
 
 It's time for the `Naive.Leader` module, again, first step will be to create a file called `leader.ex` inside `apps/naive/lib/naive` directory. At this moment it will be a skeleton GenServer implementation just to get the code to compile:
@@ -167,11 +187,17 @@ iex(1)> :observer.start()
 
 Above function will open a new window looking as follows:
 
-![New observer window](images/chapter_05_06_new_observer.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_06_new_observer.png")
+```
+
+\newpage
 
 To clearly see the supervision tree we will click on "Applications" tab at the top - the following tree of processes will be shown on the left:
 
-![Observer applications list](images/chapter_05_07_observer_app_list.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_05_07_observer_app_list.png")
+```
 
 If any other process tree is visible, go to the list on the left and select the `naive` application.
 
@@ -190,10 +216,13 @@ iex(3)> Naive.start_trading("xrpusdt")
 ```
 
 We can see that two new branches were created:
-- `SymbolSupervisor-ADAUSDT`
-- `SymbolSupervisor-XRPUSDT`
+
+* `SymbolSupervisor-ADAUSDT`
+* `SymbolSupervisor-XRPUSDT`
 
 Each of them contain a `Naive.Leader` and `DynamicTraderSupervisor`.
+
+\newpage
 
 ### Updating the `leader` module
 
@@ -250,6 +279,8 @@ The `Naive.Leader` will fetch symbol settings and based on them, it will build t
     {:noreply, %{state | settings: settings, traders: traders}}
   end
 ```
+
+\newpage
 
 Fetching symbol settings will be hardcoded for time being to keep this chapter focused. We will also move the code responsible for fetching tick
 size from the `Naive.Trader` to the `Naive.Leader` and hardcode the rest of the values:
@@ -415,6 +446,8 @@ trader locally:
 ```
 
 Another callback functions that we will need to provide are two `handle_info/2` functions that will handle the trade finished scenario as well as crashed trader.
+
+\newpage
 
 First, trade finished scenario. As previously, we will try to find the trader data in the traders list. If that's successful, we will start a new trader with fresh state. We will also overwrite existing trader data locally(as pid, ref and state changed):
 

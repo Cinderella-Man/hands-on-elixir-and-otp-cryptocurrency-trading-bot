@@ -25,11 +25,15 @@ All the changes we made in this episode will enable us to fix.
 
 Let's say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:
 
-![](images/chapter_09_01_single_trader.png)
+```{r, fig.align="center", out.height="20%", echo=FALSE}
+knitr::include_graphics("images/chapter_09_01_single_trader.png")
+```
 
 We will implement additional trade event callback inside the `Naive.Trader` that will keep checking the price after buy order has been filled. Whenever price drops below the `buy_order`'s `price` by `rebuy_interval` we will notify the `Naive.Leader` to start the new `Naive.Trader` process:
 
-![](images/chapter_09_02_multi_traders.png)
+```{r, fig.align="center", out.height="20%", echo=FALSE}
+knitr::include_graphics("images/chapter_09_02_multi_traders.png")
+```
 
 The `Naive.Leader` keeps track of how many `Naive.Trader`s are running and needs to honor the number of `chunks` set up in the settings (one chunk == one trader).
 
@@ -173,8 +177,11 @@ traders) - let's start with a header:
 ```
 
 There are few important details to make note of:
-- we need trader's pid to be able to find it details inside the list of traders
-- we need settings to cofirm number of chunks to be able to limit maximum number of parallel traders
+
+* we need trader's pid to be able to find it details inside the list of traders
+* we need settings to cofirm number of chunks to be able to limit maximum number of parallel traders
+
+\newpage
 
 Moving on to the body of our callback. As with other ones, we will check can we find trader inside list of traders and based on that we will either start another one(if we didn't reach the limit of chunks) or ignore it:
 
@@ -329,7 +336,8 @@ Now we can move on to the `Naive.Trader` and add it to the `%State{}` struct as 
     ...
       Logger.info("Trader(#{id}) finished trade cycle for #{symbol}")
       ...
-      Logger.info("Trader's(#{id} #{symbol} SELL order got partially filled")      ...
+      Logger.info("Trader's(#{id} #{symbol} SELL order got partially filled")
+      ...
   end
 
   def handle_info(
@@ -359,40 +367,53 @@ $ iex -S mix
 iex(1)> :observer.start()
 ...
 iex(2)> Naive.start_trading("HNTUSDT")
-10:22:05.018 [info]  The trader(1616754009963) is placing a BUY order for HNTUSDT @ 8.175, quantity: 2.446
+10:22:05.018 [info]  The trader(1616754009963) is placing a BUY order for HNTUSDT @ 8.175,
+quantity: 2.446
 10:22:11.665 [info]  Rebuy triggered for HNTUSDT by the trader(1616754009963)
 10:22:11.665 [info]  Starting new trader for HNTUSDT
 10:22:11.665 [info]  Initializing new trader(1616754131665) for HNTUSDT
-10:22:11.665 [info]  The trader(1616754009963) is placing a SELL order for HNTUSDT @ 8.181, quantity: 2.446.
-10:22:11.665 [info]  The trader(1616754131665) is placing a BUY order for HNTUSDT @ 8.157, quantity: 2.451
+10:22:11.665 [info]  The trader(1616754009963) is placing a SELL order for HNTUSDT @ 8.181,
+quantity: 2.446.
+10:22:11.665 [info]  The trader(1616754131665) is placing a BUY order for HNTUSDT @ 8.157,
+quantity: 2.451
 10:22:58.339 [info]  Trader(1616754009963) finished trade cycle for HNTUSDT
 10:22:58.339 [info]  HNTUSDT trader finished trade - restarting
 10:22:58.339 [info]  Initializing new trader(1616754178339) for HNTUSDT
-10:22:58.339 [info]  The trader(1616754178339) is placing a BUY order for HNTUSDT @ 8.212, quantity: 2.435
+10:22:58.339 [info]  The trader(1616754178339) is placing a BUY order for HNTUSDT @ 8.212,
+quantity: 2.435
 10:23:13.232 [info]  Rebuy triggered for HNTUSDT by the trader(1616754178339)
 10:23:13.232 [info]  Starting new trader for HNTUSDT
 10:23:13.232 [info]  Initializing new trader(1616754193232) for HNTUSDT
-10:23:13.232 [info]  The trader(1616754178339) is placing a SELL order for HNTUSDT @ 8.218, quantity: 2.435.
-10:23:31.120 [info]  The trader(1616754193232) is placing a BUY order for HNTUSDT @ 8.194, quantity: 2.44
+10:23:13.232 [info]  The trader(1616754178339) is placing a SELL order for HNTUSDT @ 8.218,
+quantity: 2.435.
+10:23:31.120 [info]  The trader(1616754193232) is placing a BUY order for HNTUSDT @ 8.194,
+quantity: 2.44
 10:23:31.121 [info]  Trader(1616754178339) finished trade cycle for HNTUSDT
 10:23:31.122 [info]  HNTUSDT trader finished trade - restarting
 10:23:31.122 [info]  Initializing new trader(1616754211122) for HNTUSDT
-10:24:31.891 [info]  The trader(1616754211122) is placing a BUY order for HNTUSDT @ 8.198, quantity: 2.439
-10:25:24.155 [info]  The trader(1616754211122) is placing a SELL order for HNTUSDT @ 8.204, quantity: 2.439.
-10:25:24.155 [info]  The trader(1616754193232) is placing a SELL order for HNTUSDT @ 8.2, quantity: 2.44.
+10:24:31.891 [info]  The trader(1616754211122) is placing a BUY order for HNTUSDT @ 8.198,
+quantity: 2.439
+10:25:24.155 [info]  The trader(1616754211122) is placing a SELL order for HNTUSDT @ 8.204,
+quantity: 2.439.
+10:25:24.155 [info]  The trader(1616754193232) is placing a SELL order for HNTUSDT @ 8.2,
+quantity: 2.44.
 10:25:24.155 [info]  Rebuy triggered for HNTUSDT by the trader(1616754211122)
 10:25:24.155 [info]  Starting new trader for HNTUSDT
 10:25:24.156 [info]  Initializing new trader(1616754324155) for HNTUSDT
 10:25:24.156 [info]  Rebuy triggered for HNTUSDT by the trader(1616754193232)
-10:25:24.156 [info]  The trader(1616754324155) is placing a BUY order for HNTUSDT @ 8.183, quantity: 2.444
+10:25:24.156 [info]  The trader(1616754324155) is placing a BUY order for HNTUSDT @ 8.183,
+quantity: 2.444
 10:25:24.156 [info]  Starting new trader for HNTUSDT
 10:25:24.156 [info]  Initializing new trader(1616754324156) for HNTUSDT 
-10:25:24.156 [info]  The trader(1616754324156) is placing a BUY order for HNTUSDT @ 8.176, quantity: 2.446
-10:25:24.156 [info]  The trader(1616754324155) is placing a SELL order for HNTUSDT @ 8.189, quantity: 2.444.
+10:25:24.156 [info]  The trader(1616754324156) is placing a BUY order for HNTUSDT @ 8.176,
+quantity: 2.446
+10:25:24.156 [info]  The trader(1616754324155) is placing a SELL order for HNTUSDT @ 8.189,
+quantity: 2.444.
 10:25:37.527 [info]  Trader(1616754324155) finished trade cycle for HNTUSDT
 10:25:37.528 [info]  HNTUSDT trader finished trade - restarting
 10:25:37.528 [info]  Initializing new trader(1616754337528) for HNTUSDT
-10:25:37.528 [info]  The trader(1616754337528) is placing a BUY order for HNTUSDT @ 8.192, quantity: 2.441
+10:25:37.528 [info]  The trader(1616754337528) is placing a BUY order for HNTUSDT @ 8.192,
+quantity: 2.441
 10:25:37.530 [info]  Trader(1616754211122) finished trade cycle for HNTUSDT
 10:25:37.530 [info]  Trader(1616754193232) finished trade cycle for HNTUSDT
 10:25:37.530 [info]  HNTUSDT trader finished trade - restarting
@@ -400,13 +421,16 @@ iex(2)> Naive.start_trading("HNTUSDT")
 10:25:37.530 [info]  HNTUSDT trader finished trade - restarting
 10:25:37.530 [info]  Initializing new trader(1616754337530) for HNTUSDT
 10:25:40.015 [info]  Rebuy triggered for HNTUSDT by the trader(1616754337528)
-10:25:40.015 [info]  The trader(1616754337530) is placing a BUY order for HNTUSDT @ 8.179, quantity: 2.445
+10:25:40.015 [info]  The trader(1616754337530) is placing a BUY order for HNTUSDT @ 8.179,
+quantity: 2.445
 10:25:40.015 [info]  All traders already started for HNTUSDT
 ```
 
 And our observer shows the following:
 
-![Observer shows 5 parallel traders](images/chapter_09_supervision_tree.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_09_supervision_tree.png")
+```
 
 We can clearly see that our strategy dynamically scaled from 1 to 5 parallel traders and they were going through different trading steps without any problems - I think that's really cool to see and it wasn't difficult to achieve in Elixir.
 

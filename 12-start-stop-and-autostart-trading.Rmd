@@ -13,12 +13,16 @@
 In the 10th chapter, we've introduced the Postgres database inside the `naive` application together with the settings per symbol.
 
 In this chapter, we will progress forward to provide additional trading functionality that will be similar to the functionality implemented in the last chapter for the `streaming` application:
-- stop trading - as the `Naive.SymbolSupervisor` processes are registered with names that can be easily reverse engineered, we should be able to utilize the `Process.where_is/1` function to retrieve the PIDs and instruct the `Naive.DynamicSymbolSupervisor` to terminate those child processes. Again, we need to put that logic somewhere so we will implement the `Naive.DynamicSymbolSupervisor` as a full module using the `DynamicSupervisor` behavior.
-- start_trading - as our `Naive.DynamicSymbolSupervisor` will now be a module we will be able to remove the `start_trading/1` implementation from the `Naive` module and reimplement it inside the `Naive.DynamicSymbolSupervisor` module. It will follow the same pattern of checking for PID, starting the `Naive.SymbolSupervisor` process and flipping the `status` flag inside the `settings` table's row for that symbol.
-- shutdown trading - sometimes abruptly stopping trading won't be the best solution, it would be better to allow the `Naive.Trader` processes to finish their ongoing trades. To be able to do that we will need to inform the `Naive.Leader` process assigned to the symbol that the settings for that symbol have been updated and that should cause the `Naive.Leader` process to withhold starting new `Naive.Trader` processes and terminate the whole tree when the last trader will finish.
-- autostart trading - this will be a very similar implementation to the one from the last chapter. It will require introducing a new supervisor(we will follow the same naming convention: rename `Naive.Application`'s registered process name to `Naive.Application`, create a new supervisor called `Naive.Supervisor`) and utilize the `Task` process to execute the autostarting logic.
 
-![Final supervision tree after adding the autostarting `Task` and the Naive.Supervisor](images/chapter_12_02_sup_diagram.png)
+* **stop trading** - as the `Naive.SymbolSupervisor` processes are registered with names that can be easily reverse engineered, we should be able to utilize the `Process.where_is/1` function to retrieve the PIDs and instruct the `Naive.DynamicSymbolSupervisor` to terminate those child processes. Again, we need to put that logic somewhere so we will implement the `Naive.DynamicSymbolSupervisor` as a full module using the `DynamicSupervisor` behavior.
+* **start_trading** - as our `Naive.DynamicSymbolSupervisor` will now be a module we will be able to remove the `start_trading/1` implementation from the `Naive` module and reimplement it inside the `Naive.DynamicSymbolSupervisor` module. It will follow the same pattern of checking for PID, starting the `Naive.SymbolSupervisor` process and flipping the `status` flag inside the `settings` table's row for that symbol.
+* **shutdown trading** - sometimes abruptly stopping trading won't be the best solution, it would be better to allow the `Naive.Trader` processes to finish their ongoing trades. To be able to do that we will need to inform the `Naive.Leader` process assigned to the symbol that the settings for that symbol have been updated and that should cause the `Naive.Leader` process to withhold starting new `Naive.Trader` processes and terminate the whole tree when the last trader will finish.
+* **autostart trading** - this will be a very similar implementation to the one from the last chapter. It will require introducing a new supervisor(we will follow the same naming convention: rename `Naive.Application`'s registered process name to `Naive.Application`, create a new supervisor called `Naive.Supervisor`) and utilize the `Task` process to execute the autostarting logic.
+
+
+```{r, fig.align="center", out.height="50%", echo=FALSE}
+knitr::include_graphics("images/chapter_12_02_sup_diagram.png")
+```
 
 ## (Re-)Implement the start trading functionality
 
@@ -97,7 +101,8 @@ together with additional helper functions:
 Both implementation and helper functions are almost the same as the ones inside the `naive` application. It could be tempting to abstract some of the logic away but remember that we should treat all applications in our umbrella project as standalone services that should not share any code if possible(we broke that rule for the `TradeEvent` struct from the `streamer` app but we could easily just make a lib with that struct that would be shared between two applications). I would shy away from sharing any business logic between applications in the umbrella project.
 
 There are two additional places where we need to make updates to get our `start_trading/1` to work again:
-- we need to update the `children` list inside the `Naive.Application`:
+
+* we need to update the `children` list inside the `Naive.Application`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/application.ex
@@ -233,7 +238,11 @@ Those are the same (excluding updated function names) as inside the `streamer` a
 
 At this moment we can already see our implementation in action:
 
-![Trading on two symbols autostarted, new Naive.Supervisor and renamed Naive.Application](images/chapter_12_01_autostarting_sup_tree.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_12_01_autostarting_sup_tree.png")
+```
+
+\newpage
 
 At this moment we are able to test the current implementation inside the `iex`:
 
@@ -280,6 +289,8 @@ Last but not least, we will move on to the `shutdown_trading/1` functionality. L
   defdelegate shutdown_trading(symbol), to: DynamicSymbolSupervisor
   ...
 ```
+
+\newpage
 
 Next, we will create a `shutdown_trading/1` function inside the `Naive.DynamicSymbolSupervisor` module where we will check is there any trading going on for that symbol(the same as for start/stop), and in case of trading happening we will inform the `Naive.Leader` process handling that symbol that settings have been updated:
 
@@ -385,6 +396,8 @@ Let's look at the updated implementation of the "end of trade" handler:
 
 As visible in the above code, whenever the `Naive.Trader` process will finish the trade cycle, the `Naive.Leader` process will check can it find a record of that trader in its state (no changes here). We will modify the callback so the leader process will check the `settings.status`. In the `shutdown` status it checks wheater it was the last trader in the `traders` list, to terminate the whole tree at that time(using the `Naive.stop_trading/1` function).
 
+\newpage
+
 The second callback that we need to modify is the `rebuy` triggered:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -438,6 +451,8 @@ $ cd apps/naive
 $ mix ecto.gen.migration update_trading_status
 * creating priv/repo/migrations/20210205232303_update_trading_status.exs
 ```
+
+\newpage
 
 Inside the generated migration file we need to excute a raw SQL command:
 
@@ -500,19 +515,24 @@ iex(4)> Naive.shutdown_trading("ethusdt")
 ...
 22:06:58.855 [info]  Trader(1612648407202) finished trade cycle for ETHUSDT
 22:06:58.855 [info]  ETHUSDT trader finished trade - restarting
-22:06:58.855 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in shutdown state
+22:06:58.855 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+shutdown state
 22:07:50.768 [info]  Trader(1612648325512) finished trade cycle for ETHUSDT
 22:07:50.768 [info]  ETHUSDT trader finished trade - restarting
-22:07:50.768 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in shutdown state
+22:07:50.768 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+shutdown state
 22:07:50.857 [info]  Trader(1612648326215) finished trade cycle for ETHUSDT
 22:07:50.857 [info]  ETHUSDT trader finished trade - restarting
-22:07:50.857 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in shutdown state
+22:07:50.857 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+shutdown state
 22:07:51.079 [info]  Trader(1612648089409) finished trade cycle for ETHUSDT
 22:07:51.079 [info]  ETHUSDT trader finished trade - restarting
-22:07:51.079 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in shutdown state
+22:07:51.079 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+shutdown state
 22:08:05.401 [info]  Trader(1612648004814) finished trade cycle for ETHUSDT
 22:08:05.401 [info]  ETHUSDT trader finished trade - restarting
-22:08:05.401 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in shutdown state
+22:08:05.401 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+shutdown state
 22:08:05.401 [info]  Stopping trading of ETHUSDT
 ```
 

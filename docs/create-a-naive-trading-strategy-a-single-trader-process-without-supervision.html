@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 2 Create a naive trading strategy - a single trader process without supervision | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 2 Create a naive trading strategy - a single trader process without supervision | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 2 Create a naive trading strategy - a single trader process without supervision | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 2 Create a naive trading strategy - a single trader process without supervision | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="stream-live-crypto-prices-from-binance-wss.html"/>
 <link rel="next" href="introduce-pubsub-as-a-communication-method.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -391,12 +391,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb27-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span></span>
 <span id="cb27-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb27-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Our trader needs to know:
-- what symbol does it need to trade (“symbol” here is a pair of assets for example “XRPUSDT”, which is XRP to/from USDT)
-- placed buy order (if any)
-- placed sell order (if any)
-- profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)
-- tick_size (yes, I know, jargon warning. We can’t ignore it here as it needs to be fetched from Binance and it’s used to calculate a valid price. Tick size differs between symbols and it is a smallest acceptable price movement up or down. For example in physical world tick size for USD is a single cent, you can’t sell something for $1.234, it’s either $1.23 or $1.24 (one cent difference between those is the tick size) - more info <a href="https://www.investopedia.com/terms/t/tick.asp">here</a></p>
+<p>Our trader needs to know:</p>
+<ul>
+<li>what symbol does it need to trade (“symbol” here is a pair of assets for example “XRPUSDT”, which is XRP to/from USDT)</li>
+<li>placed buy order (if any)</li>
+<li>placed sell order (if any)</li>
+<li>profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)</li>
+<li>tick_size (yes, I know, jargon warning. We can’t ignore it here as it needs to be fetched from Binance and it’s used to calculate a valid price. Tick size differs between symbols and it is a smallest acceptable price movement up or down. For example in physical world tick size for USD is a single cent, you can’t sell something for $1.234, it’s either $1.23 or $1.24 (one cent difference between those is the tick size) - more info <a href="https://www.investopedia.com/terms/t/tick.asp">here</a></li>
+</ul>
 <p>Our strategy won’t be able to work without symbol, profit_interval nor tick_size so we added them to the <code>@enforce_keys</code> attribute. This will ensure that we won’t create an invalid <code>%State{}</code> without those values.</p>
 <p>As now we know that our GenServer will need to receive those details via args, we can update pattern matching in <code>start_link/1</code> and <code>init/1</code> functions to confirm that passed values are indeed maps:</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb28-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
@@ -407,6 +409,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb28-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%{<span class="va">symbol:</span> symbol, <span class="va">profit_interval:</span> profit_interval}) <span class="kw">do</span></span>
 <span id="cb28-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb28-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>As we are already in the <code>init/1</code> function we will need to modify it to fetch the <code>tick_size</code> for the passed symbol and initialize a fresh state:</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb29-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb29-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%{<span class="va">symbol:</span> symbol, <span class="va">profit_interval:</span> profit_interval}) <span class="kw">do</span></span>
@@ -467,27 +470,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="how-trading-strategy-will-work" class="section level2" number="2.3">
 <h2><span class="header-section-number">2.3</span> How trading strategy will work?</h2>
 <p>Our trader process has an internal state that will serve as a indicator where in the trade cycle is it. The following diagram shows 3 possible trader states that trader will progress through from left to right:</p>
-<p><img src="images/chapter_02_01_trader_states.png" /></p>
+<p><img src="images/chapter_02_01_trader_states.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>Our trader will be receiving trade events sequentially and take decisions
 based on it’s own state and trade event’s contents.</p>
-<p>We will focus on a trader in 3 different states:
-* a new trader without any orders
-* a trader with a buy order placed
-* a trader with a sell order placed.</p>
+<p>We will focus on a trader in 3 different states:</p>
 <ul>
-<li>First state - A new trader</li>
+<li>a new trader without any orders</li>
+<li>a trader with a buy order placed</li>
+<li>a trader with a sell order placed.</li>
 </ul>
+<div style="page-break-after: always;"></div>
+<p><strong>First state - A new trader</strong></p>
 <p>Trader doesn’t have any open orders which we can confirm by pattern matching on the <code>buy_order</code> field from its state. From the incoming event, we can get
 the current price which we will use in the buy order that the trader will place.</p>
-<ul>
-<li>Second state - Buy order placed</li>
-</ul>
+<p><strong>Second state - Buy order placed</strong></p>
 <p>After placing a buy order, trader will be pattern matching to confirm that
 has incoming event filled his buy order otherwise ignoring it.
 When trade event matching the order id of trader’s buy order will arrive, it means that buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won’t cater for this case, it will always assume that it got filled in a single transaction) and trader can now place the sell order based on the expected profit and the buy_price.</p>
-<ul>
-<li>Third state - Sell order placed</li>
-</ul>
+<p><strong>Third state - Sell order placed</strong></p>
 <p>Finally, in a very similar fashion to previous state, the trader will be pattern matching to confirm that incoming event has filled his sell order(matching order id), otherwise ignoring it.
 When trade event matching the order id of trader’s sell order will arrive, that means that sell order got filled(simplification as described above) and full trade cycle has ended and the trader can now exit.</p>
 <div id="implementation-of-the-first-scenario" class="section level3" number="2.3.1">
@@ -553,6 +553,7 @@ Again, don’t forget to return the updated state as otherwise, trader will keep
 <p>To calculate the sell price we will need to use precise math and that will require a custom module. We will use the <a href="https://github.com/ericmj/decimal">Decimal</a> module, so first, let’s alias it at the top of the file:</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb36-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb36-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D</span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>Now to calculate the correct sell price, we can use the following formula which gets me pretty close to expected value:</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb37-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb37-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_sell_price(buy_price, profit_interval, tick_size) <span class="kw">do</span></span>
@@ -627,6 +628,7 @@ incoming events as they were not matched by any of the previous pattern matches:
 <span id="cb40-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb40-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb40-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb40-11" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>We will use the fact that we registered our trader process with a name to be able to cast a message to it.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="updating-streamer-app" class="section level3" number="2.3.6">
 <h3><span class="header-section-number">2.3.6</span> Updating streamer app</h3>
@@ -665,7 +667,7 @@ incoming events as they were not matched by any of the previous pattern matches:
 <p>We can see that our trader placed a buy order at 25.979c per XRP, it was filled in under 300ms, so then the trader placed a sell order at ~25.77c
 which was also filled in under 300ms. This way the trader finished the trade
 cycle and process can terminate.</p>
-<p>That’s it. Congratulations! You just made your first algorithmic trade and you should be proud of that! In the process of creating that algorithm we touched on multiple topics including GenServer and depending on it’s state and external data (trade events) to perform different actions - this is a very common workflow that Elixir engineers are following and it’s great to see it in action.</p>
+<p>That’s it. <strong>Congratulations!</strong> You just made your first algorithmic trade and you should be proud of that! In the process of creating that algorithm we touched on multiple topics including GenServer and depending on it’s state and external data (trade events) to perform different actions - this is a very common workflow that Elixir engineers are following and it’s great to see it in action.</p>
 <p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_02">Github</a></p>
 
@@ -701,6 +703,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

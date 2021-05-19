@@ -55,6 +55,7 @@ Next, let's model the state of our server:
 ```
 
 Our trader needs to know:
+
 - what symbol does it need to trade ("symbol" here is a pair of assets for example "XRPUSDT", which is XRP to/from USDT)
 - placed buy order (if any)
 - placed sell order (if any)
@@ -75,6 +76,8 @@ As now we know that our GenServer will need to receive those details via args, w
     ...
   end
 ```
+
+\newpage
 
 As we are already in the `init/1` function we will need to modify it to fetch the `tick_size` for the passed symbol and initialize a fresh state:
 
@@ -156,29 +159,33 @@ We are using `get_exchange_info/0` to fetch list of symbols, that we will filter
 
 Our trader process has an internal state that will serve as a indicator where in the trade cycle is it. The following diagram shows 3 possible trader states that trader will progress through from left to right:
 
-![](images/chapter_02_01_trader_states.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_02_01_trader_states.png")
+```
 
 Our trader will be receiving trade events sequentially and take decisions
 based on it's own state and trade event's contents.
 
 We will focus on a trader in 3 different states:
+
 * a new trader without any orders
 * a trader with a buy order placed
 * a trader with a sell order placed.
 
+\newpage
 
-* First state - A new trader
+**First state - A new trader**
 
 Trader doesn't have any open orders which we can confirm by pattern matching on the `buy_order` field from its state. From the incoming event, we can get
 the current price which we will use in the buy order that the trader will place.
 
-* Second state - Buy order placed
+**Second state - Buy order placed**
 
 After placing a buy order, trader will be pattern matching to confirm that
 has incoming event filled his buy order otherwise ignoring it.
 When trade event matching the order id of trader's buy order will arrive, it means that buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won't cater for this case, it will always assume that it got filled in a single transaction) and trader can now place the sell order based on the expected profit and the buy_price.
 
-* Third state - Sell order placed
+**Third state - Sell order placed**
 
 Finally, in a very similar fashion to previous state, the trader will be pattern matching to confirm that incoming event has filled his sell order(matching order id), otherwise ignoring it.
 When trade event matching the order id of trader's sell order will arrive, that means that sell order got filled(simplification as described above) and full trade cycle has ended and the trader can now exit.
@@ -266,6 +273,8 @@ To calculate the sell price we will need to use precise math and that will requi
 # /apps/naive/lib/naive/trader.ex
 alias Decimal, as: D
 ```
+
+\newpage
 
 Now to calculate the correct sell price, we can use the following formula which gets me pretty close to expected value:
 
@@ -362,6 +371,8 @@ end
 
 We will use the fact that we registered our trader process with a name to be able to cast a message to it.
 
+\newpage
+
 ### Updating streamer app
 
 To glue our apps together for the time and keep things simple in this chapter we will modify the streamer process to simply call our new `Naive` interface directly by appending a following function call at the end of `process_event/1` function inside the `Streamer.Binance` module:
@@ -414,7 +425,7 @@ We can see that our trader placed a buy order at 25.979c per XRP, it was filled 
 which was also filled in under 300ms. This way the trader finished the trade
 cycle and process can terminate.
 
-That's it. Congratulations! You just made your first algorithmic trade and you should be proud of that! In the process of creating that algorithm we touched on multiple topics including GenServer and depending on it's state and external data (trade events) to perform different actions - this is a very common workflow that Elixir engineers are following and it's great to see it in action.
+That's it. **Congratulations!** You just made your first algorithmic trade and you should be proud of that! In the process of creating that algorithm we touched on multiple topics including GenServer and depending on it's state and external data (trade events) to perform different actions - this is a very common workflow that Elixir engineers are following and it's great to see it in action.
 
 [Note] Please remember to run `mix format` to keep things nice and tidy.
 

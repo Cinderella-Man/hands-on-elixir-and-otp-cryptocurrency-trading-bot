@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 4 Mock the Binance API | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="introduce-pubsub-as-a-communication-method.html"/>
 <link rel="next" href="enable-parallel-trading-on-multiple-symbols.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -364,19 +364,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="design-1" class="section level2" number="4.2">
 <h2><span class="header-section-number">4.2</span> Design</h2>
 <p>First, let’s start with the current state:</p>
-<p><img src="images/chapter_04_01_current_state.png" /></p>
+<p><img src="images/chapter_04_01_current_state.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>Currently our trader is using the <code>Binance</code> module to place buy/sell
 orders and get exchange info.
 The <code>get_exchange_info/0</code> function doesn’t require a Binance account as it’s a publicly available information so we can call the <code>Binance</code> lib directly from our module.
 The remaining ones(buying/selling) require <code>Binance</code> account and some coins/token inside it’s wallet. We need to mock those inside our module.</p>
+<div style="page-break-after: always;"></div>
 <p>We will update the trader to fetch the Binance’s module name from the config:</p>
-<p><img src="images/chapter_04_02_proposal.png" /></p>
+<p><img src="images/chapter_04_02_proposal.png" width="80%" style="display: block; margin: auto;" /></p>
 <p>We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
 It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that’s why BinanceMock will also need to broadcast fake events to the “TRADE_EVENTS:#{symbol}” PubSub topic so the trader will pick them up:</p>
-<p><img src="images/chapter_04_03_proposal_pubsub.png" /></p>
+<p><img src="images/chapter_04_03_proposal_pubsub.png" width="80%" style="display: block; margin: auto;" /></p>
+<div style="page-break-after: always;"></div>
 <p>When exactly should we broadcast those fake trade events? Well, the best thing
 that we can do is make <code>BinanceMock</code> process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:</p>
-<p><img src="images/chapter_04_04_explenation.png" /></p>
+<p><img src="images/chapter_04_04_explenation.png" width="70%" style="display: block; margin: auto;" /></p>
 <p>Starting from the arrow on the left, our naive strategy will place an order at the current price.
 In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price <em>below</em> the buy order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
 Trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
@@ -389,13 +391,18 @@ Similarly to the buy order, BinanceMock will keep on waiting until a trade event
 <div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="mock-the-binance-api.html#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps</span>
 <span id="cb49-2"><a href="mock-the-binance-api.html#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix new binance_mock <span class="at">--sup</span></span></code></pre></div>
 <p>The next step will be to update the <code>BinanceMock</code> module to be a GenServer.</p>
-<p>We will utilize:
-* the <code>Decimal</code> module for comparing the prices
-* the <code>Logger</code> module to log</p>
-<p>As well as we will define internal <code>%State{}</code> struct that will hold:
-- map called <code>order_books</code> for each traded symbol
-- list of symbols that mock subscribed to
-- last generated id - for consistent generating of unique ids for fake trade events</p>
+<p>We will utilize:</p>
+<ul>
+<li>the <code>Decimal</code> module for comparing the prices</li>
+<li>the <code>Logger</code> module to log</li>
+</ul>
+<div style="page-break-after: always;"></div>
+<p>As well as we will define internal <code>%State{}</code> struct that will hold:</p>
+<ul>
+<li>map called <code>order_books</code> for each traded symbol</li>
+<li>list of symbols that mock subscribed to</li>
+<li>last generated id - for consistent generating of unique ids for fake trade events</li>
+</ul>
 <p><code>order_books</code> map will consist of <code>:"#{symbol}</code> =&gt; <code>%OrderBook{}</code>. We will define the <code>%OrderBook{}</code> struct as 3 lists <code>buy_side</code>, <code>sell_side</code> and <code>historical</code>:</p>
 <div class="sourceCode" id="cb50"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb50-1"><a href="mock-the-binance-api.html#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb50-2"><a href="mock-the-binance-api.html#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">BinanceMock</span> <span class="kw">do</span></span>
@@ -429,6 +436,7 @@ Similarly to the buy order, BinanceMock will keep on waiting until a trade event
 <span id="cb51-2"><a href="mock-the-binance-api.html#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_exchange_info <span class="kw">do</span></span>
 <span id="cb51-3"><a href="mock-the-binance-api.html#cb51-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Binance</span><span class="op">.</span>get_exchange_info()</span>
 <span id="cb51-4"><a href="mock-the-binance-api.html#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="implement-placing-buy-and-sell-orders" class="section level2" number="4.5">
 <h2><span class="header-section-number">4.5</span> Implement placing buy and sell orders</h2>
@@ -442,11 +450,13 @@ the same for both order sides:</p>
 <span id="cb52-6"><a href="mock-the-binance-api.html#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_sell(symbol, quantity, price, <span class="st">&quot;GTC&quot;</span>) <span class="kw">do</span></span>
 <span id="cb52-7"><a href="mock-the-binance-api.html#cb52-7" aria-hidden="true" tabindex="-1"></a>    order_limit(symbol, quantity, price, <span class="st">&quot;SELL&quot;</span>)</span>
 <span id="cb52-8"><a href="mock-the-binance-api.html#cb52-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The “order_limit” helper function will:
-- ensure that quantity and price are float values as the <code>Binance</code> module accepts both strings and floats
-- generate a fake order based on symbol, quantity, price, and side
-- cast a message to the BinanceMock process to add the fake order
-- return with a tuple with <code>%OrderResponse{}</code> struct to be consistent with the Binance module:</p>
+<p>The “order_limit” helper function will:</p>
+<ul>
+<li>ensure that quantity and price are float values as the <code>Binance</code> module accepts both strings and floats</li>
+<li>generate a fake order based on symbol, quantity, price, and side</li>
+<li>cast a message to the BinanceMock process to add the fake order</li>
+<li>return with a tuple with <code>%OrderResponse{}</code> struct to be consistent with the Binance module:</li>
+</ul>
 <div class="sourceCode" id="cb53"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb53-1"><a href="mock-the-binance-api.html#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb53-2"><a href="mock-the-binance-api.html#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
 <span id="cb53-3"><a href="mock-the-binance-api.html#cb53-3" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> <span class="cn">Float</span><span class="op">.</span>parse(<span class="st">&quot;</span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span>) <span class="op">|&gt;</span> elem(<span class="dv">0</span>)</span>
@@ -469,10 +479,12 @@ the same for both order sides:</p>
 <span id="cb53-20"><a href="mock-the-binance-api.html#cb53-20" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, convert_order_to_order_response(fake_order)}</span>
 <span id="cb53-21"><a href="mock-the-binance-api.html#cb53-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We can now move on to the implementation of the <code>handle_cast/2</code> callback to <code>:add_order</code> to the order book for the symbol from the order.
-It needs to do two things:
-- subscribe to the <code>TRADE_EVENTS:#{symbol}</code> topic for the symbol from
-the order
-- add the order to the correct order book</p>
+It needs to do two things:</p>
+<ul>
+<li>subscribe to the <code>TRADE_EVENTS:#{symbol}</code> topic for the symbol from the order</li>
+<li>add the order to the correct order book</li>
+</ul>
+<div style="page-break-after: always;"></div>
 <div class="sourceCode" id="cb54"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb54-1"><a href="mock-the-binance-api.html#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb54-2"><a href="mock-the-binance-api.html#cb54-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
 <span id="cb54-3"><a href="mock-the-binance-api.html#cb54-3" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:add_order</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order},</span>
@@ -599,6 +611,7 @@ previously - those are <code>generate_fake_order</code> and <code>convert_order_
 <span id="cb59-6"><a href="mock-the-binance-api.html#cb59-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
 <span id="cb59-7"><a href="mock-the-binance-api.html#cb59-7" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, id <span class="op">+</span> <span class="dv">1</span>, %{state <span class="op">|</span> <span class="va">fake_order_id:</span> id <span class="op">+</span> <span class="dv">1</span>}}</span>
 <span id="cb59-8"><a href="mock-the-binance-api.html#cb59-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="implement-order-retrival" class="section level2" number="4.6">
 <h2><span class="header-section-number">4.6</span> Implement order retrival</h2>
@@ -737,6 +750,7 @@ the children list of the application so it starts automatically:</p>
 <span id="cb65-7"><a href="mock-the-binance-api.html#cb65-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb65-8"><a href="mock-the-binance-api.html#cb65-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb65-9"><a href="mock-the-binance-api.html#cb65-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="upgrade-trader-and-config" class="section level2" number="4.8">
 <h2><span class="header-section-number">4.8</span> Upgrade trader and config</h2>
@@ -770,6 +784,7 @@ the children list of the application so it starts automatically:</p>
 <span id="cb69-9"><a href="mock-the-binance-api.html#cb69-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb69-10"><a href="mock-the-binance-api.html#cb69-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb69-11"><a href="mock-the-binance-api.html#cb69-11" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>We also add <code>:binance_mock</code> to the list of deps of the <code>naive</code> app(as the Naive app will use either <code>Binance</code> or <code>BinanceMock</code> to “trade”):</p>
 <div class="sourceCode" id="cb70"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb70-1"><a href="mock-the-binance-api.html#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/mix.exs</span></span>
 <span id="cb70-2"><a href="mock-the-binance-api.html#cb70-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
@@ -791,12 +806,15 @@ the children list of the application so it starts automatically:</p>
 <span id="cb71-4"><a href="mock-the-binance-api.html#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="co">#PID&lt;0.320.0&gt; # &lt;- confirms that BinanceMock process is alive</span></span>
 <span id="cb71-5"><a href="mock-the-binance-api.html#cb71-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
 <span id="cb71-6"><a href="mock-the-binance-api.html#cb71-6" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.332.0&gt;}</span></span>
-<span id="cb71-7"><a href="mock-the-binance-api.html#cb71-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: Decimal.new<span class="er">(</span><span class="st">&quot;-0.001&quot;</span><span class="kw">)</span><span class="er">}</span><span class="kw">)</span></span>
-<span id="cb71-8"><a href="mock-the-binance-api.html#cb71-8" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:39.232</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb71-9"><a href="mock-the-binance-api.html#cb71-9" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.318.0&gt;}</span></span>
-<span id="cb71-10"><a href="mock-the-binance-api.html#cb71-10" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:40.826</span> [info]  Placing BUY order for XRPUSDT @ 0.29520000, quantity: 100</span>
-<span id="cb71-11"><a href="mock-the-binance-api.html#cb71-11" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:44.569</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549<span class="er">)</span><span class="ex">,</span> quantity: 100.0</span>
-<span id="cb71-12"><a href="mock-the-binance-api.html#cb71-12" aria-hidden="true" tabindex="-1"></a><span class="ex">00:20:09.391</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
+<span id="cb71-7"><a href="mock-the-binance-api.html#cb71-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span></span>
+<span id="cb71-8"><a href="mock-the-binance-api.html#cb71-8" aria-hidden="true" tabindex="-1"></a><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: Decimal.new<span class="er">(</span><span class="st">&quot;-0.001&quot;</span><span class="kw">)</span><span class="er">}</span></span>
+<span id="cb71-9"><a href="mock-the-binance-api.html#cb71-9" aria-hidden="true" tabindex="-1"></a><span class="kw">)</span></span>
+<span id="cb71-10"><a href="mock-the-binance-api.html#cb71-10" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:39.232</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb71-11"><a href="mock-the-binance-api.html#cb71-11" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.318.0&gt;}</span></span>
+<span id="cb71-12"><a href="mock-the-binance-api.html#cb71-12" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:40.826</span> [info]  Placing BUY order for XRPUSDT @ 0.29520000, quantity: 100</span>
+<span id="cb71-13"><a href="mock-the-binance-api.html#cb71-13" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:44.569</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549<span class="er">)</span><span class="ex">,</span></span>
+<span id="cb71-14"><a href="mock-the-binance-api.html#cb71-14" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 100.0</span>
+<span id="cb71-15"><a href="mock-the-binance-api.html#cb71-15" aria-hidden="true" tabindex="-1"></a><span class="ex">00:20:09.391</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
 <p>As config already points to it so we can continue as previously by starting the streaming and trading on the symbol. The trader is using the <code>BinanceMock</code> and it looks like everything works as it would be dealing with a real exchange.</p>
 <p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_04">Github</a></p>
@@ -832,6 +850,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

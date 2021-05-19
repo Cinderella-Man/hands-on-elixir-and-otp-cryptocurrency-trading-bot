@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 8 Add support for multiple transactions per order | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 8 Add support for multiple transactions per order | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 8 Add support for multiple transactions per order | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 8 Add support for multiple transactions per order | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="introduce-a-trader-budget-and-calculating-the-quantity.html"/>
 <link rel="next" href="run-multiple-traders-in-parallel.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -361,17 +361,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="issue-with-the-current-implementation" class="section level2" number="8.2">
 <h2><span class="header-section-number">8.2</span> Issue with the current implementation</h2>
 <p>Currently, <code>Naive.Trader</code> process is placing a buy order and it’s assuming that it will be filled by a <em>single</em> opposite sell order(we are pattern matching on quantity to confirm that):</p>
-<p><img src="images/chapter_08_01_single_transaction.png" /></p>
+<p><img src="images/chapter_08_01_single_transaction.png" width="80%" style="display: block; margin: auto;" /></p>
 <p>Here we can see our buy order for 1000 units(on the left) and other trader’s sell order(on the right) for 1000 units. This(order fully filled in single transaction) is a case most of the time but it’s not ALWAYS the case.</p>
+<div style="page-break-after: always;"></div>
 <p>Sometimes our order will be filled by two or more transactions:</p>
-<p><img src="images/chapter_08_02_multiple_transactions_per_order.png" /></p>
+<p><img src="images/chapter_08_02_multiple_transactions_per_order.png" width="80%" style="display: block; margin: auto;" /></p>
 <p>The easiest and the safest way to check has this event filled our order fully is to fetch our order again from Binance at the moment when trade event filling our order arrives.</p>
 <p>Problem with this approach is that sometimes we will run into a race condition:</p>
-<p><img src="images/chapter_08_03_race_condition_timeline.png" /></p>
+<p><img src="images/chapter_08_03_race_condition_timeline.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>From the left, first, we are sending a buy order for quantity 1000 to the Binance. It hangs for a while until it gets filled by 2 transactions that happened very quickly. Quickly enough for us to receive both messages almost in the same moment.</p>
 <p>When our bot will handle the first one it will fetch our the buy order which is already filled. It will cause the trader to place a sell order but then the there’s another trade event waiting in the message box. It will be handled by another callback that will again fetch order and place another sell order to be placed and that’s obviously not correct.</p>
 <p>What we need to do is to update the status of the buy order after the first fetch(if it’s filled) so when second trade event arrives we will ignore it(this will require additional callback).</p>
 <p>The same issue will appear when placing sell order and dealing multiple simultaneous transaction.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="improve-buy-order-filled-callback" class="section level2" number="8.3">
 <h2><span class="header-section-number">8.3</span> Improve buy order filled callback</h2>
@@ -409,7 +411,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb106-12"><a href="add-support-for-multiple-transactions-per-order.html#cb106-12" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb106-13"><a href="add-support-for-multiple-transactions-per-order.html#cb106-13" aria-hidden="true" tabindex="-1"></a>    buy_order <span class="op">=</span> %{buy_order <span class="op">|</span> <span class="va">status:</span> current_buy_order<span class="op">.</span>status}</span>
 <span id="cb106-14"><a href="add-support-for-multiple-transactions-per-order.html#cb106-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>The rest of the logic inside this callback will depend on the <code>status</code> of the buy order. If our buy order is “filled” we would like to follow the existing logic but also update <code>buy_order</code> field inside the state of the trader process. On the other hand if our order is not yet filled the only thing to do is to update <code>buy_order</code> field inside the state of the Trader process. Here’s and updated body below above changes(few variables got renamed for clarity as we are now fetch the order):</p>
+<p>The rest of the logic inside this callback will depend on the <code>status</code> of the buy order. If our buy order is “filled” we would like to follow the existing logic but also update <code>buy_order</code> field inside the state of the trader process. On the other hand if our order is not yet filled the only thing to do is to update <code>buy_order</code> field inside the state of the Trader process.</p>
+<div style="page-break-after: always;"></div>
+<p>Here’s an updated body below above changes(few variables got renamed for clarity as we are now fetch the order):</p>
 <div class="sourceCode" id="cb107"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb107-1"><a href="add-support-for-multiple-transactions-per-order.html#cb107-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb107-2"><a href="add-support-for-multiple-transactions-per-order.html#cb107-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
 <span id="cb107-3"><a href="add-support-for-multiple-transactions-per-order.html#cb107-3" aria-hidden="true" tabindex="-1"></a>  buy_order <span class="op">=</span> <span class="op">....</span></span>
@@ -460,11 +464,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="improve-sell-order-callback" class="section level2" number="8.5">
 <h2><span class="header-section-number">8.5</span> Improve sell order callback</h2>
 <p>Let’s move on to the callback where the trader receives trade event matching sell order’s id (about line 135 inside the <code>Naive.Trader</code> module).</p>
-<p>We need to modify the header of our callback in the following ways:
-- drop the both pattern matches on <code>quantity</code> as we already know that trade event could partially fill our order (#1)
-- get <code>symbol</code> out of state (#2)
-- get <code>transact_time</code> out of the <code>sell_order</code> (used to fetch <code>get_order</code>) (#3)
-- assign <code>sell_order</code> to a variable (#4)</p>
+<p>We need to modify the header of our callback in the following ways:</p>
+<ul>
+<li>drop the both pattern matches on <code>quantity</code> as we already know that trade event could partially fill our order (#1)</li>
+<li>get <code>symbol</code> out of state (#2)</li>
+<li>get <code>transact_time</code> out of the <code>sell_order</code> (used to fetch <code>get_order</code>) (#3)</li>
+<li>assign <code>sell_order</code> to a variable (#4)</li>
+</ul>
 <div class="sourceCode" id="cb109"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb109-1"><a href="add-support-for-multiple-transactions-per-order.html#cb109-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb109-2"><a href="add-support-for-multiple-transactions-per-order.html#cb109-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
 <span id="cb109-3"><a href="add-support-for-multiple-transactions-per-order.html#cb109-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
@@ -479,13 +485,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb109-12"><a href="add-support-for-multiple-transactions-per-order.html#cb109-12" aria-hidden="true" tabindex="-1"></a>            } <span class="op">=</span> sell_order <span class="co"># to update order (#4)</span></span>
 <span id="cb109-13"><a href="add-support-for-multiple-transactions-per-order.html#cb109-13" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
 <span id="cb109-14"><a href="add-support-for-multiple-transactions-per-order.html#cb109-14" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
-<p>Moving lower to the body of the function, we need to:
-- fetch current state of our sell order
-- update <code>status</code> of our <code>sell_order</code> from Trader’s state
-- branch out the logic based on <code>status</code> of the <code>sell_order</code>:
-* log and return the <code>:stop</code> atom to stop the GenServer
-or
-* update the state with new <code>sell_order</code> and continue</p>
+<p>Moving to the body of the function, we need to:</p>
+<ul>
+<li><p>fetch current state of our sell order</p></li>
+<li><p>update <code>status</code> of our <code>sell_order</code> from Trader’s state</p></li>
+<li><p>branch out the logic based on <code>status</code> of the <code>sell_order</code>:</p>
+<ul>
+<li>log and return the <code>:stop</code> atom to stop the GenServer</li>
+</ul>
+<p>or</p>
+<ul>
+<li>update the state with new <code>sell_order</code> and continue</li>
+</ul></li>
+</ul>
+<div style="page-break-after: always;"></div>
 <p>Here’s the full body of our callback:</p>
 <div class="sourceCode" id="cb110"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb110-1"><a href="add-support-for-multiple-transactions-per-order.html#cb110-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb110-2"><a href="add-support-for-multiple-transactions-per-order.html#cb110-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># inside the callabck</span></span>
@@ -520,9 +533,10 @@ or
 <span id="cb111-8"><a href="add-support-for-multiple-transactions-per-order.html#cb111-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.345.0&gt;}</span></span>
 <span id="cb111-9"><a href="add-support-for-multiple-transactions-per-order.html#cb111-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:31:57.044</span> [info]  Initializing new trader for XRPUSDT</span>
 <span id="cb111-10"><a href="add-support-for-multiple-transactions-per-order.html#cb111-10" aria-hidden="true" tabindex="-1"></a><span class="ex">23:31:57.888</span> [info]  Placing BUY order for XRPUSDT @ 0.28031, quantity: 71.3</span>
-<span id="cb111-11"><a href="add-support-for-multiple-transactions-per-order.html#cb111-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:32:01.023</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.28053, quantity: 71.30000000</span>
-<span id="cb111-12"><a href="add-support-for-multiple-transactions-per-order.html#cb111-12" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  Trade finished, trader will now exit</span>
-<span id="cb111-13"><a href="add-support-for-multiple-transactions-per-order.html#cb111-13" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  XRPUSDT Trader finished <span class="at">-</span> restarting</span></code></pre></div>
+<span id="cb111-11"><a href="add-support-for-multiple-transactions-per-order.html#cb111-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:32:01.023</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.28053,</span>
+<span id="cb111-12"><a href="add-support-for-multiple-transactions-per-order.html#cb111-12" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 71.30000000</span>
+<span id="cb111-13"><a href="add-support-for-multiple-transactions-per-order.html#cb111-13" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  Trade finished, trader will now exit</span>
+<span id="cb111-14"><a href="add-support-for-multiple-transactions-per-order.html#cb111-14" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  XRPUSDT Trader finished <span class="at">-</span> restarting</span></code></pre></div>
 <p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_08">Github</a></p>
 
@@ -557,6 +571,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

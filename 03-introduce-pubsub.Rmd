@@ -9,35 +9,50 @@
 
 First, let's look at the current situation:
 
-![](images/chapter_03_01_current_situation.png)
+```{r, fig.align="center", out.width="40%", echo=FALSE}
+knitr::include_graphics("images/chapter_03_01_current_situation.png")
+```
 
 We started with the Binance streamer calling the `send_event/1` function on the `Naive` module. The `Naive` module then calls the trader process using the GenServer's `cast/2` function(via it's registered name).
 
+\newpage
+
 Next step in the process of extending our trading strategy will be to scale it to run multiple `Naive.Trader` processes in parallel. To be able to do that we will need to remove the option to register the `trader` process with a name(as only one process can be registered under single name).
 
-![](images/chapter_03_02_current_situation_failed.png)
+```{r, fig.align="center", out.width="40%", echo=FALSE}
+knitr::include_graphics("images/chapter_03_02_current_situation_failed.png")
+```
 
 The second issue with that design was the fact that the `Streamer` needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.
 
 To fix those issues we will invert the design and introduce a PubSub mechanism:
 
-![](images/chapter_03_03_phoenix_pubsub.png)
+```{r, fig.align="center", out.width="40%", echo=FALSE}
+knitr::include_graphics("images/chapter_03_03_phoenix_pubsub.png")
+```
 
 The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
 There's no coupling between the `Streamer` and `Naive` app any more.
 
-We can now introduce multiple traders that will subscribe to the topic and
-they will receive messages from the PubSub:
+\newpage
 
-![](images/chapter_03_04_naive_trader_group.png)
+We can now introduce multiple traders that will subscribe to the topic and they will receive messages from the PubSub:
+
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_03_04_naive_trader_group.png")
+```
 
 Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:
 
-![](images/chapter_03_05_other_services.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_03_04_naive_trader_group.png")
+```
+
+\newpage
 
 ## Implementation
 
-We will start by adding a [`Phoenix.PubSub`](https://github.com/phoenixframework/phoenix_pubsub) library to both `Streamer` and `Naive` app(as both will be using it, `Streamer` app as a broadcaster and `Naive` app as a subscriber)
+We will start by adding a [`Phoenix.PubSub`](https://github.com/phoenixframework/phoenix_pubsub) library to both `Streamer` and `Naive` app(as both will be using it, `Streamer` app as a broadcaster and `Naive` app as a subscriber).
 
 Scrolling down through it's readme on GitHub we can see that we need to add `:phoenix_pubsub` to list of dependencies:
 
@@ -75,7 +90,6 @@ We will now modify the streamer to broadcast a message to PubSub topic instead o
 # /apps/streamer/lib/streamer/binance.ex
   defp process_event(...) do
     ...
-
     Phoenix.PubSub.broadcast(
       Streamer.PubSub,
       "TRADE_EVENTS:#{trade_event.symbol}",
@@ -84,18 +98,18 @@ We will now modify the streamer to broadcast a message to PubSub topic instead o
   end
 ```
 
+\newpage
+
 Inside the trader on init we need to subscribe to the "TRADE_EVENTS" PubSub channel:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def init(...) do
     ...
-
     Phoenix.PubSub.subscribe(
       Streamer.PubSub,
       "TRADE_EVENTS:#{symbol}"
     )
-
     ...
   end
 ```
@@ -119,7 +133,8 @@ iex(2)> Naive.Trader.start_link(%{symbol: "XRPUSDT", profit_interval: Decimal.ne
 23:46:37.482 [info]  Initializing new trader for XRPUSDT
 {:ok, #PID<0.474.0>}
 23:46:55.179 [info]  Placing BUY order for XRPUSDT @ 0.29462000, quantity: 100
-23:46:55.783 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225), quantity: 100.00000000
+23:46:55.783 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225),
+quantity: 100.00000000
 23:46:56.029 [info]  Trade finished, trader will now exit
 ```
 

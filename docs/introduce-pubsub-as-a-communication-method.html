@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 3 Introduce PubSub as a communication method | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"/>
 <link rel="next" href="mock-the-binance-api.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -359,24 +359,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="design" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Design</h2>
 <p>First, let’s look at the current situation:</p>
-<p><img src="images/chapter_03_01_current_situation.png" /></p>
+<p><img src="images/chapter_03_01_current_situation.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>We started with the Binance streamer calling the <code>send_event/1</code> function on the <code>Naive</code> module. The <code>Naive</code> module then calls the trader process using the GenServer’s <code>cast/2</code> function(via it’s registered name).</p>
+<div style="page-break-after: always;"></div>
 <p>Next step in the process of extending our trading strategy will be to scale it to run multiple <code>Naive.Trader</code> processes in parallel. To be able to do that we will need to remove the option to register the <code>trader</code> process with a name(as only one process can be registered under single name).</p>
-<p><img src="images/chapter_03_02_current_situation_failed.png" /></p>
+<p><img src="images/chapter_03_02_current_situation_failed.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>The second issue with that design was the fact that the <code>Streamer</code> needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.</p>
 <p>To fix those issues we will invert the design and introduce a PubSub mechanism:</p>
-<p><img src="images/chapter_03_03_phoenix_pubsub.png" /></p>
+<p><img src="images/chapter_03_03_phoenix_pubsub.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
 There’s no coupling between the <code>Streamer</code> and <code>Naive</code> app any more.</p>
-<p>We can now introduce multiple traders that will subscribe to the topic and
-they will receive messages from the PubSub:</p>
-<p><img src="images/chapter_03_04_naive_trader_group.png" /></p>
+<div style="page-break-after: always;"></div>
+<p>We can now introduce multiple traders that will subscribe to the topic and they will receive messages from the PubSub:</p>
+<p><img src="images/chapter_03_04_naive_trader_group.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:</p>
-<p><img src="images/chapter_03_05_other_services.png" /></p>
+<p><img src="images/chapter_03_04_naive_trader_group.png" width="100%" style="display: block; margin: auto;" /></p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="implementation" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Implementation</h2>
-<p>We will start by adding a <a href="https://github.com/phoenixframework/phoenix_pubsub"><code>Phoenix.PubSub</code></a> library to both <code>Streamer</code> and <code>Naive</code> app(as both will be using it, <code>Streamer</code> app as a broadcaster and <code>Naive</code> app as a subscriber)</p>
+<p>We will start by adding a <a href="https://github.com/phoenixframework/phoenix_pubsub"><code>Phoenix.PubSub</code></a> library to both <code>Streamer</code> and <code>Naive</code> app(as both will be using it, <code>Streamer</code> app as a broadcaster and <code>Naive</code> app as a subscriber).</p>
 <p>Scrolling down through it’s readme on GitHub we can see that we need to add <code>:phoenix_pubsub</code> to list of dependencies:</p>
 <div class="sourceCode" id="cb44"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb44-1"><a href="introduce-pubsub-as-a-communication-method.html#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs &amp; /apps/naive/mix.exs</span></span>
 <span id="cb44-2"><a href="introduce-pubsub-as-a-communication-method.html#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
@@ -402,25 +404,23 @@ they will receive messages from the PubSub:</p>
 <div class="sourceCode" id="cb46"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb46-1"><a href="introduce-pubsub-as-a-communication-method.html#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
 <span id="cb46-2"><a href="introduce-pubsub-as-a-communication-method.html#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> process_event(<span class="op">...</span>) <span class="kw">do</span></span>
 <span id="cb46-3"><a href="introduce-pubsub-as-a-communication-method.html#cb46-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb46-4"><a href="introduce-pubsub-as-a-communication-method.html#cb46-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-5"><a href="introduce-pubsub-as-a-communication-method.html#cb46-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
-<span id="cb46-6"><a href="introduce-pubsub-as-a-communication-method.html#cb46-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb46-7"><a href="introduce-pubsub-as-a-communication-method.html#cb46-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb46-8"><a href="introduce-pubsub-as-a-communication-method.html#cb46-8" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
-<span id="cb46-9"><a href="introduce-pubsub-as-a-communication-method.html#cb46-9" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb46-10"><a href="introduce-pubsub-as-a-communication-method.html#cb46-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb46-4"><a href="introduce-pubsub-as-a-communication-method.html#cb46-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
+<span id="cb46-5"><a href="introduce-pubsub-as-a-communication-method.html#cb46-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb46-6"><a href="introduce-pubsub-as-a-communication-method.html#cb46-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb46-7"><a href="introduce-pubsub-as-a-communication-method.html#cb46-7" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
+<span id="cb46-8"><a href="introduce-pubsub-as-a-communication-method.html#cb46-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb46-9"><a href="introduce-pubsub-as-a-communication-method.html#cb46-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>Inside the trader on init we need to subscribe to the “TRADE_EVENTS” PubSub channel:</p>
 <div class="sourceCode" id="cb47"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb47-1"><a href="introduce-pubsub-as-a-communication-method.html#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb47-2"><a href="introduce-pubsub-as-a-communication-method.html#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(<span class="op">...</span>) <span class="kw">do</span></span>
 <span id="cb47-3"><a href="introduce-pubsub-as-a-communication-method.html#cb47-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb47-4"><a href="introduce-pubsub-as-a-communication-method.html#cb47-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-5"><a href="introduce-pubsub-as-a-communication-method.html#cb47-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
-<span id="cb47-6"><a href="introduce-pubsub-as-a-communication-method.html#cb47-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb47-7"><a href="introduce-pubsub-as-a-communication-method.html#cb47-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb47-8"><a href="introduce-pubsub-as-a-communication-method.html#cb47-8" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb47-9"><a href="introduce-pubsub-as-a-communication-method.html#cb47-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-10"><a href="introduce-pubsub-as-a-communication-method.html#cb47-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb47-11"><a href="introduce-pubsub-as-a-communication-method.html#cb47-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb47-4"><a href="introduce-pubsub-as-a-communication-method.html#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
+<span id="cb47-5"><a href="introduce-pubsub-as-a-communication-method.html#cb47-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb47-6"><a href="introduce-pubsub-as-a-communication-method.html#cb47-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb47-7"><a href="introduce-pubsub-as-a-communication-method.html#cb47-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb47-8"><a href="introduce-pubsub-as-a-communication-method.html#cb47-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb47-9"><a href="introduce-pubsub-as-a-communication-method.html#cb47-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Next, we need to convert all <code>handle_call</code> callbacks to <code>handle_info</code> inside our <code>Trader</code> module as PubSub doesn’t use <code>GenServer.cast/2</code> to send messages over to subscribers.</p>
 <p>The final change will be to remove the <code>send_event</code> function from the <code>Naive</code>
 module as it’s no longer required.</p>
@@ -435,8 +435,9 @@ to PubSub. Next, we will start trading on the same symbol. On init, trader will 
 <span id="cb48-6"><a href="introduce-pubsub-as-a-communication-method.html#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:37.482</span> [info]  Initializing new trader for XRPUSDT</span>
 <span id="cb48-7"><a href="introduce-pubsub-as-a-communication-method.html#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.474.0&gt;}</span></span>
 <span id="cb48-8"><a href="introduce-pubsub-as-a-communication-method.html#cb48-8" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.179</span> [info]  Placing BUY order for XRPUSDT @ 0.29462000, quantity: 100</span>
-<span id="cb48-9"><a href="introduce-pubsub-as-a-communication-method.html#cb48-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.783</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225<span class="er">)</span><span class="ex">,</span> quantity: 100.00000000</span>
-<span id="cb48-10"><a href="introduce-pubsub-as-a-communication-method.html#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:56.029</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
+<span id="cb48-9"><a href="introduce-pubsub-as-a-communication-method.html#cb48-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.783</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225<span class="er">)</span><span class="ex">,</span></span>
+<span id="cb48-10"><a href="introduce-pubsub-as-a-communication-method.html#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 100.00000000</span>
+<span id="cb48-11"><a href="introduce-pubsub-as-a-communication-method.html#cb48-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:56.029</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
 <p>This shows that new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders and terminated after full trade cycle finished.</p>
 <p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_03">Github</a></p>
@@ -472,6 +473,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

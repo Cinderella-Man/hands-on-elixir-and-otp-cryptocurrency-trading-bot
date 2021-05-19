@@ -14,26 +14,40 @@
 
 First, let's start with the current state:
 
-![](images/chapter_04_01_current_state.png)
+```{r, fig.align="center", out.width="40%", echo=FALSE}
+knitr::include_graphics("images/chapter_04_01_current_state.png")
+```
 
 Currently our trader is using the `Binance` module to place buy/sell
 orders and get exchange info.
 The `get_exchange_info/0` function doesn't require a Binance account as it's a publicly available information so we can call the `Binance` lib directly from our module.
 The remaining ones(buying/selling) require `Binance` account and some coins/token inside it's wallet. We need to mock those inside our module.
 
+\newpage
+
 We will update the trader to fetch the Binance's module name from the config:
 
-![](images/chapter_04_02_proposal.png)
+```{r, fig.align="center", out.width="80%", echo=FALSE}
+knitr::include_graphics("images/chapter_04_02_proposal.png")
+```
 
 We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
 It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that's why BinanceMock will also need to broadcast fake events to the "TRADE_EVENTS:#{symbol}" PubSub topic so the trader will pick them up:
 
-![](images/chapter_04_03_proposal_pubsub.png)
+
+```{r, fig.align="center", out.width="80%", echo=FALSE}
+knitr::include_graphics("images/chapter_04_03_proposal_pubsub.png")
+```
+
+\newpage
 
 When exactly should we broadcast those fake trade events? Well, the best thing
 that we can do is make `BinanceMock` process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:
 
-![](images/chapter_04_04_explenation.png)
+
+```{r, fig.align="center", out.width="70%", echo=FALSE}
+knitr::include_graphics("images/chapter_04_04_explenation.png")
+```
 
 Starting from the arrow on the left, our naive strategy will place an order at the current price.
 In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price *below* the buy order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
@@ -54,13 +68,17 @@ $ mix new binance_mock --sup
 The next step will be to update the `BinanceMock` module to be a GenServer. 
 
 We will utilize:
+
 * the `Decimal` module for comparing the prices
 * the `Logger` module to log
 
+\newpage
+
 As well as we will define internal `%State{}` struct that will hold:
-- map called `order_books` for each traded symbol
-- list of symbols that mock subscribed to
-- last generated id - for consistent generating of unique ids for fake trade events
+
+* map called `order_books` for each traded symbol
+* list of symbols that mock subscribed to
+* last generated id - for consistent generating of unique ids for fake trade events
 
 `order_books` map will consist of `:"#{symbol}` => `%OrderBook{}`. We will define the `%OrderBook{}` struct as 3 lists `buy_side`, `sell_side` and `historical`:
 
@@ -102,6 +120,8 @@ As it was mentioned before, to retrieve exchange info we can just call Binance's
   end
 ```
 
+\newpage
+
 ## Implement placing buy and sell orders
 
 For buy and sell limit orders we will write a helper function as the logic is
@@ -119,10 +139,11 @@ the same for both order sides:
 ```
 
 The "order_limit" helper function will:
-- ensure that quantity and price are float values as the `Binance` module accepts both strings and floats
-- generate a fake order based on symbol, quantity, price, and side
-- cast a message to the BinanceMock process to add the fake order
-- return with a tuple with `%OrderResponse{}` struct to be consistent with the Binance module:
+
+* ensure that quantity and price are float values as the `Binance` module accepts both strings and floats
+* generate a fake order based on symbol, quantity, price, and side
+* cast a message to the BinanceMock process to add the fake order
+* return with a tuple with `%OrderResponse{}` struct to be consistent with the Binance module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -150,9 +171,11 @@ The "order_limit" helper function will:
 
 We can now move on to the implementation of the `handle_cast/2` callback to `:add_order` to the order book for the symbol from the order.
 It needs to do two things:
-- subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from
-the order
-- add the order to the correct order book
+
+* subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from the order
+* add the order to the correct order book
+
+\newpage
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -303,6 +326,8 @@ Last function to finish support for placing buy and sell orders is to add a call
     {:reply, id + 1, %{state | fake_order_id: id + 1}}
   end
 ```
+
+\newpage
 
 ## Implement order retrival
 
@@ -466,6 +491,8 @@ the children list of the application so it starts automatically:
 end
 ```
 
+\newpage
+
 ## Upgrade trader and config
 
 We can move on to the `Naive.Trader` module where we will add an attribute which will point to the Binance client dictated by config:
@@ -514,6 +541,8 @@ Last modification to our system will be to modify the `mix.exs` of the `binance_
 ...
 ```
 
+\newpage
+
 We also add `:binance_mock` to the list of deps of the `naive` app(as the Naive app will use either `Binance` or `BinanceMock` to "trade"):
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -540,11 +569,14 @@ iex(1)> Process.whereis(BinanceMock)
 #PID<0.320.0> # <- confirms that BinanceMock process is alive
 iex(2)> Streamer.start_streaming("xrpusdt")
 {:ok, #PID<0.332.0>}
-iex(3)> Naive.Trader.start_link(%{symbol: "XRPUSDT", profit_interval: Decimal.new("-0.001")})
+iex(3)> Naive.Trader.start_link(
+%{symbol: "XRPUSDT", profit_interval: Decimal.new("-0.001")}
+)
 00:19:39.232 [info]  Initializing new trader for XRPUSDT
 {:ok, #PID<0.318.0>}
 00:19:40.826 [info]  Placing BUY order for XRPUSDT @ 0.29520000, quantity: 100
-00:19:44.569 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549), quantity: 100.0
+00:19:44.569 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549),
+quantity: 100.0
 00:20:09.391 [info]  Trade finished, trader will now exit
 ```
 
