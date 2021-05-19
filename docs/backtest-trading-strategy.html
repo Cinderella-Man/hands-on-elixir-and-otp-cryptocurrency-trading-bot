@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir</title>
   <meta name="description" content="Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir" />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="images/cover.png" />
+  <meta property="og:image" content="/images/cover.png" />
   
   <meta name="github-repo" content="frathon/create-a-cryptocurrency-trading-bot-in-elixir" />
 
@@ -19,7 +19,7 @@
   <meta name="twitter:title" content="Chapter 15 Backtest trading strategy | Create a cryptocurrency trading bot in Elixir" />
   <meta name="twitter:site" content="@kamilskowron" />
   
-  <meta name="twitter:image" content="images/cover.png" />
+  <meta name="twitter:image" content="/images/cover.png" />
 
 <meta name="author" content="Kamil Skowron" />
 
@@ -32,7 +32,7 @@
   
 <link rel="prev" href="store-trade-events-and-orders-inside-the-database.html"/>
 
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -50,6 +50,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -59,9 +61,6 @@
 
   gtag('config', 'G-52FKGBX2B8');
 </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
-</style>
 
 
 <style type="text/css">
@@ -129,6 +128,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -145,7 +145,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Create a cryptocurrency trading bot in Elixir</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome 👋</a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
 <ul>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
@@ -290,7 +290,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
 <li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
 <li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
-<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive.dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the <code>Naive.DynamicSymbolSupervisor</code></a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
 <li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
 <ul>
 <li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
@@ -362,20 +362,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>In the last chapter, we started storing trade events and orders in the database which will be crucial for backtesting, which we will focus on in this chapter.</p>
 <p>Backtesting is a procedure of running historical data through the system and observing how our strategy would perform as if we would run it “in the past”. Backtesting works on assumption that the market will behave in a similar fashion in the future as it was in the past.</p>
 <p>At this moment we are receiving the trade events from the Binance through WebSocket. The <code>Streamer.Binance</code> process is handling those messages by parsing them from JSON string to map, then converting them to structs and broadcasting them to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic. The <code>Naive.Trader</code> subscribes to the <code>TRADE_EVENTS:#{symbol}</code> topic and takes decisions based on incoming data. As it places buy and sell orders it broadcasts them to the <code>ORDERS:#{symbol}</code> PubSub topic. The <code>DataWarehouse.Subscriber.Worker</code> processes subscribe to both trade events and orders topics and store incoming data inside the database - we can visualize that flow like that:</p>
-<div class="figure">
-<img src="images/chapter_14_02_current_pubsub.png" alt="" />
-<p class="caption">Normal broadcast/subscribe flow</p>
-</div>
+<p><img src="images/chapter_14_02_current_pubsub.png" width="60%" style="display: block; margin: auto;" /></p>
 <p>To backtest we can substitute the <code>Streamer.Binance</code> process with a <code>Task</code> that will <code>stream</code> trade events’ data from the database and broadcasts it to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic(the same topic as the <code>Streamer.Binance</code> process).</p>
 <p>From the perspective of the <code>Naive.Trader</code> it <em>does not</em> make any difference who is broadcasting those trade events. This should be a clear indication of the value of publish/subscribe model that we implemented from the beginning. It allows us to swap producer and consumers freely to backtest our trading strategies:</p>
-<div class="figure">
-<img src="images/chapter_14_03_backtest_pubsub.png" alt="" />
-<p class="caption">Task feeds the stream of data from the database straight to the PubSub topic</p>
-</div>
+<p><img src="images/chapter_14_03_backtest_pubsub.png" width="60%" style="display: block; margin: auto;" /></p>
 </div>
 <div id="implement-the-storing-task" class="section level2" number="15.3">
 <h2><span class="header-section-number">15.3</span> Implement the storing task</h2>
-<p>We will start by creating a new file called <code>publisher.ex</code> inside the <code>apps/data_warehouse/lib/data_warehouse</code> directory. We will start by implementing the basic <code>Task</code> behavior:</p>
+<p>We will start by creating a new file called <code>publisher.ex</code> inside the<br />
+<code>apps/data_warehouse/lib/data_warehouse</code> directory. We will start by implementing the basic <code>Task</code> behavior:</p>
 <div class="sourceCode" id="cb292"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb292-1"><a href="backtest-trading-strategy.html#cb292-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
 <span id="cb292-2"><a href="backtest-trading-strategy.html#cb292-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Publisher</span> <span class="kw">do</span></span>
 <span id="cb292-3"><a href="backtest-trading-strategy.html#cb292-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Task</span></span>
@@ -479,6 +474,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb297-13"><a href="backtest-trading-strategy.html#cb297-13" aria-hidden="true" tabindex="-1"></a>      new_trade_event</span>
 <span id="cb297-14"><a href="backtest-trading-strategy.html#cb297-14" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb297-15"><a href="backtest-trading-strategy.html#cb297-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>We also need to remember about keeping the interface tidy so we will add <code>publish_data</code> to the <code>DataWarehouse</code> module:</p>
 <div class="sourceCode" id="cb298"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb298-1"><a href="backtest-trading-strategy.html#cb298-1" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb298-2"><a href="backtest-trading-strategy.html#cb298-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> publish_data(args) <span class="kw">do</span></span>
@@ -491,11 +487,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">15.4</span> Test the backtesting</h2>
 <p>For consistency and ease of testing/use, I prepared an compressed single data of trade events for XRPUSDT(2019-06-03). We can download that file from GitHub using <code>wget</code>:</p>
 <div class="sourceCode" id="cb299"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb299-1"><a href="backtest-trading-strategy.html#cb299-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd /tmp</span>
-<span id="cb299-2"><a href="backtest-trading-strategy.html#cb299-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> wget https://github.com/Cinderella-Man/binance-trade-events/raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz</span></code></pre></div>
+<span id="cb299-2"><a href="backtest-trading-strategy.html#cb299-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> wget https://github.com/Cinderella-Man/binance-trade-events <span class="dt">\</span></span>
+<span id="cb299-3"><a href="backtest-trading-strategy.html#cb299-3" aria-hidden="true" tabindex="-1"></a>/raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz</span></code></pre></div>
 <p>We can now uncompress the archive and load those trade events into our database:</p>
 <div class="sourceCode" id="cb300"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb300-1"><a href="backtest-trading-strategy.html#cb300-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> gunzip XRPUSDT-2019-06-03.csv.gz</span>
-<span id="cb300-2"><a href="backtest-trading-strategy.html#cb300-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> PGPASSWORD=postgres psql <span class="at">-Upostgres</span> <span class="at">-h</span> localhost <span class="at">-ddata_warehouse</span>  <span class="at">-c</span> <span class="st">&quot;\COPY trade_events FROM &#39;/tmp/XRPUSDT-2019-06-03.csv&#39; WITH (FORMAT csv, delimiter &#39;;&#39;);&quot;</span></span>
-<span id="cb300-3"><a href="backtest-trading-strategy.html#cb300-3" aria-hidden="true" tabindex="-1"></a><span class="ex">COPY</span> 206115</span></code></pre></div>
+<span id="cb300-2"><a href="backtest-trading-strategy.html#cb300-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> PGPASSWORD=postgres psql <span class="at">-Upostgres</span> <span class="at">-h</span> localhost <span class="at">-ddata_warehouse</span> <span class="dt">\</span></span>
+<span id="cb300-3"><a href="backtest-trading-strategy.html#cb300-3" aria-hidden="true" tabindex="-1"></a>-c <span class="st">&quot;\COPY trade_events FROM &#39;/tmp/XRPUSDT-2019-06-03.csv&#39; WITH (FORMAT csv, delimiter &#39;;&#39;);&quot;</span></span>
+<span id="cb300-4"><a href="backtest-trading-strategy.html#cb300-4" aria-hidden="true" tabindex="-1"></a><span class="ex">COPY</span> 206115</span></code></pre></div>
 <p>The number after the word <code>COPY</code> in the response indicates the number of rows that got copied into the database.</p>
 <p>We can now give it a try and run full backtesting but first let’s clean the orders table:</p>
 <div class="sourceCode" id="cb301"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb301-1"><a href="backtest-trading-strategy.html#cb301-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span></span>
@@ -517,19 +515,27 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb302-9"><a href="backtest-trading-strategy.html#cb302-9" aria-hidden="true" tabindex="-1"></a><span class="ex">19:18:16.332</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
 <span id="cb302-10"><a href="backtest-trading-strategy.html#cb302-10" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.419.0&gt;}</span></span>
 <span id="cb302-11"><a href="backtest-trading-strategy.html#cb302-11" aria-hidden="true" tabindex="-1"></a><span class="ex">19:18:18.327</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="cf">for</span> XRPUSDT</span>
-<span id="cb302-12"><a href="backtest-trading-strategy.html#cb302-12" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.publish_data<span class="kw">(</span><span class="ex">%{type:</span> :trade_events,  symbol: <span class="st">&quot;XRPUSDT&quot;</span>,  from: <span class="st">&quot;2019-06-02&quot;</span>,  to: <span class="st">&quot;2019-06-04&quot;</span>,  interval: 5}<span class="kw">)</span></span>
-<span id="cb302-13"><a href="backtest-trading-strategy.html#cb302-13" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.428.0&gt;}</span></span>
-<span id="cb302-14"><a href="backtest-trading-strategy.html#cb302-14" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.532</span> [info]  Publisher broadcasted 0 events</span>
-<span id="cb302-15"><a href="backtest-trading-strategy.html#cb302-15" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.534</span> [info]  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for XRPUSDT @ 0.44391, quantity: 450.5</span>
-<span id="cb302-16"><a href="backtest-trading-strategy.html#cb302-16" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.749</span> [info]  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for XRPUSDT @ 0.44426, quantity: 450.5.</span>
-<span id="cb302-17"><a href="backtest-trading-strategy.html#cb302-17" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb302-18"><a href="backtest-trading-strategy.html#cb302-18" aria-hidden="true" tabindex="-1"></a><span class="ex">19:20:07.568</span> [info]  Publisher broadcasted 10000 events</span>
-<span id="cb302-19"><a href="backtest-trading-strategy.html#cb302-19" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb302-20"><a href="backtest-trading-strategy.html#cb302-20" aria-hidden="true" tabindex="-1"></a><span class="ex">19:21:07.571</span> [info]  Publisher broadcasted 20000 events</span>
-<span id="cb302-21"><a href="backtest-trading-strategy.html#cb302-21" aria-hidden="true" tabindex="-1"></a><span class="ex">19:22:07.576</span> [info]  Publisher broadcasted 30000 events</span>
-<span id="cb302-22"><a href="backtest-trading-strategy.html#cb302-22" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb302-23"><a href="backtest-trading-strategy.html#cb302-23" aria-hidden="true" tabindex="-1"></a><span class="ex">19:39:07.875</span> [info]  Publisher broadcasted 200000 events</span>
-<span id="cb302-24"><a href="backtest-trading-strategy.html#cb302-24" aria-hidden="true" tabindex="-1"></a><span class="ex">19:39:44.576</span> [info]  Publisher finished streaming trade events</span></code></pre></div>
+<span id="cb302-12"><a href="backtest-trading-strategy.html#cb302-12" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.publish_data<span class="kw">(</span><span class="ex">%{</span></span>
+<span id="cb302-13"><a href="backtest-trading-strategy.html#cb302-13" aria-hidden="true" tabindex="-1"></a>  <span class="ex">type:</span> :trade_events,</span>
+<span id="cb302-14"><a href="backtest-trading-strategy.html#cb302-14" aria-hidden="true" tabindex="-1"></a>  <span class="ex">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb302-15"><a href="backtest-trading-strategy.html#cb302-15" aria-hidden="true" tabindex="-1"></a>  <span class="ex">from:</span> <span class="st">&quot;2019-06-02&quot;</span>,</span>
+<span id="cb302-16"><a href="backtest-trading-strategy.html#cb302-16" aria-hidden="true" tabindex="-1"></a>  <span class="ex">to:</span> <span class="st">&quot;2019-06-04&quot;</span>,</span>
+<span id="cb302-17"><a href="backtest-trading-strategy.html#cb302-17" aria-hidden="true" tabindex="-1"></a>  <span class="ex">interval:</span> 5</span>
+<span id="cb302-18"><a href="backtest-trading-strategy.html#cb302-18" aria-hidden="true" tabindex="-1"></a><span class="er">}</span><span class="kw">)</span></span>
+<span id="cb302-19"><a href="backtest-trading-strategy.html#cb302-19" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.428.0&gt;}</span></span>
+<span id="cb302-20"><a href="backtest-trading-strategy.html#cb302-20" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.532</span> [info]  Publisher broadcasted 0 events</span>
+<span id="cb302-21"><a href="backtest-trading-strategy.html#cb302-21" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.534</span> [info]  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for</span>
+<span id="cb302-22"><a href="backtest-trading-strategy.html#cb302-22" aria-hidden="true" tabindex="-1"></a><span class="ex">XRPUSDT</span> @ 0.44391, quantity: 450.5</span>
+<span id="cb302-23"><a href="backtest-trading-strategy.html#cb302-23" aria-hidden="true" tabindex="-1"></a><span class="ex">19:19:07.749</span> [info]  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for</span>
+<span id="cb302-24"><a href="backtest-trading-strategy.html#cb302-24" aria-hidden="true" tabindex="-1"></a><span class="ex">XRPUSDT</span> @ 0.44426, quantity: 450.5.</span>
+<span id="cb302-25"><a href="backtest-trading-strategy.html#cb302-25" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb302-26"><a href="backtest-trading-strategy.html#cb302-26" aria-hidden="true" tabindex="-1"></a><span class="ex">19:20:07.568</span> [info]  Publisher broadcasted 10000 events</span>
+<span id="cb302-27"><a href="backtest-trading-strategy.html#cb302-27" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb302-28"><a href="backtest-trading-strategy.html#cb302-28" aria-hidden="true" tabindex="-1"></a><span class="ex">19:21:07.571</span> [info]  Publisher broadcasted 20000 events</span>
+<span id="cb302-29"><a href="backtest-trading-strategy.html#cb302-29" aria-hidden="true" tabindex="-1"></a><span class="ex">19:22:07.576</span> [info]  Publisher broadcasted 30000 events</span>
+<span id="cb302-30"><a href="backtest-trading-strategy.html#cb302-30" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb302-31"><a href="backtest-trading-strategy.html#cb302-31" aria-hidden="true" tabindex="-1"></a><span class="ex">19:39:07.875</span> [info]  Publisher broadcasted 200000 events</span>
+<span id="cb302-32"><a href="backtest-trading-strategy.html#cb302-32" aria-hidden="true" tabindex="-1"></a><span class="ex">19:39:44.576</span> [info]  Publisher finished streaming trade events</span></code></pre></div>
 <p>From the above log, we can see that it took about 20 minutes to run 206k records through the system(a lot of that time[17+ minutes] was indeed the 5ms <code>sleep</code>).</p>
 <p>After the streaming finished we can check out the orders table inside the database to figure out how many trades we made and what income have they generated.</p>
 <div class="sourceCode" id="cb303"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb303-1"><a href="backtest-trading-strategy.html#cb303-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span>    </span>
@@ -577,6 +583,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

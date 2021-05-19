@@ -45,7 +45,7 @@ The requirements for this section are `docker` and `docker-compose` installed in
 
 Inside the main directory of our project create a new file called `docker-compose.yml` and fill it with below details:
 
-```
+```{r, engine = 'yaml', eval = FALSE}
 # /docker-compose.yml
 version: "3.2"
 services:
@@ -61,6 +61,7 @@ services:
 ```
 
 If you are new to docker here’s the gist of what the above will do:
+
 - it will start a single service called "db"
 - "db" service will use the `latest` version of the `postgres` (image) inside the docker container (`latest` version as tagged per https://hub.docker.com/_/postgres/)
 - we map TCP port 5432 in the container to port 5432 on the Docker host(format container_port:hosts_port)
@@ -78,9 +79,13 @@ To validate that it works we can run:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ docker ps -a
-CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS         PORTS                    NAMES
-98558827b80b   postgres:latest   "docker-entrypoint.sâ€¦"   4 seconds ago   Up 4 seconds   0.0.0.0:5432->5432/tcp   hedgehog_db_1
+CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS        
+PORTS                    NAMES
+98558827b80b   postgres:latest   "docker-entrypoint.sh"   4 seconds ago   Up 4 seconds
+0.0.0.0:5432->5432/tcp   hedgehog_db_1
 ```
+
+\newpage
 
 ## Set up `ecto` inside the `naive` app
 
@@ -110,7 +115,7 @@ $ mix deps.get
 
 We can now use the ecto generator to add an the ecto repository to the Naive application:
 
-```{r, engine = 'bash', eval = FALSE}
+```{r, eval = FALSE}
 $ cd apps/naive
 $ mix ecto.gen.repo -r Naive.Repo
 * creating lib/naive
@@ -274,7 +279,8 @@ Let's run the migration to create the table, unique index, and the enum:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.migrate
-00:51:16.757 [info]  == Running 20210202223209 Naive.Repo.Migrations.CreateSettings.change/0 forward
+00:51:16.757 [info]  == Running 20210202223209 Naive.Repo.Migrations.CreateSettings.change/0
+forward
 00:51:16.759 [info]  execute "CREATE TYPE public.trading_status AS ENUM ('on', 'off')"
 00:51:16.760 [info]  create table settings
 00:51:16.820 [info]  create index settings_symbol_index
@@ -347,6 +353,8 @@ Next, we will get the Binance client from the config:
 binance_client = Application.get_env(:naive, :binance_client)
 ```
 
+\newpage
+
 Now, it's time to fetch all the symbols(pairs) that Binance supports:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -393,6 +401,8 @@ base_settings = %{
   updated_at: timestamp
 }
 ```
+
+\newpage
 
 We will now map each of the retrieved symbols and inject them to the `base_settings` structs and pushing all of those to the `Repo.insert_all/3` function:
 

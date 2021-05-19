@@ -13,17 +13,22 @@ Backtesting is a procedure of running historical data through the system and obs
 
 At this moment we are receiving the trade events from the Binance through WebSocket. The `Streamer.Binance` process is handling those messages by parsing them from JSON string to map, then converting them to structs and broadcasting them to the `TRADE_EVENTS:#{symbol}` PubSub topic. The `Naive.Trader` subscribes to the `TRADE_EVENTS:#{symbol}` topic and takes decisions based on incoming data. As it places buy and sell orders it broadcasts them to the `ORDERS:#{symbol}` PubSub topic. The `DataWarehouse.Subscriber.Worker` processes subscribe to both trade events and orders topics and store incoming data inside the database - we can visualize that flow like that:
 
-![Normal broadcast/subscribe flow](images/chapter_14_02_current_pubsub.png)
+```{r, fig.align="center", out.width="60%", echo=FALSE}
+knitr::include_graphics("images/chapter_14_02_current_pubsub.png")
+```
 
 To backtest we can substitute the `Streamer.Binance` process with a `Task` that will `stream` trade events' data from the database and broadcasts it to the `TRADE_EVENTS:#{symbol}` PubSub topic(the same topic as the `Streamer.Binance` process).
 
 From the perspective of the `Naive.Trader` it *does not* make any difference who is broadcasting those trade events. This should be a clear indication of the value of publish/subscribe model that we implemented from the beginning. It allows us to swap producer and consumers freely to backtest our trading strategies:
 
-![Task feeds the stream of data from the database straight to the PubSub topic](images/chapter_14_03_backtest_pubsub.png)
+```{r, fig.align="center", out.width="60%", echo=FALSE}
+knitr::include_graphics("images/chapter_14_03_backtest_pubsub.png")
+```
 
 ## Implement the storing task
 
-We will start by creating a new file called `publisher.ex` inside the `apps/data_warehouse/lib/data_warehouse` directory. We will start by implementing the basic `Task` behavior:
+We will start by creating a new file called `publisher.ex` inside the                        
+`apps/data_warehouse/lib/data_warehouse` directory. We will start by implementing the basic `Task` behavior:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/publisher.ex
@@ -151,6 +156,8 @@ Finally, the above code uses the `publish_trade_event/1` helper function which c
   end
 ```
 
+\newpage
+
 We also need to remember about keeping the interface tidy so we will add `publish_data` to the `DataWarehouse` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -169,14 +176,16 @@ For consistency and ease of testing/use, I prepared an compressed single data of
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd /tmp
-$ wget https://github.com/Cinderella-Man/binance-trade-events/raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz
+$ wget https://github.com/Cinderella-Man/binance-trade-events \
+/raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz
 ```
 
 We can now uncompress the archive and load those trade events into our database:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ gunzip XRPUSDT-2019-06-03.csv.gz
-$ PGPASSWORD=postgres psql -Upostgres -h localhost -ddata_warehouse  -c "\COPY trade_events FROM '/tmp/XRPUSDT-2019-06-03.csv' WITH (FORMAT csv, delimiter ';');"
+$ PGPASSWORD=postgres psql -Upostgres -h localhost -ddata_warehouse \
+-c "\COPY trade_events FROM '/tmp/XRPUSDT-2019-06-03.csv' WITH (FORMAT csv, delimiter ';');"
 COPY 206115
 ```
 
@@ -208,11 +217,19 @@ iex(2)> Naive.start_trading("XRPUSDT")
 19:18:16.332 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.419.0>}
 19:18:18.327 [info]  Initializing new trader(1615288698325) for XRPUSDT
-iex(3)> DataWarehouse.publish_data(%{type: :trade_events,  symbol: "XRPUSDT",  from: "2019-06-02",  to: "2019-06-04",  interval: 5})
+iex(3)> DataWarehouse.publish_data(%{
+  type: :trade_events,
+  symbol: "XRPUSDT",
+  from: "2019-06-02",
+  to: "2019-06-04",
+  interval: 5
+})
 {:ok, #PID<0.428.0>}
 19:19:07.532 [info]  Publisher broadcasted 0 events
-19:19:07.534 [info]  The trader(1615288698325) is placing a BUY order for XRPUSDT @ 0.44391, quantity: 450.5
-19:19:07.749 [info]  The trader(1615288698325) is placing a SELL order for XRPUSDT @ 0.44426, quantity: 450.5.
+19:19:07.534 [info]  The trader(1615288698325) is placing a BUY order for
+XRPUSDT @ 0.44391, quantity: 450.5
+19:19:07.749 [info]  The trader(1615288698325) is placing a SELL order for
+XRPUSDT @ 0.44426, quantity: 450.5.
 ...
 19:20:07.568 [info]  Publisher broadcasted 10000 events
 ...

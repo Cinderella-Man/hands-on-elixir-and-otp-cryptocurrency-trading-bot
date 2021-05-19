@@ -98,7 +98,8 @@ Starting with `autostart_trading/0` we can rename it to `autostart_workers/0`:
 
 As we updated two functions inside the `autostart_workers/0` we need to update their implementations.
 
-The `start_trading/1` will become `start_worker/1`, internally we will inline the `start_symbol_supervisor/1` function(move it's contents inside the `start_worker/1` function and remove the `start_symbol_supervisor/1` function) as it's used just once inside this module as well as `update_trading_status/2` need to be renamed to `update_status/2`.
+The `start_trading/1` will become `start_worker/1`, internally we will inline the                      
+`start_symbol_supervisor/1` function(move it's contents inside the `start_worker/1` function and remove the `start_symbol_supervisor/1` function) as it's used just once inside this module as well as `update_trading_status/2` need to be renamed to `update_status/2`.
 
 The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
 
@@ -166,7 +167,7 @@ Last function to rename in this module will be the `stop_trading/1` to `stop_wor
 
 At this moment we have a pseudo-generic implementation of `start_worker/1` and `stop_worker/1` inside the `Core.ServiceSupervisor` module. Function names are generic but they still refer to `Repo`, `Settings`, and other modules specific to the `naive` app's implementation. We are probably in a worse situation than we have been before starting this refactoring ;) but don't fear this was just the first step on the way to abstract away that starting, stopping and autostarting code.
 
-## Utilize pseudo generalized code inside the `Naive.DynamicSymbolSupervisor`
+## Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor
 
 Before we will jump back to the `naive`'s application modules we need to add the `core` application the dependencies of the `naive` application:
 
@@ -182,7 +183,10 @@ Before we will jump back to the `naive`'s application modules we need to add the
 
 Let's get back to the `Naive.DynamicSymbolSupervisor` where we expect functions that we just cut out to exist like `start_trading/1` or `stop_trading/1`.
 
-Let's reimplement more generic versions of those functions as just simple calls to the `Core.ServiceSupervisor` module:
+\newpage
+
+Let's reimplement more generic versions of those functions as just simple calls to the                       
+`Core.ServiceSupervisor` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -205,21 +209,24 @@ We also need to update the `shutdown_trading/1` function as we removed all the p
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   def shutdown_worker(symbol) when is_binary(symbol) do # <= updated name
-    case Core.ServiceSupervisor.get_pid(symbol) do # <= module added
+    case Core.ServiceSupervisor.get_pid(symbol) do      # <= module added
       nil ->
         Logger.warn("Trading on #{symbol} already stopped")
-        {:ok, _settings} = Core.ServiceSupervisor.update_status(symbol, "off") # <= updated name + module
+        {:ok, _settings} = Core.ServiceSupervisor.update_status(symbol, "off")
+                                                # ^^^ updated name + module
 
       _pid ->
         Logger.info("Shutdown of trading on #{symbol} initialized")
-        {:ok, settings} = Core.ServiceSupervisor.update_status(symbol, "shutdown") # <= updated name + module
+        {:ok, settings} = Core.ServiceSupervisor.update_status(symbol, "shutdown")
+                                                # ^^^ updated name + module
         Naive.Leader.notify(:settings_updated, settings)
         {:ok, settings}
     end
   end
 ```
 
-As we were moving all the private helper functions we didn't make them public so the `Naive.DynamicSymbolSupervisor` module can use them - we will fix that now together with temporary aliases/require/imports at the top of the `Core.ServiceSupervisor`:
+As we were moving all the private helper functions we didn't make them public so the                  
+`Naive.DynamicSymbolSupervisor` module can use them - we will fix that now together with temporary aliases/require/imports at the top of the `Core.ServiceSupervisor`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/service_supervisor.ex
@@ -381,7 +388,12 @@ Let's don't waste time and start from the other helper function inside the `Core
 
 As previously we added `repo` and `schema` as arguments and modified the body of the function to utilize them instead of hardcoded modules (aliased at the top of the `Core.ServiceSupervisor` module).
 
-In the same fashion as previously, we need to check "who" is using the `update_status/2` and update those calls to `update_status/4`. The function is used inside the `start_worker/1` and the `stop_worker/1` inside the `Core.ServiceSupervisor` module so as previously we need to bubble them up(pass via arguments to both `start_worker/1` and `stop_worker/1` functions):
+In the same fashion as previously, we need to check "who" is using the `update_status/2` and update those calls to `update_status/4`.
+
+\newpage
+
+The function is used inside the `start_worker/1` and the `stop_worker/1` inside the                     
+`Core.ServiceSupervisor` module so as previously we need to bubble them up(pass via arguments to both `start_worker/1` and `stop_worker/1` functions):
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -462,6 +474,7 @@ We can see that it has a hardcoded `Naive.SymbolSupervisor` worker module - we n
 Moving up to functions that are referencing the `get_pid/1` function, those will be the `start_worker/3` and the `stop_worker/3` function. 
 
 As those are the two last functions to be updated, we will look into them more closely to finish our refactoring in this 3rd run. At this moment both need to add `worker_module` as both are calling the `get_pid/2` function. Looking at both function we can see two other hardcoded details:
+
 - inside log message there are words "trading" - we can replace them so we will utilize the `worker_module` and `symbol` arguments
 - there are two references to the `Naive.DynamicSymbolSupervisor` which we will replace with the `module` argument
 - there is one more reference to the `Naive.SymbolSupervisor` module which we will replace with the `worker_module` argument
@@ -475,12 +488,15 @@ Let's look at updated functions:
       when is_binary(symbol) do
     case get_pid(worker_module, symbol) do # <= worker_module passed
       nil ->
-        Logger.info("Starting #{worker_module} worker for #{symbol}") # <= dynamic text
+        Logger.info("Starting #{worker_module} worker for #{symbol}")
+                      # ^^^ dynamic text
         {:ok, _settings} = update_status(symbol, "on", repo, schema)
-        {:ok, _pid} = DynamicSupervisor.start_child(module, {worker_module, symbol}) # <= args used
+        {:ok, _pid} = DynamicSupervisor.start_child(module, {worker_module, symbol})
+                                                              # ^^^ args used
 
       pid ->
-        Logger.warn("#{worker_module} worker for #{symbol} already started") # <= dynamic text
+        Logger.warn("#{worker_module} worker for #{symbol} already started")
+                        # ^^^ dynamic text
         {:ok, _settings} = update_status(symbol, "on", repo, schema)
         {:ok, pid}
     end
@@ -491,11 +507,13 @@ Let's look at updated functions:
       when is_binary(symbol) do
     case get_pid(worker_module, symbol) do # <= worker_module passed
       nil ->
-        Logger.warn("#{worker_module} worker for #{symbol} already stopped") # <= dynamic text
+        Logger.warn("#{worker_module} worker for #{symbol} already stopped")
+                             # ^^^ dynamic text
         {:ok, _settings} = update_status(symbol, "off", repo, schema)
 
       pid ->
-        Logger.info("Stopping #{worker_module} worker for #{symbol}") # <= dynamic text
+        Logger.info("Stopping #{worker_module} worker for #{symbol}")
+                             # ^^^ dynamic text
         :ok = DynamicSupervisor.terminate_child(module, pid) # <= arg used
         {:ok, _settings} = update_status(symbol, "off", repo, schema)
     end
@@ -503,11 +521,13 @@ Let's look at updated functions:
 ```
 
 Inside both the `start_worker/5` and the `stop_worker/5` functions we modified:
+
 - `get_pid/1` to pass the `worker_module`
 - `Logger`'s messages to use the `worker_module` and `symbol`
 - `DynamicSupervisor`'s functions to use the `module` and the `worker_module`
 
-Again, as we modified `start_worker/5` we need to make the last change inside the `Core.ServiceSupervisor` module - `autostart_workers/2` uses the `start_worker/5` function:
+Again, as we modified `start_worker/5` we need to make the last change inside the                                
+`Core.ServiceSupervisor` module - `autostart_workers/2` uses the `start_worker/5` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -588,13 +608,21 @@ That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` modul
   def shutdown_worker(symbol) when is_binary(symbol) do
     case Core.ServiceSupervisor.get_pid(Naive.SymbolSupervisor, symbol) do # <= arg added
       nil ->
-        Logger.warn("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped") # <= updated
+        Logger.warn("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
+                                                              # ^^^ updated
 
         {:ok, _settings} =
-          Core.ServiceSupervisor.update_status(symbol, "off", Naive.Repo, Naive.Schema.Settings) # <= args added
+          Core.ServiceSupervisor.update_status(
+            symbol,
+            "off",
+            Naive.Repo,
+            Naive.Schema.Settings
+          ) # ^^^ args added
 
       _pid ->
-        Logger.info("Initializing shutdown of #{Naive.SymbolSupervisor} worker for #{symbol}") # <= updated
+        Logger.info(
+          "Initializing shutdown of #{Naive.SymbolSupervisor} worker for #{symbol}"
+        )                                     # ^^^ updated
 
         {:ok, settings} =
           Core.ServiceSupervisor.update_status(
@@ -627,6 +655,8 @@ defmodule Naive.DynamicSymbolSupervisor do
   use Core.ServiceSupervisor
 ```
 
+\newpage
+
 To be able to `use` the `Core.ServiceSupervisor` module it needs to provide the `__using__/1` macro. As the simplest content of that macro, we can use here would be just to use the `DynamicSupervisor` inside:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -647,7 +677,8 @@ As the `autostart_workers/0` function is a part of the boilerplate, we will move
 
 Ok, but it has all of those other `naive` application-specific arguments - where will we get those?
 
-That's what that `opts` argument is for inside the `__using__/1` macro. When we call `use Core.ServiceSupervisor` we can pass an additional keyword list which will contain all `naive` application-specific details:
+That's what that `opts` argument is for inside the `__using__/1` macro. When we call                            
+`use Core.ServiceSupervisor` we can pass an additional keyword list which will contain all `naive` application-specific details:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -826,7 +857,9 @@ As those will get compiled and "pasted" into the `Naive.DynamicSymbolSupervisor`
         {:ok, _settings} = update_status(symbol, "off") # <= macro provided function
 
       _pid ->
-        Logger.info("Initializing shutdown of #{Naive.SymbolSupervisor} worker for #{symbol}")
+        Logger.info(
+          "Initializing shutdown of #{Naive.SymbolSupervisor} worker for #{symbol}"
+        )
         {:ok, settings} = update_status(symbol, "shutdown") # <= macro provided function
         Naive.Leader.notify(:settings_updated, settings)
         {:ok, settings}
@@ -855,7 +888,8 @@ As we don't want/need to do anything different inside the `Core.ServiceSuperviso
   defdelegate init(opts), to: DynamicSupervisor
 ```
 
-That finishes our refactoring of both the `Naive.DynamicSymbolSupervisor` and the `Core.ServiceSupervisor` modules.
+That finishes our refactoring of both the `Naive.DynamicSymbolSupervisor` and the                           
+`Core.ServiceSupervisor` modules.
 
 We can test to confirm that everything works as expected:
 
@@ -884,7 +918,8 @@ $ iex -S mix
 21:47:22.161 [info]  Starting new supervision tree to trade on HNTUSDT
 21:47:24.213 [info]  Initializing new trader(1614462444212) for HNTUSDT
 iex(1)> Naive.shutdown_trading("HNTUSDT")
-21:48:42.003 [info]  Initializing shutdown of Elixir.Naive.SymbolSupervisor worker for HNTUSDT
+21:48:42.003 [info]  Initializing shutdown of Elixir.Naive.SymbolSupervisor worker for
+HNTUSDT
 {:ok,
  %Naive.Schema.Settings{
    ...
@@ -931,7 +966,8 @@ end
 
 Not much to add here - we are `use`ing the `Core.ServiceSupervisor` module and passing options to it so it can macro generates `streamer` application-specific wrappers(like `start_worker/1` or `stop_worker/1` with required repo, schema etc) around generic logic from the `Core.ServiceSupervisor` module.
 
-Using the `Core.Servicesupervisor` module will have an impact on the interface of the `Streamer.DynamicStreamerSupervisor` as it will now provide functions like `start_worker/1` instead of `start_streaming/1` etc.
+Using the `Core.Servicesupervisor` module will have an impact on the interface of the                         
+`Streamer.DynamicStreamerSupervisor` as it will now provide functions like `start_worker/1` instead of `start_streaming/1` etc.
 
 As with the `naive` application, we need to update the Task function inside the `Streamer.Supervisor` module:
 

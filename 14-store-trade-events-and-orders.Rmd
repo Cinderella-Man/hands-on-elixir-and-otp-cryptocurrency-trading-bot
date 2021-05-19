@@ -152,7 +152,8 @@ Let's run the migration so it will create a new `trade_events` table for us:
 $ mix ecto.migrate
 ```
 
-The next step will be to create a new directory called `schema` inside the `apps/data_warehouse/lib/data_warehouse` directory. Inside it, we need to create a new schema file called `trade_event.ex`. We can copy across the same columns from the migration straight to schema:
+The next step will be to create a new directory called `schema` inside the                              
+`apps/data_warehouse/lib/data_warehouse` directory. Inside it, we need to create a new schema file called `trade_event.ex`. We can copy across the same columns from the migration straight to schema:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/trade_event.ex
@@ -195,7 +196,8 @@ Currently, we can already store the trade events' data inside the database so we
 
 We will implement a `subscriber` process that will be given a PubSub topic and it will store incoming data inside the database.
 
-Let's start by creating a new folder called `subscriber` inside the `apps/data_warehouse/lib/data_warehouse` directory together with a new file called `worker.ex` inside it:
+Let's start by creating a new folder called `subscriber` inside the                              
+`apps/data_warehouse/lib/data_warehouse` directory together with a new file called `worker.ex` inside it:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -342,6 +344,8 @@ end
 ```
 
 We updated all of the shortened names like `orig_qty` to full names like `original_quantity`.
+
+\newpage
 
 Let's run the migration so it will create a new `orders` table for us:
 
@@ -496,14 +500,18 @@ $ iex -S mix
 iex(1)> DataWarehouse.Subscriber.Worker.start_link("ORDERS:NEOUSDT")
 22:37:43.043 [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT
 {:ok, #PID<0.400.0>}
-iex(2)> Naive.start_trading("NEOUSDT")                                        22:38:39.741 [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT
+iex(2)> Naive.start_trading("NEOUSDT")
+22:38:39.741 [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT
 22:38:39.832 [info]  Starting new supervision tree to trade on NEOUSDT
 {:ok, #PID<0.402.0>}
 22:38:41.654 [info]  Initializing new trader(1614119921653) for NEOUSDT
-iex(3)> Streamer.start_streaming("NEOUSDT")                                   22:39:23.786 [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT
+iex(3)> Streamer.start_streaming("NEOUSDT")
+22:39:23.786 [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT
 {:ok, #PID<0.412.0>}
-22:39:27.187 [info]  The trader(1614119921653) is placing a BUY order for NEOUSDT @ 37.549, quantity: 5.326
-22:39:27.449 [info]  The trader(1614119921653) is placing a SELL order for NEOUSDT @ 37.578, quantity: 5.326.
+22:39:27.187 [info]  The trader(1614119921653) is placing a BUY order for NEOUSDT @ 37.549,
+quantity: 5.326
+22:39:27.449 [info]  The trader(1614119921653) is placing a SELL order for NEOUSDT @ 37.578,
+quantity: 5.326.
 ```
 
 At this moment inside the DataWarehouse's database we should see orders:
@@ -611,8 +619,10 @@ end
 Both schema and enum will be almost identical to the ones from the `streamer` application - we can simply copy those files and apply basic tweaks like updating the namespace:
 
 ```{r, engine = 'bash', eval = FALSE}
-$ cp apps/streamer/lib/streamer/schema/settings.ex apps/data_warehouse/lib/data_warehouse/schema/subscriber_settings.ex
-$ cp apps/streamer/lib/streamer/schema/streaming_status_enum.ex apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex
+$ cp apps/streamer/lib/streamer/schema/settings.ex \
+apps/data_warehouse/lib/data_warehouse/schema/subscriber_settings.ex
+$ cp apps/streamer/lib/streamer/schema/streaming_status_enum.ex \
+apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex
 ```
 
 Remember about updating the `symbol` column to `topic` as well as table name inside the `DataWarehouse.Schema.SubscriberSettings`:
@@ -660,7 +670,9 @@ As it was with the case of `naive` and `streamer` applications, we will need an 
 
 The full supervision tree will look as follows:
 
-![Supervision tree with Registry](images/chapter_14_01_sup_diagram.png)
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_14_01_sup_diagram.png")
+```
 
 Everything looks very similar to the supervision tree that we created in the `streamer` and the `naive` applications but there's an additional `Registry` that is supervised by the `SubscriberSupervisior` process.
 
@@ -670,7 +682,8 @@ Just as previously the `DynamicSupervisor` will be in charge of the supervising 
 
 ### Create the `DataWarehouse.Subscriber.DynamicSupervisor` module
 
-Let's start by creating a new file called `dynamic_supervisor.ex` inside the `apps/data_warehouse/lib/data_warehouse/subscriber` directory and put default dynamic supervisor implementation inside:
+Let's start by creating a new file called `dynamic_supervisor.ex` inside the                                  
+`apps/data_warehouse/lib/data_warehouse/subscriber` directory and put default dynamic supervisor implementation inside:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -729,6 +742,8 @@ We can move on to implementing `autostart_workers/0` which will look very simila
 
 We can see that we are querying the database for list of `topic`s(not symbols) and we are calling `start_child/2` for each results.
 
+\newpage
+
 The `start_worker/1` is where the `Registry` will shine as we won't need to check is there already a process running for that topic - we can leave that check to the `Registry`. If there's process already running for that topic it will just return a tuple starting with `:error` atom:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -776,9 +791,12 @@ Last function in this module will be `stop_worker/1` which uses private `stop_ch
 
 That is a full implementation of the `DataWarehouse.Subscriber.DynamicSupervisor` module and it's almost as slim as one from the last chapter where we leveraged macros to achieve that lightness. Using the `Registry` is the preferred way to manage a list of identifiable processes. We won't run into an issue of overusing the atoms(as they are not garbage collected, we could hit that limit sooner or later).
 
+\newpage
+
 ### Register Worker processes using :via
 
-The above `DynamicSupervisor` module assumes that Workers are registered inside the `Registry` - to make this happen we will need to update the `start_link/1` function of the `DataWarehouse.Subscriber.Worker` module:
+The above `DynamicSupervisor` module assumes that Workers are registered inside the `Registry` - to make this happen we will need to update the `start_link/1` function of the                   
+`DataWarehouse.Subscriber.Worker` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -835,7 +853,8 @@ Important part here will be to match the `Registry` name to the one defined insi
 
 ### Link the `SubscriberSupervisor` to the `Application`
 
-We need to update the `DataWarehouse.Application` module to start our new `DataWarehouse.SubscriberSupervisor` process as well as register itself under name matching to its module(just for consistency with other applications):
+We need to update the `DataWarehouse.Application` module to start our new                          
+`DataWarehouse.SubscriberSupervisor` process as well as register itself under name matching to its module(just for consistency with other applications):
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/application.ex
@@ -933,7 +952,7 @@ true
 
 As we can see even this simple implementation handles starting, autostarting and stopping. It also gracefully handles starting workers when one is already running as well as stopping when there none running.
 
-As a challenge, you could update the `naive` and the `streamer` application to use `Registry` and remove `Core.ServiceSupervisor` module as it was superseded by the above solution.
+As a challenge, you could update the `naive` and the `streamer` application to use the `Registry` and remove `Core.ServiceSupervisor` module as it was superseded by the above solution - here's the [link to PR](https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/pull/7)(pull request) that sums up the required changes.
 
 [Note] Please remember to run `mix format` to keep things nice and tidy.
 
