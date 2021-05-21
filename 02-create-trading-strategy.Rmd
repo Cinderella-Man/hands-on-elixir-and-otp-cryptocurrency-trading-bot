@@ -281,8 +281,9 @@ Now to calculate the correct sell price, we can use the following formula which 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   defp calculate_sell_price(buy_price, profit_interval, tick_size) do
-    fee = D.new("1.001")
-    original_price = D.mult(D.new(buy_price), fee)
+    fee = "1.001"
+
+    original_price = D.mult(buy_price, fee)
 
     net_target_price =
       D.mult(
@@ -301,14 +302,13 @@ Now to calculate the correct sell price, we can use the following formula which 
   end
 ```
 
-First, we would like to convert all the numbers to the `Decimal` structs so it will be easier to work with them. We will also hardcode the fee which we will refactor in one of the future chapters.
+First, we will hardcode the fee to 0.1% which we will refactor in one of the future chapters.
 
-We started by calculating the `gross_buy_price` which is a sum of buy
-price together with the fee that we paid on top of it.
+We started by calculating the `original_price` which is the buy price together with the fee that we paid on top of it.
 
-Next, we enlarge the originally paid price by profit interval to get `net_target_price` 
+Next, we enlarge the originally paid price by profit interval to get `net_target_price`.
 
-As we will be charged a fee for selling, we need to add the fee again on top of this target sell price(`gross_target_price`).
+As we will be charged a fee for selling, we need to add the fee again on top of the net target sell price(we will call this amount the `gross_target_price`).
 
 Next, we will use the tick size as Binance won't accept any prices that aren't divisible by the symbols' tick sizes so we need to "normalize" them on our side.
 
