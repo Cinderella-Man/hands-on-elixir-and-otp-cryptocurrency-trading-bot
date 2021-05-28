@@ -27,7 +27,7 @@ knitr::include_graphics("images/chapter_06_02_rebuy_expl.png")
 
 So every new `Naive.Trader` process as it receives first trade event, trader will take it's price and will calculate an decreased price by using the `buy_down_interval` value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.
 
-When looking at the chart above we can figure out that `buy_down_interval` should never be smaller than double the fee(at the moment of writting transaction fee is 0.1%) that you are paying per transaction.
+When looking at the chart above we can figure out that `buy_down_interval` should never be smaller than double the fee(at the moment of writing transaction fee is 0.1%) that you are paying per transaction.
 
 ## `Naive.Trader` implementation
 
@@ -115,6 +115,7 @@ Next we need to update the `Naive.Leader` as it needs to add `buy_down_interval`
     %{
       symbol: symbol,
       chunks: 1,
+      # 0.01% for quick testing
       buy_down_interval: Decimal.new("0.0001"), # <= add this line
       # -0.12% for quick testing
       profit_interval: Decimal.new("-0.0012"),
