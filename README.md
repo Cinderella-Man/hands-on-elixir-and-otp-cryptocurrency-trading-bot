@@ -1,14 +1,14 @@
 # Welcome 👋
 
-This website is the home of **Create a cryptocurrency trading bot in Elixir** book.
+This website is the home of **Hands-on Elixir & OTP: Cryptocurrency trading bot** book.
 
 <img src="images/cover.png" width="250" height="324" alt="The book cover" align="right" style="margin: 0 1em 0 1em"/>
 
 **This book is 75% complete** - chapters 1-15 are finished but I'm planning to add more content in the near future.
 
-Are you looking for a real-world project to gain hands-on experience/solidify your understanding of Elixir/OTP? You are in the right place! We will venture on a journey to create a cryptocurrency trading bot in Elixir. You will be able to see first-hand, how complex systems are designed and developed as we will build them together!
+Want to learn Elixir & OTP by creating a real-world project? With *Hands-on Elixir & OTP: Cryptocurrency trading bot* you will gain hands-on experience by working on an interesting software project. We will explore all the key abstractions and essential principles through iterative implementation improvements.
 
-This book is based on [Create a cryptocurrency trading bot in Elixir](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video series released on YouTube.
+This book is based on [Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video series released on YouTube.
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
