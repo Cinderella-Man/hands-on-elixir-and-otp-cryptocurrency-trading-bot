@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -383,7 +388,7 @@ that we can do is make <code>BinanceMock</code> process to subscribe to the trad
 In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price <em>below</em> the buy order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
 Trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
 Similarly to the buy order, BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with the price <em>above</em> the sell order’s price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.</p>
-<p>Enough theory for now, let’s get our hands dirty with some coding</p>
+<p>Enough theory for now, let’s get our hands dirty with some coding.</p>
 </div>
 <div id="create-binancemock-app" class="section level2" number="4.3">
 <h2><span class="header-section-number">4.3</span> Create “BinanceMock” app</h2>
@@ -431,7 +436,7 @@ Similarly to the buy order, BinanceMock will keep on waiting until a trade event
 </div>
 <div id="implement-getting-exchange-info" class="section level2" number="4.4">
 <h2><span class="header-section-number">4.4</span> Implement getting exchange info</h2>
-<p>As it was mentioned before, to retrieve exchange info we can just call Binance’s function directly as it’s a publicly avaiable information:</p>
+<p>As it was mentioned before, to retrieve exchange info we can just call Binance’s function directly as it’s a publicly available information:</p>
 <div class="sourceCode" id="cb51"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb51-1"><a href="mock-the-binance-api.html#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb51-2"><a href="mock-the-binance-api.html#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_exchange_info <span class="kw">do</span></span>
 <span id="cb51-3"><a href="mock-the-binance-api.html#cb51-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Binance</span><span class="op">.</span>get_exchange_info()</span>
@@ -452,32 +457,28 @@ the same for both order sides:</p>
 <span id="cb52-8"><a href="mock-the-binance-api.html#cb52-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The “order_limit” helper function will:</p>
 <ul>
-<li>ensure that quantity and price are float values as the <code>Binance</code> module accepts both strings and floats</li>
 <li>generate a fake order based on symbol, quantity, price, and side</li>
 <li>cast a message to the BinanceMock process to add the fake order</li>
 <li>return with a tuple with <code>%OrderResponse{}</code> struct to be consistent with the Binance module:</li>
 </ul>
 <div class="sourceCode" id="cb53"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb53-1"><a href="mock-the-binance-api.html#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb53-2"><a href="mock-the-binance-api.html#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
-<span id="cb53-3"><a href="mock-the-binance-api.html#cb53-3" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> <span class="cn">Float</span><span class="op">.</span>parse(<span class="st">&quot;</span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span>) <span class="op">|&gt;</span> elem(<span class="dv">0</span>)</span>
-<span id="cb53-4"><a href="mock-the-binance-api.html#cb53-4" aria-hidden="true" tabindex="-1"></a>    price <span class="op">=</span> <span class="cn">Float</span><span class="op">.</span>parse(<span class="st">&quot;</span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">&quot;</span>) <span class="op">|&gt;</span> elem(<span class="dv">0</span>)</span>
-<span id="cb53-5"><a href="mock-the-binance-api.html#cb53-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb53-6"><a href="mock-the-binance-api.html#cb53-6" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span></span>
-<span id="cb53-7"><a href="mock-the-binance-api.html#cb53-7" aria-hidden="true" tabindex="-1"></a>      fake_order <span class="op">=</span></span>
-<span id="cb53-8"><a href="mock-the-binance-api.html#cb53-8" aria-hidden="true" tabindex="-1"></a>      generate_fake_order(</span>
-<span id="cb53-9"><a href="mock-the-binance-api.html#cb53-9" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
-<span id="cb53-10"><a href="mock-the-binance-api.html#cb53-10" aria-hidden="true" tabindex="-1"></a>        quantity,</span>
-<span id="cb53-11"><a href="mock-the-binance-api.html#cb53-11" aria-hidden="true" tabindex="-1"></a>        price,</span>
-<span id="cb53-12"><a href="mock-the-binance-api.html#cb53-12" aria-hidden="true" tabindex="-1"></a>        side</span>
-<span id="cb53-13"><a href="mock-the-binance-api.html#cb53-13" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb53-14"><a href="mock-the-binance-api.html#cb53-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb53-15"><a href="mock-the-binance-api.html#cb53-15" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>cast(</span>
-<span id="cb53-16"><a href="mock-the-binance-api.html#cb53-16" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
-<span id="cb53-17"><a href="mock-the-binance-api.html#cb53-17" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:add_order</span>, fake_order}</span>
-<span id="cb53-18"><a href="mock-the-binance-api.html#cb53-18" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb53-19"><a href="mock-the-binance-api.html#cb53-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb53-20"><a href="mock-the-binance-api.html#cb53-20" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, convert_order_to_order_response(fake_order)}</span>
-<span id="cb53-21"><a href="mock-the-binance-api.html#cb53-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb53-3"><a href="mock-the-binance-api.html#cb53-3" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span></span>
+<span id="cb53-4"><a href="mock-the-binance-api.html#cb53-4" aria-hidden="true" tabindex="-1"></a>      fake_order <span class="op">=</span></span>
+<span id="cb53-5"><a href="mock-the-binance-api.html#cb53-5" aria-hidden="true" tabindex="-1"></a>      generate_fake_order(</span>
+<span id="cb53-6"><a href="mock-the-binance-api.html#cb53-6" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
+<span id="cb53-7"><a href="mock-the-binance-api.html#cb53-7" aria-hidden="true" tabindex="-1"></a>        quantity,</span>
+<span id="cb53-8"><a href="mock-the-binance-api.html#cb53-8" aria-hidden="true" tabindex="-1"></a>        price,</span>
+<span id="cb53-9"><a href="mock-the-binance-api.html#cb53-9" aria-hidden="true" tabindex="-1"></a>        side</span>
+<span id="cb53-10"><a href="mock-the-binance-api.html#cb53-10" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb53-11"><a href="mock-the-binance-api.html#cb53-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-12"><a href="mock-the-binance-api.html#cb53-12" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>cast(</span>
+<span id="cb53-13"><a href="mock-the-binance-api.html#cb53-13" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb53-14"><a href="mock-the-binance-api.html#cb53-14" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:add_order</span>, fake_order}</span>
+<span id="cb53-15"><a href="mock-the-binance-api.html#cb53-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb53-16"><a href="mock-the-binance-api.html#cb53-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-17"><a href="mock-the-binance-api.html#cb53-17" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, convert_order_to_order_response(fake_order)}</span>
+<span id="cb53-18"><a href="mock-the-binance-api.html#cb53-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We can now move on to the implementation of the <code>handle_cast/2</code> callback to <code>:add_order</code> to the order book for the symbol from the order.
 It needs to do two things:</p>
 <ul>
@@ -546,14 +547,14 @@ We need to remember to append the symbol to the list of subscription and return 
 <span id="cb56-16"><a href="mock-the-binance-api.html#cb56-16" aria-hidden="true" tabindex="-1"></a>          order_book,</span>
 <span id="cb56-17"><a href="mock-the-binance-api.html#cb56-17" aria-hidden="true" tabindex="-1"></a>          <span class="va">:sell_side</span>,</span>
 <span id="cb56-18"><a href="mock-the-binance-api.html#cb56-18" aria-hidden="true" tabindex="-1"></a>          [order <span class="op">|</span> order_book<span class="op">.</span>sell_side]</span>
-<span id="cb56-19"><a href="mock-the-binance-api.html#cb56-19" aria-hidden="true" tabindex="-1"></a>          <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>sort(<span class="op">&amp;</span>D<span class="op">.</span>lt?(D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">2</span><span class="op">.</span>price)))</span>
+<span id="cb56-19"><a href="mock-the-binance-api.html#cb56-19" aria-hidden="true" tabindex="-1"></a>          <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>sort(<span class="op">&amp;</span>D<span class="op">.</span>lt?(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price, <span class="op">&amp;</span><span class="dv">2</span><span class="op">.</span>price))</span>
 <span id="cb56-20"><a href="mock-the-binance-api.html#cb56-20" aria-hidden="true" tabindex="-1"></a>        )</span>
 <span id="cb56-21"><a href="mock-the-binance-api.html#cb56-21" aria-hidden="true" tabindex="-1"></a>      <span class="cf">else</span></span>
 <span id="cb56-22"><a href="mock-the-binance-api.html#cb56-22" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Map</span><span class="op">.</span>replace!(</span>
 <span id="cb56-23"><a href="mock-the-binance-api.html#cb56-23" aria-hidden="true" tabindex="-1"></a>          order_book,</span>
 <span id="cb56-24"><a href="mock-the-binance-api.html#cb56-24" aria-hidden="true" tabindex="-1"></a>          <span class="va">:buy_side</span>,</span>
 <span id="cb56-25"><a href="mock-the-binance-api.html#cb56-25" aria-hidden="true" tabindex="-1"></a>          [order <span class="op">|</span> order_book<span class="op">.</span>buy_side]</span>
-<span id="cb56-26"><a href="mock-the-binance-api.html#cb56-26" aria-hidden="true" tabindex="-1"></a>          <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>sort(<span class="op">&amp;</span>D<span class="op">.</span>gt?(D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">2</span><span class="op">.</span>price)))</span>
+<span id="cb56-26"><a href="mock-the-binance-api.html#cb56-26" aria-hidden="true" tabindex="-1"></a>          <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>sort(<span class="op">&amp;</span>D<span class="op">.</span>gt?(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price, <span class="op">&amp;</span><span class="dv">2</span><span class="op">.</span>price))</span>
 <span id="cb56-27"><a href="mock-the-binance-api.html#cb56-27" aria-hidden="true" tabindex="-1"></a>        )</span>
 <span id="cb56-28"><a href="mock-the-binance-api.html#cb56-28" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span></span>
 <span id="cb56-29"><a href="mock-the-binance-api.html#cb56-29" aria-hidden="true" tabindex="-1"></a></span>
@@ -565,8 +566,8 @@ previously - those are <code>generate_fake_order</code> and <code>convert_order_
 <div class="sourceCode" id="cb57"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb57-1"><a href="mock-the-binance-api.html#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb57-2"><a href="mock-the-binance-api.html#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> generate_fake_order(symbol, quantity, price, side)</span>
 <span id="cb57-3"><a href="mock-the-binance-api.html#cb57-3" aria-hidden="true" tabindex="-1"></a>       <span class="kw">when</span> is_binary(symbol) <span class="kw">and</span></span>
-<span id="cb57-4"><a href="mock-the-binance-api.html#cb57-4" aria-hidden="true" tabindex="-1"></a>              is_float(quantity) <span class="kw">and</span></span>
-<span id="cb57-5"><a href="mock-the-binance-api.html#cb57-5" aria-hidden="true" tabindex="-1"></a>              is_float(price) <span class="kw">and</span></span>
+<span id="cb57-4"><a href="mock-the-binance-api.html#cb57-4" aria-hidden="true" tabindex="-1"></a>              is_binary(quantity) <span class="kw">and</span></span>
+<span id="cb57-5"><a href="mock-the-binance-api.html#cb57-5" aria-hidden="true" tabindex="-1"></a>              is_binary(price) <span class="kw">and</span></span>
 <span id="cb57-6"><a href="mock-the-binance-api.html#cb57-6" aria-hidden="true" tabindex="-1"></a>              (side <span class="op">==</span> <span class="st">&quot;BUY&quot;</span> <span class="kw">or</span> side <span class="op">==</span> <span class="st">&quot;SELL&quot;</span>) <span class="kw">do</span></span>
 <span id="cb57-7"><a href="mock-the-binance-api.html#cb57-7" aria-hidden="true" tabindex="-1"></a>    current_timestamp <span class="op">=</span> <span class="va">:os</span><span class="op">.</span>system_time(<span class="va">:millisecond</span>)</span>
 <span id="cb57-8"><a href="mock-the-binance-api.html#cb57-8" aria-hidden="true" tabindex="-1"></a>    order_id <span class="op">=</span> <span class="cn">GenServer</span><span class="op">.</span>call(<span class="cn">__MODULE__</span>, <span class="va">:generate_id</span>)</span>
@@ -576,8 +577,8 @@ previously - those are <code>generate_fake_order</code> and <code>convert_order_
 <span id="cb57-12"><a href="mock-the-binance-api.html#cb57-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
 <span id="cb57-13"><a href="mock-the-binance-api.html#cb57-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">order_id:</span> order_id,</span>
 <span id="cb57-14"><a href="mock-the-binance-api.html#cb57-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">client_order_id:</span> client_order_id,</span>
-<span id="cb57-15"><a href="mock-the-binance-api.html#cb57-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> <span class="cn">Float</span><span class="op">.</span>to_string(price),</span>
-<span id="cb57-16"><a href="mock-the-binance-api.html#cb57-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">orig_qty:</span> <span class="cn">Float</span><span class="op">.</span>to_string(quantity),</span>
+<span id="cb57-15"><a href="mock-the-binance-api.html#cb57-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> price,</span>
+<span id="cb57-16"><a href="mock-the-binance-api.html#cb57-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">orig_qty:</span> quantity,</span>
 <span id="cb57-17"><a href="mock-the-binance-api.html#cb57-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">executed_qty:</span> <span class="st">&quot;0.00000000&quot;</span>,</span>
 <span id="cb57-18"><a href="mock-the-binance-api.html#cb57-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">cummulative_quote_qty:</span> <span class="st">&quot;0.00000000&quot;</span>,</span>
 <span id="cb57-19"><a href="mock-the-binance-api.html#cb57-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">status:</span> <span class="st">&quot;NEW&quot;</span>,</span>
@@ -675,12 +676,12 @@ and <code>reject/2</code>(later ones will go through whole lists which could bec
 <span id="cb62-12"><a href="mock-the-binance-api.html#cb62-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-13"><a href="mock-the-binance-api.html#cb62-13" aria-hidden="true" tabindex="-1"></a>    filled_buy_orders <span class="op">=</span></span>
 <span id="cb62-14"><a href="mock-the-binance-api.html#cb62-14" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>buy_side</span>
-<span id="cb62-15"><a href="mock-the-binance-api.html#cb62-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>take_while(<span class="op">&amp;</span>D<span class="op">.</span>lt?(D<span class="op">.</span>new(trade_event<span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price)))</span>
+<span id="cb62-15"><a href="mock-the-binance-api.html#cb62-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>take_while(<span class="op">&amp;</span>D<span class="op">.</span>lt?(trade_event<span class="op">.</span>price, <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price))</span>
 <span id="cb62-16"><a href="mock-the-binance-api.html#cb62-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="st">&quot;FILLED&quot;</span>))</span>
 <span id="cb62-17"><a href="mock-the-binance-api.html#cb62-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-18"><a href="mock-the-binance-api.html#cb62-18" aria-hidden="true" tabindex="-1"></a>    filled_sell_orders <span class="op">=</span></span>
 <span id="cb62-19"><a href="mock-the-binance-api.html#cb62-19" aria-hidden="true" tabindex="-1"></a>      order_book<span class="op">.</span>sell_side</span>
-<span id="cb62-20"><a href="mock-the-binance-api.html#cb62-20" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>take_while(<span class="op">&amp;</span>D<span class="op">.</span>gt?(D<span class="op">.</span>new(trade_event<span class="op">.</span>price), D<span class="op">.</span>new(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price)))</span>
+<span id="cb62-20"><a href="mock-the-binance-api.html#cb62-20" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>take_while(<span class="op">&amp;</span>D<span class="op">.</span>gt?(trade_event<span class="op">.</span>price, <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>price))</span>
 <span id="cb62-21"><a href="mock-the-binance-api.html#cb62-21" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="st">&quot;FILLED&quot;</span>))</span>
 <span id="cb62-22"><a href="mock-the-binance-api.html#cb62-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-23"><a href="mock-the-binance-api.html#cb62-23" aria-hidden="true" tabindex="-1"></a>    (filled_buy_orders <span class="op">++</span> filled_sell_orders)</span>
@@ -712,7 +713,7 @@ and <code>reject/2</code>(later ones will go through whole lists which could bec
 <span id="cb62-49"><a href="mock-the-binance-api.html#cb62-49" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">order_books:</span> order_books}}</span>
 <span id="cb62-50"><a href="mock-the-binance-api.html#cb62-50" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Inside the callback we referred to two new functions that we will implement now(<code>convert_order_to_event</code> and <code>broadcast_trade_event</code>).</p>
-<p>Starting with the <code>convert_order_to_event</code> function, it will simply return a new <code>Streamer.Binance.TradeEvent</code> struct filled with data. An interesting thing to observe here is that again all values are predicatable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behaviour between runs:</p>
+<p>Starting with the <code>convert_order_to_event</code> function, it will simply return a new <code>Streamer.Binance.TradeEvent</code> struct filled with data. An interesting thing to observe here is that again all values are predicatable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behavior between runs:</p>
 <div class="sourceCode" id="cb63"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb63-1"><a href="mock-the-binance-api.html#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb63-2"><a href="mock-the-binance-api.html#cb63-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_event(%<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order, time) <span class="kw">do</span></span>
 <span id="cb63-3"><a href="mock-the-binance-api.html#cb63-3" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{</span>
@@ -777,7 +778,7 @@ the children list of the application so it starts automatically:</p>
 <span id="cb69-2"><a href="mock-the-binance-api.html#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb69-3"><a href="mock-the-binance-api.html#cb69-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb69-4"><a href="mock-the-binance-api.html#cb69-4" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb69-5"><a href="mock-the-binance-api.html#cb69-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb69-5"><a href="mock-the-binance-api.html#cb69-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb69-6"><a href="mock-the-binance-api.html#cb69-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:decimal</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
 <span id="cb69-7"><a href="mock-the-binance-api.html#cb69-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
 <span id="cb69-8"><a href="mock-the-binance-api.html#cb69-8" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:streamer</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}</span>
@@ -807,7 +808,7 @@ the children list of the application so it starts automatically:</p>
 <span id="cb71-5"><a href="mock-the-binance-api.html#cb71-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
 <span id="cb71-6"><a href="mock-the-binance-api.html#cb71-6" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.332.0&gt;}</span></span>
 <span id="cb71-7"><a href="mock-the-binance-api.html#cb71-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span></span>
-<span id="cb71-8"><a href="mock-the-binance-api.html#cb71-8" aria-hidden="true" tabindex="-1"></a><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: Decimal.new<span class="er">(</span><span class="st">&quot;-0.001&quot;</span><span class="kw">)</span><span class="er">}</span></span>
+<span id="cb71-8"><a href="mock-the-binance-api.html#cb71-8" aria-hidden="true" tabindex="-1"></a><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.001&quot;</span>}</span>
 <span id="cb71-9"><a href="mock-the-binance-api.html#cb71-9" aria-hidden="true" tabindex="-1"></a><span class="kw">)</span></span>
 <span id="cb71-10"><a href="mock-the-binance-api.html#cb71-10" aria-hidden="true" tabindex="-1"></a><span class="ex">00:19:39.232</span> [info]  Initializing new trader for XRPUSDT</span>
 <span id="cb71-11"><a href="mock-the-binance-api.html#cb71-11" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.318.0&gt;}</span></span>

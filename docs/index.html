@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -381,14 +386,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2>Preface</h2>
 <p>In recent years <a href="https://elixir-lang.org/">Elixir</a> programming language gained a lot of interest in the industry.</p>
 <p>Its unmatched parallelization capabilities are unique and powerful, making it a great candidate for highly concurrent systems like the ones trading assets on exchanges.</p>
-<p>In this book, we will go through the development process of a cryptocurrency trading bot in Elixir. We will start grounds up and chapter by chapter progress with the implementation ending up with a fully fledged <em>naive</em> trading strategy. We will be designing process supervision trees, describing why specific decisions were taken and how will they impact the system going forward.</p>
+<p>In this book, we will go through the development process of a cryptocurrency trading bot in Elixir. We will start ground up and chapter by chapter progress with the implementation ending up with a fully-fledged <em>naive</em> trading strategy. We will be designing process supervision trees, describing why specific decisions were taken and how will they impact the system going forward.</p>
 <p>By any stretch of the imagination, I don’t believe that “this is <em>the only</em> way”(nor even the best way) to create a cryptocurrency trading bot in Elixir. This book focuses more on building a real-life project and iterating over it, taking decisions on the way as it would happen in a real work environment. There are parts that will be “perfect” the first time around, but there are also others, where we will take compromises to “get it to working” and then when the time is right, we will refactor them as we will gain a better understanding of the domain problem.</p>
 </div>
 <div id="who-this-book-is-for" class="section level2 unnumbered">
 <h2>Who this book is for</h2>
 <p>This book will be a great resource for everyone that already knows the basics of Elixir and wants to get a feel of how developing a non-trivial system looks like using it.</p>
 <p>Readers do not need deep knowledge about cryptocurrencies to follow along as I will shy away from crypto / trading jargon as well as will explain it whenever it’s unavoidable.</p>
-<p><strong>This is not a book focused on trading strategies, neither it’s financial advice to trade at all.</strong> The main focus of this book is to showcase how the implementation of even complex problems can be achieved in Elixir by simple processes working together in a orchestrated manner.</p>
+<p><strong>This is not a book focused on trading strategies, neither it’s financial advice to trade at all.</strong> The main focus of this book is to showcase how the implementation of even complex problems can be achieved in Elixir by simple processes working together in an orchestrated manner.</p>
 <p><strong>The strategy described in this book is naive and most probably will end up losing money</strong>, but that’s not the point of this book. <strong>As we will build up the strategy we will face a spectrum of problems that developers face at work. It’s a great primer if you want to get your first “project” behind your belt</strong>.</p>
 <p>So, if you’ve already gone through the motions and learned Elixir and OTP but still feel like you need to get your hands dirty with a “real problem” to “make it stick”, this book is for you.</p>
 </div>
@@ -403,7 +408,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li>Chapter 2 - Create a naive trading strategy - single trader without supervision</li>
 </ul>
-<p>In this chapter we will create our first <em>naive</em> trading strategy. We will create another application inside our umbrella called <code>naive</code>. We will put data streamed to our <code>streamer</code> application to good use by sending it over to the <code>naive</code> application. We will start with a very basic solution consisting of single process called <code>trader</code> that will utilize the <code>GenServer</code> behaviour. It will allow us to go through the full trading cycle and will give us something that “works”.</p>
+<p>In this chapter, we will create our first <em>naive</em> trading strategy. We will create another application inside our umbrella called <code>naive</code>. We will put data streamed to our <code>streamer</code> application to good use by sending it over to the <code>naive</code> application. We will start with a very basic solution consisting of a single process called <code>trader</code> that will utilize the <code>GenServer</code> behavior. It will allow us to go through the full trading cycle and will give us something that “works”.</p>
 <ul>
 <li>Chapter 3 - Introduce PubSub as a communication method</li>
 </ul>
@@ -412,7 +417,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li>Chapter 4 - Mock the Binance API</li>
 </ul>
-<p>Besides historical prices (trade events), to perform backtesting, we need to be able to mock placing orders and get trade events back as they are filled. In this chapter we will focus on developing the solution that will allow our trader to “trade” without contacting the Binance exchange(for people without Binance accounts), it will also allow us to backtest our trading strategy.</p>
+<p>Besides historical prices (trade events), to perform backtesting, we need to be able to mock placing orders and get trade events back as they are filled. In this chapter, we will focus on developing the solution that will allow our trader to “trade” without contacting the Binance exchange(for people without Binance accounts), it will also allow us to backtest our trading strategy.</p>
 <ul>
 <li>Chapter 5 - Enable parallel trading on multiple symbols</li>
 </ul>
@@ -420,7 +425,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li>Chapter 6 - Introduce a <code>buy_down_interval</code> to make a single trader more profitable</li>
 </ul>
-<p>At this moment our <code>Naive.Trader</code> implementation will blindly place a buy order at the price of the last trade event. Whenever the <code>Naive.Trader</code> process will finish trade, a new <code>Naive.Trader</code> process will be started and it will end up placing a buy order at the same price as the price of the previous sell order. This will cost us double the fee without gaining any advantage and would cause further complications down the line so we will introduce a <code>buy_down_interval</code> which will allow the <code>Naive.Trader</code> processes to place buy order below the current trade event’s price.</p>
+<p>At this moment our <code>Naive.Trader</code> implementation will blindly place a buy order at the price of the last trade event. Whenever the <code>Naive.Trader</code> process will finish trade, a new <code>Naive.Trader</code> process will be started and it will end up placing a buy order at the same price as the price of the previous sell order. This will cost us double the fee without gaining any advantage and would cause further complications down the line, so we will introduce a <code>buy_down_interval</code> which will allow the <code>Naive.Trader</code> processes to place a buy order below the current trade event’s price.</p>
 <ul>
 <li>Chapter 7 - Introduce a trader budget and calculating the quantity</li>
 </ul>
@@ -432,27 +437,27 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li>Chapter 9 - Run multiple traders in parallel</li>
 </ul>
-<p>With PubSub, supervision tree, buy down and budget in place we can progress with scaling the number of traders. This will require further improvements to our trading strategy like introducing a <code>rebuy_interval</code>. At the end of this chapter our trading strategy will be able to start and run multiple traders in parallel.</p>
+<p>With PubSub, supervision tree, buy down and budget in place we can progress with scaling the number of traders. This will require further improvements to our trading strategy like introducing a <code>rebuy_interval</code>. At the end of this chapter, our trading strategy will be able to start and run multiple traders in parallel.</p>
 <ul>
 <li>Chapter 10 - Fine-tune trading strategy per symbol</li>
 </ul>
-<p>Currently naive strategy works based on settings hardcoded in the <code>leader</code> module. To allow for fine-tunning the naive trading strategy per symbol we will introduce a new database together with table that will store trading settings.</p>
+<p>Currently, naive strategy works based on settings hardcoded in the <code>leader</code> module. To allow for fine-tunning the naive trading strategy per symbol we will introduce a new database together with the table that will store trading settings.</p>
 <ul>
 <li>Chapter 11 - Supervise and autostart streaming</li>
 </ul>
-<p>In the last chapter we introduced a new database inside the <code>naive</code> application to store default settings, in this chapter we will do the same for the <code>streamer</code> application. Inside the settings there will be a <code>status</code> flag that will allow us to implement the autostarting functionality on initialization using Task abstracting</p>
+<p>In the last chapter, we introduced a new database inside the <code>naive</code> application to store default settings, in this chapter we will do the same for the <code>streamer</code> application. Inside the settings, there will be a <code>status</code> flag that will allow us to implement the autostarting functionality on initialization using Task abstracting</p>
 <ul>
-<li>Chapter 12 - Start, stop, shutdown and autostart trading</li>
+<li>Chapter 12 - Start, stop, shutdown, and autostart trading</li>
 </ul>
-<p>To follow up after autostarting streaming we will apply the same trick to the trading supervision tree using Task abstraction. We will need to introduce new supervision level to achieve correct supervision strategy.</p>
+<p>To follow up after autostarting streaming we will apply the same trick to the trading supervision tree using Task abstraction. We will need to introduce a new supervision level to achieve the correct supervision strategy.</p>
 <ul>
 <li>Chapter 13 - Abstract duplicated supervision code</li>
 </ul>
-<p>As both the <code>naive</code> and the <code>streamer</code> application contain almost the same copy-pasted code that allows us to start, stop and autostart workers. We will look into how could we abstract the common parts of that implementation to a single module. We will venture into utilizing the <code>__using__</code> macro to get rid of the boilerplate.</p>
+<p>As both the <code>naive</code> and the <code>streamer</code> application contain almost the same copy-pasted code that allows us to start, stop and autostart workers. We will look into how could we abstract the common parts of that implementation into a single module. We will venture into utilizing the <code>__using__</code> macro to get rid of the boilerplate.</p>
 <ul>
 <li>Chapter 14 - Store trade events and orders inside the database</li>
 </ul>
-<p>To be able to backtest the trading strategy, we need to have historical prices (trade events) and list of orders that were placed stored in the database, which will be the focus of this chapter. At this moment, the latest prices (trade events) are broadcasted to PubSub topic and traders are subscribing to it. We will create a new application called <code>data_warehouse</code> inside our umbrella that will be responsible for subscribing to the same PubSub topics and storing incoming prices (trade events) in the Postgres database. We will update the <code>Naive.Trader</code> module to broadcast orders as traders will place them.</p>
+<p>To be able to backtest the trading strategy, we need to have historical prices (trade events) and a list of orders that were placed stored in the database, which will be the focus of this chapter. At this moment, the latest prices (trade events) are broadcasted to PubSub topic and traders are subscribing to it. We will create a new application called <code>data_warehouse</code> inside our umbrella that will be responsible for subscribing to the same PubSub topics and storing incoming prices (trade events) in the Postgres database. We will update the <code>Naive.Trader</code> module to broadcast orders as traders will place them.</p>
 <p>Then we will move on to adding supervision similar to the one from the <code>naive</code> and the <code>streamer</code> applications but this time we will show how we could avoid using both common module and macros by utilizing the <code>Registry</code> module.</p>
 <ul>
 <li>Chapter 15 - Backtest trading strategy</li>
@@ -463,7 +468,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2>Source code</h2>
 <p>The source code for this book is hosted on Github:</p>
 <p><a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code" class="uri">https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code</a></p>
-<p>Final code of each chapter has it’s own branch.</p>
+<p>The final code of each chapter has its own branch.</p>
 
 </div>
 </div>

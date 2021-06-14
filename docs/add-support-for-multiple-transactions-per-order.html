@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -443,7 +448,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="implement-buy-order-filled-callback" class="section level2" number="8.4">
 <h2><span class="header-section-number">8.4</span> Implement buy order “filled” callback</h2>
-<p>Above callback covers the case where we will get multiple transactions filling our buy order. We aren’t yet convering for the race condition described at the begining of this chapter. When another trade event matching <code>buyer_order_id</code> would arrive, above callback would be used and another sell order would be placed. To avoid that we need to add a new callback <em>ABOVE</em> the one that we just edited that will match <code>buyer_order_id</code> together with “filled” <code>status</code> and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:</p>
+<p>Above callback covers the case where we will get multiple transactions filling our buy order. We aren’t yet covering for the race condition described at the begining of this chapter. When another trade event matching <code>buyer_order_id</code> would arrive, above callback would be used and another sell order would be placed. To avoid that we need to add a new callback <em>ABOVE</em> the one that we just edited that will match <code>buyer_order_id</code> together with “filled” <code>status</code> and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:</p>
 <div class="sourceCode" id="cb108"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb108-1"><a href="add-support-for-multiple-transactions-per-order.html#cb108-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb108-2"><a href="add-support-for-multiple-transactions-per-order.html#cb108-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this callback ABOVE callback from previous section</span></span>
 <span id="cb108-3"><a href="add-support-for-multiple-transactions-per-order.html#cb108-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
@@ -522,7 +527,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="test-the-implementation-1" class="section level2" number="8.6">
 <h2><span class="header-section-number">8.6</span> Test the implementation</h2>
-<p>Testing this feature is a bit tricky as it requires trading on real Binance exachnge(as our BinanceMock always fills order with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected wiht BinanceMock:</p>
+<p>Testing this feature is a bit tricky as it requires trading on real Binance exchange(as our BinanceMock always fills order with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected wiht BinanceMock:</p>
 <div class="sourceCode" id="cb111"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb111-1"><a href="add-support-for-multiple-transactions-per-order.html#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb111-2"><a href="add-support-for-multiple-transactions-per-order.html#cb111-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb111-3"><a href="add-support-for-multiple-transactions-per-order.html#cb111-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>

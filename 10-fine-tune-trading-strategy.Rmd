@@ -21,13 +21,14 @@ At this moment the settings of our naive strategy are hardcoded inside the `Naiv
 
     Map.merge(
       %{
-        symbol: symbol,                           # <=
-        chunks: 5,                                # <=
-        budget: Decimal.new("100"),               # <=
-        buy_down_interval: Decimal.new("0.0001"), # <= all of those settings
-        # -0.12% for quick testing                # <=
-        profit_interval: Decimal.new("-0.0012"),  # <=
-        rebuy_interval: Decimal.new("0.001")      # <=
+        symbol: symbol,              # <=
+        chunks: 5,                   # <=
+        budget: 100,                 # <=
+        # -0.01% for quick testing   # <=
+        buy_down_interval: "0.0001", # <= all of those settings
+        # -0.12% for quick testing   # <=
+        profit_interval: "-0.0012",  # <=
+        rebuy_interval: "0.001"      # <=
       },
       symbol_filters
     )
@@ -326,10 +327,10 @@ config :naive,
   trading: %{
     defaults: %{
       chunks: 5,
-      budget: 1000.0,
-      buy_down_interval: 0.0001,
-      profit_interval: -0.0012,
-      rebuy_interval: 0.001
+      budget: 1000,
+      buy_down_interval: "0.0001",
+      profit_interval: "-0.0012",
+      rebuy_interval: "0.001"
     }
   }
 ```
@@ -392,10 +393,10 @@ As our structs will differ by only the `symbol` column we can first create a ful
 base_settings = %{
   symbol: "",
   chunks: chunks,
-  budget: Decimal.from_float(budget),
-  buy_down_interval: Decimal.from_float(buy_down_interval),
-  profit_interval: Decimal.from_float(profit_interval),
-  rebuy_interval: Decimal.from_float(rebuy_interval),
+  budget: Decimal.new(budget),
+  buy_down_interval: Decimal.new(buy_down_interval),
+  profit_interval: Decimal.new(profit_interval),
+  rebuy_interval: Decimal.new(rebuy_interval),
   status: "off",
   inserted_at: timestamp,
   updated_at: timestamp

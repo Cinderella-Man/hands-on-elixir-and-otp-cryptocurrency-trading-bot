@@ -20,11 +20,13 @@ already retrieving together with `tick_size` in the `exchangeInfo` call(but not 
     
     Map.merge(
       %{
+        symbol: symbol,
         chunks: 1,
         budget: 20,
-        buy_down_interval: Decimal.new("0.0001"),
+        # -0.01% for quick testing
+        buy_down_interval: "0.0001",
         # -0.12% for quick testing
-        profit_interval: Decimal.new("-0.0012")
+        profit_interval: "-0.0012"
       },
       symbol_filters
     )
@@ -42,13 +44,11 @@ already retrieving together with `tick_size` in the `exchangeInfo` call(but not 
       symbol_filters
       |> Enum.find(&(&1["filterType"] == "PRICE_FILTER"))
       |> Map.get("tickSize")
-      |> Decimal.new()
 
     step_size =
       symbol_filters
       |> Enum.find(&(&1["filterType"] == "LOT_SIZE"))
       |> Map.get("stepSize")
-      |> Decimal.new()
 
     %{
       tick_size: tick_size,
@@ -145,16 +145,15 @@ To calculate quantity we will just divide the `budget` by the `price` with a cav
   # add below at the bottom of the file
   ...
   defp calculate_quantity(budget, price, step_size) do
-    price = D.from_float(price)
-
     # not necessarily legal quantity
     exact_target_quantity = D.div(budget, price)
 
-    D.to_float(
+    D.to_string(
       D.mult(
         D.div_int(exact_target_quantity, step_size),
         step_size
-      )
+      ),
+      :normal
     )
   end
 ```

@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -352,14 +357,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="objectives-1" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Objectives</h2>
 <ul>
-<li>create another supervised application inside umbrella to store our trading strategy</li>
-<li>define callbacks for events dependent on state of the trader</li>
+<li>create another supervised application inside the umbrella to store our trading strategy</li>
+<li>define callbacks for events dependent on the state of the trader</li>
 <li>push events from the streamer app to the naive app</li>
 </ul>
 </div>
 <div id="initializiation" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> Initializiation</h2>
-<p>To develop our <em>naive</em> strategy will need to create a new supervised application inside our umbrella project:</p>
+<p>To develop our <em>naive</em> strategy will need to create a new supervised application inside the our umbrella project:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> apps</span>
 <span id="cb25-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mix</span> new naive <span class="at">--sup</span></span></code></pre></div>
 <p>We can now focus on creating a <code>trader</code> abstraction inside that newly created application. First we need to create a new file called <code>trader.ex</code> inside <code>apps/naive/lib/naive/</code>.</p>
@@ -378,7 +383,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb26-12"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb26-12" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, args}</span>
 <span id="cb26-13"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb26-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>Our module uses the <a href="https://hexdocs.pm/elixir/master/GenServer.html#content">GenServer</a> behaviour and to fulfill it’s “contract”, we need to implement the <code>init/1</code> function. The <code>start_link/1</code> function is a convention and it allows us to register the process with a name(it’s a default function that supervisor will use when starting the Trader). We also add a <code>require Logger</code> as we will keep on logging across the module.</p>
+<p>Our module uses the <a href="https://hexdocs.pm/elixir/master/GenServer.html#content">GenServer</a> behavior and to fulfill its “contract”, we need to implement the <code>init/1</code> function. The <code>start_link/1</code> function is a convention and it allows us to register the process with a name(it’s a default function that supervisor will use when starting the Trader). We also add a <code>require Logger</code> as we will keep on logging across the module.</p>
 <p>Next, let’s model the state of our server:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb27-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb27-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
@@ -397,7 +402,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>placed buy order (if any)</li>
 <li>placed sell order (if any)</li>
 <li>profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)</li>
-<li>tick_size (yes, I know, jargon warning. We can’t ignore it here as it needs to be fetched from Binance and it’s used to calculate a valid price. Tick size differs between symbols and it is a smallest acceptable price movement up or down. For example in physical world tick size for USD is a single cent, you can’t sell something for $1.234, it’s either $1.23 or $1.24 (one cent difference between those is the tick size) - more info <a href="https://www.investopedia.com/terms/t/tick.asp">here</a></li>
+<li>tick_size (yes, I know, jargon warning. We can’t ignore it here as it needs to be fetched from Binance and it’s used to calculate a valid price. Tick size differs between symbols and it is the smallest acceptable price movement up or down. For example in the physical world tick size for USD is a single cent, you can’t sell something for $1.234, it’s either $1.23 or $1.24 (one cent difference between those is the tick size) - more info <a href="https://www.investopedia.com/terms/t/tick.asp">here</a></li>
 </ul>
 <p>Our strategy won’t be able to work without symbol, profit_interval nor tick_size so we added them to the <code>@enforce_keys</code> attribute. This will ensure that we won’t create an invalid <code>%State{}</code> without those values.</p>
 <p>As now we know that our GenServer will need to receive those details via args, we can update pattern matching in <code>start_link/1</code> and <code>init/1</code> functions to confirm that passed values are indeed maps:</p>
@@ -427,17 +432,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb29-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-14" aria-hidden="true" tabindex="-1"></a>     }}</span>
 <span id="cb29-15"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We are uppercasing the symbol above as Binance’s REST API accepts only uppercased symbols.</p>
-<p>It’s the time to connect to Binance’s REST API. The easiest way to do that will be to use the <a href="https://github.com/dvcrn/binance.ex">binance</a> module.</p>
+<p>It’s time to connect to Binance’s REST API. The easiest way to do that will be to use the <a href="https://github.com/dvcrn/binance.ex">binance</a> module.</p>
 <p>As previously, looking through the module’s docs on Github, we can see the <code>Installation</code> section. We will follow the steps mentioned there, starting from adding <code>binance</code> to the deps in <code>/apps/naive/mix.exs</code>:</p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb30-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/mix.ex</span></span>
 <span id="cb30-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb30-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb30-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb30-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb30-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:decimal</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
 <span id="cb30-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:streamer</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}</span>
 <span id="cb30-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-7" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb30-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb30-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Beside adding the <code>:binance</code> module, we also added <code>:decimal</code> and the <code>:streamer</code>. The <a href="https://github.com/ericmj/decimal">decimal</a> module will help us to calculate the buy and sell prices (without decimal module we would have problems with precision). Lastly, we need to include the <code>:streamer</code> application(created in the first chapter) as we will use the <code>%Streamer.Binance.TradeEvent{}</code> struct inside the naive application.</p>
+<p>Besides adding the <code>:binance</code> module, we also added <code>:decimal</code> and the <code>:streamer</code>. The <a href="https://github.com/ericmj/decimal">decimal</a> module will help us to calculate the buy and sell prices (without the decimal module we would have problems with precision). Lastly, we need to include the <code>:streamer</code> application(created in the first chapter) as we will use the <code>%Streamer.Binance.TradeEvent{}</code> struct inside the naive application.</p>
 <p>We need to run <code>mix deps.get</code> to install our new deps.</p>
 <p>We can now get back to the <code>trader</code> module and focus on fetching the tick size from Binance:</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb31-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
@@ -449,9 +454,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb31-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
 <span id="cb31-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
 <span id="cb31-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
-<span id="cb31-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Decimal</span><span class="op">.</span>new()</span>
-<span id="cb31-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We are using <code>get_exchange_info/0</code> to fetch list of symbols, that we will filter to find the symbol that we are requested to trade. Tick size is defined as a <code>PRICE_FILTER</code> filter. Here’s the <a href="https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information">link</a> to the documentation listing all keys in the result. In a nutshell, that’s how the important parts of the result looks like:</p>
+<span id="cb31-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We are using <code>get_exchange_info/0</code> to fetch the list of symbols, that we will filter to find the symbol that we are requested to trade. Tick size is defined as a <code>PRICE_FILTER</code> filter. Here’s the <a href="https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information">link</a> to the documentation listing all keys in the result. In a nutshell, that’s how the important parts of the result look like:</p>
 <pre><code>{:ok, %{
   ...
   &quot;symbols&quot;: [
@@ -469,10 +473,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="how-trading-strategy-will-work" class="section level2" number="2.3">
 <h2><span class="header-section-number">2.3</span> How trading strategy will work?</h2>
-<p>Our trader process has an internal state that will serve as a indicator where in the trade cycle is it. The following diagram shows 3 possible trader states that trader will progress through from left to right:</p>
+<p>Our trader process has an internal state that will serve as an indicator of its step in the trade cycle. The following diagram shows 3 possible trader states that trader will progress through from left to right:</p>
 <p><img src="images/chapter_02_01_trader_states.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>Our trader will be receiving trade events sequentially and take decisions
-based on it’s own state and trade event’s contents.</p>
+based on its own state and trade event’s contents.</p>
 <p>We will focus on a trader in 3 different states:</p>
 <ul>
 <li>a new trader without any orders</li>
@@ -481,15 +485,15 @@ based on it’s own state and trade event’s contents.</p>
 </ul>
 <div style="page-break-after: always;"></div>
 <p><strong>First state - A new trader</strong></p>
-<p>Trader doesn’t have any open orders which we can confirm by pattern matching on the <code>buy_order</code> field from its state. From the incoming event, we can get
+<p>The trader doesn’t have any open orders which we can confirm by pattern matching on the <code>buy_order</code> field from its state. From the incoming event, we can get
 the current price which we will use in the buy order that the trader will place.</p>
 <p><strong>Second state - Buy order placed</strong></p>
-<p>After placing a buy order, trader will be pattern matching to confirm that
+<p>After placing a buy order, the trader will be pattern matching to confirm that
 has incoming event filled his buy order otherwise ignoring it.
-When trade event matching the order id of trader’s buy order will arrive, it means that buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won’t cater for this case, it will always assume that it got filled in a single transaction) and trader can now place the sell order based on the expected profit and the buy_price.</p>
+When a trade event matching the order id of the trader’s buy order will arrive, it means that the buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won’t cater for this case, it will always assume that it got filled in a single transaction) and trader can now place the sell order based on the expected profit and the buy_price.</p>
 <p><strong>Third state - Sell order placed</strong></p>
-<p>Finally, in a very similar fashion to previous state, the trader will be pattern matching to confirm that incoming event has filled his sell order(matching order id), otherwise ignoring it.
-When trade event matching the order id of trader’s sell order will arrive, that means that sell order got filled(simplification as described above) and full trade cycle has ended and the trader can now exit.</p>
+<p>Finally, in a very similar fashion to the previous state, the trader will be pattern matching to confirm that the incoming event has filled his sell order(matching order id), otherwise ignoring it.
+When a trade event matching the order id of trader’s sell order will arrive, which means that the sell order got filled(simplification as described above) and the full trade cycle has ended and the trader can now exit.</p>
 <div id="implementation-of-the-first-scenario" class="section level3" number="2.3.1">
 <h3><span class="header-section-number">2.3.1</span> Implementation of the first scenario</h3>
 <p>Enough theory :) back to the editor, we will implement the first scenario. Before doing that let’s alias Streamer’s TradeEvent struct as we will rely on it heavily in pattern matching.</p>
@@ -502,7 +506,7 @@ When trade event matching the order id of trader’s sell order will arrive, tha
 <span id="cb34-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="va">price:</span> price},</span>
 <span id="cb34-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{<span class="va">symbol:</span> symbol, <span class="va">buy_order:</span> <span class="cn">nil</span>} <span class="op">=</span> state</span>
 <span id="cb34-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-5" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb34-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-6" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> <span class="dv">100</span> <span class="co"># &lt;= Hardcoded until chapter 7</span></span>
+<span id="cb34-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-6" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> <span class="st">&quot;100&quot;</span> <span class="co"># &lt;= Hardcoded until chapter 7</span></span>
 <span id="cb34-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb34-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Placing BUY order for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span>)</span>
 <span id="cb34-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-9" aria-hidden="true" tabindex="-1"></a></span>
@@ -513,11 +517,11 @@ When trade event matching the order id of trader’s sell order will arrive, tha
 <span id="cb34-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb34-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>For the time being, we will keep the quantity hardcoded as this chapter will
 get really long otherwise - don’t worry, we will refactor this in one of the next chapters.</p>
-<p>After confirming that we deal with the “new” trader(by pattern matching on the <code>buy_order</code> field from state), we can safely progress to placing a new buy order. We just need to remember to return the updated state as otherwise, trader will go on a shopping spree, as every next incoming event will cause further buy orders(above pattern match will continue to be successful).</p>
+<p>After confirming that we deal with the “new” trader(by pattern matching on the <code>buy_order</code> field from the state), we can safely progress to placing a new buy order. We just need to remember to return the updated state as otherwise, the trader will go on a shopping spree, as every next incoming event will cause further buy orders(the above pattern match will continue to be successful).</p>
 </div>
 <div id="implementation-of-the-second-scenario" class="section level3" number="2.3.2">
 <h3><span class="header-section-number">2.3.2</span> Implementation of the second scenario</h3>
-<p>With that out of the way, we can now move on to monitoring for event that matches our buy order id and quantity to confirm that our buy order got filled:</p>
+<p>With that out of the way, we can now move on to monitoring for an event that matches our buy order id and quantity to confirm that our buy order got filled:</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb35-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb35-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
 <span id="cb35-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
@@ -547,8 +551,8 @@ get really long otherwise - don’t worry, we will refactor this in one of the n
 <span id="cb35-27"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-28"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-28" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">sell_order:</span> order}}</span>
 <span id="cb35-29"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We will implement calculating sell price in a sepearate function based on buy price, profit interval and tick_size.</p>
-<p>Our pattern match will confirm that indeed our buy order got filled(order_id and quantity matches) so we can now we proceed with placing a sell order using calculated sell price and quantity retrieved from buy order.
+<p>We will implement calculating sell price in a separate function based on buy price, profit interval and tick_size.</p>
+<p>Our pattern match will confirm that indeed our buy order got filled(order_id and quantity matches) so we can now proceed with placing a sell order using calculated sell price and quantity retrieved from buy order.
 Again, don’t forget to return the updated state as otherwise, trader will keep on placing sell orders for every incoming event.</p>
 <p>To calculate the sell price we will need to use precise math and that will require a custom module. We will use the <a href="https://github.com/ericmj/decimal">Decimal</a> module, so first, let’s alias it at the top of the file:</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb36-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
@@ -569,13 +573,14 @@ Again, don’t forget to return the updated state as otherwise, trader will keep
 <span id="cb37-12"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb37-13"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-13" aria-hidden="true" tabindex="-1"></a>    gross_target_price <span class="op">=</span> D<span class="op">.</span>mult(net_target_price, fee)</span>
 <span id="cb37-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-15"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-15" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_float(</span>
+<span id="cb37-15"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-15" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_string(</span>
 <span id="cb37-16"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-16" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
 <span id="cb37-17"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-17" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(gross_target_price, tick_size),</span>
 <span id="cb37-18"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-18" aria-hidden="true" tabindex="-1"></a>        tick_size</span>
-<span id="cb37-19"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-19" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb37-20"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-20" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb37-21"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb37-19"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-19" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb37-20"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:normal</span></span>
+<span id="cb37-21"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-21" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb37-22"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>First, we will hardcode the fee to 0.1% which we will refactor in one of the future chapters.</p>
 <p>We started by calculating the <code>original_price</code> which is the buy price together with the fee that we paid on top of it.</p>
 <p>Next, we enlarge the originally paid price by profit interval to get <code>net_target_price</code>.</p>
@@ -653,7 +658,7 @@ incoming events as they were not matched by any of the previous pattern matches:
 <p>Now it’s the time to give our implementation a run for it’s money. Once again, to be able to do that you will need to have at least 20 USDT tokens in your Binance’s wallet and you will loose just under 0.5% of your USDTs(as “expected profit” is below 0 to quickly showcase the full trade cycle) in the following test:</p>
 <div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb43-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb43-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: Decimal.new<span class="er">(</span><span class="st">&quot;-0.01&quot;</span><span class="kw">)</span><span class="er">}</span><span class="kw">)</span></span>
+<span id="cb43-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
 <span id="cb43-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:30.648</span> [info] Initializing new trader for XRPUSDT</span>
 <span id="cb43-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.355.0&gt;}</span></span>
 <span id="cb43-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>

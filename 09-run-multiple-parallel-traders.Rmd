@@ -121,9 +121,6 @@ At the bottom of the module we need to add `trigger_rebuy?` helper function:
   # /apps/naive/lib/naive/trader.ex
   # bottom of the module
   defp trigger_rebuy?(buy_price, current_price, rebuy_interval) do
-    current_price = D.new(current_price)
-    buy_price = D.new(buy_price)
-
     rebuy_price =
       D.sub(
         buy_price,
@@ -233,10 +230,10 @@ trader's state(inside the `fresh_trader_state` function):
       %{
         ...
         chunks: 5, # <= update to 5 parallel traders max
-        budget: Decimal.new("100"), # <= update this line
+        budget: 100, # <= update this line
         ...
-        profit_interval: Decimal.new("-0.0012"),
-        rebuy_interval: Decimal.new("0.001") # <= add this line
+        profit_interval: "-0.0012",
+        rebuy_interval: "0.001" # <= add this line
       },
       symbol_filters
     )

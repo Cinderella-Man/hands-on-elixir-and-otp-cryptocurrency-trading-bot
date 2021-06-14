@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -491,7 +496,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb211"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb211-1"><a href="abstract-duplicated-supervision-code.html#cb211-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/mix.exs</span></span>
 <span id="cb211-2"><a href="abstract-duplicated-supervision-code.html#cb211-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb211-3"><a href="abstract-duplicated-supervision-code.html#cb211-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb211-4"><a href="abstract-duplicated-supervision-code.html#cb211-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb211-4"><a href="abstract-duplicated-supervision-code.html#cb211-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb211-5"><a href="abstract-duplicated-supervision-code.html#cb211-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance_mock</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>},</span>
 <span id="cb211-6"><a href="abstract-duplicated-supervision-code.html#cb211-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:core</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}, <span class="co"># &lt;= core dep added </span></span>
 <span id="cb211-7"><a href="abstract-duplicated-supervision-code.html#cb211-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">....</span></span></code></pre></div>
@@ -1080,7 +1085,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb247"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb247-1"><a href="abstract-duplicated-supervision-code.html#cb247-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs</span></span>
 <span id="cb247-2"><a href="abstract-duplicated-supervision-code.html#cb247-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb247-3"><a href="abstract-duplicated-supervision-code.html#cb247-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb247-4"><a href="abstract-duplicated-supervision-code.html#cb247-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb247-4"><a href="abstract-duplicated-supervision-code.html#cb247-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb247-5"><a href="abstract-duplicated-supervision-code.html#cb247-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:core</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}, <span class="co"># &lt;= core added to deps</span></span>
 <span id="cb247-6"><a href="abstract-duplicated-supervision-code.html#cb247-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>We can now move on to the <code>Streamer.DynamicStreamerSupervisor</code> where we will remove everything (really everything including <code>import</code>s, <code>alias</code>es and even <code>require</code>) beside the <code>start_link/1</code> and the <code>init/1</code>. As with the <code>Naive.DynamicSymbolSupervisor</code> we will <code>use</code> the <code>Core.ServiceSupervisor</code> and pass all required options - <em>full</em> implementation of the <code>Streamer.DynamicStreamerSupervisor</code> module should look as follows:</p>

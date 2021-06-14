@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -375,7 +380,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>As trader state will get updated, it will notify the leader about it’s new state to be stored. This way whenever trader would crash, leader will be able to start new trader process with last known state.</p>
 <p>This setup will also allow us to start and supervise multiple traders for a single symbol which our naive strategy will require in the future(next chapter).</p>
 <div style="page-break-after: always;"></div>
-<p>For each symbol that we will be trading on we need a above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an <code>Naive.SymbolSupervisor</code> that will start both <code>Naive.Leader</code> and `Naive.Dynamic:</p>
+<p>For each symbol that we will be trading on we need a above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an <code>Naive.SymbolSupervisor</code> that will start both <code>Naive.Leader</code> and <code>Naive.Dynamic</code>:</p>
 <p><img src="images/chapter_05_04_symbol_sup.png" width="70%" style="display: block; margin: auto;" /></p>
 <p>We will need multiple symbol supervisors, one for each symbol that we would like to trade on. As with traders, they will be dynamically started on demand, this should give us a hint that we need another dynamic supervisor that will supervise symbol supervisors and will be direct child of our <code>Naive.Supervisor</code>(<code>Naive.Application</code> module):</p>
 <p><img src="images/chapter_05_05_full.png" width="70%" style="display: block; margin: auto;" /></p>
@@ -558,7 +563,7 @@ size from the <code>Naive.Trader</code> to the <code>Naive.Leader</code> and har
 <span id="cb81-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
 <span id="cb81-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">chunks:</span> <span class="dv">1</span>,</span>
 <span id="cb81-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># -0.12% for quick testing</span></span>
-<span id="cb81-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;-0.0012&quot;</span>),</span>
+<span id="cb81-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
 <span id="cb81-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size</span>
 <span id="cb81-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-11" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb81-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
@@ -571,8 +576,7 @@ size from the <code>Naive.Trader</code> to the <code>Naive.Leader</code> and har
 <span id="cb81-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
 <span id="cb81-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
 <span id="cb81-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
-<span id="cb81-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Decimal</span><span class="op">.</span>new()</span>
-<span id="cb81-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb81-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Additionally we need to create a helper method that we used inside the <code>handle_continue/2</code> callback called <code>fresh_trader_state/1</code>:</p>
 <div class="sourceCode" id="cb82"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb82-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb82-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this one above the `fetch_symbol_settings` function</span></span>

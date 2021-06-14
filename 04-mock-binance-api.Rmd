@@ -140,7 +140,6 @@ the same for both order sides:
 
 The "order_limit" helper function will:
 
-* ensure that quantity and price are float values as the `Binance` module accepts both strings and floats
 * generate a fake order based on symbol, quantity, price, and side
 * cast a message to the BinanceMock process to add the fake order
 * return with a tuple with `%OrderResponse{}` struct to be consistent with the Binance module:
@@ -148,9 +147,6 @@ The "order_limit" helper function will:
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   defp order_limit(symbol, quantity, price, side) do
-    quantity = Float.parse("#{quantity}") |> elem(0)
-    price = Float.parse("#{price}") |> elem(0)
-
     %Binance.Order{} =
       fake_order =
       generate_fake_order(
@@ -247,14 +243,14 @@ Next, time for implementation of `add_order` function. First, we need to get the
           order_book,
           :sell_side,
           [order | order_book.sell_side]
-          |> Enum.sort(&D.lt?(D.new(&1.price), D.new(&2.price)))
+          |> Enum.sort(&D.lt?(&1.price, &2.price))
         )
       else
         Map.replace!(
           order_book,
           :buy_side,
           [order | order_book.buy_side]
-          |> Enum.sort(&D.gt?(D.new(&1.price), D.new(&2.price)))
+          |> Enum.sort(&D.gt?(&1.price, &2.price))
         )
       end
 
@@ -271,8 +267,8 @@ Starting with the `generate_fake_orders`, it's a function that takes a symbol, q
 # /apps/binance_mock/lib/binance_mock.ex
   defp generate_fake_order(symbol, quantity, price, side)
        when is_binary(symbol) and
-              is_float(quantity) and
-              is_float(price) and
+              is_binary(quantity) and
+              is_binary(price) and
               (side == "BUY" or side == "SELL") do
     current_timestamp = :os.system_time(:millisecond)
     order_id = GenServer.call(__MODULE__, :generate_id)
@@ -282,8 +278,8 @@ Starting with the `generate_fake_orders`, it's a function that takes a symbol, q
       symbol: symbol,
       order_id: order_id,
       client_order_id: client_order_id,
-      price: Float.to_string(price),
-      orig_qty: Float.to_string(quantity),
+      price: price,
+      orig_qty: quantity,
       executed_qty: "0.00000000",
       cummulative_quote_qty: "0.00000000",
       status: "NEW",
@@ -401,12 +397,12 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
 
     filled_buy_orders =
       order_book.buy_side
-      |> Enum.take_while(&D.lt?(D.new(trade_event.price), D.new(&1.price)))
+      |> Enum.take_while(&D.lt?(trade_event.price, &1.price))
       |> Enum.map(&Map.replace!(&1, :status, "FILLED"))
 
     filled_sell_orders =
       order_book.sell_side
-      |> Enum.take_while(&D.gt?(D.new(trade_event.price), D.new(&1.price)))
+      |> Enum.take_while(&D.gt?(trade_event.price, &1.price))
       |> Enum.map(&Map.replace!(&1, :status, "FILLED"))
 
     (filled_buy_orders ++ filled_sell_orders)
@@ -441,7 +437,7 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
 
 Inside the callback we referred to two new functions that we will implement now(`convert_order_to_event` and `broadcast_trade_event`).
 
-Starting with the `convert_order_to_event` function, it will simply return a new `Streamer.Binance.TradeEvent` struct filled with data. An interesting thing to observe here is that again all values are predicatable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behaviour between runs:
+Starting with the `convert_order_to_event` function, it will simply return a new `Streamer.Binance.TradeEvent` struct filled with data. An interesting thing to observe here is that again all values are predicatable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behavior between runs:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -570,7 +566,7 @@ iex(1)> Process.whereis(BinanceMock)
 iex(2)> Streamer.start_streaming("xrpusdt")
 {:ok, #PID<0.332.0>}
 iex(3)> Naive.Trader.start_link(
-%{symbol: "XRPUSDT", profit_interval: Decimal.new("-0.001")}
+%{symbol: "XRPUSDT", profit_interval: "-0.001"}
 )
 00:19:39.232 [info]  Initializing new trader for XRPUSDT
 {:ok, #PID<0.318.0>}

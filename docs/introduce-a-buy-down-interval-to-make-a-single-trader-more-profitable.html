@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -412,24 +417,23 @@ before to calculate the sell price. First, we will need to cast all variables
 into the <code>Decimal</code> structs and then, we will simply subtract the <code>buy_down_interval</code> of the price from the price. The number that we will end up with won’t necessarily be a legal price as every price needs to be divisible by the <code>tick_size</code> which we will assure in the last calculation:</p>
 <div class="sourceCode" id="cb94"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb94-1"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb94-2"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb94-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_buy_price(price, buy_down_interval, tick_size) <span class="kw">do</span></span>
-<span id="cb94-4"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-4" aria-hidden="true" tabindex="-1"></a>    current_price <span class="op">=</span> D<span class="op">.</span>new(price)</span>
-<span id="cb94-5"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb94-6"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># not necessarily legal price</span></span>
-<span id="cb94-7"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-7" aria-hidden="true" tabindex="-1"></a>    exact_buy_price <span class="op">=</span></span>
-<span id="cb94-8"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-8" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>sub(</span>
-<span id="cb94-9"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-9" aria-hidden="true" tabindex="-1"></a>        current_price,</span>
-<span id="cb94-10"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>mult(current_price, buy_down_interval)</span>
-<span id="cb94-11"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-11" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb94-12"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb94-13"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-13" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_float(</span>
-<span id="cb94-14"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-14" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
-<span id="cb94-15"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-15" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(exact_buy_price, tick_size),</span>
-<span id="cb94-16"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-16" aria-hidden="true" tabindex="-1"></a>        tick_size</span>
-<span id="cb94-17"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-17" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb94-18"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-18" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb94-19"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb94-20"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-20" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<span id="cb94-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_buy_price(current_price, buy_down_interval, tick_size) <span class="kw">do</span></span>
+<span id="cb94-4"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># not necessarily legal price</span></span>
+<span id="cb94-5"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-5" aria-hidden="true" tabindex="-1"></a>    exact_buy_price <span class="op">=</span></span>
+<span id="cb94-6"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-6" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>sub(</span>
+<span id="cb94-7"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-7" aria-hidden="true" tabindex="-1"></a>        current_price,</span>
+<span id="cb94-8"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-8" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>mult(current_price, buy_down_interval)</span>
+<span id="cb94-9"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-9" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb94-10"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-11"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-11" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_string(</span>
+<span id="cb94-12"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-12" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
+<span id="cb94-13"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-13" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(exact_buy_price, tick_size),</span>
+<span id="cb94-14"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-14" aria-hidden="true" tabindex="-1"></a>        tick_size</span>
+<span id="cb94-15"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-15" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb94-16"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">:normal</span></span>
+<span id="cb94-17"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb94-18"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb94-19"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb94-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 </div>
 <div id="naive.leader-implementation" class="section level2" number="6.4">
 <h2><span class="header-section-number">6.4</span> <code>Naive.Leader</code> implementation</h2>
@@ -442,9 +446,9 @@ into the <code>Decimal</code> structs and then, we will simply subtract the <cod
 <span id="cb95-6"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
 <span id="cb95-7"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">chunks:</span> <span class="dv">1</span>,</span>
 <span id="cb95-8"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># 0.01% for quick testing</span></span>
-<span id="cb95-9"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.0001&quot;</span>), <span class="co"># &lt;= add this line</span></span>
+<span id="cb95-9"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>, <span class="co"># &lt;= add this line</span></span>
 <span id="cb95-10"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-10" aria-hidden="true" tabindex="-1"></a>      <span class="co"># -0.12% for quick testing</span></span>
-<span id="cb95-11"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;-0.0012&quot;</span>),</span>
+<span id="cb95-11"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
 <span id="cb95-12"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size</span>
 <span id="cb95-13"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-13" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb95-14"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span>  </span>

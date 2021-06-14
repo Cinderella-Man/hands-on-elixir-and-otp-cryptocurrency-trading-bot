@@ -83,9 +83,7 @@ into the `Decimal` structs and then, we will simply subtract the `buy_down_inter
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   ...
-  defp calculate_buy_price(price, buy_down_interval, tick_size) do
-    current_price = D.new(price)
-
+  defp calculate_buy_price(current_price, buy_down_interval, tick_size) do
     # not necessarily legal price
     exact_buy_price =
       D.sub(
@@ -93,11 +91,12 @@ into the `Decimal` structs and then, we will simply subtract the `buy_down_inter
         D.mult(current_price, buy_down_interval)
       )
 
-    D.to_float(
+    D.to_string(
       D.mult(
         D.div_int(exact_buy_price, tick_size),
         tick_size
-      )
+      ),
+      :normal
     )
   end
   ...
@@ -116,9 +115,9 @@ Next we need to update the `Naive.Leader` as it needs to add `buy_down_interval`
       symbol: symbol,
       chunks: 1,
       # 0.01% for quick testing
-      buy_down_interval: Decimal.new("0.0001"), # <= add this line
+      buy_down_interval: "0.0001", # <= add this line
       # -0.12% for quick testing
-      profit_interval: Decimal.new("-0.0012"),
+      profit_interval: "-0.0012",
       tick_size: tick_size
     }
   end  

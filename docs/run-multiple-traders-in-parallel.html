@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -369,7 +374,7 @@ starts all of the traders at the same moment:</p>
 <span id="cb112-5"><a href="run-multiple-traders-in-parallel.html#cb112-5" aria-hidden="true" tabindex="-1"></a>          <span class="kw">do</span>: start_new_trader(trader_state)</span>
 <span id="cb112-6"><a href="run-multiple-traders-in-parallel.html#cb112-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>All the changes we made in this episode will enable us to fix.</p>
-<p>Let’s say that we placed a buy order that got filled and the price fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
+<p>Let’s say that we placed a buy order that got filled and the price has fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
 <p><img src="images/chapter_09_01_single_trader.png" height="20%" style="display: block; margin: auto;" /></p>
 <p>We will implement additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after buy order has been filled. Whenever price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
 <p><img src="images/chapter_09_02_multi_traders.png" height="20%" style="display: block; margin: auto;" /></p>
@@ -443,17 +448,14 @@ starts all of the traders at the same moment:</p>
 <div class="sourceCode" id="cb116"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb116-1"><a href="run-multiple-traders-in-parallel.html#cb116-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb116-2"><a href="run-multiple-traders-in-parallel.html#cb116-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bottom of the module</span></span>
 <span id="cb116-3"><a href="run-multiple-traders-in-parallel.html#cb116-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> trigger_rebuy?(buy_price, current_price, rebuy_interval) <span class="kw">do</span></span>
-<span id="cb116-4"><a href="run-multiple-traders-in-parallel.html#cb116-4" aria-hidden="true" tabindex="-1"></a>    current_price <span class="op">=</span> D<span class="op">.</span>new(current_price)</span>
-<span id="cb116-5"><a href="run-multiple-traders-in-parallel.html#cb116-5" aria-hidden="true" tabindex="-1"></a>    buy_price <span class="op">=</span> D<span class="op">.</span>new(buy_price)</span>
-<span id="cb116-6"><a href="run-multiple-traders-in-parallel.html#cb116-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb116-7"><a href="run-multiple-traders-in-parallel.html#cb116-7" aria-hidden="true" tabindex="-1"></a>    rebuy_price <span class="op">=</span></span>
-<span id="cb116-8"><a href="run-multiple-traders-in-parallel.html#cb116-8" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>sub(</span>
-<span id="cb116-9"><a href="run-multiple-traders-in-parallel.html#cb116-9" aria-hidden="true" tabindex="-1"></a>        buy_price,</span>
-<span id="cb116-10"><a href="run-multiple-traders-in-parallel.html#cb116-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>mult(buy_price, rebuy_interval)</span>
-<span id="cb116-11"><a href="run-multiple-traders-in-parallel.html#cb116-11" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb116-12"><a href="run-multiple-traders-in-parallel.html#cb116-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb116-13"><a href="run-multiple-traders-in-parallel.html#cb116-13" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>lt?(current_price, rebuy_price)</span>
-<span id="cb116-14"><a href="run-multiple-traders-in-parallel.html#cb116-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb116-4"><a href="run-multiple-traders-in-parallel.html#cb116-4" aria-hidden="true" tabindex="-1"></a>    rebuy_price <span class="op">=</span></span>
+<span id="cb116-5"><a href="run-multiple-traders-in-parallel.html#cb116-5" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>sub(</span>
+<span id="cb116-6"><a href="run-multiple-traders-in-parallel.html#cb116-6" aria-hidden="true" tabindex="-1"></a>        buy_price,</span>
+<span id="cb116-7"><a href="run-multiple-traders-in-parallel.html#cb116-7" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>mult(buy_price, rebuy_interval)</span>
+<span id="cb116-8"><a href="run-multiple-traders-in-parallel.html#cb116-8" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb116-9"><a href="run-multiple-traders-in-parallel.html#cb116-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-10"><a href="run-multiple-traders-in-parallel.html#cb116-10" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>lt?(current_price, rebuy_price)</span>
+<span id="cb116-11"><a href="run-multiple-traders-in-parallel.html#cb116-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 </div>
 <div id="implement-rebuy-in-the-naive.leader" class="section level2" number="9.4">
 <h2><span class="header-section-number">9.4</span> Implement rebuy in the <code>Naive.Leader</code></h2>
@@ -534,10 +536,10 @@ trader’s state(inside the <code>fresh_trader_state</code> function):</p>
 <span id="cb121-14"><a href="run-multiple-traders-in-parallel.html#cb121-14" aria-hidden="true" tabindex="-1"></a>      %{</span>
 <span id="cb121-15"><a href="run-multiple-traders-in-parallel.html#cb121-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
 <span id="cb121-16"><a href="run-multiple-traders-in-parallel.html#cb121-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">5</span>, <span class="co"># &lt;= update to 5 parallel traders max</span></span>
-<span id="cb121-17"><a href="run-multiple-traders-in-parallel.html#cb121-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;100&quot;</span>), <span class="co"># &lt;= update this line</span></span>
+<span id="cb121-17"><a href="run-multiple-traders-in-parallel.html#cb121-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">100</span>, <span class="co"># &lt;= update this line</span></span>
 <span id="cb121-18"><a href="run-multiple-traders-in-parallel.html#cb121-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb121-19"><a href="run-multiple-traders-in-parallel.html#cb121-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;-0.0012&quot;</span>),</span>
-<span id="cb121-20"><a href="run-multiple-traders-in-parallel.html#cb121-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.001&quot;</span>) <span class="co"># &lt;= add this line</span></span>
+<span id="cb121-19"><a href="run-multiple-traders-in-parallel.html#cb121-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
+<span id="cb121-20"><a href="run-multiple-traders-in-parallel.html#cb121-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_interval:</span> <span class="st">&quot;0.001&quot;</span> <span class="co"># &lt;= add this line</span></span>
 <span id="cb121-21"><a href="run-multiple-traders-in-parallel.html#cb121-21" aria-hidden="true" tabindex="-1"></a>      },</span>
 <span id="cb121-22"><a href="run-multiple-traders-in-parallel.html#cb121-22" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
 <span id="cb121-23"><a href="run-multiple-traders-in-parallel.html#cb121-23" aria-hidden="true" tabindex="-1"></a>    )</span>
