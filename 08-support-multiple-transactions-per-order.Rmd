@@ -125,7 +125,7 @@ As we are branching our logic and both paths are updating the state, we will ret
 
 ## Implement buy order "filled" callback
 
-Above callback covers the case where we will get multiple transactions filling our buy order. We aren't yet convering for the race condition described at the begining of this chapter. When another trade event matching  `buyer_order_id` would arrive, above callback would be used and another sell order would be placed. To avoid that we need to add a new callback *ABOVE* the one that we just edited that will match `buyer_order_id` together with "filled" `status` and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:
+Above callback covers the case where we will get multiple transactions filling our buy order. We aren't yet covering for the race condition described at the begining of this chapter. When another trade event matching  `buyer_order_id` would arrive, above callback would be used and another sell order would be placed. To avoid that we need to add a new callback *ABOVE* the one that we just edited that will match `buyer_order_id` together with "filled" `status` and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -215,7 +215,7 @@ Here's the full body of our callback:
 
 ## Test the implementation
 
-Testing this feature is a bit tricky as it requires trading on real Binance exachnge(as our BinanceMock always fills order with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected wiht BinanceMock:
+Testing this feature is a bit tricky as it requires trading on real Binance exchange(as our BinanceMock always fills order with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected wiht BinanceMock:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
