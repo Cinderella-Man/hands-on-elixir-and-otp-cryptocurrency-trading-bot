@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -352,32 +357,32 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="objectives-7" class="section level2" number="8.1">
 <h2><span class="header-section-number">8.1</span> Objectives</h2>
 <ul>
-<li>describe issue with current implementation</li>
+<li>describe the issue with the current implementation</li>
 <li>improve buy order filled callback</li>
 <li>implement buy order “filled” callback</li>
 <li>improve sell order callback</li>
 </ul>
 </div>
-<div id="issue-with-the-current-implementation" class="section level2" number="8.2">
-<h2><span class="header-section-number">8.2</span> Issue with the current implementation</h2>
+<div id="the-issue-with-the-current-implementation" class="section level2" number="8.2">
+<h2><span class="header-section-number">8.2</span> The issue with the current implementation</h2>
 <p>Currently, <code>Naive.Trader</code> process is placing a buy order and it’s assuming that it will be filled by a <em>single</em> opposite sell order(we are pattern matching on quantity to confirm that):</p>
 <p><img src="images/chapter_08_01_single_transaction.png" width="80%" style="display: block; margin: auto;" /></p>
-<p>Here we can see our buy order for 1000 units(on the left) and other trader’s sell order(on the right) for 1000 units. This(order fully filled in single transaction) is a case most of the time but it’s not ALWAYS the case.</p>
+<p>Here we can see our buy order for 1000 units(on the left) and other trader’s sell order(on the right) for 1000 units. This(order fully filled in a single transaction) is a case most of the time but it’s not ALWAYS the case.</p>
 <div style="page-break-after: always;"></div>
 <p>Sometimes our order will be filled by two or more transactions:</p>
 <p><img src="images/chapter_08_02_multiple_transactions_per_order.png" width="80%" style="display: block; margin: auto;" /></p>
 <p>The easiest and the safest way to check has this event filled our order fully is to fetch our order again from Binance at the moment when trade event filling our order arrives.</p>
-<p>Problem with this approach is that sometimes we will run into a race condition:</p>
+<p>The problem with this approach is that sometimes we will run into a race condition:</p>
 <p><img src="images/chapter_08_03_race_condition_timeline.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>From the left, first, we are sending a buy order for quantity 1000 to the Binance. It hangs for a while until it gets filled by 2 transactions that happened very quickly. Quickly enough for us to receive both messages almost in the same moment.</p>
-<p>When our bot will handle the first one it will fetch our the buy order which is already filled. It will cause the trader to place a sell order but then the there’s another trade event waiting in the message box. It will be handled by another callback that will again fetch order and place another sell order to be placed and that’s obviously not correct.</p>
-<p>What we need to do is to update the status of the buy order after the first fetch(if it’s filled) so when second trade event arrives we will ignore it(this will require additional callback).</p>
-<p>The same issue will appear when placing sell order and dealing multiple simultaneous transaction.</p>
+<p>When our bot will handle the first one it will fetch the buy order which is already filled. It will cause the trader to place a sell order but then there’s another trade event waiting in the message box. It will be handled by another callback that will again fetch the order and place another sell order to be placed and that’s obviously not correct.</p>
+<p>What we need to do is to update the status of the buy order after the first fetch(if it’s filled) so when the second trade event arrives we will ignore it(this will require an additional callback).</p>
+<p>The same issue will appear when placing a sell order and dealing with multiple simultaneous transactions.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="improve-buy-order-filled-callback" class="section level2" number="8.3">
 <h2><span class="header-section-number">8.3</span> Improve buy order filled callback</h2>
-<p>First, we need to modify the callback which monitors incoming trade events for ones filling it’s buy order and then places sell order. We need to remove pattern matching assuming that a single trade event will fill our buy order - we need to drop quantity check as well as add</p>
+<p>First, we need to modify the callback which monitors incoming trade events for ones filling its buy order and then places sell order. We need to remove pattern matching assuming that a single trade event will fill our buy order - we need to drop quantity check as well as add:</p>
 <div class="sourceCode" id="cb105"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb105-1"><a href="add-support-for-multiple-transactions-per-order.html#cb105-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb105-2"><a href="add-support-for-multiple-transactions-per-order.html#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
 <span id="cb105-3"><a href="add-support-for-multiple-transactions-per-order.html#cb105-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
@@ -396,7 +401,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb105-16"><a href="add-support-for-multiple-transactions-per-order.html#cb105-16" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size</span>
 <span id="cb105-17"><a href="add-support-for-multiple-transactions-per-order.html#cb105-17" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
 <span id="cb105-18"><a href="add-support-for-multiple-transactions-per-order.html#cb105-18" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
-<p>Now we can fetch our buy order to check is it already filled. We will get the <code>Binance.Order</code> struct instead of the <code>Binance.OrderResponse</code> that we normally deal with. At this moment we will simply update our <code>Binance.OrderResponse</code> struct from state:</p>
+<p>Now we can fetch our buy order to check is it already filled. We will get the <code>Binance.Order</code> struct instead of the <code>Binance.OrderResponse</code> that we normally deal with. At this moment we will simply update our <code>Binance.OrderResponse</code> struct from the state:</p>
 <div class="sourceCode" id="cb106"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb106-1"><a href="add-support-for-multiple-transactions-per-order.html#cb106-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb106-2"><a href="add-support-for-multiple-transactions-per-order.html#cb106-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
 <span id="cb106-3"><a href="add-support-for-multiple-transactions-per-order.html#cb106-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
@@ -411,9 +416,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb106-12"><a href="add-support-for-multiple-transactions-per-order.html#cb106-12" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb106-13"><a href="add-support-for-multiple-transactions-per-order.html#cb106-13" aria-hidden="true" tabindex="-1"></a>    buy_order <span class="op">=</span> %{buy_order <span class="op">|</span> <span class="va">status:</span> current_buy_order<span class="op">.</span>status}</span>
 <span id="cb106-14"><a href="add-support-for-multiple-transactions-per-order.html#cb106-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>The rest of the logic inside this callback will depend on the <code>status</code> of the buy order. If our buy order is “filled” we would like to follow the existing logic but also update <code>buy_order</code> field inside the state of the trader process. On the other hand if our order is not yet filled the only thing to do is to update <code>buy_order</code> field inside the state of the Trader process.</p>
+<p>The rest of the logic inside this callback will depend on the <code>status</code> of the buy order. If our buy order is “filled” we would like to follow the existing logic but also update the <code>buy_order</code> field inside the state of the trader process. On the other hand, if our order is not yet filled the only thing to do is to update the <code>buy_order</code> field inside the state of the Trader process.</p>
 <div style="page-break-after: always;"></div>
-<p>Here’s an updated body below above changes(few variables got renamed for clarity as we are now fetch the order):</p>
+<p>Here’s an updated body below the above changes(few variables got renamed for clarity as we are now fetching the order):</p>
 <div class="sourceCode" id="cb107"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb107-1"><a href="add-support-for-multiple-transactions-per-order.html#cb107-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb107-2"><a href="add-support-for-multiple-transactions-per-order.html#cb107-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
 <span id="cb107-3"><a href="add-support-for-multiple-transactions-per-order.html#cb107-3" aria-hidden="true" tabindex="-1"></a>  buy_order <span class="op">=</span> <span class="op">....</span></span>
@@ -439,11 +444,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb107-23"><a href="add-support-for-multiple-transactions-per-order.html#cb107-23" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
 <span id="cb107-24"><a href="add-support-for-multiple-transactions-per-order.html#cb107-24" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
 <span id="cb107-25"><a href="add-support-for-multiple-transactions-per-order.html#cb107-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>As we are branching our logic and both paths are updating the state, we will return it together with an <code>:ok</code> atom to be able to pattern match it and assign as a new state.</p>
+<p>As we are branching our logic and both paths are updating the state, we will return it together with an <code>:ok</code> atom to be able to pattern match it and assign it as a new state.</p>
 </div>
 <div id="implement-buy-order-filled-callback" class="section level2" number="8.4">
 <h2><span class="header-section-number">8.4</span> Implement buy order “filled” callback</h2>
-<p>Above callback covers the case where we will get multiple transactions filling our buy order. We aren’t yet convering for the race condition described at the begining of this chapter. When another trade event matching <code>buyer_order_id</code> would arrive, above callback would be used and another sell order would be placed. To avoid that we need to add a new callback <em>ABOVE</em> the one that we just edited that will match <code>buyer_order_id</code> together with “filled” <code>status</code> and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:</p>
+<p>The above callback covers the case where we will get multiple transactions filling our buy order. We aren’t yet covering for the race condition described at the beginning of this chapter. When another trade event matching <code>buyer_order_id</code> would arrive, the above callback would be used and another sell order would be placed. To avoid that we need to add a new callback <em>ABOVE</em> the one that we just edited that will match <code>buyer_order_id</code> together with “filled” <code>status</code> and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:</p>
 <div class="sourceCode" id="cb108"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb108-1"><a href="add-support-for-multiple-transactions-per-order.html#cb108-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb108-2"><a href="add-support-for-multiple-transactions-per-order.html#cb108-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this callback ABOVE callback from previous section</span></span>
 <span id="cb108-3"><a href="add-support-for-multiple-transactions-per-order.html#cb108-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
@@ -463,10 +468,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="improve-sell-order-callback" class="section level2" number="8.5">
 <h2><span class="header-section-number">8.5</span> Improve sell order callback</h2>
-<p>Let’s move on to the callback where the trader receives trade event matching sell order’s id (about line 135 inside the <code>Naive.Trader</code> module).</p>
+<p>Let’s move on to the callback where the trader receives a trade event matching the sell order’s id (about line 135 inside the <code>Naive.Trader</code> module).</p>
 <p>We need to modify the header of our callback in the following ways:</p>
 <ul>
-<li>drop the both pattern matches on <code>quantity</code> as we already know that trade event could partially fill our order (#1)</li>
+<li>drop both pattern matches on <code>quantity</code> as we already know that trade event could partially fill our order (#1)</li>
 <li>get <code>symbol</code> out of state (#2)</li>
 <li>get <code>transact_time</code> out of the <code>sell_order</code> (used to fetch <code>get_order</code>) (#3)</li>
 <li>assign <code>sell_order</code> to a variable (#4)</li>
@@ -522,7 +527,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="test-the-implementation-1" class="section level2" number="8.6">
 <h2><span class="header-section-number">8.6</span> Test the implementation</h2>
-<p>Testing this feature is a bit tricky as it requires trading on real Binance exachnge(as our BinanceMock always fills order with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected wiht BinanceMock:</p>
+<p>Testing this feature is a bit tricky as it requires trading on real Binance exchange(as our BinanceMock always fills orders with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected with BinanceMock:</p>
 <div class="sourceCode" id="cb111"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb111-1"><a href="add-support-for-multiple-transactions-per-order.html#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb111-2"><a href="add-support-for-multiple-transactions-per-order.html#cb111-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb111-3"><a href="add-support-for-multiple-transactions-per-order.html#cb111-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
@@ -537,7 +542,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb111-12"><a href="add-support-for-multiple-transactions-per-order.html#cb111-12" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 71.30000000</span>
 <span id="cb111-13"><a href="add-support-for-multiple-transactions-per-order.html#cb111-13" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  Trade finished, trader will now exit</span>
 <span id="cb111-14"><a href="add-support-for-multiple-transactions-per-order.html#cb111-14" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  XRPUSDT Trader finished <span class="at">-</span> restarting</span></code></pre></div>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_08">Github</a></p>
 
 </div>

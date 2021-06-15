@@ -17,7 +17,7 @@ Our new `Core.ServiceSupervisor` module will hold all the logic responsible for 
 
 ## Pseudo generalize Core.ServiceSupervisor module
 
-Let's start by creating a new *non supervised* application called `core` inside our umbrella project. At this moment our "abstraction code" will sit inside it just to keep things simple as otherwise, we would need to create a new repo and jump between codebases which we will avoid for time being:
+Let's start by creating a new *non-supervised* application called `core` inside our umbrella project. At this moment our "abstraction code" will sit inside it just to keep things simple as otherwise, we would need to create a new repo and jump between codebases which we will avoid for time being:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
@@ -165,7 +165,7 @@ Last function to rename in this module will be the `stop_trading/1` to `stop_wor
   end
 ```
 
-At this moment we have a pseudo-generic implementation of `start_worker/1` and `stop_worker/1` inside the `Core.ServiceSupervisor` module. Function names are generic but they still refer to `Repo`, `Settings`, and other modules specific to the `naive` app's implementation. We are probably in a worse situation than we have been before starting this refactoring ;) but don't fear this was just the first step on the way to abstract away that starting, stopping and autostarting code.
+At this moment we have a pseudo-generic implementation of `start_worker/1` and `stop_worker/1` inside the `Core.ServiceSupervisor` module. Function names are generic but they still refer to `Repo`, `Settings`, and other modules specific to the `naive` app's implementation. We are probably in a worse situation than we have been before starting this refactoring ;) but don't fear this was just the first step on the way to abstract away that starting, stopping, and autostarting code.
 
 ## Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor
 
@@ -175,7 +175,7 @@ Before we will jump back to the `naive`'s application modules we need to add the
   # /apps/naive/mix.exs
   defp deps do
     [
-      {:binance, "~> 0.7.1"},
+      {:binance, "~> 1.0"},
       {:binance_mock, in_umbrella: true},
       {:core, in_umbrella: true}, # <= core dep added 
       ....
@@ -255,7 +255,7 @@ As `fetch_symbols_to_start/0` is only used internally by the `Core.ServiceSuperv
 
 We can also remove the `alias`es and `import` from the `Naive.DynamicSymbolSupervisor` as it won't need them anymore.
 
-Next step will be to add `ecto` to the deps of the `core` application as it will make db queries now:
+The next step will be to add `ecto` to the deps of the `core` application as it will make db queries now:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/mix.exs
@@ -278,7 +278,7 @@ As we modified the interface of the `Naive.DynamicSymbolSupervisor` (for example
        ...
 ```
 
-Last step will be to update interface of the `naive` application:
+The last step will be to update the interface of the `naive` application:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive.ex
@@ -426,7 +426,7 @@ We will start with `start_worker/1` function (which is now `start_worker/3`) - i
   end
 ```
 
-Both the `start_worker/3` and the `stop_worker/3` function are used by the functions inside the `Naive.DynamicSymbolSupervisor` module. We need to pass the `Repo` and `Schema` in the same fashion as previously with `autostart_workers/2` function:
+Both the `start_worker/3` and the `stop_worker/3` function are used by the functions inside the `Naive.DynamicSymbolSupervisor` module. We need to pass the `Repo` and `Schema` in the same fashion as previously with the `autostart_workers/2` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -537,7 +537,7 @@ Again, as we modified `start_worker/5` we need to make the last change inside th
   end
 ```
 
-Just for referrence - final function headers look as following:
+Just for reference - the final function headers look as following:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -730,7 +730,7 @@ to:
       end
 ```
 
-in the end generated code that will be "pasted" to the `Naive.DynamicSymbolSupervisor` module at compile time will be:
+At the end, generated code that will be "pasted" to the `Naive.DynamicSymbolSupervisor` module at compile time will be:
 
 ```{r, engine = 'elixir', eval = FALSE}
     # compiled code attached to the `Naive.DynamicSymbolSupervisor` module
@@ -744,7 +744,7 @@ in the end generated code that will be "pasted" to the `Naive.DynamicSymbolSuper
     end
 ```
 
-This way we can dynamically create functions for any application(for the `streamer` application, it will generate function call with the `Streamer.Repo`, `Streamer.Schema.Settings` args etc).
+This way we can dynamically create functions for any application(for the `streamer` application, it will generate function call with the `Streamer.Repo`, `Streamer.Schema.Settings` args, etc).
 
 We can apply that to all of the passed variables inside the `autostart_workers/0` function - just for reference full macro will look as follows:
 
@@ -938,7 +938,7 @@ We need to start with adding the `core` application to the list of dependencies 
 # /apps/streamer/mix.exs
   defp deps do
     [
-      {:binance, "~> 0.7.1"},
+      {:binance, "~> 1.0"},
       {:core, in_umbrella: true}, # <= core added to deps
       ...
 ```
@@ -964,7 +964,7 @@ defmodule Streamer.DynamicStreamerSupervisor do
 end
 ```
 
-Not much to add here - we are `use`ing the `Core.ServiceSupervisor` module and passing options to it so it can macro generates `streamer` application-specific wrappers(like `start_worker/1` or `stop_worker/1` with required repo, schema etc) around generic logic from the `Core.ServiceSupervisor` module.
+Not much to add here - we are `use`ing the `Core.ServiceSupervisor` module and passing options to it so it can macro generates `streamer` application-specific wrappers(like `start_worker/1` or `stop_worker/1` with required repo, schema, etc) around generic logic from the `Core.ServiceSupervisor` module.
 
 Using the `Core.Servicesupervisor` module will have an impact on the interface of the                         
 `Streamer.DynamicStreamerSupervisor` as it will now provide functions like `start_worker/1` instead of `start_streaming/1` etc.
@@ -1031,6 +1031,6 @@ $ iex -S mix
 
 This finishes the implementation for both the `streamer` and the `naive` application. We are generating dynamic functions(metaprogramming) using Elixir macros which is a cool exercise to go through and feels like superpowers ;)
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_13)

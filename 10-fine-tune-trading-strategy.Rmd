@@ -21,13 +21,14 @@ At this moment the settings of our naive strategy are hardcoded inside the `Naiv
 
     Map.merge(
       %{
-        symbol: symbol,                           # <=
-        chunks: 5,                                # <=
-        budget: Decimal.new("100"),               # <=
-        buy_down_interval: Decimal.new("0.0001"), # <= all of those settings
-        # -0.12% for quick testing                # <=
-        profit_interval: Decimal.new("-0.0012"),  # <=
-        rebuy_interval: Decimal.new("0.001")      # <=
+        symbol: symbol,              # <=
+        chunks: 5,                   # <=
+        budget: 100,                 # <=
+        # -0.01% for quick testing   # <=
+        buy_down_interval: "0.0001", # <= all of those settings
+        # -0.12% for quick testing   # <=
+        profit_interval: "-0.0012",  # <=
+        rebuy_interval: "0.001"      # <=
       },
       symbol_filters
     )
@@ -43,7 +44,7 @@ In this chapter, we will move them out from this file into the Postgres database
 
 The requirements for this section are `docker` and `docker-compose` installed in your system.
 
-Inside the main directory of our project create a new file called `docker-compose.yml` and fill it with below details:
+Inside the main directory of our project create a new file called `docker-compose.yml` and fill it with the below details:
 
 ```{r, engine = 'yaml', eval = FALSE}
 # /docker-compose.yml
@@ -95,7 +96,7 @@ Let's start by adding database access to the `naive` application. The first step
   # /apps/naive/mix.exs
   defp deps do
     [
-      {:binance, "~> 0.7.1"},
+      {:binance, "~> 1.0"},
       {:binance_mock, in_umbrella: true},
       {:decimal, "~> 2.0"},
       {:ecto_sql, "~> 3.0"},     # <= New line
@@ -179,7 +180,7 @@ $ mix ecto.gen.migration create_settings
 * creating priv/repo/migrations/20210202223209_create_settings.exs
 ```
 
-We can now copy the current hardcoded settings from the `Naive.Leader` module and use them as a column list of our new `settings` table. All of the below alterations needs to be done inside the `change` function of our migration file:
+We can now copy the current hardcoded settings from the `Naive.Leader` module and use them as a column list of our new `settings` table. All of the below alterations need to be done inside the `change` function of our migration file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs
@@ -326,10 +327,10 @@ config :naive,
   trading: %{
     defaults: %{
       chunks: 5,
-      budget: 1000.0,
-      buy_down_interval: 0.0001,
-      profit_interval: -0.0012,
-      rebuy_interval: 0.001
+      budget: 1000,
+      buy_down_interval: "0.0001",
+      profit_interval: "-0.0012",
+      rebuy_interval: "0.001"
     }
   }
 ```
@@ -392,10 +393,10 @@ As our structs will differ by only the `symbol` column we can first create a ful
 base_settings = %{
   symbol: "",
   chunks: chunks,
-  budget: Decimal.from_float(budget),
-  buy_down_interval: Decimal.from_float(buy_down_interval),
-  profit_interval: Decimal.from_float(profit_interval),
-  rebuy_interval: Decimal.from_float(rebuy_interval),
+  budget: Decimal.new(budget),
+  buy_down_interval: Decimal.new(buy_down_interval),
+  profit_interval: Decimal.new(profit_interval),
+  rebuy_interval: Decimal.new(rebuy_interval),
   status: "off",
   inserted_at: timestamp,
   updated_at: timestamp
@@ -490,7 +491,7 @@ count | 1276
 naive=# \q # <= to close the `psql`
 ```
 
-That confirms that there are 1276 settings inside the database that will allow us to continue trading which we can check by running our app inside `iex`(from the main project's directory):
+That confirms that there are 1276 settings inside the database that will allow us to continue trading which we can check by running our app inside the IEx(from the main project's directory):
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -503,6 +504,6 @@ iex(1)> Naive.start_trading("NEOUSDT")
 
 The above log messages confirm that the `Naive.Leader` was able to fetch settings from the database that were later put into the `Naive.Trader`'s state and passed to it.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_10)

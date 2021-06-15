@@ -26,7 +26,7 @@ knitr::include_graphics("images/chapter_12_02_sup_diagram.png")
 
 ## (Re-)Implement the start trading functionality
 
-To (re-)implement the `start_trading/1` functionality we will need to create a new file called `dynamic_symbol_supervisor.ex` inside the `/apps/naive/lib/naive` directory that will use the `DynamicSupervisor` behaviour. Previously we have been using default `DynamicSupervisor` implementation(one of the children of the `Naive.Application` - to be substituted with the below module):
+To (re-)implement the `start_trading/1` functionality we will need to create a new file called `dynamic_symbol_supervisor.ex` inside the `/apps/naive/lib/naive` directory that will use the `DynamicSupervisor` behavior. Previously we have been using default `DynamicSupervisor` implementation(one of the children of the `Naive.Application` - to be substituted with the below module):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -112,7 +112,8 @@ There are two additional places where we need to make updates to get our `start_
       {Naive.DynamicSymbolSupervisor, []} # <= replacement of DynamicSupervisor
     ]
 ```
-- we need to replace the `start_trading/1` implementation inside the `Naive` module to `defdelegate` macro(as we don't have any logic to run there):
+
+* we need to replace the `start_trading/1` implementation inside the `Naive` module to `defdelegate` macro(as we don't have any logic to run there):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive.ex
@@ -244,7 +245,7 @@ knitr::include_graphics("images/chapter_12_01_autostarting_sup_tree.png")
 
 \newpage
 
-At this moment we are able to test the current implementation inside the `iex`:
+At this moment we are able to test the current implementation inside the IEx:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -266,7 +267,7 @@ iex(3)> Naive.start_trading("neousdt")
  }}
 ```
 
-We can now exit the `iex` and start a new one:
+We can now exit the IEx and start a new one:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -343,8 +344,9 @@ Currently, the `Naive.Leader` module does *not* support updating the settings af
 Ok, we have a way to update the settings of the `Naive.Leader` process "on the go" but what effects should the `shutdown` state have on the `Naive.Leader`'s actions?
 
 There are two places that require modification:
-- whenever the `Naive.Trader` process will finish the trade cycle, `Naive.Leader` process should *not* start a new one, as well as check, was that the last trader process and if that was the case it needs to call the `Naive.stop_trading/1` function with its symbol to terminate whole supervision tree for that symbol
-- whenever the `Naive.Leader` process will receive a `rebuy` notification, it should just ignore it when the symbol is in the `shutdown` state.
+
+* whenever the `Naive.Trader` process will finish the trade cycle, `Naive.Leader` process should *not* start a new one, as well as check, was that the last trader process and if that was the case it needs to call the `Naive.stop_trading/1` function with its symbol to terminate whole supervision tree for that symbol
+* whenever the `Naive.Leader` process will receive a `rebuy` notification, it should just ignore it when the symbol is in the `shutdown` state.
 
 Let's look at the updated implementation of the "end of trade" handler:
 
@@ -444,7 +446,7 @@ The second callback that we need to modify is the `rebuy` triggered:
 
 In the above `rebuy_triggered` handler function we added branching on the `settings.status` and we simply ignore the rebuy notification when the symbol is in the `shutdown` status.
 
-The final change will be to create a new migration that will update the `TradingStatusEnum` to have `shutdown` option:
+The final change will be to create a new migration that will update the `TradingStatusEnum` to have a `shutdown` option:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/naive 
@@ -480,7 +482,7 @@ defenum(Naive.Schema.TradingStatusEnum, :trading_status, [:on, :off, :shutdown])
 
 Don't forget to run `mix ecto.migrate` to run the new migration.
 
-We can now test the `shutdown_trading/1` functionality inside the `iex`:
+We can now test the `shutdown_trading/1` functionality inside the IEx:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -538,6 +540,6 @@ shutdown state
 
 As we can see from the logs above, our `naive` strategy grown from 1 to 5 `Naive.Trader` processes running in parallel, then we called the `shutdown_trading/1` function. In the `shutdown` status, the `Naive.Leader` process ignored `rebuy` notifications and wasn't starting any new `Naive.Trader` processes as the old ones were finishing. At the moment when the last `Naive.Trader` process finished the trade cycle, the `Naive.Leader` called `stop_trading/1` on "it's" symbol, terminating the whole supervision tree for that symbol.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_12)

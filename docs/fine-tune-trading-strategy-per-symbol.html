@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -370,25 +375,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb125-5"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb125-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
 <span id="cb125-7"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-7" aria-hidden="true" tabindex="-1"></a>      %{</span>
-<span id="cb125-8"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,                           <span class="co"># &lt;=</span></span>
-<span id="cb125-9"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">5</span>,                                <span class="co"># &lt;=</span></span>
-<span id="cb125-10"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;100&quot;</span>),               <span class="co"># &lt;=</span></span>
-<span id="cb125-11"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.0001&quot;</span>), <span class="co"># &lt;= all of those settings</span></span>
-<span id="cb125-12"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing                # &lt;=</span></span>
-<span id="cb125-13"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;-0.0012&quot;</span>),  <span class="co"># &lt;=</span></span>
-<span id="cb125-14"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.001&quot;</span>)      <span class="co"># &lt;=</span></span>
-<span id="cb125-15"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-15" aria-hidden="true" tabindex="-1"></a>      },</span>
-<span id="cb125-16"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-16" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb125-17"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-17" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb125-18"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb125-19"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<span id="cb125-8"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,              <span class="co"># &lt;=</span></span>
+<span id="cb125-9"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">5</span>,                   <span class="co"># &lt;=</span></span>
+<span id="cb125-10"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">100</span>,                 <span class="co"># &lt;=</span></span>
+<span id="cb125-11"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.01% for quick testing   # &lt;=</span></span>
+<span id="cb125-12"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>, <span class="co"># &lt;= all of those settings</span></span>
+<span id="cb125-13"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing   # &lt;=</span></span>
+<span id="cb125-14"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,  <span class="co"># &lt;=</span></span>
+<span id="cb125-15"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_interval:</span> <span class="st">&quot;0.001&quot;</span>      <span class="co"># &lt;=</span></span>
+<span id="cb125-16"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-16" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="cb125-17"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-17" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb125-18"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb125-19"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb125-20"><a href="fine-tune-trading-strategy-per-symbol.html#cb125-20" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 <p>The problem about those is that they are hardcoded and there’s no flexibility to define them per symbol at the moment.</p>
 <p>In this chapter, we will move them out from this file into the Postgres database.</p>
 </div>
 <div id="add-docker-to-project" class="section level2" number="10.3">
 <h2><span class="header-section-number">10.3</span> Add docker to project</h2>
 <p>The requirements for this section are <code>docker</code> and <code>docker-compose</code> installed in your system.</p>
-<p>Inside the main directory of our project create a new file called <code>docker-compose.yml</code> and fill it with below details:</p>
+<p>Inside the main directory of our project create a new file called <code>docker-compose.yml</code> and fill it with the below details:</p>
 <div class="sourceCode" id="cb126"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb126-1"><a href="fine-tune-trading-strategy-per-symbol.html#cb126-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /docker-compose.yml</span></span>
 <span id="cb126-2"><a href="fine-tune-trading-strategy-per-symbol.html#cb126-2" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3.2&quot;</span></span>
 <span id="cb126-3"><a href="fine-tune-trading-strategy-per-symbol.html#cb126-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
@@ -426,7 +432,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb129"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb129-1"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/mix.exs</span></span>
 <span id="cb129-2"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb129-3"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb129-4"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb129-4"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb129-5"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance_mock</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>},</span>
 <span id="cb129-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:decimal</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
 <span id="cb129-7"><a href="fine-tune-trading-strategy-per-symbol.html#cb129-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ecto_sql</span>, <span class="st">&quot;~&gt; 3.0&quot;</span>},     <span class="co"># &lt;= New line</span></span>
@@ -488,7 +494,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb134-4"><a href="fine-tune-trading-strategy-per-symbol.html#cb134-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.gen.migration create_settings</span>
 <span id="cb134-5"><a href="fine-tune-trading-strategy-per-symbol.html#cb134-5" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating priv/repo/migrations</span>
 <span id="cb134-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb134-6" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating priv/repo/migrations/20210202223209_create_settings.exs</span></code></pre></div>
-<p>We can now copy the current hardcoded settings from the <code>Naive.Leader</code> module and use them as a column list of our new <code>settings</code> table. All of the below alterations needs to be done inside the <code>change</code> function of our migration file:</p>
+<p>We can now copy the current hardcoded settings from the <code>Naive.Leader</code> module and use them as a column list of our new <code>settings</code> table. All of the below alterations need to be done inside the <code>change</code> function of our migration file:</p>
 <div class="sourceCode" id="cb135"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb135-1"><a href="fine-tune-trading-strategy-per-symbol.html#cb135-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs</span></span>
 <span id="cb135-2"><a href="fine-tune-trading-strategy-per-symbol.html#cb135-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb135-3"><a href="fine-tune-trading-strategy-per-symbol.html#cb135-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
@@ -600,10 +606,10 @@ Here’s the full implementation of migration for reference:</p>
 <span id="cb143-5"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">trading:</span> %{</span>
 <span id="cb143-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">defaults:</span> %{</span>
 <span id="cb143-7"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">chunks:</span> <span class="dv">5</span>,</span>
-<span id="cb143-8"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">budget:</span> <span class="fl">1000.0</span>,</span>
-<span id="cb143-9"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="fl">0.0001</span>,</span>
-<span id="cb143-10"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="op">-</span><span class="fl">0.0012</span>,</span>
-<span id="cb143-11"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">rebuy_interval:</span> <span class="fl">0.001</span></span>
+<span id="cb143-8"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">budget:</span> <span class="dv">1000</span>,</span>
+<span id="cb143-9"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>,</span>
+<span id="cb143-10"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
+<span id="cb143-11"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">rebuy_interval:</span> <span class="st">&quot;0.001&quot;</span></span>
 <span id="cb143-12"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-12" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb143-13"><a href="fine-tune-trading-strategy-per-symbol.html#cb143-13" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
 <p>Moving on to the seeding script, we need to create a new file called <code>seed_settings.exs</code> inside the <code>/apps/naive/lib/naive/priv/</code> directory. Let’s start by aliasing the required modules and requiring the <code>Logger</code>:</p>
@@ -644,10 +650,10 @@ Here’s the full implementation of migration for reference:</p>
 <span id="cb148-3"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-3" aria-hidden="true" tabindex="-1"></a>base_settings <span class="op">=</span> %{</span>
 <span id="cb148-4"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">symbol:</span> <span class="st">&quot;&quot;</span>,</span>
 <span id="cb148-5"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">chunks:</span> chunks,</span>
-<span id="cb148-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">budget:</span> <span class="cn">Decimal</span><span class="op">.</span>from_float(budget),</span>
-<span id="cb148-7"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">buy_down_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>from_float(buy_down_interval),</span>
-<span id="cb148-8"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>from_float(profit_interval),</span>
-<span id="cb148-9"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">rebuy_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>from_float(rebuy_interval),</span>
+<span id="cb148-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">budget:</span> <span class="cn">Decimal</span><span class="op">.</span>new(budget),</span>
+<span id="cb148-7"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">buy_down_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(buy_down_interval),</span>
+<span id="cb148-8"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(profit_interval),</span>
+<span id="cb148-9"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">rebuy_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(rebuy_interval),</span>
 <span id="cb148-10"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">status:</span> <span class="st">&quot;off&quot;</span>,</span>
 <span id="cb148-11"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">inserted_at:</span> timestamp,</span>
 <span id="cb148-12"><a href="fine-tune-trading-strategy-per-symbol.html#cb148-12" aria-hidden="true" tabindex="-1"></a>  <span class="va">updated_at:</span> timestamp</span>
@@ -720,7 +726,7 @@ Here’s the full implementation of migration for reference:</p>
 <span id="cb153-25"><a href="fine-tune-trading-strategy-per-symbol.html#cb153-25" aria-hidden="true" tabindex="-1"></a><span class="ex">count</span> <span class="kw">|</span> <span class="ex">1276</span></span>
 <span id="cb153-26"><a href="fine-tune-trading-strategy-per-symbol.html#cb153-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb153-27"><a href="fine-tune-trading-strategy-per-symbol.html#cb153-27" aria-hidden="true" tabindex="-1"></a><span class="va">naive=</span># <span class="ex">\q</span> <span class="co"># &lt;= to close the `psql`</span></span></code></pre></div>
-<p>That confirms that there are 1276 settings inside the database that will allow us to continue trading which we can check by running our app inside <code>iex</code>(from the main project’s directory):</p>
+<p>That confirms that there are 1276 settings inside the database that will allow us to continue trading which we can check by running our app inside the IEx(from the main project’s directory):</p>
 <div class="sourceCode" id="cb154"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb154-1"><a href="fine-tune-trading-strategy-per-symbol.html#cb154-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb154-2"><a href="fine-tune-trading-strategy-per-symbol.html#cb154-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb154-3"><a href="fine-tune-trading-strategy-per-symbol.html#cb154-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;NEOUSDT&quot;</span><span class="kw">)</span></span>
@@ -728,7 +734,7 @@ Here’s the full implementation of migration for reference:</p>
 <span id="cb154-5"><a href="fine-tune-trading-strategy-per-symbol.html#cb154-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.378.0&gt;}</span></span>
 <span id="cb154-6"><a href="fine-tune-trading-strategy-per-symbol.html#cb154-6" aria-hidden="true" tabindex="-1"></a><span class="ex">19:20:04.584</span> [info]  Initializing new trader<span class="er">(</span><span class="ex">1612293637000</span><span class="kw">)</span> <span class="cf">for</span> NEOUSDT</span></code></pre></div>
 <p>The above log messages confirm that the <code>Naive.Leader</code> was able to fetch settings from the database that were later put into the <code>Naive.Trader</code>’s state and passed to it.</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_10">Github</a></p>
 
 </div>

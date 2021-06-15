@@ -2,12 +2,12 @@
 
 ## Objectives
 
-- describe issue with current implementation
+- describe the issue with the current implementation
 - improve buy order filled callback
 - implement buy order "filled" callback
 - improve sell order callback
 
-## Issue with the current implementation
+## The issue with the current implementation
 
 Currently, `Naive.Trader` process is placing a buy order and it's assuming that it will be filled by a *single* opposite sell order(we are pattern matching on quantity to confirm that):
 
@@ -15,7 +15,7 @@ Currently, `Naive.Trader` process is placing a buy order and it's assuming that 
 knitr::include_graphics("images/chapter_08_01_single_transaction.png")
 ```
 
-Here we can see our buy order for 1000 units(on the left) and other trader's sell order(on the right) for 1000 units. This(order fully filled in single transaction) is a case most of the time but it's not ALWAYS the case.
+Here we can see our buy order for 1000 units(on the left) and other trader's sell order(on the right) for 1000 units. This(order fully filled in a single transaction) is a case most of the time but it's not ALWAYS the case.
 
 \newpage
 
@@ -27,7 +27,7 @@ knitr::include_graphics("images/chapter_08_02_multiple_transactions_per_order.pn
 
 The easiest and the safest way to check has this event filled our order fully is to fetch our order again from Binance at the moment when trade event filling our order arrives.
 
-Problem with this approach is that sometimes we will run into a race condition:
+The problem with this approach is that sometimes we will run into a race condition:
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_08_03_race_condition_timeline.png")
@@ -35,17 +35,17 @@ knitr::include_graphics("images/chapter_08_03_race_condition_timeline.png")
 
 From the left, first, we are sending a buy order for quantity 1000 to the Binance. It hangs for a while until it gets filled by 2 transactions that happened very quickly. Quickly enough for us to receive both messages almost in the same moment.
 
-When our bot will handle the first one it will fetch our the buy order which is already filled. It will cause the trader to place a sell order but then the there's another trade event waiting in the message box. It will be handled by another callback that will again fetch order and place another sell order to be placed and that's obviously not correct.
+When our bot will handle the first one it will fetch the buy order which is already filled. It will cause the trader to place a sell order but then there's another trade event waiting in the message box. It will be handled by another callback that will again fetch the order and place another sell order to be placed and that's obviously not correct.
 
-What we need to do is to update the status of the buy order after the first fetch(if it's filled) so when second trade event arrives we will ignore it(this will require additional callback).
+What we need to do is to update the status of the buy order after the first fetch(if it's filled) so when the second trade event arrives we will ignore it(this will require an additional callback).
 
-The same issue will appear when placing sell order and dealing multiple simultaneous transaction.
+The same issue will appear when placing a sell order and dealing with multiple simultaneous transactions.
 
 \newpage
 
 ## Improve buy order filled callback
 
-First, we need to modify the callback which monitors incoming trade events for ones filling it's buy order and then places sell order. We need to remove pattern matching assuming that a single trade event will fill our buy order - we need to drop quantity check as well as add 
+First, we need to modify the callback which monitors incoming trade events for ones filling its buy order and then places sell order. We need to remove pattern matching assuming that a single trade event will fill our buy order - we need to drop quantity check as well as add:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -68,7 +68,7 @@ First, we need to modify the callback which monitors incoming trade events for o
       ) do
 ```
 
-Now we can fetch our buy order to check is it already filled. We will get the `Binance.Order` struct instead of the `Binance.OrderResponse` that we normally deal with. At this moment we will simply update our `Binance.OrderResponse` struct from state:
+Now we can fetch our buy order to check is it already filled. We will get the `Binance.Order` struct instead of the `Binance.OrderResponse` that we normally deal with. At this moment we will simply update our `Binance.OrderResponse` struct from the state:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -87,11 +87,11 @@ Now we can fetch our buy order to check is it already filled. We will get the `B
     ...
 ```
 
-The rest of the logic inside this callback will depend on the `status` of the buy order. If our buy order is "filled" we would like to follow the existing logic but also update `buy_order` field inside the state of the trader process. On the other hand if our order is not yet filled the only thing to do is to update `buy_order` field inside the state of the Trader process.
+The rest of the logic inside this callback will depend on the `status` of the buy order. If our buy order is "filled" we would like to follow the existing logic but also update the `buy_order` field inside the state of the trader process. On the other hand, if our order is not yet filled the only thing to do is to update the `buy_order` field inside the state of the Trader process.
 
 \newpage
 
-Here's an updated body below above changes(few variables got renamed for clarity as we are now fetch the order):
+Here's an updated body below the above changes(few variables got renamed for clarity as we are now fetching the order):
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -121,11 +121,11 @@ Here's an updated body below above changes(few variables got renamed for clarity
   end
 ```
 
-As we are branching our logic and both paths are updating the state, we will return it together with an `:ok` atom to be able to pattern match it and assign as a new state.
+As we are branching our logic and both paths are updating the state, we will return it together with an `:ok` atom to be able to pattern match it and assign it as a new state.
 
 ## Implement buy order "filled" callback
 
-Above callback covers the case where we will get multiple transactions filling our buy order. We aren't yet convering for the race condition described at the begining of this chapter. When another trade event matching  `buyer_order_id` would arrive, above callback would be used and another sell order would be placed. To avoid that we need to add a new callback *ABOVE* the one that we just edited that will match `buyer_order_id` together with "filled" `status` and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:
+The above callback covers the case where we will get multiple transactions filling our buy order. We aren't yet covering for the race condition described at the beginning of this chapter. When another trade event matching  `buyer_order_id` would arrive, the above callback would be used and another sell order would be placed. To avoid that we need to add a new callback *ABOVE* the one that we just edited that will match `buyer_order_id` together with "filled" `status` and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -148,11 +148,11 @@ Above callback covers the case where we will get multiple transactions filling o
 
 ## Improve sell order callback
 
-Let's move on to the callback where the trader receives trade event matching sell order's id (about line 135 inside the `Naive.Trader` module).
+Let's move on to the callback where the trader receives a trade event matching the sell order's id (about line 135 inside the `Naive.Trader` module).
 
 We need to modify the header of our callback in the following ways:
 
-* drop the both pattern matches on `quantity` as we already know that trade event could partially fill our order (#1)
+* drop both pattern matches on `quantity` as we already know that trade event could partially fill our order (#1)
 * get `symbol` out of state (#2)
 * get `transact_time` out of the `sell_order` (used to fetch `get_order`) (#3)
 * assign `sell_order` to a variable (#4)
@@ -215,7 +215,7 @@ Here's the full body of our callback:
 
 ## Test the implementation
 
-Testing this feature is a bit tricky as it requires trading on real Binance exachnge(as our BinanceMock always fills order with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected wiht BinanceMock:
+Testing this feature is a bit tricky as it requires trading on real Binance exchange(as our BinanceMock always fills orders with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected with BinanceMock:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -234,6 +234,6 @@ quantity: 71.30000000
 23:33:08.865 [info]  XRPUSDT Trader finished - restarting
 ```
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_08)

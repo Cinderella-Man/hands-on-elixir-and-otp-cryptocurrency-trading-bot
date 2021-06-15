@@ -67,7 +67,7 @@ As previously the first step will be to add the `ecto` modules and Postgres rela
   ...
   defp deps do
     [
-      {:binance, "~> 0.7.1"}, # <= used to retrieve symbols list(exchangeInfo)
+      {:binance, "~> 1.0"}, # <= used to retrieve symbols list(exchangeInfo)
       {:ecto_sql, "~> 3.0"},  # <= added dependency
       {:ecto_enum, "~> 1.4"}, # <= added dependency
       {:jason, "~> 1.2"},
@@ -159,7 +159,7 @@ defmodule Streamer.Repo.Migrations.CreateSettings do
 end
 ```
 
-That finishes our work on the migration file, we need to add the `StreamingStatusEnum` in the same way as in the last chapter (create a `schema` directory inside the `apps/streamer/lib/streamer` directory and anew  file called `streaming_status_enum.ex` and place below logic (defining the enum) in it:
+That finishes our work on the migration file, we need to add the `StreamingStatusEnum` in the same way as in the last chapter (create a `schema` directory inside the `apps/streamer/lib/streamer` directory and a new  file called `streaming_status_enum.ex` and place below logic (defining the enum) in it:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/schema/streaming_status_enum.ex
@@ -320,7 +320,7 @@ Inside the `start_streaming/1` function, we are using 3 helper functions that we
 The above functions are quite self-explanatory, `get_pid/1` is a convenience wrapper,                  
 `update_streaming_status/2` will update the status field for the passed symbol, `start_streamer/1` will instruct the `Streamer.DynamicStreamerSupervisor` to start a new `Streamer.Binance` process with symbol passed as the first argument.
 
-The last step to get the above function to work(and future ones in this module) would be to add an `require`, an `import` and a few `alias`es at the top of the module:
+The last step to get the above function to work(and future ones in this module) would be to add a `require`, an `import`, and a few `alias`es at the top of the module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -421,7 +421,7 @@ Note: It very important to differentiate between module and process. We will put
 We will introduce a new [Task](https://hexdocs.pm/elixir/master/Task.html) process that will execute all the autostarting logic.
 
 That will cover the problem of the Supervisor executing too much business logic (as the Task will execute it), but how will we supervise them together?
-At init both will start, the `Streamer.DynamicStreamerSupervisor` first and then Task will ask it to start multiple children and that will work fine. The problem occurs when the `Streamer.DynamicStreamerSupervisor` would die because of any reason. Currently, it's supervised using the `one_for_one` strategy(and the `Task` would be as well) which means that it will get started again by the `Streamer.Application` process but at that moment the "autostarting" `Task` won't be there anymore to start streaming on all enabled symbols.
+At init both will start, the `Streamer.DynamicStreamerSupervisor` first, and then Task will ask it to start multiple children and that will work fine. The problem occurs when the `Streamer.DynamicStreamerSupervisor` would die because of any reason. Currently, it's supervised using the `one_for_one` strategy(and the `Task` would be as well) which means that it will get started again by the `Streamer.Application` process but at that moment the "autostarting" `Task` won't be there anymore to start streaming on all enabled symbols.
 
 We can clearly see that whenever the `Streamer.DynamicStreamerSupervisor` will die it needs to be started again *together* with the "autostart" `Task` and this won't fit our current `Streamer.Application`'s strategy.
 
@@ -504,7 +504,7 @@ The last step inside our new supervisor will be to add 2 children: `Streamer.Dyn
   end
 ```
 
-Final update in this chapter will be to replace the `Streamer.DynamicStreamerSupervisor` as one of the children inside the `Streamer.Application` module and update the name that application process registers under:
+The final update in this chapter will be to replace the `Streamer.DynamicStreamerSupervisor` as one of the children inside the `Streamer.Application` module and update the name that the application process registers under:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/application.ex
@@ -526,7 +526,7 @@ Final update in this chapter will be to replace the `Streamer.DynamicStreamerSup
 
 ## Test the implementation
 
-Let's start an `iex` session and call the `start_streaming/1` function twice for two different symbols and then exit using double Ctrl+c:
+Let's start an IEx session and call the `start_streaming/1` function twice for two different symbols and then exit using double Ctrl+c:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -539,7 +539,7 @@ iex(2)> Streamer.start_streaming("neousdt")
 {:ok, #PID<0.377.0>}
 ```
 
-Now, open a *new* `iex` session and look at the output:
+Now, open a *new* IEx session and look at the output:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -572,8 +572,8 @@ iex(6)> Streamer.stop_streaming("ethusdt")
  }}
 ```
 
-Stop the `iex` session and start new one - streamers shouldn't be autostarted any more.
+Stop the IEx session and start a new one - streamers shouldn't be autostarted anymore.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_11)

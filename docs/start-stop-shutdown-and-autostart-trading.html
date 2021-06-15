@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -374,7 +379,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="re-implement-the-start-trading-functionality" class="section level2" number="12.3">
 <h2><span class="header-section-number">12.3</span> (Re-)Implement the start trading functionality</h2>
-<p>To (re-)implement the <code>start_trading/1</code> functionality we will need to create a new file called <code>dynamic_symbol_supervisor.ex</code> inside the <code>/apps/naive/lib/naive</code> directory that will use the <code>DynamicSupervisor</code> behaviour. Previously we have been using default <code>DynamicSupervisor</code> implementation(one of the children of the <code>Naive.Application</code> - to be substituted with the below module):</p>
+<p>To (re-)implement the <code>start_trading/1</code> functionality we will need to create a new file called <code>dynamic_symbol_supervisor.ex</code> inside the <code>/apps/naive/lib/naive</code> directory that will use the <code>DynamicSupervisor</code> behavior. Previously we have been using default <code>DynamicSupervisor</code> implementation(one of the children of the <code>Naive.Application</code> - to be substituted with the below module):</p>
 <div class="sourceCode" id="cb183"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb183-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb183-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/dynamic_symbol_supervisor.ex</span></span>
 <span id="cb183-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb183-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span> <span class="kw">do</span> <span class="co"># &lt;= module updated</span></span>
 <span id="cb183-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb183-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">DynamicSupervisor</span></span>
@@ -547,7 +552,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>At this moment we can already see our implementation in action:</p>
 <p><img src="images/chapter_12_01_autostarting_sup_tree.png" width="100%" style="display: block; margin: auto;" /></p>
 <div style="page-break-after: always;"></div>
-<p>At this moment we are able to test the current implementation inside the <code>iex</code>:</p>
+<p>At this moment we are able to test the current implementation inside the IEx:</p>
 <div class="sourceCode" id="cb193"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb193-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb193-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb193-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb193-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb193-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb193-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;ethusdt&quot;</span><span class="kw">)</span></span>
@@ -565,7 +570,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb193-15"><a href="start-stop-shutdown-and-autostart-trading.html#cb193-15" aria-hidden="true" tabindex="-1"></a> <span class="ex">%Naive.Schema.Settings{</span></span>
 <span id="cb193-16"><a href="start-stop-shutdown-and-autostart-trading.html#cb193-16" aria-hidden="true" tabindex="-1"></a>     <span class="ex">...</span></span>
 <span id="cb193-17"><a href="start-stop-shutdown-and-autostart-trading.html#cb193-17" aria-hidden="true" tabindex="-1"></a> <span class="er">}}</span></span></code></pre></div>
-<p>We can now exit the <code>iex</code> and start a new one:</p>
+<p>We can now exit the IEx and start a new one:</p>
 <div class="sourceCode" id="cb194"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb194-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb194-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb194-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb194-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb194-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb194-3" aria-hidden="true" tabindex="-1"></a><span class="ex">21:39:16.894</span> [info]  Starting trading of ETHUSDT</span>
@@ -622,9 +627,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb197-17"><a href="start-stop-shutdown-and-autostart-trading.html#cb197-17" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">settings:</span> new_settings}}</span>
 <span id="cb197-18"><a href="start-stop-shutdown-and-autostart-trading.html#cb197-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Ok, we have a way to update the settings of the <code>Naive.Leader</code> process “on the go” but what effects should the <code>shutdown</code> state have on the <code>Naive.Leader</code>’s actions?</p>
-<p>There are two places that require modification:
-- whenever the <code>Naive.Trader</code> process will finish the trade cycle, <code>Naive.Leader</code> process should <em>not</em> start a new one, as well as check, was that the last trader process and if that was the case it needs to call the <code>Naive.stop_trading/1</code> function with its symbol to terminate whole supervision tree for that symbol
-- whenever the <code>Naive.Leader</code> process will receive a <code>rebuy</code> notification, it should just ignore it when the symbol is in the <code>shutdown</code> state.</p>
+<p>There are two places that require modification:</p>
+<ul>
+<li>whenever the <code>Naive.Trader</code> process will finish the trade cycle, <code>Naive.Leader</code> process should <em>not</em> start a new one, as well as check, was that the last trader process and if that was the case it needs to call the <code>Naive.stop_trading/1</code> function with its symbol to terminate whole supervision tree for that symbol</li>
+<li>whenever the <code>Naive.Leader</code> process will receive a <code>rebuy</code> notification, it should just ignore it when the symbol is in the <code>shutdown</code> state.</li>
+</ul>
 <p>Let’s look at the updated implementation of the “end of trade” handler:</p>
 <div class="sourceCode" id="cb198"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb198-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb198-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -712,7 +719,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb199-38"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb199-39"><a href="start-stop-shutdown-and-autostart-trading.html#cb199-39" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 <p>In the above <code>rebuy_triggered</code> handler function we added branching on the <code>settings.status</code> and we simply ignore the rebuy notification when the symbol is in the <code>shutdown</code> status.</p>
-<p>The final change will be to create a new migration that will update the <code>TradingStatusEnum</code> to have <code>shutdown</code> option:</p>
+<p>The final change will be to create a new migration that will update the <code>TradingStatusEnum</code> to have a <code>shutdown</code> option:</p>
 <div class="sourceCode" id="cb200"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb200-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps/naive </span>
 <span id="cb200-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix ecto.gen.migration update_trading_status</span>
 <span id="cb200-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating priv/repo/migrations/20210205232303_update_trading_status.exs</span></code></pre></div>
@@ -734,7 +741,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb202-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb202-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb202-4"><a href="start-stop-shutdown-and-autostart-trading.html#cb202-4" aria-hidden="true" tabindex="-1"></a>defenum(<span class="cn">Naive</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradingStatusEnum</span>, <span class="va">:trading_status</span>, [<span class="va">:on</span>, <span class="va">:off</span>, <span class="va">:shutdown</span>])</span></code></pre></div>
 <p>Don’t forget to run <code>mix ecto.migrate</code> to run the new migration.</p>
-<p>We can now test the <code>shutdown_trading/1</code> functionality inside the <code>iex</code>:</p>
+<p>We can now test the <code>shutdown_trading/1</code> functionality inside the IEx:</p>
 <div class="sourceCode" id="cb203"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb203-1"><a href="start-stop-shutdown-and-autostart-trading.html#cb203-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb203-2"><a href="start-stop-shutdown-and-autostart-trading.html#cb203-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb203-3"><a href="start-stop-shutdown-and-autostart-trading.html#cb203-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;ethusdt&quot;</span><span class="kw">)</span></span>
@@ -787,7 +794,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb203-50"><a href="start-stop-shutdown-and-autostart-trading.html#cb203-50" aria-hidden="true" tabindex="-1"></a><span class="st">shutdown state</span></span>
 <span id="cb203-51"><a href="start-stop-shutdown-and-autostart-trading.html#cb203-51" aria-hidden="true" tabindex="-1"></a><span class="st">22:08:05.401 [info]  Stopping trading of ETHUSDT</span></span></code></pre></div>
 <p>As we can see from the logs above, our <code>naive</code> strategy grown from 1 to 5 <code>Naive.Trader</code> processes running in parallel, then we called the <code>shutdown_trading/1</code> function. In the <code>shutdown</code> status, the <code>Naive.Leader</code> process ignored <code>rebuy</code> notifications and wasn’t starting any new <code>Naive.Trader</code> processes as the old ones were finishing. At the moment when the last <code>Naive.Trader</code> process finished the trade cycle, the <code>Naive.Leader</code> called <code>stop_trading/1</code> on “it’s” symbol, terminating the whole supervision tree for that symbol.</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_12">Github</a></p>
 
 </div>

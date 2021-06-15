@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -367,7 +372,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="pseudo-generalize-core.servicesupervisor-module" class="section level2" number="13.3">
 <h2><span class="header-section-number">13.3</span> Pseudo generalize Core.ServiceSupervisor module</h2>
-<p>Let’s start by creating a new <em>non supervised</em> application called <code>core</code> inside our umbrella project. At this moment our “abstraction code” will sit inside it just to keep things simple as otherwise, we would need to create a new repo and jump between codebases which we will avoid for time being:</p>
+<p>Let’s start by creating a new <em>non-supervised</em> application called <code>core</code> inside our umbrella project. At this moment our “abstraction code” will sit inside it just to keep things simple as otherwise, we would need to create a new repo and jump between codebases which we will avoid for time being:</p>
 <div class="sourceCode" id="cb204"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb204-1"><a href="abstract-duplicated-supervision-code.html#cb204-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd apps</span>
 <span id="cb204-2"><a href="abstract-duplicated-supervision-code.html#cb204-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mix new core</span>
 <span id="cb204-3"><a href="abstract-duplicated-supervision-code.html#cb204-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> creating README.md</span>
@@ -483,7 +488,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb210-17"><a href="abstract-duplicated-supervision-code.html#cb210-17" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> update_status(symbol, <span class="st">&quot;off&quot;</span>) <span class="co"># &lt;= updated name</span></span>
 <span id="cb210-18"><a href="abstract-duplicated-supervision-code.html#cb210-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb210-19"><a href="abstract-duplicated-supervision-code.html#cb210-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>At this moment we have a pseudo-generic implementation of <code>start_worker/1</code> and <code>stop_worker/1</code> inside the <code>Core.ServiceSupervisor</code> module. Function names are generic but they still refer to <code>Repo</code>, <code>Settings</code>, and other modules specific to the <code>naive</code> app’s implementation. We are probably in a worse situation than we have been before starting this refactoring ;) but don’t fear this was just the first step on the way to abstract away that starting, stopping and autostarting code.</p>
+<p>At this moment we have a pseudo-generic implementation of <code>start_worker/1</code> and <code>stop_worker/1</code> inside the <code>Core.ServiceSupervisor</code> module. Function names are generic but they still refer to <code>Repo</code>, <code>Settings</code>, and other modules specific to the <code>naive</code> app’s implementation. We are probably in a worse situation than we have been before starting this refactoring ;) but don’t fear this was just the first step on the way to abstract away that starting, stopping, and autostarting code.</p>
 </div>
 <div id="utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor" class="section level2" number="13.4">
 <h2><span class="header-section-number">13.4</span> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</h2>
@@ -491,7 +496,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb211"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb211-1"><a href="abstract-duplicated-supervision-code.html#cb211-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/mix.exs</span></span>
 <span id="cb211-2"><a href="abstract-duplicated-supervision-code.html#cb211-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb211-3"><a href="abstract-duplicated-supervision-code.html#cb211-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb211-4"><a href="abstract-duplicated-supervision-code.html#cb211-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb211-4"><a href="abstract-duplicated-supervision-code.html#cb211-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb211-5"><a href="abstract-duplicated-supervision-code.html#cb211-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance_mock</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>},</span>
 <span id="cb211-6"><a href="abstract-duplicated-supervision-code.html#cb211-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:core</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}, <span class="co"># &lt;= core dep added </span></span>
 <span id="cb211-7"><a href="abstract-duplicated-supervision-code.html#cb211-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">....</span></span></code></pre></div>
@@ -553,7 +558,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb214-20"><a href="abstract-duplicated-supervision-code.html#cb214-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>As <code>fetch_symbols_to_start/0</code> is only used internally by the <code>Core.ServiceSupervisor</code> module itself, we don’t need to make it public.</p>
 <p>We can also remove the <code>alias</code>es and <code>import</code> from the <code>Naive.DynamicSymbolSupervisor</code> as it won’t need them anymore.</p>
-<p>Next step will be to add <code>ecto</code> to the deps of the <code>core</code> application as it will make db queries now:</p>
+<p>The next step will be to add <code>ecto</code> to the deps of the <code>core</code> application as it will make db queries now:</p>
 <div class="sourceCode" id="cb215"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb215-1"><a href="abstract-duplicated-supervision-code.html#cb215-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/mix.exs</span></span>
 <span id="cb215-2"><a href="abstract-duplicated-supervision-code.html#cb215-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb215-3"><a href="abstract-duplicated-supervision-code.html#cb215-3" aria-hidden="true" tabindex="-1"></a>    [</span>
@@ -568,7 +573,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb216-5"><a href="abstract-duplicated-supervision-code.html#cb216-5" aria-hidden="true" tabindex="-1"></a>         <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span><span class="op">.</span>autostart_workers() <span class="co"># &lt;= func name updated</span></span>
 <span id="cb216-6"><a href="abstract-duplicated-supervision-code.html#cb216-6" aria-hidden="true" tabindex="-1"></a>       <span class="kw">end</span>}</span>
 <span id="cb216-7"><a href="abstract-duplicated-supervision-code.html#cb216-7" aria-hidden="true" tabindex="-1"></a>       <span class="op">...</span></span></code></pre></div>
-<p>Last step will be to update interface of the <code>naive</code> application:</p>
+<p>The last step will be to update the interface of the <code>naive</code> application:</p>
 <div class="sourceCode" id="cb217"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb217-1"><a href="abstract-duplicated-supervision-code.html#cb217-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive.ex</span></span>
 <span id="cb217-2"><a href="abstract-duplicated-supervision-code.html#cb217-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span></span>
 <span id="cb217-3"><a href="abstract-duplicated-supervision-code.html#cb217-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -675,7 +680,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb224-3"><a href="abstract-duplicated-supervision-code.html#cb224-3" aria-hidden="true" tabindex="-1"></a>    fetch_symbols_to_start(repo, schema)</span>
 <span id="cb224-4"><a href="abstract-duplicated-supervision-code.html#cb224-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>start_worker(<span class="op">&amp;</span><span class="dv">1</span>, repo, schema)) <span class="co"># &lt;= args passed</span></span>
 <span id="cb224-5"><a href="abstract-duplicated-supervision-code.html#cb224-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Both the <code>start_worker/3</code> and the <code>stop_worker/3</code> function are used by the functions inside the <code>Naive.DynamicSymbolSupervisor</code> module. We need to pass the <code>Repo</code> and <code>Schema</code> in the same fashion as previously with <code>autostart_workers/2</code> function:</p>
+<p>Both the <code>start_worker/3</code> and the <code>stop_worker/3</code> function are used by the functions inside the <code>Naive.DynamicSymbolSupervisor</code> module. We need to pass the <code>Repo</code> and <code>Schema</code> in the same fashion as previously with the <code>autostart_workers/2</code> function:</p>
 <div class="sourceCode" id="cb225"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb225-1"><a href="abstract-duplicated-supervision-code.html#cb225-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/dynamic_symbol_supervisor.ex</span></span>
 <span id="cb225-2"><a href="abstract-duplicated-supervision-code.html#cb225-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_worker(symbol) <span class="kw">do</span></span>
 <span id="cb225-3"><a href="abstract-duplicated-supervision-code.html#cb225-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Core</span><span class="op">.</span><span class="cn">ServiceSupervisor</span><span class="op">.</span>start_worker(</span>
@@ -764,7 +769,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb229-3"><a href="abstract-duplicated-supervision-code.html#cb229-3" aria-hidden="true" tabindex="-1"></a>    fetch_symbols_to_start(repo, schema)</span>
 <span id="cb229-4"><a href="abstract-duplicated-supervision-code.html#cb229-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>start_worker(<span class="op">&amp;</span><span class="dv">1</span>, repo, schema, module, worker_module)) <span class="co"># &lt;= args added</span></span>
 <span id="cb229-5"><a href="abstract-duplicated-supervision-code.html#cb229-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Just for referrence - final function headers look as following:</p>
+<p>Just for reference - the final function headers look as following:</p>
 <div class="sourceCode" id="cb230"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb230-1"><a href="abstract-duplicated-supervision-code.html#cb230-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/service_supervisor.ex</span></span>
 <span id="cb230-2"><a href="abstract-duplicated-supervision-code.html#cb230-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">ServiceSupervisor</span> <span class="kw">do</span></span>
 <span id="cb230-3"><a href="abstract-duplicated-supervision-code.html#cb230-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> autostart_workers(repo, schema, module, worker_module) <span class="kw">do</span></span>
@@ -918,7 +923,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb237-7"><a href="abstract-duplicated-supervision-code.html#cb237-7" aria-hidden="true" tabindex="-1"></a>          <span class="kw">unquote</span>(worker_module)</span>
 <span id="cb237-8"><a href="abstract-duplicated-supervision-code.html#cb237-8" aria-hidden="true" tabindex="-1"></a>        )</span>
 <span id="cb237-9"><a href="abstract-duplicated-supervision-code.html#cb237-9" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span></span></code></pre></div>
-<p>in the end generated code that will be “pasted” to the <code>Naive.DynamicSymbolSupervisor</code> module at compile time will be:</p>
+<p>At the end, generated code that will be “pasted” to the <code>Naive.DynamicSymbolSupervisor</code> module at compile time will be:</p>
 <div class="sourceCode" id="cb238"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb238-1"><a href="abstract-duplicated-supervision-code.html#cb238-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># compiled code attached to the `Naive.DynamicSymbolSupervisor` module</span></span>
 <span id="cb238-2"><a href="abstract-duplicated-supervision-code.html#cb238-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> autostart_workers <span class="kw">do</span></span>
 <span id="cb238-3"><a href="abstract-duplicated-supervision-code.html#cb238-3" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">ServiceSupervisor</span><span class="op">.</span>autostart_workers(</span>
@@ -928,7 +933,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb238-7"><a href="abstract-duplicated-supervision-code.html#cb238-7" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Naive</span><span class="op">.</span><span class="cn">SymbolSupervisor</span></span>
 <span id="cb238-8"><a href="abstract-duplicated-supervision-code.html#cb238-8" aria-hidden="true" tabindex="-1"></a>      )</span>
 <span id="cb238-9"><a href="abstract-duplicated-supervision-code.html#cb238-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
-<p>This way we can dynamically create functions for any application(for the <code>streamer</code> application, it will generate function call with the <code>Streamer.Repo</code>, <code>Streamer.Schema.Settings</code> args etc).</p>
+<p>This way we can dynamically create functions for any application(for the <code>streamer</code> application, it will generate function call with the <code>Streamer.Repo</code>, <code>Streamer.Schema.Settings</code> args, etc).</p>
 <p>We can apply that to all of the passed variables inside the <code>autostart_workers/0</code> function - just for reference full macro will look as follows:</p>
 <div class="sourceCode" id="cb239"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb239-1"><a href="abstract-duplicated-supervision-code.html#cb239-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/service_supervisor.ex</span></span>
 <span id="cb239-2"><a href="abstract-duplicated-supervision-code.html#cb239-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmacro</span> __using__(opts) <span class="kw">do</span></span>
@@ -1080,7 +1085,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb247"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb247-1"><a href="abstract-duplicated-supervision-code.html#cb247-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs</span></span>
 <span id="cb247-2"><a href="abstract-duplicated-supervision-code.html#cb247-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb247-3"><a href="abstract-duplicated-supervision-code.html#cb247-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb247-4"><a href="abstract-duplicated-supervision-code.html#cb247-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 0.7.1&quot;</span>},</span>
+<span id="cb247-4"><a href="abstract-duplicated-supervision-code.html#cb247-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>},</span>
 <span id="cb247-5"><a href="abstract-duplicated-supervision-code.html#cb247-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:core</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span>}, <span class="co"># &lt;= core added to deps</span></span>
 <span id="cb247-6"><a href="abstract-duplicated-supervision-code.html#cb247-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>We can now move on to the <code>Streamer.DynamicStreamerSupervisor</code> where we will remove everything (really everything including <code>import</code>s, <code>alias</code>es and even <code>require</code>) beside the <code>start_link/1</code> and the <code>init/1</code>. As with the <code>Naive.DynamicSymbolSupervisor</code> we will <code>use</code> the <code>Core.ServiceSupervisor</code> and pass all required options - <em>full</em> implementation of the <code>Streamer.DynamicStreamerSupervisor</code> module should look as follows:</p>
@@ -1100,7 +1105,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb248-14"><a href="abstract-duplicated-supervision-code.html#cb248-14" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Core</span><span class="op">.</span><span class="cn">ServiceSupervisor</span><span class="op">.</span>init(<span class="va">strategy:</span> <span class="va">:one_for_one</span>)</span>
 <span id="cb248-15"><a href="abstract-duplicated-supervision-code.html#cb248-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb248-16"><a href="abstract-duplicated-supervision-code.html#cb248-16" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>Not much to add here - we are <code>use</code>ing the <code>Core.ServiceSupervisor</code> module and passing options to it so it can macro generates <code>streamer</code> application-specific wrappers(like <code>start_worker/1</code> or <code>stop_worker/1</code> with required repo, schema etc) around generic logic from the <code>Core.ServiceSupervisor</code> module.</p>
+<p>Not much to add here - we are <code>use</code>ing the <code>Core.ServiceSupervisor</code> module and passing options to it so it can macro generates <code>streamer</code> application-specific wrappers(like <code>start_worker/1</code> or <code>stop_worker/1</code> with required repo, schema, etc) around generic logic from the <code>Core.ServiceSupervisor</code> module.</p>
 <p>Using the <code>Core.Servicesupervisor</code> module will have an impact on the interface of the<br />
 <code>Streamer.DynamicStreamerSupervisor</code> as it will now provide functions like <code>start_worker/1</code> instead of <code>start_streaming/1</code> etc.</p>
 <p>As with the <code>naive</code> application, we need to update the Task function inside the <code>Streamer.Supervisor</code> module:</p>
@@ -1152,7 +1157,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb251-23"><a href="abstract-duplicated-supervision-code.html#cb251-23" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb251-24"><a href="abstract-duplicated-supervision-code.html#cb251-24" aria-hidden="true" tabindex="-1"></a><span class="ex">22:26:30.775</span> [info]  Starting Elixir.Streamer.Binance worker for LTCUSDT</span></code></pre></div>
 <p>This finishes the implementation for both the <code>streamer</code> and the <code>naive</code> application. We are generating dynamic functions(metaprogramming) using Elixir macros which is a cool exercise to go through and feels like superpowers ;)</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_13">Github</a></p>
 
 </div>

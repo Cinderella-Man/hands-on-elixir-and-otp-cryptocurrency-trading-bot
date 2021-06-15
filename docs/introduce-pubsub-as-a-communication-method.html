@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,6 +327,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -352,7 +357,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="objectives-2" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Objectives</h2>
 <ul>
-<li>consider reasons why introducing a PubSub communication would be benefitial</li>
+<li>consider reasons why introducing a PubSub communication would be beneficial</li>
 <li>implement the PubSub communication between the <code>Streamer.Binance</code> and the <code>Naive.Trader</code>(s)</li>
 </ul>
 </div>
@@ -360,26 +365,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">3.2</span> Design</h2>
 <p>First, let’s look at the current situation:</p>
 <p><img src="images/chapter_03_01_current_situation.png" width="40%" style="display: block; margin: auto;" /></p>
-<p>We started with the Binance streamer calling the <code>send_event/1</code> function on the <code>Naive</code> module. The <code>Naive</code> module then calls the trader process using the GenServer’s <code>cast/2</code> function(via it’s registered name).</p>
+<p>We started with the Binance streamer calling the <code>send_event/1</code> function on the <code>Naive</code> module. The <code>Naive</code> module then calls the trader process using the GenServer’s <code>cast/2</code> function(via its registered name).</p>
 <div style="page-break-after: always;"></div>
-<p>Next step in the process of extending our trading strategy will be to scale it to run multiple <code>Naive.Trader</code> processes in parallel. To be able to do that we will need to remove the option to register the <code>trader</code> process with a name(as only one process can be registered under single name).</p>
+<p>The next step in the process of extending our trading strategy will be to scale it to run multiple <code>Naive.Trader</code> processes in parallel. To be able to do that we will need to remove the option to register the <code>trader</code> process with a name(as only one process can be registered under a single name).</p>
 <p><img src="images/chapter_03_02_current_situation_failed.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>The second issue with that design was the fact that the <code>Streamer</code> needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.</p>
 <p>To fix those issues we will invert the design and introduce a PubSub mechanism:</p>
 <p><img src="images/chapter_03_03_phoenix_pubsub.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
-There’s no coupling between the <code>Streamer</code> and <code>Naive</code> app any more.</p>
+There’s no coupling between the <code>Streamer</code> and <code>Naive</code> app anymore.</p>
 <div style="page-break-after: always;"></div>
 <p>We can now introduce multiple traders that will subscribe to the topic and they will receive messages from the PubSub:</p>
 <p><img src="images/chapter_03_04_naive_trader_group.png" width="100%" style="display: block; margin: auto;" /></p>
-<p>Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:</p>
+<p>Going even further down the line we can picture that system could consist of other processes interested in the streamed data. An example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:</p>
 <p><img src="images/chapter_03_05_other_services.png" width="100%" style="display: block; margin: auto;" /></p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="implementation" class="section level2" number="3.3">
 <h2><span class="header-section-number">3.3</span> Implementation</h2>
 <p>We will start by adding a <a href="https://github.com/phoenixframework/phoenix_pubsub"><code>Phoenix.PubSub</code></a> library to both <code>Streamer</code> and <code>Naive</code> app(as both will be using it, <code>Streamer</code> app as a broadcaster and <code>Naive</code> app as a subscriber).</p>
-<p>Scrolling down through it’s readme on GitHub we can see that we need to add <code>:phoenix_pubsub</code> to list of dependencies:</p>
+<p>Scrolling down through its readme on GitHub we can see that we need to add <code>:phoenix_pubsub</code> to list of dependencies:</p>
 <div class="sourceCode" id="cb44"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb44-1"><a href="introduce-pubsub-as-a-communication-method.html#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs &amp; /apps/naive/mix.exs</span></span>
 <span id="cb44-2"><a href="introduce-pubsub-as-a-communication-method.html#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb44-3"><a href="introduce-pubsub-as-a-communication-method.html#cb44-3" aria-hidden="true" tabindex="-1"></a>    [</span>
@@ -388,7 +393,7 @@ There’s no coupling between the <code>Streamer</code> and <code>Naive</code> a
 <span id="cb44-6"><a href="introduce-pubsub-as-a-communication-method.html#cb44-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
 <span id="cb44-7"><a href="introduce-pubsub-as-a-communication-method.html#cb44-7" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb44-8"><a href="introduce-pubsub-as-a-communication-method.html#cb44-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Remember to place it so the list will keep alphabetical order. Second step in the readme says that we need to add PubSub as a child of our app. We need to decide where we will put it, <code>Streamer</code> sounds like a good starting point. We will modify the <code>/apps/streamer/lib/streamer/application.ex</code> module by appending the PubSub to it:</p>
+<p>Remember to place it so the list will keep alphabetical order. The second step in the readme says that we need to add PubSub as a child of our app. We need to decide where we will put it, <code>Streamer</code> sounds like a good starting point. We will modify the <code>/apps/streamer/lib/streamer/application.ex</code> module by appending the PubSub to it:</p>
 <div class="sourceCode" id="cb45"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb45-1"><a href="introduce-pubsub-as-a-communication-method.html#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
 <span id="cb45-2"><a href="introduce-pubsub-as-a-communication-method.html#cb45-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
 <span id="cb45-3"><a href="introduce-pubsub-as-a-communication-method.html#cb45-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
@@ -399,7 +404,7 @@ There’s no coupling between the <code>Streamer</code> and <code>Naive</code> a
 <span id="cb45-8"><a href="introduce-pubsub-as-a-communication-method.html#cb45-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb45-9"><a href="introduce-pubsub-as-a-communication-method.html#cb45-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb45-10"><a href="introduce-pubsub-as-a-communication-method.html#cb45-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We will add the <code>:adapter_name</code> option to instruct PubSub to use <a href="http://erlang.org/doc/man/pg.html"><code>pg</code></a> adapter, which will give us distrubuted process groups.</p>
+<p>We will add the <code>:adapter_name</code> option to instruct PubSub to use <a href="http://erlang.org/doc/man/pg.html"><code>pg</code></a> adapter, which will give us distributed process groups.</p>
 <p>We will now modify the streamer to broadcast a message to PubSub topic instead of using the <code>Naive</code> module’s function:</p>
 <div class="sourceCode" id="cb46"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb46-1"><a href="introduce-pubsub-as-a-communication-method.html#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
 <span id="cb46-2"><a href="introduce-pubsub-as-a-communication-method.html#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> process_event(<span class="op">...</span>) <span class="kw">do</span></span>
@@ -426,20 +431,20 @@ There’s no coupling between the <code>Streamer</code> and <code>Naive</code> a
 module as it’s no longer required.</p>
 <p>Our update is now finished so we can start an iex session to see how it works.</p>
 <p>First, we will start a streamer process that will broadcast messages
-to PubSub. Next, we will start trading on the same symbol. On init, trader will subscribe to a PubSub channel and it will make a full trade cycle.</p>
+to PubSub. Next, we will start trading on the same symbol. On init, the trader will subscribe to a PubSub channel and it will make a full trade cycle.</p>
 <div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="introduce-pubsub-as-a-communication-method.html#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb48-2"><a href="introduce-pubsub-as-a-communication-method.html#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb48-3"><a href="introduce-pubsub-as-a-communication-method.html#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
 <span id="cb48-4"><a href="introduce-pubsub-as-a-communication-method.html#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.483.0&gt;}</span></span>
-<span id="cb48-5"><a href="introduce-pubsub-as-a-communication-method.html#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: Decimal.new<span class="er">(</span><span class="st">&quot;-0.01&quot;</span><span class="kw">)</span><span class="er">}</span><span class="kw">)</span> </span>
+<span id="cb48-5"><a href="introduce-pubsub-as-a-communication-method.html#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
 <span id="cb48-6"><a href="introduce-pubsub-as-a-communication-method.html#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:37.482</span> [info]  Initializing new trader for XRPUSDT</span>
 <span id="cb48-7"><a href="introduce-pubsub-as-a-communication-method.html#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.474.0&gt;}</span></span>
 <span id="cb48-8"><a href="introduce-pubsub-as-a-communication-method.html#cb48-8" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.179</span> [info]  Placing BUY order for XRPUSDT @ 0.29462000, quantity: 100</span>
 <span id="cb48-9"><a href="introduce-pubsub-as-a-communication-method.html#cb48-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.783</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225<span class="er">)</span><span class="ex">,</span></span>
 <span id="cb48-10"><a href="introduce-pubsub-as-a-communication-method.html#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 100.00000000</span>
 <span id="cb48-11"><a href="introduce-pubsub-as-a-communication-method.html#cb48-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:56.029</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
-<p>This shows that new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders and terminated after full trade cycle finished.</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>This shows that the new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders, and terminated after the full trade cycle finished.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_03">Github</a></p>
 
 </div>

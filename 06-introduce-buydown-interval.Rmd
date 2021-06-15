@@ -13,9 +13,9 @@
 knitr::include_graphics("images/chapter_06_01_current_buy_price.png")
 ```
 
-The `Naive.Trader` process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when buy order gets filled, it places sell order which later also gets filled.
+The `Naive.Trader` process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when the buy order gets filled, it places the sell order which later also gets filled.
 
-The Trader A exits and a new trader B is started which again immediately places a buy order *at the same price* as the previous trader just sold. When this gets filled sell order get's placed and loop continues on and on.
+The Trader A exits and a new trader B is started which again immediately places a buy order *at the same price* as the previous trader just sold. When this gets filled sell order gets placed and the loop continues on and on.
 
 We can see that there's a problem here as we just paid a fee twice(once for selling by the Trader A and once for buying by the Trader B) without really gaining anything(the Trader A could just hold the currency and could simply cash in on double profit in this specific situation).
 
@@ -25,15 +25,15 @@ The solution is to be more clever about our buy order's price. The idea is simpl
 knitr::include_graphics("images/chapter_06_02_rebuy_expl.png")
 ```
 
-So every new `Naive.Trader` process as it receives first trade event, trader will take it's price and will calculate an decreased price by using the `buy_down_interval` value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.
+So every new `Naive.Trader` process as it receives the first trade event, the trader will take its price and will calculate a decreased price by using the `buy_down_interval` value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.
 
 When looking at the chart above we can figure out that `buy_down_interval` should never be smaller than double the fee(at the moment of writing transaction fee is 0.1%) that you are paying per transaction.
 
+\newpage
+
 ## `Naive.Trader` implementation
 
-Let's open the `Naive.Trader` module's file(`/apps/naive/lib/naive/trader.ex`) and add `buy_down_interval` to it's state:
-
-\newpage
+Let's open the `Naive.Trader` module's file(`/apps/naive/lib/naive/trader.ex`) and add `buy_down_interval` to its state:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -76,6 +76,8 @@ Next, we need to update the initial `handle_info/2` callback which places the bu
     ...
 ```
 
+\newpage
+
 To calculate the buy price we will use a very similar method to the one used
 before to calculate the sell price. First, we will need to cast all variables
 into the `Decimal` structs and then, we will simply subtract the `buy_down_interval` of the price from the price. The number that we will end up with won't necessarily be a legal price as every price needs to be divisible by the `tick_size` which we will assure in the last calculation:
@@ -83,9 +85,7 @@ into the `Decimal` structs and then, we will simply subtract the `buy_down_inter
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   ...
-  defp calculate_buy_price(price, buy_down_interval, tick_size) do
-    current_price = D.new(price)
-
+  defp calculate_buy_price(current_price, buy_down_interval, tick_size) do
     # not necessarily legal price
     exact_buy_price =
       D.sub(
@@ -93,11 +93,12 @@ into the `Decimal` structs and then, we will simply subtract the `buy_down_inter
         D.mult(current_price, buy_down_interval)
       )
 
-    D.to_float(
+    D.to_string(
       D.mult(
         D.div_int(exact_buy_price, tick_size),
         tick_size
-      )
+      ),
+      :normal
     )
   end
   ...
@@ -105,7 +106,7 @@ into the `Decimal` structs and then, we will simply subtract the `buy_down_inter
 
 ## `Naive.Leader` implementation
 
-Next we need to update the `Naive.Leader` as it needs to add `buy_down_interval` to the `Naive.Trader`'s state:
+Next, we need to update the `Naive.Leader` as it needs to add `buy_down_interval` to the `Naive.Trader`'s state:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -116,18 +117,20 @@ Next we need to update the `Naive.Leader` as it needs to add `buy_down_interval`
       symbol: symbol,
       chunks: 1,
       # 0.01% for quick testing
-      buy_down_interval: Decimal.new("0.0001"), # <= add this line
+      buy_down_interval: "0.0001", # <= add this line
       # -0.12% for quick testing
-      profit_interval: Decimal.new("-0.0012"),
+      profit_interval: "-0.0012",
       tick_size: tick_size
     }
   end  
   ...
 ```
 
+\newpage
+
 ### IEx testing
 
-That finishes the `buy_down_interval` implementation, we will jump into iex session to see how it works, but before that for a moment we will change the logging level to `debug` to see current prices:
+That finishes the `buy_down_interval` implementation, we will jump into the IEx session to see how it works, but before that, for a moment we will change the logging level to `debug` to see current prices:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # config/config.exs
@@ -137,7 +140,7 @@ config :logger,
 ...
 ```
 
-After starting the streaming we should start seeing log messages with current prices. As we updated our implementation we should place our buy order below current price as it's visible below:
+After starting the streaming we should start seeing log messages with current prices. As we updated our implementation we should place our buy order below the current price as it's visible below:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -153,10 +156,10 @@ iex(2)> Naive.start_trading("FLMUSDT")
 21:16:20.009 [info]  Placing BUY order for FLMUSDT @ 0.1517, quantity: 100
 ```
 
-As we can see our `Naive.Trader` process placed an buy order below the current price (based on most recent trade event received)
+As we can see our `Naive.Trader` process placed a buy order below the current price (based on the most recent trade event received)
 
 [Note] Please remember to revert the change to logger level as otherwise there's too much noise in the logs.
 
-[Note 2] Please remember to run `mix format` to keep things nice and tidy.
+[Note 2] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_06)
