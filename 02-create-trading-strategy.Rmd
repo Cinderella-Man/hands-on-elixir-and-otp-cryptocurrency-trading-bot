@@ -8,7 +8,7 @@
 
 ## Initializiation
 
-To develop our *naive* strategy will need to create a new supervised application inside the our umbrella project:
+To develop our *naive* strategy will need to create a new supervised application inside our umbrella project:
 
 ```{r, engine = 'bash', eval = FALSE}
 cd apps
@@ -36,7 +36,7 @@ defmodule Naive.Trader do
 end
 ```
 
-Our module uses the [GenServer](https://hexdocs.pm/elixir/master/GenServer.html#content) behavior and to fulfill its "contract", we need to implement the `init/1` function. The `start_link/1` function is a convention and it allows us to register the process with a name(it's a default function that supervisor will use when starting the Trader). We also add a `require Logger` as we will keep on logging across the module.
+Our module uses the [GenServer](https://hexdocs.pm/elixir/master/GenServer.html#content) behavior and to fulfill its "contract", we need to implement the `init/1` function. The `start_link/1` function is a convention and it allows us to register the process with a name(it's a default function that the `Supervisor` will use when starting the Trader). We also add a `require Logger` as we will keep on logging across the module.
 
 Next, let's model the state of our server:
 
@@ -60,7 +60,7 @@ Our trader needs to know:
 - placed buy order (if any)
 - placed sell order (if any)
 - profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)
-- tick_size (yes, I know, jargon warning. We can't ignore it here as it needs to be fetched from Binance and it's used to calculate a valid price. Tick size differs between symbols and it is the smallest acceptable price movement up or down. For example in the physical world tick size for USD is a single cent, you can't sell something for $1.234, it's either $1.23 or $1.24 (one cent difference between those is the tick size) - more info [here](https://www.investopedia.com/terms/t/tick.asp)
+- tick_size (yes, I know, jargon warning. We can't ignore it here as it needs to be fetched from Binance and it's used to calculate a valid price. Tick size differs between symbols and it is the smallest acceptable price movement up or down. For example in the physical world tick size for USD is a single cent, you can't sell something for $1.234, it's either $1.23 or $1.24 (a single cent difference between those is the tick size) - more info [here](https://www.investopedia.com/terms/t/tick.asp).
 
 Our strategy won't be able to work without symbol, profit_interval nor tick_size so we added them to the `@enforce_keys` attribute. This will ensure that we won't create an invalid `%State{}` without those values.
 
@@ -135,7 +135,7 @@ We can now get back to the `trader` module and focus on fetching the tick size f
   end
 ```
 
-We are using `get_exchange_info/0` to fetch the list of symbols, that we will filter to find the symbol that we are requested to trade. Tick size is defined as a `PRICE_FILTER` filter. Here's the [link](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information) to the documentation listing all keys in the result. In a nutshell, that's how the important parts of the result look like:
+We are using `get_exchange_info/0` to fetch the list of symbols, which we will filter to find the symbol that we are requested to trade. Tick size is defined as a `PRICE_FILTER` filter. Here's the [link](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information) to the documentation listing all keys in the result. In a nutshell, that's how the important parts of the result look like:
 
 ```
 {:ok, %{
@@ -182,11 +182,11 @@ the current price which we will use in the buy order that the trader will place.
 
 After placing a buy order, the trader will be pattern matching to confirm that
 has incoming event filled his buy order otherwise ignoring it.
-When a trade event matching the order id of the trader's buy order will arrive, it means that the buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won't cater for this case, it will always assume that it got filled in a single transaction) and trader can now place the sell order based on the expected profit and the buy_price.
+When a trade event matching the order id of the trader's buy order will arrive, it means that the buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won't cater for this case, it will always assume that it got filled in a single transaction) and the trader can now place the sell order based on the expected profit and the buy_price.
 
 **Third state - Sell order placed**
 
-Finally, in a very similar fashion to the previous state, the trader will be pattern matching to confirm that the incoming event has filled his sell order(matching order id), otherwise ignoring it.
+Finally, in a very similar fashion to the previous state, the trader will be pattern matching to confirm that the incoming event has filled his sell order(matching order id), otherwise ignore it.
 When a trade event matching the order id of trader's sell order will arrive, which means that the sell order got filled(simplification as described above) and the full trade cycle has ended and the trader can now exit.
 
 ### Implementation of the first scenario
@@ -201,7 +201,7 @@ Enough theory :) back to the editor, we will implement the first scenario. Befor
 We are also aliasing the `%Streamer.Binance.TradeEvent{}` struct as we will rely on it heavily in pattern matching. 
 
 
-To confirm that we are dealing with a "new" trader, we will pattern match on `buy_order: nil` from it's state:
+To confirm that we are dealing with a "new" trader, we will pattern match on `buy_order: nil` from its state:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -261,10 +261,10 @@ With that out of the way, we can now move on to monitoring for an event that mat
   end
 ```
 
-We will implement calculating sell price in a separate function based on buy price, profit interval and tick_size.
+We will implement calculating sell price in a separate function based on buy price, profit interval, and tick_size.
 
-Our pattern match will confirm that indeed our buy order got filled(order_id and quantity matches) so we can now proceed with placing a sell order using calculated sell price and quantity retrieved from buy order.
-Again, don't forget to return the updated state as otherwise, trader will keep on placing sell orders for every incoming event.
+Our pattern match will confirm that indeed our buy order got filled(order_id and quantity matches) so we can now proceed with placing a sell order using calculated sell price and quantity retrieved from the buy order.
+Again, don't forget to return the updated state as otherwise, the trader will keep on placing sell orders for every incoming event.
 
 To calculate the sell price we will need to use precise math and that will require a custom module. We will use the [Decimal](https://github.com/ericmj/decimal) module, so first, let's alias it at the top of the file:
 
@@ -335,7 +335,7 @@ Getting back to handling incoming events, we can now add a clause for a trader t
   end
 ```
 
-When the sell order was successfully filled(confirmed by pattern matching above), there's nothing else to do for the trader, so it can retrun a tuple with `:stop` atom which will cause the trader process to terminate.
+When the sell order was successfully filled(confirmed by pattern matching above), there's nothing else to do for the trader, so it can return a tuple with `:stop` atom which will cause the trader process to terminate.
 
 ### Implementation fallback scenario
 
@@ -375,7 +375,7 @@ We will use the fact that we registered our trader process with a name to be abl
 
 ### Updating streamer app
 
-To glue our apps together for the time and keep things simple in this chapter we will modify the streamer process to simply call our new `Naive` interface directly by appending a following function call at the end of `process_event/1` function inside the `Streamer.Binance` module:
+To glue our apps together for the time and keep things simple in this chapter we will modify the streamer process to simply call our new `Naive` interface directly by appending the following function call at the end of the `process_event/1` function inside the `Streamer.Binance` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -385,7 +385,7 @@ To glue our apps together for the time and keep things simple in this chapter we
   end
 ```
 
-This creates a two way link between the streamer and the naive app. In the next chapter we will fix that as in the perfect world those apps shouldn't even be aware of existance of each other.
+This creates a two-way link between the streamer and the naive app. In the next chapter, we will fix that as in the perfect world those apps shouldn't even be aware of existence of each other.
 
 ### Access details to Binance
 
@@ -397,11 +397,11 @@ config :binance,
   secret_key: "YOUR-SECRET-KEY-HERE"
 ```
 
-*Important note*: To be able to run below test and perform real trades, Binance account is required with balance of at least 20 USDT. In the 4th chapter we will focus on creating a `BinanceMock` that will allow us to run our bot *without* requirement for a real Binance account. You don't need to test run it now if you don't need/want to have an account.
+*Important note*: To be able to run the below test and perform real trades, a Binance account is required with a balance of at least 20 USDT. In the 4th chapter, we will focus on creating a `BinanceMock` that will allow us to run our bot *without* the requirement for a real Binance account. You don't need to test run it now if you don't need/want to have an account.
 
 ### Test run
 
-Now it's the time to give our implementation a run for it's money. Once again, to be able to do that you will need to have at least 20 USDT tokens in your Binance's wallet and you will loose just under 0.5% of your USDTs(as "expected profit" is below 0 to quickly showcase the full trade cycle) in the following test:
+Now it's time to give our implementation a run for its money. Once again, to be able to do that you will need to have at least 20 USDT tokens in your Binance's wallet and you will lose just under 0.5% of your USDTs(as "expected profit" is below 0 to quickly showcase the full trade cycle) in the following test:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -417,16 +417,16 @@ iex(3)>
 13:45:33.094 [info] Trade finished, trader will now exit
 ```
 
-After starting the IEx session, start the trader process with a map containing symbol and profit interval. To be able to quickly test full trade cycle we will pass sub-zero profit interval instead of waiting for the increase in price.
+After starting the IEx session, start the trader process with a map containing the symbol and profit interval. To be able to quickly test the full trade cycle we will pass a sub-zero profit interval instead of waiting for the price increase.
 
 Next, we will start streaming on the same symbol, please be aware that this will cause an immediate reaction in the trader process.
 
 We can see that our trader placed a buy order at 25.979c per XRP, it was filled in under 300ms, so then the trader placed a sell order at ~25.77c
 which was also filled in under 300ms. This way the trader finished the trade
-cycle and process can terminate.
+cycle and the process can terminate.
 
-That's it. **Congratulations!** You just made your first algorithmic trade and you should be proud of that! In the process of creating that algorithm we touched on multiple topics including GenServer and depending on it's state and external data (trade events) to perform different actions - this is a very common workflow that Elixir engineers are following and it's great to see it in action.
+That's it. **Congratulations!** You just made your first algorithmic trade and you should be proud of that! In the process of creating that algorithm, we touched on multiple topics including GenServer and depending on its state and external data (trade events) to perform different actions - this is a very common workflow that Elixir engineers are following and it's great to see it in action.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_02)

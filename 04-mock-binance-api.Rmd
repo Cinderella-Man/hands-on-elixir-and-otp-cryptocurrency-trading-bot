@@ -18,10 +18,10 @@ First, let's start with the current state:
 knitr::include_graphics("images/chapter_04_01_current_state.png")
 ```
 
-Currently our trader is using the `Binance` module to place buy/sell
+Currently, our trader is using the `Binance` module to place buy/sell
 orders and get exchange info.
-The `get_exchange_info/0` function doesn't require a Binance account as it's a publicly available information so we can call the `Binance` lib directly from our module.
-The remaining ones(buying/selling) require `Binance` account and some coins/token inside it's wallet. We need to mock those inside our module.
+The `get_exchange_info/0` function doesn't require a Binance account as it's publicly available information so we can call the `Binance` lib directly from our module.
+The remaining ones(buying/selling) require a `Binance` account and some coins/tokens inside its wallet. We need to mock those inside our module.
 
 \newpage
 
@@ -42,7 +42,7 @@ knitr::include_graphics("images/chapter_04_03_proposal_pubsub.png")
 \newpage
 
 When exactly should we broadcast those fake trade events? Well, the best thing
-that we can do is make `BinanceMock` process to subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:
+that we can do is make the `BinanceMock` process subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:
 
 
 ```{r, fig.align="center", out.width="70%", echo=FALSE}
@@ -50,9 +50,9 @@ knitr::include_graphics("images/chapter_04_04_explenation.png")
 ```
 
 Starting from the arrow on the left, our naive strategy will place an order at the current price.
-In this hypotetical scenario price was raising for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with price *below* the buy order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
-Trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
-Similarly to the buy order, BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with the price *above* the sell order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
+In this hypotetical scenario, the price raised for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with a price *below* the buy order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
+The trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
+Similar to the buy order, BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with the price *above* the sell order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
 
 Enough theory for now, let's get our hands dirty with some coding.
 
@@ -111,7 +111,7 @@ end
 
 ## Implement getting exchange info
 
-As it was mentioned before, to retrieve exchange info we can just call Binance's function directly as it's a publicly available information:
+As it was mentioned before, to retrieve exchange info we can just call Binance's function directly as its publicly available information:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -171,8 +171,6 @@ It needs to do two things:
 * subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from the order
 * add the order to the correct order book
 
-\newpage
-
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   def handle_cast(
@@ -196,7 +194,7 @@ It needs to do two things:
   end
 ```
 
-We will start with the implementation of `subscribe_to_topic/2` function. We need to make sure that the symbol is uppercase'd as well as check have we already subscribed to that topic. Otherwise, we can safely use the PubSub module to subscribe to the `TRADE_EVENTS:#{symbol}` topic for this symbol.
+We will start with the implementation of the `subscribe_to_topic/2` function. We need to make sure that the symbol is uppercased as well as check have we already subscribed to that topic. Otherwise, we can safely use the PubSub module to subscribe to the `TRADE_EVENTS:#{symbol}` topic for this symbol.
 We need to remember to append the symbol to the list of subscription and return the updated list:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -222,7 +220,7 @@ We need to remember to append the symbol to the list of subscription and return 
   end
 ```
 
-Next, time for implementation of `add_order` function. First, we need to get the order book for the symbol of the order. Depends on the side of the order we will update either `buy_side` or `sell_side` list remembering that both sides are sorted. We are sorting them so we can easily grab all orders that should be filled whenever trade event arrived, this will become clearer as we will write a handle callback for incoming trade events:
+Next, time for implementation of the `add_order` function. First, we need to get the order book for the symbol of the order. Depends on the side of the order we will update either the `buy_side` or `sell_side` list remembering that both sides are sorted. We are sorting them so we can easily grab all orders that should be filled whenever trade event arrived, this will become clearer as we will write a handle callback for incoming trade events:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -261,7 +259,7 @@ Next, time for implementation of `add_order` function. First, we need to get the
 Now we need to follow up and implement the functions that we referred to
 previously - those are `generate_fake_order` and `convert_order_to_order_response`.
 
-Starting with the `generate_fake_orders`, it's a function that takes a symbol, quantity, price and side and based on those values returns a `Binance.Order` struct. To return the struct we will need to generate a unique id for each faked order - this is where `fake_order_id` will be used(callback implemented later). This way we will be able to run tests multiple times using the BinanceMock and always get the same ids:
+Starting with the `generate_fake_orders`, it's a function that takes a symbol, quantity, price, and side and based on those values returns a `Binance.Order` struct. To return the struct we will need to generate a unique id for each faked order - this is where `fake_order_id` will be used(callback implemented later). This way we will be able to run tests multiple times using the BinanceMock and always get the same ids:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -295,7 +293,7 @@ Starting with the `generate_fake_orders`, it's a function that takes a symbol, q
   end
 ```
 
-We can now focus on converting the `Binance.Order` to the `Binance.OrderResponse` struct. As `Binance.Order` struct contains almost all of the same fields that the `Binance.OrderResponse` struct, we can use `struct` function without exclanation mark to ignore all additional fields. The only field that has different name is `transact_time` field which is called `time` in the `Binance.Order` struct - we can fix that separetely:
+We can now focus on converting the `Binance.Order` to the `Binance.OrderResponse` struct. As `Binance.Order` struct contains almost all of the same fields that the `Binance.OrderResponse` struct, we can use `struct` function without exclamation mark to ignore all additional fields. The only field that has a different name is `transact_time` field which is called `time` in the `Binance.Order` struct - we can fix that separately:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -310,7 +308,7 @@ We can now focus on converting the `Binance.Order` to the `Binance.OrderResponse
   end
 ```
 
-Last function to finish support for placing buy and sell orders is to add a callback that will iterate the fake order id and return it:
+The last function to finish support for placing buy and sell orders is to add a callback that will iterate the fake order id and return it:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -323,11 +321,9 @@ Last function to finish support for placing buy and sell orders is to add a call
   end
 ```
 
-\newpage
-
 ## Implement order retrival
 
-We can now move on to retrieving the orders. First, we need to add an interface function that will call our BinanceMock genserver:
+We can now move on to retrieving the orders. First, we need to add an interface function that will call our BinanceMock GenServer:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -339,8 +335,8 @@ We can now move on to retrieving the orders. First, we need to add an interface 
   end
 ```
 
-The callback itself is pretty straightforward. We will need to get order book for passed symbol. As we don't know the order's side, we will concat all 3 lists(buy_side, sell_side and historical) and try to find an order that will
-match passed symbol, time and order_id:
+The callback itself is pretty straightforward. We will need to get an order book for the passed symbol. As we don't know the order's side, we will concat all 3 lists(buy_side, sell_side, and historical) and try to find an order that will
+match passed symbol, time, and order_id:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -373,11 +369,14 @@ match passed symbol, time and order_id:
 ## Implement callback for incoming trade events
 
 Finally, we need to handle incoming trade events(streamed from the PubSub topic). We need to implement a callback that will:
-- get the order book for the symbol from the trade event
-- use the `take_while/2` function on the buy orders with prices that are *greater* than the current price - we can update their status to filled.
-- use the `take_while/2` function again, this time to sell orders with prices *less* than the current price, we will also update their statuses to filled.
-- concat both lists of filled orders, convert them to trade events and broadcast them to the PubSub's TRADE_EVENTS topic.
-- remove the filled orders from buy and sell lists and put them into the historical list.
+
+* get the order book for the symbol from the trade event
+* use the `take_while/2` function on the buy orders with prices that are *greater* than the current price - we can update their status to filled.
+* use the `take_while/2` function again, this time to sell orders with prices *less* than the current price, we will also update their statuses to filled.
+* concat both lists of filled orders, convert them to trade events, and broadcast them to the PubSub's TRADE_EVENTS topic.
+* remove the filled orders from buy and sell lists and put them into the historical list.
+
+\newpage
 
 Here we can clearly see the benefit of sorting the lists, we can use functions like `take_while/2` and `drop/2` instead of `filter/2`
 and `reject/2`(later ones will go through whole lists which could become a bottleneck when multiple open orders would be active):
@@ -437,7 +436,7 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
 
 Inside the callback we referred to two new functions that we will implement now(`convert_order_to_event` and `broadcast_trade_event`).
 
-Starting with the `convert_order_to_event` function, it will simply return a new `Streamer.Binance.TradeEvent` struct filled with data. An interesting thing to observe here is that again all values are predicatable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behavior between runs:
+Starting with the `convert_order_to_event` function, it will simply return a new `Streamer.Binance.TradeEvent` struct filled with data. An interesting thing to observe here is that again all values are predictable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behavior between runs:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -457,7 +456,7 @@ Starting with the `convert_order_to_event` function, it will simply return a new
   end
 ```
 
-Broadcasting trade event to PubSub will be the last function that will finish
+Broadcasting trade events to PubSub will be the last function that will finish
 the implementation of `BinanceMock` for now. It's safe to assume that the incoming
 symbol will be uppercased as it comes from the exchange (the symbol is part of the topic name which is case-sensitive):
 
@@ -491,7 +490,7 @@ end
 
 ## Upgrade trader and config
 
-We can move on to the `Naive.Trader` module where we will add an attribute which will point to the Binance client dictated by config:
+We can move on to the `Naive.Trader` module where we will add an attribute that will point to the Binance client dictated by config:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -521,7 +520,7 @@ config :naive,
   binance_client: BinanceMock
 ```
 
-Last modification to our system will be to modify the `mix.exs` of the `binance_mock` app to list all deps required for it to work:
+The last modification to our system will be to modify the `mix.exs` of the `binance_mock` app to list all deps required for it to work:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/mix.exs
@@ -556,7 +555,7 @@ We also add `:binance_mock` to the list of deps of the `naive` app(as the Naive 
 
 ## Test the implementation
 
-We can now see the BinanceMock in action. First, we will start an iex session and double check that BinanceMock process is alive.
+We can now see the BinanceMock in action. First, we will start an iex session and double-check that the BinanceMock process is alive.
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -578,6 +577,6 @@ quantity: 100.0
 
 As config already points to it so we can continue as previously by starting the streaming and trading on the symbol. The trader is using the `BinanceMock` and it looks like everything works as it would be dealing with a real exchange.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)

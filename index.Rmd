@@ -1,7 +1,7 @@
 --- 
 title: "Hands-on Elixir & OTP: Cryptocurrency trading bot"
 author: "Kamil Skowron"
-date: "0.1.6"
+date: "0.1.7"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
 documentclass: book
@@ -22,7 +22,7 @@ This website is the home of **Hands-on Elixir & OTP: Cryptocurrency trading bot*
 
 <img src="images/cover.png" width="250" height="324" alt="The book cover" align="right" style="margin: 0 1em 0 1em"/>
 
-**This book is 75% complete** - chapters 1-15 are finished but I'm planning to add more content in the near future.
+**This book is 75% complete** - chapters 1-15 are finished but I'm planning to add more content soon.
 
 Want to learn Elixir & OTP by creating a real-world project? With *Hands-on Elixir & OTP: Cryptocurrency trading bot* you will gain hands-on experience by working on an interesting software project. We will explore all the key abstractions and essential principles through iterative implementation improvements.
 
@@ -52,7 +52,7 @@ The book is written using [R Markdown](http://rmarkdown.rstudio.com/)(it's a ver
 
 To keep this book up to date as well as publicly available for people that can't afford to pay for it, it's available in HTML format online free of charge.
 
-PDF & EPUB formats are available to backers using either [GitHub Sponsors](https://github.com/sponsors/frathon)(it supports both one-off payments as well as "monthly" plans) or [Gumroad](https://gum.co/cSGdY).
+PDF & EPUB formats are available to backers using either [GitHub Sponsors](https://github.com/sponsors/frathon)(it supports both one-offs payments as well as "monthly" plans) or [Gumroad](https://gum.co/cSGdY).
 
 ## Preface {-}
 
@@ -62,13 +62,13 @@ Its unmatched parallelization capabilities are unique and powerful, making it a 
 
 In this book, we will go through the development process of a cryptocurrency trading bot in Elixir. We will start ground up and chapter by chapter progress with the implementation ending up with a fully-fledged *naive* trading strategy. We will be designing process supervision trees, describing why specific decisions were taken and how will they impact the system going forward.
 
-By any stretch of the imagination, I don't believe that "this is *the only* way"(nor even the best way) to create a cryptocurrency trading bot in Elixir. This book focuses more on building a real-life project and iterating over it, taking decisions on the way as it would happen in a real work environment. There are parts that will be "perfect" the first time around, but there are also others, where we will take compromises to "get it to working" and then when the time is right, we will refactor them as we will gain a better understanding of the domain problem.
+By any stretch of the imagination, I don't believe that "this is *the only* way"(nor even the best way) to create a cryptocurrency trading bot in Elixir. This book focuses more on building a real-life project and iterating over it, taking decisions on the way as it would happen in a real work environment. Some parts will be "perfect" the first time around, but there are also others, where we will take compromises to "get it to working" and then when the time is right, we will refactor them as we will gain a better understanding of the domain problem.
 
 ## Who this book is for {-}
 
 This book will be a great resource for everyone that already knows the basics of Elixir and wants to get a feel of how developing a non-trivial system looks like using it.
 
-Readers do not need deep knowledge about cryptocurrencies to follow along as I will shy away from crypto / trading jargon as well as will explain it whenever it's unavoidable.
+Readers do not need deep knowledge about cryptocurrencies to follow along as I will shy away from crypto/trading jargon as well as will explain it whenever it's unavoidable.
 
 **This is not a book focused on trading strategies, neither it's financial advice to trade at all.** The main focus of this book is to showcase how the implementation of even complex problems can be achieved in Elixir by simple processes working together in an orchestrated manner.
 
@@ -110,7 +110,7 @@ At this moment our `Naive.Trader` implementation will blindly place a buy order 
 
 * Chapter 7 - Introduce a trader budget and calculating the quantity
 
-Since the second chapter our `Naive.Trader` processes are placing orders with a hardcoded quantity of 100. In this chapter, we will introduce a budget that will be evenly split between the `Naive.Trader` processes using chunks. We will utilize that budget to calculate quantity (to be able to do that we need to fetch further `step_size` information from the Binance API) 
+Since the second chapter, our `Naive.Trader` processes are placing orders with a hardcoded quantity of 100. In this chapter, we will introduce a budget that will be evenly split between the `Naive.Trader` processes using chunks. We will utilize that budget to calculate quantity (to be able to do that we need to fetch further `step_size` information from the Binance API).
 
 * Chapter 8 - Add support for multiple transactions per order
 
@@ -122,11 +122,11 @@ With PubSub, supervision tree, buy down and budget in place we can progress with
 
 * Chapter 10 - Fine-tune trading strategy per symbol
 
-Currently, naive strategy works based on settings hardcoded in the `leader` module. To allow for fine-tunning the naive trading strategy per symbol we will introduce a new database together with the table that will store trading settings.
+Currently, the naive strategy works based on settings hardcoded in the `leader` module. To allow for fine-tuning the naive trading strategy per symbol we will introduce a new database together with the table that will store trading settings.
 
 * Chapter 11 - Supervise and autostart streaming
 
-In the last chapter, we introduced a new database inside the `naive` application to store default settings, in this chapter we will do the same for the `streamer` application. Inside the settings, there will be a `status` flag that will allow us to implement the autostarting functionality on initialization using Task abstracting
+In the last chapter, we introduced a new database inside the `naive` application to store default settings, in this chapter we will do the same for the `streamer` application. Inside the settings, there will be a `status` flag that will allow us to implement the autostarting functionality on initialization using Task abstraction.
 
 * Chapter 12 - Start, stop, shutdown, and autostart trading
 
@@ -134,7 +134,7 @@ To follow up after autostarting streaming we will apply the same trick to the tr
 
 * Chapter 13 - Abstract duplicated supervision code
 
-As both the `naive` and the `streamer` application contain almost the same copy-pasted code that allows us to start, stop and autostart workers. We will look into how could we abstract the common parts of that implementation into a single module. We will venture into utilizing the `__using__` macro to get rid of the boilerplate.
+As both the `naive` and the `streamer` applications contain almost the same copy-pasted code that allows us to start, stop and autostart workers. We will look into how could we abstract the common parts of that implementation into a single module. We will venture into utilizing the `__using__` macro to get rid of the boilerplate.
 
 * Chapter 14 - Store trade events and orders inside the database
 

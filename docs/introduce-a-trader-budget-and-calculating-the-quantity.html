@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,10 +327,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
-<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -365,7 +365,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="fetch-step_size" class="section level2" number="7.2">
 <h2><span class="header-section-number">7.2</span> Fetch <code>step_size</code></h2>
-<p>In 2nd chapter we hardcoded <code>quantity</code> to 100, it’s time to refactor that. We will need <code>step_size</code> information from the Binance which we are
+<p>In the 2nd chapter we hardcoded <code>quantity</code> to 100, it’s time to refactor that. We will need <code>step_size</code> information from the Binance which we are
 already retrieving together with <code>tick_size</code> in the <code>exchangeInfo</code> call(but not getting it out from the response). So we will rename the <code>fetch_tick_size/1</code> function to <code>fetch_symbol_filters/1</code> which will allow us to return multiple filters(<code>tick_size</code> and <code>step_size</code>) from that function.</p>
 <div class="sourceCode" id="cb98"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb98-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb98-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb98-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -413,7 +413,7 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
 </div>
 <div id="append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="section level2" number="7.3">
 <h2><span class="header-section-number">7.3</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></h2>
-<p>The <code>budget</code> needs to be added to the <code>%State{}</code>(<code>step_size</code> will be automatically passed on by <code>struct/2</code>) of the trader inside <code>fresh_trader_state/1</code>(where we initialize the state of traders). Before we will assign it we need to divide it by number of chunks as each trader gets only a chunk of the budget:</p>
+<p>The <code>budget</code> needs to be added to the <code>%State{}</code>(<code>step_size</code> will be automatically passed on by <code>struct/2</code>) of the trader inside <code>fresh_trader_state/1</code>(where we initialize the state of traders). Before we will assign it we need to divide it by the number of chunks as each trader gets only a chunk of the budget:</p>
 <div class="sourceCode" id="cb99"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb99-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb99-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
 <span id="cb99-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb99-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
@@ -459,7 +459,7 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
 </div>
 <div id="calculate-quantity" class="section level2" number="7.5">
 <h2><span class="header-section-number">7.5</span> Calculate quantity</h2>
-<p>Jumping back to the <code>handle_info/2</code> where the <code>Naive.Trader</code> places a buy order, we need to pattern match on the <code>step_size</code> and <code>budget</code> then we will be able to swap hardcoded quantity with result of calling the <code>calculate_quantity/3</code> function:</p>
+<p>Jumping back to the <code>handle_info/2</code> where the <code>Naive.Trader</code> places a buy order, we need to pattern match on the <code>step_size</code> and <code>budget</code> then we will be able to swap hardcoded quantity with the result of calling the <code>calculate_quantity/3</code> function:</p>
 <div class="sourceCode" id="cb102"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb102-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb102-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb102-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
@@ -476,7 +476,7 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
 <span id="cb102-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb102-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-15" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> calculate_quantity(budget, price, step_size)</span>
 <span id="cb102-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>To calculate quantity we will just divide the <code>budget</code> by the <code>price</code> with a caveat that it’s possible (as with calculating the price) that it’s not a legal quantity value as it needs to be divisiable by <code>step_size</code>:</p>
+<p>To calculate quantity we will just divide the <code>budget</code> by the <code>price</code> with a caveat that it’s possible (as with calculating the price) that it’s not a legal quantity value as it needs to be divisible by <code>step_size</code>:</p>
 <div class="sourceCode" id="cb103"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb103-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb103-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below at the bottom of the file</span></span>
 <span id="cb103-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -494,8 +494,8 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
 <span id="cb103-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <div id="iex-testing-2" class="section level3" number="7.5.1">
 <h3><span class="header-section-number">7.5.1</span> IEx testing</h3>
-<p>That finishes the <code>quantity</code>(and <code>budget</code>) implementation, we will jump into iex session to see how it works.</p>
-<p>First, start the streaming and trading on the same symbol and moment later you should see variable amount of quantity that more or less uses full allowed budget:</p>
+<p>That finishes the <code>quantity</code>(and <code>budget</code>) implementation, we will jump into the IEx session to see how it works.</p>
+<p>First, start the streaming and trading on the same symbol and a moment later you should see a variable amount of quantity that more or less uses the full allowed budget:</p>
 <div class="sourceCode" id="cb104"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb104-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb104-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb104-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
@@ -507,7 +507,7 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
 <span id="cb104-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:23.456</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29529,</span>
 <span id="cb104-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 67.7</span></code></pre></div>
 <p>As we can see our <code>Naive.Trader</code> process is now buying and selling based on passed budget.</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07">Github</a></p>
 
 </div>

@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,10 +327,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
-<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -366,18 +366,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="why-we-need-to-buy-below-the-current-price-feature-overview" class="section level2" number="6.2">
 <h2><span class="header-section-number">6.2</span> Why we need to buy below the current price? Feature overview</h2>
 <p><img src="images/chapter_06_01_current_buy_price.png" width="50%" style="display: block; margin: auto;" /></p>
-<p>The <code>Naive.Trader</code> process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when buy order gets filled, it places sell order which later also gets filled.</p>
-<p>The Trader A exits and a new trader B is started which again immediately places a buy order <em>at the same price</em> as the previous trader just sold. When this gets filled sell order get’s placed and loop continues on and on.</p>
+<p>The <code>Naive.Trader</code> process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when the buy order gets filled, it places the sell order which later also gets filled.</p>
+<p>The Trader A exits and a new trader B is started which again immediately places a buy order <em>at the same price</em> as the previous trader just sold. When this gets filled sell order gets placed and the loop continues on and on.</p>
 <p>We can see that there’s a problem here as we just paid a fee twice(once for selling by the Trader A and once for buying by the Trader B) without really gaining anything(the Trader A could just hold the currency and could simply cash in on double profit in this specific situation).</p>
 <p>The solution is to be more clever about our buy order’s price. The idea is simple, instead of placing a new buy order at the current price(price from the last TradeEvent), we will introduce a <code>buy_down_interval</code>:</p>
 <p><img src="images/chapter_06_02_rebuy_expl.png" width="50%" style="display: block; margin: auto;" /></p>
-<p>So every new <code>Naive.Trader</code> process as it receives first trade event, trader will take it’s price and will calculate an decreased price by using the <code>buy_down_interval</code> value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.</p>
+<p>So every new <code>Naive.Trader</code> process as it receives the first trade event, the trader will take its price and will calculate a decreased price by using the <code>buy_down_interval</code> value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.</p>
 <p>When looking at the chart above we can figure out that <code>buy_down_interval</code> should never be smaller than double the fee(at the moment of writing transaction fee is 0.1%) that you are paying per transaction.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="naive.trader-implementation" class="section level2" number="6.3">
 <h2><span class="header-section-number">6.3</span> <code>Naive.Trader</code> implementation</h2>
-<p>Let’s open the <code>Naive.Trader</code> module’s file(<code>/apps/naive/lib/naive/trader.ex</code>) and add <code>buy_down_interval</code> to it’s state:</p>
-<div style="page-break-after: always;"></div>
+<p>Let’s open the <code>Naive.Trader</code> module’s file(<code>/apps/naive/lib/naive/trader.ex</code>) and add <code>buy_down_interval</code> to its state:</p>
 <div class="sourceCode" id="cb92"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb92-1"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb92-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb92-2"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb92-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb92-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb92-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
@@ -412,6 +412,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb93-12"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb93-12" aria-hidden="true" tabindex="-1"></a>    price <span class="op">=</span> calculate_buy_price(price, buy_down_interval, tick_size)</span>
 <span id="cb93-13"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb93-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ^ add above call</span></span>
 <span id="cb93-14"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb93-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>To calculate the buy price we will use a very similar method to the one used
 before to calculate the sell price. First, we will need to cast all variables
 into the <code>Decimal</code> structs and then, we will simply subtract the <code>buy_down_interval</code> of the price from the price. The number that we will end up with won’t necessarily be a legal price as every price needs to be divisible by the <code>tick_size</code> which we will assure in the last calculation:</p>
@@ -437,7 +438,7 @@ into the <code>Decimal</code> structs and then, we will simply subtract the <cod
 </div>
 <div id="naive.leader-implementation" class="section level2" number="6.4">
 <h2><span class="header-section-number">6.4</span> <code>Naive.Leader</code> implementation</h2>
-<p>Next we need to update the <code>Naive.Leader</code> as it needs to add <code>buy_down_interval</code> to the <code>Naive.Trader</code>’s state:</p>
+<p>Next, we need to update the <code>Naive.Leader</code> as it needs to add <code>buy_down_interval</code> to the <code>Naive.Trader</code>’s state:</p>
 <div class="sourceCode" id="cb95"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb95-1"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb95-2"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
 <span id="cb95-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
@@ -453,15 +454,16 @@ into the <code>Decimal</code> structs and then, we will simply subtract the <cod
 <span id="cb95-13"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-13" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb95-14"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span>  </span>
 <span id="cb95-15"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb95-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <div id="iex-testing-1" class="section level3" number="6.4.1">
 <h3><span class="header-section-number">6.4.1</span> IEx testing</h3>
-<p>That finishes the <code>buy_down_interval</code> implementation, we will jump into iex session to see how it works, but before that for a moment we will change the logging level to <code>debug</code> to see current prices:</p>
+<p>That finishes the <code>buy_down_interval</code> implementation, we will jump into the IEx session to see how it works, but before that, for a moment we will change the logging level to <code>debug</code> to see current prices:</p>
 <div class="sourceCode" id="cb96"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb96-1"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="co"># config/config.exs</span></span>
 <span id="cb96-2"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb96-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb96-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb96-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
 <span id="cb96-4"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb96-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">level:</span> <span class="va">:debug</span> <span class="co"># &lt;= updated for our manual test</span></span>
 <span id="cb96-5"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb96-5" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
-<p>After starting the streaming we should start seeing log messages with current prices. As we updated our implementation we should place our buy order below current price as it’s visible below:</p>
+<p>After starting the streaming we should start seeing log messages with current prices. As we updated our implementation we should place our buy order below the current price as it’s visible below:</p>
 <div class="sourceCode" id="cb97"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb97-1"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb97-2"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb97-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb97-3"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb97-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;FLMUSDT&quot;</span><span class="kw">)</span></span>
@@ -473,9 +475,9 @@ into the <code>Decimal</code> structs and then, we will simply subtract the <cod
 <span id="cb97-9"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb97-9" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb97-10"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb97-10" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:20.000</span> [debug] Trade event received FLMUSDT@0.15180000</span>
 <span id="cb97-11"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#cb97-11" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:20.009</span> [info]  Placing BUY order for FLMUSDT @ 0.1517, quantity: 100</span></code></pre></div>
-<p>As we can see our <code>Naive.Trader</code> process placed an buy order below the current price (based on most recent trade event received)</p>
+<p>As we can see our <code>Naive.Trader</code> process placed a buy order below the current price (based on the most recent trade event received)</p>
 <p>[Note] Please remember to revert the change to logger level as otherwise there’s too much noise in the logs.</p>
-<p>[Note 2] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note 2] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_06">Github</a></p>
 
 </div>

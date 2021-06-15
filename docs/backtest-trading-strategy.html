@@ -31,7 +31,7 @@
   
   
 <link rel="prev" href="store-trade-events-and-orders-inside-the-database.html"/>
-<link rel="next" href="deep-dive-into-testing.html"/>
+<link rel="next" href="end-to-end-testing.html"/>
 <script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,10 +327,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
-<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -463,7 +463,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb296-30"><a href="backtest-trading-strategy.html#cb296-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb296-31"><a href="backtest-trading-strategy.html#cb296-31" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Publisher finished streaming trade events&quot;</span>)</span>
 <span id="cb296-32"><a href="backtest-trading-strategy.html#cb296-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Finally, the above code uses the <code>publish_trade_event/1</code> helper function which converts DataWarehouse’s TradeEvent to the Stremer’s TradeEvent to broadcast the same structs as the <code>streamer</code> application:</p>
+<p>Finally, the above code uses the <code>publish_trade_event/1</code> helper function which converts DataWarehouse’s TradeEvent to the Streamer’s TradeEvent to broadcast the same structs as the <code>streamer</code> application:</p>
 <div class="sourceCode" id="cb297"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb297-1"><a href="backtest-trading-strategy.html#cb297-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
 <span id="cb297-2"><a href="backtest-trading-strategy.html#cb297-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb297-3"><a href="backtest-trading-strategy.html#cb297-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> publish_trade_event(%<span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event) <span class="kw">do</span></span>
@@ -554,7 +554,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb303-9"><a href="backtest-trading-strategy.html#cb303-9" aria-hidden="true" tabindex="-1"></a>   <span class="ex">224</span></span>
 <span id="cb303-10"><a href="backtest-trading-strategy.html#cb303-10" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">1</span> row<span class="kw">)</span></span></code></pre></div>
 <p>By looking at the orders we can figure out some performance metrics but that’s less than perfect to get answers to simple questions like “what’s the performance of my strategy?”. We will address that and other concerns in future chapters.</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_15">Github</a></p>
 
 </div>
@@ -565,7 +565,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
         </div>
       </div>
 <a href="store-trade-events-and-orders-inside-the-database.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="deep-dive-into-testing.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="end-to-end-testing.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

@@ -80,7 +80,7 @@ defmodule Streamer.Binance do
 
 In the spirit of keeping things tidy - we will now remove the `handle_cast/2` function (the last function in our module) as we won't be sending any messages back to Binance via WebSocket (to place orders etc - Binance provides a REST API which we will use in the next chapter).
 
-Next, let's look up what URL should we use to connect to Binance's API. Binance has a separate WSS (Web Socket Streams) documentation at [Github](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md)
+Next, let's look up what URL should we use to connect to Binance's API. Binance has a separate WSS (Web Socket Streams) documentation at [Github](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md).
 
 Scrolling down we can see the `General WSS information` section where 3 important pieces of information are listed:
 
@@ -108,7 +108,7 @@ Stream Name: <symbol>@trade
 ```
 
 Together, our full URL looks like: "wss://stream.binance.com:9443/ws/<symbol>@trade".
-To give a concrete example: raw trade events stream URL for symbol XRPUSDT is:
+To give a concrete example: the raw trade events stream URL for symbol XRPUSDT is:
 "wss://stream.binance.com:9443/ws/xrpusdt@trade" (remember that symbols need to be lowercased, otherwise no trade events will get streamed - there's *no* error).
 
 Back to the IDE, we will now modify the `start_link/2` function to use Binance API's URL:
@@ -233,7 +233,7 @@ we can see that `Decoder` is an alias of the [`Jason.Decoder`](https://github.co
   end
 ```
 
-Based on the result of decoding it will either return `{:ok, value}` or `{:error, %Decode.Error{...}}` we can confirm that by digging through documentation of the module on [hex](https://hexdocs.pm/jason/Jason.html#decode/2).
+Based on the result of decoding it will either return `{:ok, value}` or `{:error, %Decode.Error{...}}` we can confirm that by digging through documentation of the module on the [hexdocs](https://hexdocs.pm/jason/Jason.html#decode/2).
 
 Once again, the point of this lengthy investigation was to show that Elixir code is readable and easy to understand so don't be thrown off when documentation is a little bit light, quite opposite, contribute to docs and code as you gain a better understanding of the codebase.
 
@@ -378,7 +378,7 @@ iex(1)> Streamer.start_streaming("xrpusdt")
 23:14:36.386 [debug] Trade event received XRPUSDT@0.25606000
 ```
 
-As we can see, the streamer is establishing a WebSocket connection with the Binance's API and its receiving trade events. It decodes them from JSON to `%Streamer.Binance.TradeEvent` struct and logs a compiled message. Also, our interface hides implementation details from the "user" of our application.
+As we can see, the streamer is establishing a WebSocket connection with Binance's API and its receiving trade events. It decodes them from JSON to `%Streamer.Binance.TradeEvent` struct and logs a compiled message. Also, our interface hides implementation details from the "user" of our application.
 
 We will now flip the `Logger` level back to `info` so the output won't every incoming trade event:
 

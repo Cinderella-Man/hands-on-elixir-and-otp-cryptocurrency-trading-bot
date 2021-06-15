@@ -12,15 +12,15 @@
 
 In the next chapter, we will move on to testing our strategy against historical data(aka backtesting - I will explain that process in the next chapter). What we need to have in place before we will be able to do that is both trade events and orders stored in the database.
 
-Starting with the trade events. The `streamer` application could store trade events from Binance inside its database but how would that work if we would like to introduce another source of non-streamed trade events(ie. flat files, HTTP polling). It would be better if the `Streamer.Binance` process would keep on streaming those trade events as it is and we would create a new application that would subscribe to the existing `TRADE_EVENTS:#{symbol}` topic and store them to the database.
+Starting with the trade events. The `streamer` application could store trade events from Binance inside its database but how would that work if we would like to introduce another source of non-streamed trade events(ie. flat files, HTTP polling). It would be better if the `Streamer.Binance` process would keep on streaming those trade events as it is and we would create a new application that would subscribe to the existing `TRADE_EVENTS:#{symbol}` topic and store them in the database.
 
 A similar idea applies to the orders' data. At this moment the `naive` application uses the Binance module to place orders. We could store them inside the `naive` application's database but how would that work if we would like to introduce another trading strategy. Holding data in separate databases for each strategy would cause further complications in future reporting, auditing, etc.
 
-To store trade events' and orders' data we will create a new application called `data_warehouse` inside our umbrella project. It will subscribe to a `TRADE_EVENTS:#{symbol}` stream as well as `ORDERS:#{symbol}` stream, convert broadcasted data to its own representations(structs), and store it inside the database.
+To store trade events' and orders' data we will create a new application called `data_warehouse` inside our umbrella project. It will subscribe to a `TRADE_EVENTS:#{symbol}` stream as well as `ORDERS:#{symbol}` stream, convert broadcasted data to its own representations(structs) and store it inside the database.
 
 Trade events are already broadcasted to the PubSub topic, orders on the other hand aren't. We will need to modify the `Naive.Trader` module to broadcast the new and updated orders to the `ORDERS:#{symbol}` topic.
 
-After implementing the basic worker that will store the incoming data(trade events and orders) inside the database, we will look into adding a supervision tree utilizing [Elixir Registry](https://hexdocs.pm/elixir/master/Registry.html). It will allow us to skip registering every worker with a unique atom and will offer an easy lookup to fetch pids instead.
+After implementing the basic worker that will store the incoming data(trade events and orders) inside the database, we will look into adding a supervision tree utilizing [Elixir Registry](https://hexdocs.pm/elixir/master/Registry.html). It will allow us to skip registering every worker with a unique atom and will offer an easy lookup to fetch PIDs instead.
 
 ## Create a new `data_warehouse` application in the umbrella
 
@@ -194,7 +194,7 @@ Currently, we can already store the trade events' data inside the database so we
     ...
 ```
 
-We will implement a `subscriber` process that will be given a PubSub topic and it will store incoming data inside the database.
+We will implement a `subscriber` process that will be given a PubSub topic and will store incoming data inside the database.
 
 Let's start by creating a new folder called `subscriber` inside the                              
 `apps/data_warehouse/lib/data_warehouse` directory together with a new file called `worker.ex` inside it:
@@ -258,7 +258,7 @@ Next, we need to add a handler for received messages:
   end
 ```
 
-As we did in the case of the `Naive.Trader`, all incoming messages trigger a `handle_info/2` callback with contents of the message and the current state of the subscriber worker. We just convert that incoming trade event to a map and then that map to the `TradeEvent` struct that gets inserted into the database.
+As we did in the case of the `Naive.Trader`, all incoming messages trigger a `handle_info/2` callback with the contents of the message and the current state of the subscriber worker. We just convert that incoming trade event to a map and then that map to the `TradeEvent` struct that gets inserted into the database.
 
 This finishes storing of trade events implementation which we can test by in the interactive shell by running:
 
@@ -591,7 +591,7 @@ $ mix ecto.gen.migration create_subscriber_settings
 * creating priv/repo/migrations/20210227230123_create_subscriber_settings.exs
 ```
 
-At this moment we can copy the code to create the `settings` table(enum and index as well) from the `streamer` application and tweak it to fit the `data_warehouse` application. So the first important change (beside updating namespaces from `Streamer` to `DataWarehouse`) will be to make a note that we have a setting per topic - not per symbol as for the `naive` and `streamer` applications:
+At this moment we can copy the code to create the `settings` table(enum and index as well) from the `streamer` application and tweak it to fit the `data_warehouse` application. So the first important change (besides updating namespaces from `Streamer` to `DataWarehouse`) will be to make a note that we have a setting per topic - not per symbol as for the `naive` and `streamer` applications:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210227230123_create_subscriber_settings.exs
@@ -676,9 +676,9 @@ knitr::include_graphics("images/chapter_14_01_sup_diagram.png")
 
 Everything looks very similar to the supervision tree that we created in the `streamer` and the `naive` applications but there's an additional `Registry` that is supervised by the `SubscriberSupervisior` process.
 
-The idea is that inside the `Worker` module's `start_link/1` we will register worker processes using [:via](https://hexdocs.pm/elixir/master/GenServer.html#module-name-registration) tuple. Internally, GenServer will utilize `Registry`'s functions like `register_name/2` to add process to the registry under the `topic` string. This way we will be able to retrieve pids assigned to topics using those topic strings instead of registering each worker process with an atom name.
+The idea is that inside the `Worker` module's `start_link/1` we will register worker processes using [:via](https://hexdocs.pm/elixir/master/GenServer.html#module-name-registration) tuple. Internally, GenServer will utilize `Registry`'s functions like `register_name/2` to add process to the registry under the `topic` string. This way we will be able to retrieve PIDs assigned to topics using those topic strings instead of registering each worker process with an atom name.
 
-Just as previously the `DynamicSupervisor` will be in charge of the supervising the `Worker` processes and it won't be even aware that we are using the `Registry` to keep track of `topic => pid` association.
+Just as previously the `DynamicSupervisor` will be in charge of supervising the `Worker` processes and it won't be even aware that we are using the `Registry` to keep track of `topic => PID` association.
 
 ### Create the `DataWarehouse.Subscriber.DynamicSupervisor` module
 
@@ -715,7 +715,7 @@ As we will put all our logic related to autostarting, starting and stopping insi
   @registry :subscriber_workers
 ```
 
-Additionally, we added the `@registry` module attribute that we will use to retrieve pid for the specific topic.
+Additionally, we added the `@registry` module attribute that we will use to retrieve PID for the specific topic.
 
 We can move on to implementing `autostart_workers/0` which will look very similar to the ones that we implemented in the `streamer` and the `naive` applications:
 
@@ -740,11 +740,11 @@ We can move on to implementing `autostart_workers/0` which will look very simila
   end
 ```
 
-We can see that we are querying the database for list of `topic`s(not symbols) and we are calling `start_child/2` for each results.
+We can see that we are querying the database for a list of `topic`s(not symbols) and we are calling `start_child/2` for each result.
 
 \newpage
 
-The `start_worker/1` is where the `Registry` will shine as we won't need to check is there already a process running for that topic - we can leave that check to the `Registry`. If there's process already running for that topic it will just return a tuple starting with `:error` atom:
+The `start_worker/1` is where the `Registry` will shine as we won't need to check is there already a process running for that topic - we can leave that check to the `Registry`. If there's a process already running for that topic it will just return a tuple starting with `:error` atom:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -770,7 +770,7 @@ The `start_worker/1` is where the `Registry` will shine as we won't need to chec
 
 As we are not seeding the database with the default settings we will use the `insert/2` function with options(as previously) to make it work as it would be an "upsert" function.
 
-Last function in this module will be `stop_worker/1` which uses private `stop_child/1` function. The `stop_child/1` function shows how to retrieve `pid` of the process assigned to the passed `topic`:
+Last function in this module will be `stop_worker/1` which uses private `stop_child/1` function. The `stop_child/1` function shows how to retrieve `PID` of the process assigned to the passed `topic`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -819,7 +819,7 @@ Passing the `:name` option to the `GenServer`'s `start_link/3` function we instr
 
 ### Create a new supervision level for Registry, Task and the DynamicSupervisor
 
-We have the lowest level modules - the `Worker` and the `DynamicSupervisor` implemented - time to add a new `Supervisor` that will start the `Registry`, the `DynamicSupervisor` and the autostart storing `Task`. First create a new file called `subscriber_supervisor.ex` inside the `apps/data_warehouse/lib/data_warehouse` directory:
+We have the lowest level modules - the `Worker` and the `DynamicSupervisor` implemented - time to add a new `Supervisor` that will start the `Registry`, the `DynamicSupervisor`, and the autostart storing `Task`. First create a new file called `subscriber_supervisor.ex` inside the `apps/data_warehouse/lib/data_warehouse` directory:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber_supervisor.ex
@@ -849,7 +849,7 @@ defmodule DataWarehouse.SubscriberSupervisor do
 end
 ```
 
-Important part here will be to match the `Registry` name to the one defined inside the `DynamicSupervisor` and the `Worker` modules.
+The important part here will be to match the `Registry` name to the one defined inside the `DynamicSupervisor` and the `Worker` modules.
 
 ### Link the `SubscriberSupervisor` to the `Application`
 
@@ -950,10 +950,10 @@ true
 16:43:40.812 [info]  DataWarehouse worker is subscribing to ORDERS:NEOUSDT
 ```
 
-As we can see even this simple implementation handles starting, autostarting and stopping. It also gracefully handles starting workers when one is already running as well as stopping when there none running.
+As we can see even this simple implementation handles starting, autostarting, and stopping. It also gracefully handles starting workers when one is already running as well as stopping when there none running.
 
 As a challenge, you could update the `naive` and the `streamer` application to use the `Registry` and remove `Core.ServiceSupervisor` module as it was superseded by the above solution - here's the [link to PR](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/pull/7)(pull request) that sums up the required changes.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_14)

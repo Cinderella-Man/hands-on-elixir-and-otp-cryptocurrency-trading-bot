@@ -2,7 +2,7 @@
 
 ## Objectives
 
-- consider reasons why introducing a PubSub communication would be benefitial
+- consider reasons why introducing a PubSub communication would be beneficial
 - implement the PubSub communication between the `Streamer.Binance` and the `Naive.Trader`(s)
 
 ## Design
@@ -13,11 +13,11 @@ First, let's look at the current situation:
 knitr::include_graphics("images/chapter_03_01_current_situation.png")
 ```
 
-We started with the Binance streamer calling the `send_event/1` function on the `Naive` module. The `Naive` module then calls the trader process using the GenServer's `cast/2` function(via it's registered name).
+We started with the Binance streamer calling the `send_event/1` function on the `Naive` module. The `Naive` module then calls the trader process using the GenServer's `cast/2` function(via its registered name).
 
 \newpage
 
-Next step in the process of extending our trading strategy will be to scale it to run multiple `Naive.Trader` processes in parallel. To be able to do that we will need to remove the option to register the `trader` process with a name(as only one process can be registered under single name).
+The next step in the process of extending our trading strategy will be to scale it to run multiple `Naive.Trader` processes in parallel. To be able to do that we will need to remove the option to register the `trader` process with a name(as only one process can be registered under a single name).
 
 ```{r, fig.align="center", out.width="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_02_current_situation_failed.png")
@@ -32,7 +32,7 @@ knitr::include_graphics("images/chapter_03_03_phoenix_pubsub.png")
 ```
 
 The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
-There's no coupling between the `Streamer` and `Naive` app any more.
+There's no coupling between the `Streamer` and `Naive` app anymore.
 
 \newpage
 
@@ -42,7 +42,7 @@ We can now introduce multiple traders that will subscribe to the topic and they 
 knitr::include_graphics("images/chapter_03_04_naive_trader_group.png")
 ```
 
-Going even further down the line we can picture that system could consist of other processes interested in the streamed data. Example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:
+Going even further down the line we can picture that system could consist of other processes interested in the streamed data. An example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_05_other_services.png")
@@ -54,7 +54,7 @@ knitr::include_graphics("images/chapter_03_05_other_services.png")
 
 We will start by adding a [`Phoenix.PubSub`](https://github.com/phoenixframework/phoenix_pubsub) library to both `Streamer` and `Naive` app(as both will be using it, `Streamer` app as a broadcaster and `Naive` app as a subscriber).
 
-Scrolling down through it's readme on GitHub we can see that we need to add `:phoenix_pubsub` to list of dependencies:
+Scrolling down through its readme on GitHub we can see that we need to add `:phoenix_pubsub` to list of dependencies:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/mix.exs & /apps/naive/mix.exs
@@ -67,7 +67,7 @@ Scrolling down through it's readme on GitHub we can see that we need to add `:ph
   end
 ```
 
-Remember to place it so the list will keep alphabetical order. Second step in the readme says that we need to add PubSub as a child of our app. We need to decide where we will put it, `Streamer` sounds like a good starting point. We will modify the `/apps/streamer/lib/streamer/application.ex` module by appending the PubSub to it:
+Remember to place it so the list will keep alphabetical order. The second step in the readme says that we need to add PubSub as a child of our app. We need to decide where we will put it, `Streamer` sounds like a good starting point. We will modify the `/apps/streamer/lib/streamer/application.ex` module by appending the PubSub to it:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/application.ex
@@ -82,7 +82,7 @@ Remember to place it so the list will keep alphabetical order. Second step in th
   end
 ```
 
-We will add the `:adapter_name` option to instruct PubSub to use [`pg`](http://erlang.org/doc/man/pg.html) adapter, which will give us distrubuted process groups.
+We will add the `:adapter_name` option to instruct PubSub to use [`pg`](http://erlang.org/doc/man/pg.html) adapter, which will give us distributed process groups.
 
 We will now modify the streamer to broadcast a message to PubSub topic instead of using the `Naive` module's function:
 
@@ -122,7 +122,7 @@ module as it's no longer required.
 Our update is now finished so we can start an iex session to see how it works.
 
 First, we will start a streamer process that will broadcast messages
-to PubSub. Next, we will start trading on the same symbol. On init, trader will subscribe to a PubSub channel and it will make a full trade cycle.
+to PubSub. Next, we will start trading on the same symbol. On init, the trader will subscribe to a PubSub channel and it will make a full trade cycle.
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -138,8 +138,8 @@ quantity: 100.00000000
 23:46:56.029 [info]  Trade finished, trader will now exit
 ```
 
-This shows that new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders and terminated after full trade cycle finished.
+This shows that the new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders, and terminated after the full trade cycle finished.
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
 
 Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_03)

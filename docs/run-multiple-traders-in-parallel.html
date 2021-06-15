@@ -238,7 +238,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
-<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> Issue with the current implementation</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
 <li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
 <li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
 <li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
@@ -327,10 +327,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
 <li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html"><i class="fa fa-check"></i><b>16</b> Deep dive into testing</a>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
-<li class="chapter" data-level="16.2" data-path="deep-dive-into-testing.html"><a href="deep-dive-into-testing.html#implement-e2e-test"><i class="fa fa-check"></i><b>16.2</b> Implement E2E test</a></li>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -365,25 +365,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="describe-and-design-the-required-functionality" class="section level2" number="9.2">
 <h2><span class="header-section-number">9.2</span> Describe and design the required functionality</h2>
-<p>At this moment, inside the <code>Naive.Leader</code> we have a silly code that
-starts all of the traders at the same moment:</p>
+<p>At this moment, inside the <code>Naive.Leader</code> we have a silly code that starts all of the traders at the same moment:</p>
 <div class="sourceCode" id="cb112"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb112-1"><a href="run-multiple-traders-in-parallel.html#cb112-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb112-2"><a href="run-multiple-traders-in-parallel.html#cb112-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb112-3"><a href="run-multiple-traders-in-parallel.html#cb112-3" aria-hidden="true" tabindex="-1"></a>    traders <span class="op">=</span></span>
 <span id="cb112-4"><a href="run-multiple-traders-in-parallel.html#cb112-4" aria-hidden="true" tabindex="-1"></a>      <span class="kw">for</span> _i <span class="op">&lt;-</span> <span class="dv">1</span><span class="op">..</span>settings<span class="op">.</span>chunks,</span>
 <span id="cb112-5"><a href="run-multiple-traders-in-parallel.html#cb112-5" aria-hidden="true" tabindex="-1"></a>          <span class="kw">do</span>: start_new_trader(trader_state)</span>
 <span id="cb112-6"><a href="run-multiple-traders-in-parallel.html#cb112-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>All the changes we made in this episode will enable us to fix.</p>
+<p>All the changes we made in this episode will enable us to fix this.</p>
 <p>Let’s say that we placed a buy order that got filled and the price has fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
 <p><img src="images/chapter_09_01_single_trader.png" height="20%" style="display: block; margin: auto;" /></p>
-<p>We will implement additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after buy order has been filled. Whenever price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
+<p>We will implement an additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after the buy order has been filled. Whenever a price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
 <p><img src="images/chapter_09_02_multi_traders.png" height="20%" style="display: block; margin: auto;" /></p>
 <p>The <code>Naive.Leader</code> keeps track of how many <code>Naive.Trader</code>s are running and needs to honor the number of <code>chunks</code> set up in the settings (one chunk == one trader).</p>
 <p>To stop the <code>Naive.Trader</code>s from continuously notifying about a drop in the price we will also introduce a boolean flag that will track has the <code>Naive.Leader</code> been already notified.</p>
 </div>
 <div id="implement-rebuy-inside-naive.trader" class="section level2" number="9.3">
 <h2><span class="header-section-number">9.3</span> Implement rebuy inside <code>Naive.Trader</code></h2>
-<p>We will start by adding the <code>rebuy_interval</code> and the <code>rebuy_notified</code> to trader’s state:</p>
+<p>We will start by adding the <code>rebuy_interval</code> and the <code>rebuy_notified</code> to the trader’s state:</p>
 <div class="sourceCode" id="cb113"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb113-1"><a href="run-multiple-traders-in-parallel.html#cb113-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb113-2"><a href="run-multiple-traders-in-parallel.html#cb113-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb113-3"><a href="run-multiple-traders-in-parallel.html#cb113-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
@@ -410,7 +409,7 @@ starts all of the traders at the same moment:</p>
 <span id="cb113-24"><a href="run-multiple-traders-in-parallel.html#cb113-24" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span></span>
 <span id="cb113-25"><a href="run-multiple-traders-in-parallel.html#cb113-25" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb113-26"><a href="run-multiple-traders-in-parallel.html#cb113-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Rebuy logic should be placed almost as last callback just before the one that ignores all events. We will need to retrieve the current <code>price</code> and <code>buy_price</code> and confirm that we didn’t notify the leader yet(<code>rebuy_notified</code> flag):</p>
+<p>Rebuy logic should be placed almost as the last callback just before the one that ignores all events. We will need to retrieve the current <code>price</code> and <code>buy_price</code> and confirm that we didn’t notify the leader yet(<code>rebuy_notified</code> flag):</p>
 <div class="sourceCode" id="cb114"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb114-1"><a href="run-multiple-traders-in-parallel.html#cb114-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb114-2"><a href="run-multiple-traders-in-parallel.html#cb114-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb114-3"><a href="run-multiple-traders-in-parallel.html#cb114-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># sell filled callback here</span></span>
@@ -443,8 +442,8 @@ starts all of the traders at the same moment:</p>
 <span id="cb115-8"><a href="run-multiple-traders-in-parallel.html#cb115-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
 <span id="cb115-9"><a href="run-multiple-traders-in-parallel.html#cb115-9" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:noreply</span>, state}</span>
 <span id="cb115-10"><a href="run-multiple-traders-in-parallel.html#cb115-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
-<p>As mentioned before, we will set the <code>rebuy_notified</code> boolean flag to true and notify the leader using the <code>notify</code> function with dedicated atom.</p>
-<p>At the bottom of the module we need to add <code>trigger_rebuy?</code> helper function:</p>
+<p>As mentioned before, we will set the <code>rebuy_notified</code> boolean flag to true and notify the leader using the <code>notify</code> function with the dedicated atom.</p>
+<p>At the bottom of the module we need to add the <code>trigger_rebuy?</code> helper function:</p>
 <div class="sourceCode" id="cb116"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb116-1"><a href="run-multiple-traders-in-parallel.html#cb116-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb116-2"><a href="run-multiple-traders-in-parallel.html#cb116-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bottom of the module</span></span>
 <span id="cb116-3"><a href="run-multiple-traders-in-parallel.html#cb116-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> trigger_rebuy?(buy_price, current_price, rebuy_interval) <span class="kw">do</span></span>
@@ -467,7 +466,7 @@ starts all of the traders at the same moment:</p>
 <span id="cb117-5"><a href="run-multiple-traders-in-parallel.html#cb117-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb117-6"><a href="run-multiple-traders-in-parallel.html#cb117-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb117-7"><a href="run-multiple-traders-in-parallel.html#cb117-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We will need to add a new clause of <code>notify</code> function that will handle the rebuy scenario:</p>
+<p>We will need to add a new clause of the <code>notify</code> function that will handle the rebuy scenario:</p>
 <div class="sourceCode" id="cb118"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb118-1"><a href="run-multiple-traders-in-parallel.html#cb118-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb118-2"><a href="run-multiple-traders-in-parallel.html#cb118-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below current `notify` function</span></span>
 <span id="cb118-3"><a href="run-multiple-traders-in-parallel.html#cb118-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> notify(<span class="va">:rebuy_triggered</span>, trader_state) <span class="kw">do</span></span>
@@ -476,8 +475,7 @@ starts all of the traders at the same moment:</p>
 <span id="cb118-6"><a href="run-multiple-traders-in-parallel.html#cb118-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:rebuy_triggered</span>, trader_state}</span>
 <span id="cb118-7"><a href="run-multiple-traders-in-parallel.html#cb118-7" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb118-8"><a href="run-multiple-traders-in-parallel.html#cb118-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We need to add a new <code>handle_call</code> function that will start new traders only when there are still chunks available(enforce the maximum number of parallel
-traders) - let’s start with a header:</p>
+<p>We need to add a new <code>handle_call</code> function that will start new traders only when there are still chunks available(enforce the maximum number of parallel traders) - let’s start with a header:</p>
 <div class="sourceCode" id="cb119"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb119-1"><a href="run-multiple-traders-in-parallel.html#cb119-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb119-2"><a href="run-multiple-traders-in-parallel.html#cb119-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this one after :update_trader_state handle_call</span></span>
 <span id="cb119-3"><a href="run-multiple-traders-in-parallel.html#cb119-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
@@ -489,11 +487,11 @@ traders) - let’s start with a header:</p>
 <span id="cb119-9"><a href="run-multiple-traders-in-parallel.html#cb119-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>There are few important details to make note of:</p>
 <ul>
-<li>we need trader’s pid to be able to find it details inside the list of traders</li>
-<li>we need settings to cofirm number of chunks to be able to limit maximum number of parallel traders</li>
+<li>we need the trader’s PID to be able to find it details inside the list of traders</li>
+<li>we need settings to confirm the number of chunks to be able to limit the maximum number of parallel traders</li>
 </ul>
 <div style="page-break-after: always;"></div>
-<p>Moving on to the body of our callback. As with other ones, we will check can we find trader inside list of traders and based on that we will either start another one(if we didn’t reach the limit of chunks) or ignore it:</p>
+<p>Moving on to the body of our callback. As with other ones, we will check can we find a trader inside the list of traders, and based on that we will either start another one(if we didn’t reach the limit of chunks) or ignore it:</p>
 <div class="sourceCode" id="cb120"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb120-1"><a href="run-multiple-traders-in-parallel.html#cb120-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb120-2"><a href="run-multiple-traders-in-parallel.html#cb120-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># body of our callback</span></span>
 <span id="cb120-3"><a href="run-multiple-traders-in-parallel.html#cb120-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
@@ -517,7 +515,7 @@ traders) - let’s start with a header:</p>
 <span id="cb120-21"><a href="run-multiple-traders-in-parallel.html#cb120-21" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb120-22"><a href="run-multiple-traders-in-parallel.html#cb120-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span> updated_traders}}</span>
 <span id="cb120-23"><a href="run-multiple-traders-in-parallel.html#cb120-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
-<p>In above code we need to remember to update the state of the trader that triggered the rebuy inside the <code>traders</code> list as well as add state of a new trader to that list.</p>
+<p>In the above code, we need to remember to update the state of the trader that triggered the rebuy inside the <code>traders</code> list as well as add the state of a new trader to that list.</p>
 <p>As with other setting we will hardcode the <code>rebuy_interval</code>(inside the <code>fetch_symbol_settings</code> function) and assign them to
 trader’s state(inside the <code>fresh_trader_state</code> function):</p>
 <div class="sourceCode" id="cb121"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb121-1"><a href="run-multiple-traders-in-parallel.html#cb121-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
@@ -548,8 +546,8 @@ trader’s state(inside the <code>fresh_trader_state</code> function):</p>
 </div>
 <div id="improve-logs-by-assigning-ids-to-traders" class="section level2" number="9.5">
 <h2><span class="header-section-number">9.5</span> Improve logs by assigning ids to traders</h2>
-<p>The final change will be to add an <code>id</code> to trader’s state so we can use it inside log messages to give us meaningful data about what’s going on(otherwise we won’t be able to tell which message was logged by which trader).</p>
-<p>First let’s add the <code>id</code> into the <code>Naive.Leader</code>’s fresh_trader_state as it will be defined per trader:</p>
+<p>The final change will be to add an <code>id</code> to the trader’s state so we can use it inside log messages to give us meaningful data about what’s going on(otherwise we won’t be able to tell which message was logged by which trader).</p>
+<p>First, let’s add the <code>id</code> into the <code>Naive.Leader</code>’s fresh_trader_state as it will be defined per trader:</p>
 <div class="sourceCode" id="cb122"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb122-1"><a href="run-multiple-traders-in-parallel.html#cb122-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb122-2"><a href="run-multiple-traders-in-parallel.html#cb122-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
 <span id="cb122-3"><a href="run-multiple-traders-in-parallel.html#cb122-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
@@ -647,11 +645,11 @@ trader’s state(inside the <code>fresh_trader_state</code> function):</p>
 <span id="cb123-85"><a href="run-multiple-traders-in-parallel.html#cb123-85" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Rebuy triggered for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> by the trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">)&quot;</span>)</span>
 <span id="cb123-86"><a href="run-multiple-traders-in-parallel.html#cb123-86" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
 <span id="cb123-87"><a href="run-multiple-traders-in-parallel.html#cb123-87" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>That finishes the implementation part - we should now be able to test the implementation and see dynamically growing number of traders for our strategy based on price movement.</p>
+<p>That finishes the implementation part - we should now be able to test the implementation and see a dynamically growing number of traders for our strategy based on price movement.</p>
 </div>
 <div id="test-the-implementation-2" class="section level2" number="9.6">
 <h2><span class="header-section-number">9.6</span> Test the implementation</h2>
-<p>Let’s start an iEx the session and open the <code>:observer</code>(inside go to “Applications” tab and click on <code>naive</code> from the list of the left) so we will be able to see how the number of traders is growing as well as PIDs are changing which means that they are finishing the full trades:</p>
+<p>Let’s start an iEx session and open the <code>:observer</code>(inside go to “Applications” tab and click on <code>naive</code> from the list of the left) so we will be able to see how the number of traders is growing as well as PIDs are changing which means that they are finishing the full trades:</p>
 <div class="sourceCode" id="cb124"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb124-1"><a href="run-multiple-traders-in-parallel.html#cb124-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb124-2"><a href="run-multiple-traders-in-parallel.html#cb124-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb124-3"><a href="run-multiple-traders-in-parallel.html#cb124-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> :observer.start<span class="kw">()</span></span>
@@ -717,7 +715,7 @@ trader’s state(inside the <code>fresh_trader_state</code> function):</p>
 <p>And our observer shows the following:</p>
 <p><img src="images/chapter_09_supervision_tree.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>We can clearly see that our strategy dynamically scaled from 1 to 5 parallel traders and they were going through different trading steps without any problems - I think that’s really cool to see and it wasn’t difficult to achieve in Elixir.</p>
-<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_09">Github</a></p>
 
 </div>
