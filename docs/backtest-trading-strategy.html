@@ -331,6 +331,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
 <li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+<li class="chapter" data-level="16.3" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#implement-basic-test"><i class="fa fa-check"></i><b>16.3</b> Implement basic test</a></li>
+<li class="chapter" data-level="16.4" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-environment-based-config-files"><i class="fa fa-check"></i><b>16.4</b> Introduce environment based config files</a></li>
+<li class="chapter" data-level="16.5" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#add-convenience-aliases"><i class="fa fa-check"></i><b>16.5</b> Add convenience aliases</a></li>
+<li class="chapter" data-level="16.6" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#cache-initial-seed-data-inside-a-file"><i class="fa fa-check"></i><b>16.6</b> Cache initial seed data inside a file</a></li>
+<li class="chapter" data-level="16.7" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#update-seeding-scripts-to-use-the-binancemock"><i class="fa fa-check"></i><b>16.7</b> Update seeding scripts to use the BinanceMock</a></li>
+<li class="chapter" data-level="16.8" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-the-core-application"><i class="fa fa-check"></i><b>16.8</b> Introduce the Core application</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -481,11 +487,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb297-15"><a href="backtest-trading-strategy.html#cb297-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
 <p>We also need to remember about keeping the interface tidy so we will add <code>publish_data</code> to the <code>DataWarehouse</code> module:</p>
-<div class="sourceCode" id="cb298"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb298-1"><a href="backtest-trading-strategy.html#cb298-1" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb298-2"><a href="backtest-trading-strategy.html#cb298-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> publish_data(args) <span class="kw">do</span></span>
-<span id="cb298-3"><a href="backtest-trading-strategy.html#cb298-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Publisher</span><span class="op">.</span>start_link(args)</span>
-<span id="cb298-4"><a href="backtest-trading-strategy.html#cb298-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb298-5"><a href="backtest-trading-strategy.html#cb298-5" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb298"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb298-1"><a href="backtest-trading-strategy.html#cb298-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse.ex</span></span>
+<span id="cb298-2"><a href="backtest-trading-strategy.html#cb298-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb298-3"><a href="backtest-trading-strategy.html#cb298-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> publish_data(args) <span class="kw">do</span></span>
+<span id="cb298-4"><a href="backtest-trading-strategy.html#cb298-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Publisher</span><span class="op">.</span>start_link(args)</span>
+<span id="cb298-5"><a href="backtest-trading-strategy.html#cb298-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb298-6"><a href="backtest-trading-strategy.html#cb298-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
 <p>This finishes our implementation - we should be able to stream trade events from the database to the PubSub using the above Task which we will do below.</p>
 </div>
 <div id="test-the-backtesting" class="section level2" number="15.4">
