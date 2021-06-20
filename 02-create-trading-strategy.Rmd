@@ -389,12 +389,33 @@ This creates a two-way link between the streamer and the naive app. In the next 
 
 ### Access details to Binance
 
-Inside the main config of our umbrella project we need to define access details for our Binance account:
+Inside the config of our umbrella project we create a new file `config/secrets.exs`. We will use this for our Binance account access details.
 
 ```{r, engine = 'elixir', eval = FALSE}
+# /config/secrets.exs
+import Config
+
 config :binance,
   api_key: "YOUR-API-KEY-HERE",
   secret_key: "YOUR-SECRET-KEY-HERE"
+```
+
+We don't want to check this file in, so we add it to our `.gitignore`:
+
+```{r, engine = 'bash', eval = FALSE}
+# .gitignore
+config/secrets.exs
+```
+
+Finally, we update our main config file to include it using [import_config](https://hexdocs.pm/elixir/master/Config.html#import_config/1):
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/config.exs
+
+# Import secrets file with Binance keys if it exists
+if File.exists?('config/secrets.exs') do
+  import_config('secrets.exs')
+end
 ```
 
 *Important note*: To be able to run the below test and perform real trades, a Binance account is required with a balance of at least 20 USDT. In the 4th chapter, we will focus on creating a `BinanceMock` that will allow us to run our bot *without* the requirement for a real Binance account. You don't need to test run it now if you don't need/want to have an account.
