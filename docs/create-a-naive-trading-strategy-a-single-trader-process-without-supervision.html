@@ -358,6 +358,67 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
+<div class="quick-option">
+ 
+  <!-- Start Form Toolbar -->
+  <div class="form-toolbar">
+      <div class="inner">
+          <a class="trigger-option" href="#">
+              <img src="https://image.flaticon.com/icons/png/512/833/833472.png" width="40px" />
+          </a>
+      </div>
+  </div>
+  <!-- End Form Toolbar -->
+
+  <!-- Start Quick Form -->
+  <div class="form-option-wrapper">
+      <div class="form-panel-header">
+          <h4>This book wouldn't be possible without our great sponsors ❤️</h4>
+
+          <img src="https://avatars.githubusercontent.com/u/36407?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/212169?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/5660941?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/9498445?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/65608642?s=200&v=4" width="40px"/>
+
+          <h5>Please consider supporting by:</h5>
+
+          <a class="notify-btn" href="https://github.com/sponsors/frathon"><b>DONATE VIA GITHUB</b></a>
+          <br/><br/>
+          <a class="notify-btn" href="https://gumroad.com/l/cSGdY"><b>BUY ON GUMROAD</b></a>
+
+          <h6>BTC</h6>
+          <h7>14YKWr2avF9QrKtyRMg2NdbnUy28B8RMYw</h7>
+
+          <h6>ETH(ERC 20)</h6>
+          <h7>0x4083c298442c2cc722797c86118b1f0a2644b653</h7>
+
+          <h6>ADA(Cardano)</h6>
+          <h7>DdzFFzCqrhshNEJzMsyUbN3jXkD7vnJUSGFCWRs4LezprJc4rrnUdUBURGEM7wjTnjsmXUFoSaGZrkHigXThjD8B8Evs2HtZYDiCpJG6</h7>
+
+          <h6>NEO(NEP5)</h6>
+          <h7>AbcLVaphAXgx2adcEFCWQ8oiE9ncezbnWW</h7>          
+      </div>
+  </div>
+  <!-- End Quick Link -->
+
+</div>
+
+<script>
+  $(".trigger-option").on("click", function (e) {
+      e.preventDefault(),
+          (function () {
+              $formOption.toggleClass("open");
+          })();
+  });
+
+  var $html = $("html"),
+    $formOption = $(".quick-option");
+  
+  if (window.location.href.indexOf("index.html") > 0) {
+    $formOption.toggleClass("open");
+  }
+</script>
 <div id="create-a-naive-trading-strategy---a-single-trader-process-without-supervision" class="section level1" number="2">
 <h1><span class="header-section-number">Chapter 2</span> Create a naive trading strategy - a single trader process without supervision</h1>
 <div id="objectives-1" class="section level2" number="2.1">
@@ -653,26 +714,39 @@ incoming events as they were not matched by any of the previous pattern matches:
 </div>
 <div id="access-details-to-binance" class="section level3" number="2.3.7">
 <h3><span class="header-section-number">2.3.7</span> Access details to Binance</h3>
-<p>Inside the main config of our umbrella project we need to define access details for our Binance account:</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb42-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-1" aria-hidden="true" tabindex="-1"></a>config <span class="va">:binance</span>,</span>
-<span id="cb42-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">api_key:</span> <span class="st">&quot;YOUR-API-KEY-HERE&quot;</span>,</span>
-<span id="cb42-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">secret_key:</span> <span class="st">&quot;YOUR-SECRET-KEY-HERE&quot;</span></span></code></pre></div>
+<p>Inside the config of our umbrella project we create a new file <code>config/secrets.exs</code>. We will use this for our Binance account access details.</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb42-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/secrets.exs</span></span>
+<span id="cb42-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="cn">Config</span></span>
+<span id="cb42-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-4" aria-hidden="true" tabindex="-1"></a>config <span class="va">:binance</span>,</span>
+<span id="cb42-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">api_key:</span> <span class="st">&quot;YOUR-API-KEY-HERE&quot;</span>,</span>
+<span id="cb42-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb42-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">secret_key:</span> <span class="st">&quot;YOUR-SECRET-KEY-HERE&quot;</span></span></code></pre></div>
+<p>We don’t want to check this file in, so we add it to our <code>.gitignore</code>:</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># .gitignore</span></span>
+<span id="cb43-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="ex">config/secrets.exs</span></span></code></pre></div>
+<p>Finally, we update our main config file to include it using <a href="https://hexdocs.pm/elixir/master/Config.html#import_config/1">import_config</a>:</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb44-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb44-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Import secrets file with Binance keys if it exists</span></span>
+<span id="cb44-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="cn">File</span><span class="op">.</span>exists?(<span class="vs">&#39;config/secrets.exs&#39;</span>) <span class="kw">do</span></span>
+<span id="cb44-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-5" aria-hidden="true" tabindex="-1"></a>  import_config(<span class="vs">&#39;secrets.exs&#39;</span>)</span>
+<span id="cb44-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p><em>Important note</em>: To be able to run the below test and perform real trades, a Binance account is required with a balance of at least 20 USDT. In the 4th chapter, we will focus on creating a <code>BinanceMock</code> that will allow us to run our bot <em>without</em> the requirement for a real Binance account. You don’t need to test run it now if you don’t need/want to have an account.</p>
 </div>
 <div id="test-run" class="section level3" number="2.3.8">
 <h3><span class="header-section-number">2.3.8</span> Test run</h3>
 <p>Now it’s time to give our implementation a run for its money. Once again, to be able to do that you will need to have at least 20 USDT tokens in your Binance’s wallet and you will lose just under 0.5% of your USDTs(as “expected profit” is below 0 to quickly showcase the full trade cycle) in the following test:</p>
-<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb43-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb43-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
-<span id="cb43-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:30.648</span> [info] Initializing new trader for XRPUSDT</span>
-<span id="cb43-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.355.0&gt;}</span></span>
-<span id="cb43-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb43-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.372.0&gt;}</span></span>
-<span id="cb43-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-8" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> </span>
-<span id="cb43-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:32.561</span> [info] Placing BUY order for XRPUSDT @ 0.25979000, quantity: 100</span>
-<span id="cb43-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-10" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:32.831</span> [info] Buy order filled, placing SELL order for XRPUSDT @ 0.2577, quantity: 100</span>
-<span id="cb43-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb43-11" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:33.094</span> [info] Trade finished, trader will now exit</span></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb45-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb45-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
+<span id="cb45-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:30.648</span> [info] Initializing new trader for XRPUSDT</span>
+<span id="cb45-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.355.0&gt;}</span></span>
+<span id="cb45-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb45-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.372.0&gt;}</span></span>
+<span id="cb45-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-8" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> </span>
+<span id="cb45-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-9" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:32.561</span> [info] Placing BUY order for XRPUSDT @ 0.25979000, quantity: 100</span>
+<span id="cb45-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:32.831</span> [info] Buy order filled, placing SELL order for XRPUSDT @ 0.2577, quantity: 100</span>
+<span id="cb45-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:33.094</span> [info] Trade finished, trader will now exit</span></code></pre></div>
 <p>After starting the IEx session, start the trader process with a map containing the symbol and profit interval. To be able to quickly test the full trade cycle we will pass a sub-zero profit interval instead of waiting for the price increase.</p>
 <p>Next, we will start streaming on the same symbol, please be aware that this will cause an immediate reaction in the trader process.</p>
 <p>We can see that our trader placed a buy order at 25.979c per XRP, it was filled in under 300ms, so then the trader placed a sell order at ~25.77c

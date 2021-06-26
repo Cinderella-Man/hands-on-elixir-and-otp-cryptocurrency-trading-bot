@@ -358,6 +358,67 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
+<div class="quick-option">
+ 
+  <!-- Start Form Toolbar -->
+  <div class="form-toolbar">
+      <div class="inner">
+          <a class="trigger-option" href="#">
+              <img src="https://image.flaticon.com/icons/png/512/833/833472.png" width="40px" />
+          </a>
+      </div>
+  </div>
+  <!-- End Form Toolbar -->
+
+  <!-- Start Quick Form -->
+  <div class="form-option-wrapper">
+      <div class="form-panel-header">
+          <h4>This book wouldn't be possible without our great sponsors ❤️</h4>
+
+          <img src="https://avatars.githubusercontent.com/u/36407?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/212169?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/5660941?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/9498445?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/65608642?s=200&v=4" width="40px"/>
+
+          <h5>Please consider supporting by:</h5>
+
+          <a class="notify-btn" href="https://github.com/sponsors/frathon"><b>DONATE VIA GITHUB</b></a>
+          <br/><br/>
+          <a class="notify-btn" href="https://gumroad.com/l/cSGdY"><b>BUY ON GUMROAD</b></a>
+
+          <h6>BTC</h6>
+          <h7>14YKWr2avF9QrKtyRMg2NdbnUy28B8RMYw</h7>
+
+          <h6>ETH(ERC 20)</h6>
+          <h7>0x4083c298442c2cc722797c86118b1f0a2644b653</h7>
+
+          <h6>ADA(Cardano)</h6>
+          <h7>DdzFFzCqrhshNEJzMsyUbN3jXkD7vnJUSGFCWRs4LezprJc4rrnUdUBURGEM7wjTnjsmXUFoSaGZrkHigXThjD8B8Evs2HtZYDiCpJG6</h7>
+
+          <h6>NEO(NEP5)</h6>
+          <h7>AbcLVaphAXgx2adcEFCWQ8oiE9ncezbnWW</h7>          
+      </div>
+  </div>
+  <!-- End Quick Link -->
+
+</div>
+
+<script>
+  $(".trigger-option").on("click", function (e) {
+      e.preventDefault(),
+          (function () {
+              $formOption.toggleClass("open");
+          })();
+  });
+
+  var $html = $("html"),
+    $formOption = $(".quick-option");
+  
+  if (window.location.href.indexOf("index.html") > 0) {
+    $formOption.toggleClass("open");
+  }
+</script>
 <div id="introduce-pubsub-as-a-communication-method" class="section level1" number="3">
 <h1><span class="header-section-number">Chapter 3</span> Introduce PubSub as a communication method</h1>
 <div id="objectives-2" class="section level2" number="3.1">
@@ -391,64 +452,64 @@ There’s no coupling between the <code>Streamer</code> and <code>Naive</code> a
 <h2><span class="header-section-number">3.3</span> Implementation</h2>
 <p>We will start by adding a <a href="https://github.com/phoenixframework/phoenix_pubsub"><code>Phoenix.PubSub</code></a> library to both <code>Streamer</code> and <code>Naive</code> app(as both will be using it, <code>Streamer</code> app as a broadcaster and <code>Naive</code> app as a subscriber).</p>
 <p>Scrolling down through its readme on GitHub we can see that we need to add <code>:phoenix_pubsub</code> to list of dependencies:</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb44-1"><a href="introduce-pubsub-as-a-communication-method.html#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs &amp; /apps/naive/mix.exs</span></span>
-<span id="cb44-2"><a href="introduce-pubsub-as-a-communication-method.html#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
-<span id="cb44-3"><a href="introduce-pubsub-as-a-communication-method.html#cb44-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb44-4"><a href="introduce-pubsub-as-a-communication-method.html#cb44-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb44-5"><a href="introduce-pubsub-as-a-communication-method.html#cb44-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
-<span id="cb44-6"><a href="introduce-pubsub-as-a-communication-method.html#cb44-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb44-7"><a href="introduce-pubsub-as-a-communication-method.html#cb44-7" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb44-8"><a href="introduce-pubsub-as-a-communication-method.html#cb44-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb46"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb46-1"><a href="introduce-pubsub-as-a-communication-method.html#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs &amp; /apps/naive/mix.exs</span></span>
+<span id="cb46-2"><a href="introduce-pubsub-as-a-communication-method.html#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb46-3"><a href="introduce-pubsub-as-a-communication-method.html#cb46-3" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb46-4"><a href="introduce-pubsub-as-a-communication-method.html#cb46-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb46-5"><a href="introduce-pubsub-as-a-communication-method.html#cb46-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span>},</span>
+<span id="cb46-6"><a href="introduce-pubsub-as-a-communication-method.html#cb46-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb46-7"><a href="introduce-pubsub-as-a-communication-method.html#cb46-7" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb46-8"><a href="introduce-pubsub-as-a-communication-method.html#cb46-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Remember to place it so the list will keep alphabetical order. The second step in the readme says that we need to add PubSub as a child of our app. We need to decide where we will put it, <code>Streamer</code> sounds like a good starting point. We will modify the <code>/apps/streamer/lib/streamer/application.ex</code> module by appending the PubSub to it:</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb45-1"><a href="introduce-pubsub-as-a-communication-method.html#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
-<span id="cb45-2"><a href="introduce-pubsub-as-a-communication-method.html#cb45-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
-<span id="cb45-3"><a href="introduce-pubsub-as-a-communication-method.html#cb45-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
-<span id="cb45-4"><a href="introduce-pubsub-as-a-communication-method.html#cb45-4" aria-hidden="true" tabindex="-1"></a>      {</span>
-<span id="cb45-5"><a href="introduce-pubsub-as-a-communication-method.html#cb45-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb45-6"><a href="introduce-pubsub-as-a-communication-method.html#cb45-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>, <span class="va">adapter_name:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span><span class="cn">PG2</span></span>
-<span id="cb45-7"><a href="introduce-pubsub-as-a-communication-method.html#cb45-7" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb45-8"><a href="introduce-pubsub-as-a-communication-method.html#cb45-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb45-9"><a href="introduce-pubsub-as-a-communication-method.html#cb45-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb45-10"><a href="introduce-pubsub-as-a-communication-method.html#cb45-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb47-1"><a href="introduce-pubsub-as-a-communication-method.html#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
+<span id="cb47-2"><a href="introduce-pubsub-as-a-communication-method.html#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
+<span id="cb47-3"><a href="introduce-pubsub-as-a-communication-method.html#cb47-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb47-4"><a href="introduce-pubsub-as-a-communication-method.html#cb47-4" aria-hidden="true" tabindex="-1"></a>      {</span>
+<span id="cb47-5"><a href="introduce-pubsub-as-a-communication-method.html#cb47-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb47-6"><a href="introduce-pubsub-as-a-communication-method.html#cb47-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>, <span class="va">adapter_name:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span><span class="cn">PG2</span></span>
+<span id="cb47-7"><a href="introduce-pubsub-as-a-communication-method.html#cb47-7" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb47-8"><a href="introduce-pubsub-as-a-communication-method.html#cb47-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb47-9"><a href="introduce-pubsub-as-a-communication-method.html#cb47-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb47-10"><a href="introduce-pubsub-as-a-communication-method.html#cb47-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We will add the <code>:adapter_name</code> option to instruct PubSub to use <a href="http://erlang.org/doc/man/pg.html"><code>pg</code></a> adapter, which will give us distributed process groups.</p>
 <p>We will now modify the streamer to broadcast a message to PubSub topic instead of using the <code>Naive</code> module’s function:</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb46-1"><a href="introduce-pubsub-as-a-communication-method.html#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb46-2"><a href="introduce-pubsub-as-a-communication-method.html#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> process_event(<span class="op">...</span>) <span class="kw">do</span></span>
-<span id="cb46-3"><a href="introduce-pubsub-as-a-communication-method.html#cb46-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb46-4"><a href="introduce-pubsub-as-a-communication-method.html#cb46-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
-<span id="cb46-5"><a href="introduce-pubsub-as-a-communication-method.html#cb46-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb46-6"><a href="introduce-pubsub-as-a-communication-method.html#cb46-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb46-7"><a href="introduce-pubsub-as-a-communication-method.html#cb46-7" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
-<span id="cb46-8"><a href="introduce-pubsub-as-a-communication-method.html#cb46-8" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb46-9"><a href="introduce-pubsub-as-a-communication-method.html#cb46-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb48"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb48-1"><a href="introduce-pubsub-as-a-communication-method.html#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
+<span id="cb48-2"><a href="introduce-pubsub-as-a-communication-method.html#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> process_event(<span class="op">...</span>) <span class="kw">do</span></span>
+<span id="cb48-3"><a href="introduce-pubsub-as-a-communication-method.html#cb48-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb48-4"><a href="introduce-pubsub-as-a-communication-method.html#cb48-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast(</span>
+<span id="cb48-5"><a href="introduce-pubsub-as-a-communication-method.html#cb48-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb48-6"><a href="introduce-pubsub-as-a-communication-method.html#cb48-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb48-7"><a href="introduce-pubsub-as-a-communication-method.html#cb48-7" aria-hidden="true" tabindex="-1"></a>      trade_event</span>
+<span id="cb48-8"><a href="introduce-pubsub-as-a-communication-method.html#cb48-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb48-9"><a href="introduce-pubsub-as-a-communication-method.html#cb48-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
 <p>Inside the trader on init we need to subscribe to the “TRADE_EVENTS” PubSub channel:</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb47-1"><a href="introduce-pubsub-as-a-communication-method.html#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb47-2"><a href="introduce-pubsub-as-a-communication-method.html#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(<span class="op">...</span>) <span class="kw">do</span></span>
-<span id="cb47-3"><a href="introduce-pubsub-as-a-communication-method.html#cb47-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb47-4"><a href="introduce-pubsub-as-a-communication-method.html#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
-<span id="cb47-5"><a href="introduce-pubsub-as-a-communication-method.html#cb47-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb47-6"><a href="introduce-pubsub-as-a-communication-method.html#cb47-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb47-7"><a href="introduce-pubsub-as-a-communication-method.html#cb47-7" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb47-8"><a href="introduce-pubsub-as-a-communication-method.html#cb47-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb47-9"><a href="introduce-pubsub-as-a-communication-method.html#cb47-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb49-1"><a href="introduce-pubsub-as-a-communication-method.html#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb49-2"><a href="introduce-pubsub-as-a-communication-method.html#cb49-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(<span class="op">...</span>) <span class="kw">do</span></span>
+<span id="cb49-3"><a href="introduce-pubsub-as-a-communication-method.html#cb49-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb49-4"><a href="introduce-pubsub-as-a-communication-method.html#cb49-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
+<span id="cb49-5"><a href="introduce-pubsub-as-a-communication-method.html#cb49-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb49-6"><a href="introduce-pubsub-as-a-communication-method.html#cb49-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb49-7"><a href="introduce-pubsub-as-a-communication-method.html#cb49-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb49-8"><a href="introduce-pubsub-as-a-communication-method.html#cb49-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb49-9"><a href="introduce-pubsub-as-a-communication-method.html#cb49-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Next, we need to convert all <code>handle_call</code> callbacks to <code>handle_info</code> inside our <code>Trader</code> module as PubSub doesn’t use <code>GenServer.cast/2</code> to send messages over to subscribers.</p>
 <p>The final change will be to remove the <code>send_event</code> function from the <code>Naive</code>
 module as it’s no longer required.</p>
 <p>Our update is now finished so we can start an iex session to see how it works.</p>
 <p>First, we will start a streamer process that will broadcast messages
 to PubSub. Next, we will start trading on the same symbol. On init, the trader will subscribe to a PubSub channel and it will make a full trade cycle.</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="introduce-pubsub-as-a-communication-method.html#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb48-2"><a href="introduce-pubsub-as-a-communication-method.html#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb48-3"><a href="introduce-pubsub-as-a-communication-method.html#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb48-4"><a href="introduce-pubsub-as-a-communication-method.html#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.483.0&gt;}</span></span>
-<span id="cb48-5"><a href="introduce-pubsub-as-a-communication-method.html#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
-<span id="cb48-6"><a href="introduce-pubsub-as-a-communication-method.html#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:37.482</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb48-7"><a href="introduce-pubsub-as-a-communication-method.html#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.474.0&gt;}</span></span>
-<span id="cb48-8"><a href="introduce-pubsub-as-a-communication-method.html#cb48-8" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.179</span> [info]  Placing BUY order for XRPUSDT @ 0.29462000, quantity: 100</span>
-<span id="cb48-9"><a href="introduce-pubsub-as-a-communication-method.html#cb48-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.783</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225<span class="er">)</span><span class="ex">,</span></span>
-<span id="cb48-10"><a href="introduce-pubsub-as-a-communication-method.html#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 100.00000000</span>
-<span id="cb48-11"><a href="introduce-pubsub-as-a-communication-method.html#cb48-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:56.029</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
+<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="introduce-pubsub-as-a-communication-method.html#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb50-2"><a href="introduce-pubsub-as-a-communication-method.html#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb50-3"><a href="introduce-pubsub-as-a-communication-method.html#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb50-4"><a href="introduce-pubsub-as-a-communication-method.html#cb50-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.483.0&gt;}</span></span>
+<span id="cb50-5"><a href="introduce-pubsub-as-a-communication-method.html#cb50-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
+<span id="cb50-6"><a href="introduce-pubsub-as-a-communication-method.html#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:37.482</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb50-7"><a href="introduce-pubsub-as-a-communication-method.html#cb50-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.474.0&gt;}</span></span>
+<span id="cb50-8"><a href="introduce-pubsub-as-a-communication-method.html#cb50-8" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.179</span> [info]  Placing BUY order for XRPUSDT @ 0.29462000, quantity: 100</span>
+<span id="cb50-9"><a href="introduce-pubsub-as-a-communication-method.html#cb50-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:55.783</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29225<span class="er">)</span><span class="ex">,</span></span>
+<span id="cb50-10"><a href="introduce-pubsub-as-a-communication-method.html#cb50-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 100.00000000</span>
+<span id="cb50-11"><a href="introduce-pubsub-as-a-communication-method.html#cb50-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:46:56.029</span> [info]  Trade finished, trader will now exit</span></code></pre></div>
 <p>This shows that the new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders, and terminated after the full trade cycle finished.</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_03">Github</a></p>
