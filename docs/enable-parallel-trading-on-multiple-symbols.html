@@ -358,6 +358,67 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
+<div class="quick-option">
+ 
+  <!-- Start Form Toolbar -->
+  <div class="form-toolbar">
+      <div class="inner">
+          <a class="trigger-option" href="#">
+              <img src="https://image.flaticon.com/icons/png/512/833/833472.png" width="40px" />
+          </a>
+      </div>
+  </div>
+  <!-- End Form Toolbar -->
+
+  <!-- Start Quick Form -->
+  <div class="form-option-wrapper">
+      <div class="form-panel-header">
+          <h4>This book wouldn't be possible without our great sponsors ❤️</h4>
+
+          <img src="https://avatars.githubusercontent.com/u/36407?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/212169?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/5660941?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/9498445?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/65608642?s=200&v=4" width="40px"/>
+
+          <h5>Please consider supporting by:</h5>
+
+          <a class="notify-btn" href="https://github.com/sponsors/frathon"><b>DONATE VIA GITHUB</b></a>
+          <br/><br/>
+          <a class="notify-btn" href="https://gumroad.com/l/cSGdY"><b>BUY ON GUMROAD</b></a>
+
+          <h6>BTC</h6>
+          <h7>14YKWr2avF9QrKtyRMg2NdbnUy28B8RMYw</h7>
+
+          <h6>ETH(ERC 20)</h6>
+          <h7>0x4083c298442c2cc722797c86118b1f0a2644b653</h7>
+
+          <h6>ADA(Cardano)</h6>
+          <h7>DdzFFzCqrhshNEJzMsyUbN3jXkD7vnJUSGFCWRs4LezprJc4rrnUdUBURGEM7wjTnjsmXUFoSaGZrkHigXThjD8B8Evs2HtZYDiCpJG6</h7>
+
+          <h6>NEO(NEP5)</h6>
+          <h7>AbcLVaphAXgx2adcEFCWQ8oiE9ncezbnWW</h7>          
+      </div>
+  </div>
+  <!-- End Quick Link -->
+
+</div>
+
+<script>
+  $(".trigger-option").on("click", function (e) {
+      e.preventDefault(),
+          (function () {
+              $formOption.toggleClass("open");
+          })();
+  });
+
+  var $html = $("html"),
+    $formOption = $(".quick-option");
+  
+  if (window.location.href.indexOf("index.html") > 0) {
+    $formOption.toggleClass("open");
+  }
+</script>
 <div id="enable-parallel-trading-on-multiple-symbols" class="section level1" number="5">
 <h1><span class="header-section-number">Chapter 5</span> Enable parallel trading on multiple symbols</h1>
 <div id="objectives-4" class="section level2" number="5.1">
@@ -403,69 +464,69 @@ as we will write the code. Let’s get to it!</p>
 <div id="update-application-supervisor" class="section level3" number="5.2.1">
 <h3><span class="header-section-number">5.2.1</span> Update application supervisor</h3>
 <p>Let’s start by adding a <code>Naive.DynamicSymbolSupervisor</code> and a server to the children list of the <code>Naive.Application</code> supervisor:</p>
-<div class="sourceCode" id="cb72"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb72-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/application.ex</span></span>
-<span id="cb72-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
-<span id="cb72-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
-<span id="cb72-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-4" aria-hidden="true" tabindex="-1"></a>      {</span>
-<span id="cb72-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">DynamicSupervisor</span>,</span>
-<span id="cb72-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">strategy:</span> <span class="va">:one_for_one</span>,</span>
-<span id="cb72-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span></span>
-<span id="cb72-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-8" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb72-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb72-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb72-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb72-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb72-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb74"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb74-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/application.ex</span></span>
+<span id="cb74-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
+<span id="cb74-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-3" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb74-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-4" aria-hidden="true" tabindex="-1"></a>      {</span>
+<span id="cb74-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-5" aria-hidden="true" tabindex="-1"></a>        <span class="cn">DynamicSupervisor</span>,</span>
+<span id="cb74-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">strategy:</span> <span class="va">:one_for_one</span>,</span>
+<span id="cb74-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span></span>
+<span id="cb74-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-8" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb74-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb74-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb74-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 </div>
 <div id="add-interface-method" class="section level3" number="5.2.2">
 <h3><span class="header-section-number">5.2.2</span> Add interface method</h3>
 <p>We will now add an interface method to the <code>Naive</code> module that will instruct<br />
 <code>Naive.DynamicSymbolSupervisor</code> to start <code>Naive.SymbolSupervisor</code>(to be implemented next) as its child:</p>
-<div class="sourceCode" id="cb73"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb73-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive.ex</span></span>
-<span id="cb73-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_trading(symbol) <span class="kw">do</span></span>
-<span id="cb73-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
-<span id="cb73-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb73-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-5" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, _pid} <span class="op">=</span></span>
-<span id="cb73-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child(</span>
-<span id="cb73-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-7" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span>,</span>
-<span id="cb73-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-8" aria-hidden="true" tabindex="-1"></a>        {<span class="cn">Naive</span><span class="op">.</span><span class="cn">SymbolSupervisor</span>, symbol}</span>
-<span id="cb73-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-9" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb73-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb73-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb75"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb75-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive.ex</span></span>
+<span id="cb75-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_trading(symbol) <span class="kw">do</span></span>
+<span id="cb75-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
+<span id="cb75-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-5" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, _pid} <span class="op">=</span></span>
+<span id="cb75-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child(</span>
+<span id="cb75-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-7" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicSymbolSupervisor</span>,</span>
+<span id="cb75-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-8" aria-hidden="true" tabindex="-1"></a>        {<span class="cn">Naive</span><span class="op">.</span><span class="cn">SymbolSupervisor</span>, symbol}</span>
+<span id="cb75-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-9" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb75-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="implement-naive.symbolsupervisor" class="section level2" number="5.3">
 <h2><span class="header-section-number">5.3</span> Implement <code>Naive.SymbolSupervisor</code></h2>
 <p>Next, time for the <code>Naive.SymbolSupervisor</code>, the first step will be to create a file called <code>symbol_supervisor.ex</code> inside <code>apps/naive/lib/naive</code> directory. There’s no point in using the <a href="https://hexdocs.pm/elixir/master/DynamicSupervisor.html">DynamicSupervisor</a>, as we know the children that we would like to start automatically on init. This is a full implementation of the supervisor and it’s a simple as just listing child processes inside the init function:</p>
-<div class="sourceCode" id="cb74"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb74-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/symbol_supervisor.ex</span></span>
-<span id="cb74-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">SymbolSupervisor</span> <span class="kw">do</span></span>
-<span id="cb74-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Supervisor</span></span>
-<span id="cb74-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb74-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
-<span id="cb74-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb74-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
-<span id="cb74-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>start_link(</span>
-<span id="cb74-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
-<span id="cb74-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-10" aria-hidden="true" tabindex="-1"></a>      symbol,</span>
-<span id="cb74-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb74-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-12" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb74-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb74-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb74-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span></span>
-<span id="cb74-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new supervision tree to trade on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb74-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb74-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>init(</span>
-<span id="cb74-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-19" aria-hidden="true" tabindex="-1"></a>      [</span>
-<span id="cb74-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-20" aria-hidden="true" tabindex="-1"></a>        {</span>
-<span id="cb74-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-21" aria-hidden="true" tabindex="-1"></a>          <span class="cn">DynamicSupervisor</span>,</span>
-<span id="cb74-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-22" aria-hidden="true" tabindex="-1"></a>          <span class="va">strategy:</span> <span class="va">:one_for_one</span>,</span>
-<span id="cb74-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-23" aria-hidden="true" tabindex="-1"></a>          <span class="va">name:</span> :<span class="st">&quot;Naive.DynamicTraderSupervisor-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb74-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-24" aria-hidden="true" tabindex="-1"></a>        },</span>
-<span id="cb74-25"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-25" aria-hidden="true" tabindex="-1"></a>        {<span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>, symbol}</span>
-<span id="cb74-26"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-26" aria-hidden="true" tabindex="-1"></a>      ],</span>
-<span id="cb74-27"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-27" aria-hidden="true" tabindex="-1"></a>      <span class="va">strategy:</span> <span class="va">:one_for_all</span></span>
-<span id="cb74-28"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-28" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb74-29"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb74-30"><a href="enable-parallel-trading-on-multiple-symbols.html#cb74-30" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb76"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb76-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/symbol_supervisor.ex</span></span>
+<span id="cb76-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">SymbolSupervisor</span> <span class="kw">do</span></span>
+<span id="cb76-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Supervisor</span></span>
+<span id="cb76-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb76-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
+<span id="cb76-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>start_link(</span>
+<span id="cb76-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb76-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-10" aria-hidden="true" tabindex="-1"></a>      symbol,</span>
+<span id="cb76-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb76-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb76-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb76-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span></span>
+<span id="cb76-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Starting new supervision tree to trade on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb76-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Supervisor</span><span class="op">.</span>init(</span>
+<span id="cb76-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-19" aria-hidden="true" tabindex="-1"></a>      [</span>
+<span id="cb76-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-20" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb76-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-21" aria-hidden="true" tabindex="-1"></a>          <span class="cn">DynamicSupervisor</span>,</span>
+<span id="cb76-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-22" aria-hidden="true" tabindex="-1"></a>          <span class="va">strategy:</span> <span class="va">:one_for_one</span>,</span>
+<span id="cb76-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-23" aria-hidden="true" tabindex="-1"></a>          <span class="va">name:</span> :<span class="st">&quot;Naive.DynamicTraderSupervisor-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb76-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-24" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb76-25"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-25" aria-hidden="true" tabindex="-1"></a>        {<span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>, symbol}</span>
+<span id="cb76-26"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-26" aria-hidden="true" tabindex="-1"></a>      ],</span>
+<span id="cb76-27"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-27" aria-hidden="true" tabindex="-1"></a>      <span class="va">strategy:</span> <span class="va">:one_for_all</span></span>
+<span id="cb76-28"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb76-29"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb76-30"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-30" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>It’s advised to keep supervisor processes slim.</p>
 <p>We registered the <code>Naive.SymbolSupervisor</code> processes with names, which will help us understand the supervision tree inside the observer GUI(it will also allow us to stop those supervisors in the future).</p>
 <p>As mentioned previously whenever either the <code>Naive.Leader</code> or <code>Naive.DynamicSymbolSupervisor-#{symbol}</code> would crash we would like to kill the other child process as we won’t be able to recover the state - it’s just easier to init both again.</p>
@@ -474,27 +535,27 @@ as we will write the code. Let’s get to it!</p>
 <div id="implement-naive.leader" class="section level2" number="5.4">
 <h2><span class="header-section-number">5.4</span> Implement <code>Naive.Leader</code></h2>
 <p>It’s time for the <code>Naive.Leader</code> module, again, the first step will be to create a file called the <code>leader.ex</code> inside <code>apps/naive/lib/naive</code> directory. At this moment it will be a skeleton GenServer implementation just to get the code to compile:</p>
-<div class="sourceCode" id="cb75"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb75-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb75-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
-<span id="cb75-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
-<span id="cb75-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb75-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
-<span id="cb75-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(</span>
-<span id="cb75-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
-<span id="cb75-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-8" aria-hidden="true" tabindex="-1"></a>      symbol,</span>
-<span id="cb75-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb75-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-10" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb75-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb75-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb75-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span></span>
-<span id="cb75-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-14" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %{<span class="va">symbol:</span> symbol}}</span>
-<span id="cb75-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb75-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb75-16" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb77"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb77-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb77-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
+<span id="cb77-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
+<span id="cb77-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
+<span id="cb77-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(</span>
+<span id="cb77-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb77-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-8" aria-hidden="true" tabindex="-1"></a>      symbol,</span>
+<span id="cb77-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb77-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb77-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb77-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span></span>
+<span id="cb77-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-14" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %{<span class="va">symbol:</span> symbol}}</span>
+<span id="cb77-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb77-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-16" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>At this moment we have half of the supervision tree working so we can give it
 a spin in iex. Using the observer we will be able to see all processes created when the <code>start_trading/1</code> function gets called:</p>
-<div class="sourceCode" id="cb76"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb76-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb76-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb76-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> :observer.start<span class="kw">()</span></span></code></pre></div>
+<div class="sourceCode" id="cb78"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb78-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb78-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb78-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> :observer.start<span class="kw">()</span></span></code></pre></div>
 <p>The above function will open a new window looking as follows:</p>
 <p><img src="images/chapter_05_06_new_observer.png" width="100%" style="display: block; margin: auto;" /></p>
 <div style="page-break-after: always;"></div>
@@ -503,13 +564,13 @@ a spin in iex. Using the observer we will be able to see all processes created w
 <p>If any other process tree is visible, go to the list on the left and select the <code>naive</code> application.</p>
 <p>The <code>Naive.Supervisor</code> is our <code>Naive.Application</code> module(you can confirm that by checking the <code>name</code> option send to the <code>start_link</code> function inside the module). It starts the <code>Naive.DynamicSymbolSupervisor</code>.</p>
 <p>We can now call the <code>Naive.start_trading/1</code> function couple time to see how the tree will look like with additional processes(go back to the <code>iex</code> session):</p>
-<div class="sourceCode" id="cb77"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb77-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb77-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;adausdt&quot;</span><span class="kw">)</span></span>
-<span id="cb77-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="ex">23:14:40.974</span> [info]  Starting new supervision tree to trade on ADAUSDT</span>
-<span id="cb77-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.340.0&gt;}</span></span>
-<span id="cb77-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb77-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:15:12.117</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb77-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb77-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.345.0&gt;}</span></span></code></pre></div>
+<div class="sourceCode" id="cb79"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb79-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb79-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;adausdt&quot;</span><span class="kw">)</span></span>
+<span id="cb79-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-3" aria-hidden="true" tabindex="-1"></a><span class="ex">23:14:40.974</span> [info]  Starting new supervision tree to trade on ADAUSDT</span>
+<span id="cb79-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.340.0&gt;}</span></span>
+<span id="cb79-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb79-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:15:12.117</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
+<span id="cb79-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-7" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.345.0&gt;}</span></span></code></pre></div>
 <p>We can see that two new branches were created:</p>
 <ul>
 <li><code>SymbolSupervisor-ADAUSDT</code></li>
@@ -521,250 +582,250 @@ a spin in iex. Using the observer we will be able to see all processes created w
 <h3><span class="header-section-number">5.4.1</span> Updating the <code>leader</code> module</h3>
 <p>Let’s jump back to extending a leader implementation to get those traders running.</p>
 <p>We will introduce a leader’s state that will consist of a symbol, setting, and a list of traders’ data. Trader data will hold PID, ref, and state of the trader:</p>
-<div class="sourceCode" id="cb78"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb78-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb78-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb78-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
-<span id="cb78-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb78-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
-<span id="cb78-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb78-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:naive</span>, <span class="va">:binance_client</span>)</span>
-<span id="cb78-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb78-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
-<span id="cb78-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="va">symbol:</span> <span class="cn">nil</span>,</span>
-<span id="cb78-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-11" aria-hidden="true" tabindex="-1"></a>              <span class="va">settings:</span> <span class="cn">nil</span>,</span>
-<span id="cb78-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-12" aria-hidden="true" tabindex="-1"></a>              <span class="va">traders:</span> []</span>
-<span id="cb78-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb78-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb78-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">TraderData</span> <span class="kw">do</span></span>
-<span id="cb78-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="va">pid:</span> <span class="cn">nil</span>,</span>
-<span id="cb78-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-17" aria-hidden="true" tabindex="-1"></a>              <span class="va">ref:</span> <span class="cn">nil</span>,</span>
-<span id="cb78-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-18" aria-hidden="true" tabindex="-1"></a>              <span class="va">state:</span> <span class="cn">nil</span></span>
-<span id="cb78-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb78-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb80"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb80-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb80-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb80-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
+<span id="cb80-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb80-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:naive</span>, <span class="va">:binance_client</span>)</span>
+<span id="cb80-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb80-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="va">symbol:</span> <span class="cn">nil</span>,</span>
+<span id="cb80-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-11" aria-hidden="true" tabindex="-1"></a>              <span class="va">settings:</span> <span class="cn">nil</span>,</span>
+<span id="cb80-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-12" aria-hidden="true" tabindex="-1"></a>              <span class="va">traders:</span> []</span>
+<span id="cb80-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb80-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">TraderData</span> <span class="kw">do</span></span>
+<span id="cb80-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="va">pid:</span> <span class="cn">nil</span>,</span>
+<span id="cb80-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-17" aria-hidden="true" tabindex="-1"></a>              <span class="va">ref:</span> <span class="cn">nil</span>,</span>
+<span id="cb80-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-18" aria-hidden="true" tabindex="-1"></a>              <span class="va">state:</span> <span class="cn">nil</span></span>
+<span id="cb80-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We will use a <code>handle_continue</code> callback which was introduced in Erlang 21 to
 initialize the leader asynchronously. To do that we will return a tuple starting with a <code>:continue</code> atom from inside the init function:</p>
-<div class="sourceCode" id="cb79"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb79-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb79-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span></span>
-<span id="cb79-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>,</span>
-<span id="cb79-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-4" aria-hidden="true" tabindex="-1"></a>      %<span class="cn">State</span>{</span>
-<span id="cb79-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol</span>
-<span id="cb79-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-6" aria-hidden="true" tabindex="-1"></a>      }, {<span class="va">:continue</span>, <span class="va">:start_traders</span>}}</span>
-<span id="cb79-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb79-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb81"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb81-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb81-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span></span>
+<span id="cb81-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>,</span>
+<span id="cb81-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-4" aria-hidden="true" tabindex="-1"></a>      %<span class="cn">State</span>{</span>
+<span id="cb81-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol</span>
+<span id="cb81-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-6" aria-hidden="true" tabindex="-1"></a>      }, {<span class="va">:continue</span>, <span class="va">:start_traders</span>}}</span>
+<span id="cb81-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The <code>Naive.Leader</code> will fetch symbol settings and based on them, it will build the state for traders so they don’t need to fetch the same settings again. It will also start as many traders there were set under chunks key in setting:</p>
-<div class="sourceCode" id="cb80"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb80-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb80-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below init()</span></span>
-<span id="cb80-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_continue(<span class="va">:start_traders</span>, %{<span class="va">symbol:</span> symbol} <span class="op">=</span> state) <span class="kw">do</span></span>
-<span id="cb80-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-4" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> fetch_symbol_settings(symbol)</span>
-<span id="cb80-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-5" aria-hidden="true" tabindex="-1"></a>    trader_state <span class="op">=</span> fresh_trader_state(settings)</span>
-<span id="cb80-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-6" aria-hidden="true" tabindex="-1"></a>    traders <span class="op">=</span> <span class="kw">for</span> _i <span class="op">&lt;-</span> <span class="dv">1</span><span class="op">..</span>settings<span class="op">.</span>chunks,</span>
-<span id="cb80-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-7" aria-hidden="true" tabindex="-1"></a>              <span class="kw">do</span>: start_new_trader(trader_state)</span>
-<span id="cb80-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb80-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-9" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">settings:</span> settings, <span class="va">traders:</span> traders}}</span>
-<span id="cb80-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb80-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb82"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb82-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb82-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below init()</span></span>
+<span id="cb82-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_continue(<span class="va">:start_traders</span>, %{<span class="va">symbol:</span> symbol} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb82-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-4" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> fetch_symbol_settings(symbol)</span>
+<span id="cb82-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-5" aria-hidden="true" tabindex="-1"></a>    trader_state <span class="op">=</span> fresh_trader_state(settings)</span>
+<span id="cb82-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-6" aria-hidden="true" tabindex="-1"></a>    traders <span class="op">=</span> <span class="kw">for</span> _i <span class="op">&lt;-</span> <span class="dv">1</span><span class="op">..</span>settings<span class="op">.</span>chunks,</span>
+<span id="cb82-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-7" aria-hidden="true" tabindex="-1"></a>              <span class="kw">do</span>: start_new_trader(trader_state)</span>
+<span id="cb82-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-9" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">settings:</span> settings, <span class="va">traders:</span> traders}}</span>
+<span id="cb82-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
 <p>Fetching symbol settings will be hardcoded for time being to keep this chapter focused. We will also move the code responsible for fetching tick
 size from the <code>Naive.Trader</code> to the <code>Naive.Leader</code> and hardcode the rest of the values:</p>
-<div class="sourceCode" id="cb81"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb81-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb81-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
-<span id="cb81-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-3" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span> fetch_tick_size(symbol)</span>
-<span id="cb81-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb81-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-5" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb81-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
-<span id="cb81-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">chunks:</span> <span class="dv">1</span>,</span>
-<span id="cb81-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># -0.12% for quick testing</span></span>
-<span id="cb81-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
-<span id="cb81-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size</span>
-<span id="cb81-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-11" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb81-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb81-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb81-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_tick_size(symbol) <span class="kw">do</span></span>
-<span id="cb81-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-15" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
-<span id="cb81-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
-<span id="cb81-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
-<span id="cb81-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
-<span id="cb81-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
-<span id="cb81-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
-<span id="cb81-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
-<span id="cb81-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb81-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Additionally, we need to create a helper method that we used inside the <code>handle_continue/2</code> callback called <code>fresh_trader_state/1</code>:</p>
-<div class="sourceCode" id="cb82"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb82-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb82-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this one above the `fetch_symbol_settings` function</span></span>
-<span id="cb82-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
-<span id="cb82-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-4" aria-hidden="true" tabindex="-1"></a>    struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings)</span>
-<span id="cb82-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb82-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Starting a new trader isn’t any different from the code that we already wrote to start a new <code>Naive.SymbolSupervisor</code>. We need to call the <code>DynamicSupervisor.start_child/2</code> function and start to monitor the process:</p>
 <div class="sourceCode" id="cb83"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb83-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb83-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> start_new_trader(%<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
-<span id="cb83-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, pid} <span class="op">=</span></span>
-<span id="cb83-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child(</span>
-<span id="cb83-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-5" aria-hidden="true" tabindex="-1"></a>        :<span class="st">&quot;Naive.DynamicTraderSupervisor-</span><span class="ot">#{</span>state<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb83-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-6" aria-hidden="true" tabindex="-1"></a>        {<span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span>, state}</span>
-<span id="cb83-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-7" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb83-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-9" aria-hidden="true" tabindex="-1"></a>    ref <span class="op">=</span> <span class="cn">Process</span><span class="op">.</span>monitor(pid)</span>
-<span id="cb83-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-11" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">TraderData</span>{<span class="va">pid:</span> pid, <span class="va">ref:</span> ref, <span class="va">state:</span> state}</span>
-<span id="cb83-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb83-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
+<span id="cb83-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-3" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span> fetch_tick_size(symbol)</span>
+<span id="cb83-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-5" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb83-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
+<span id="cb83-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">chunks:</span> <span class="dv">1</span>,</span>
+<span id="cb83-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># -0.12% for quick testing</span></span>
+<span id="cb83-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
+<span id="cb83-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size</span>
+<span id="cb83-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb83-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb83-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_tick_size(symbol) <span class="kw">do</span></span>
+<span id="cb83-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-15" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb83-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
+<span id="cb83-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
+<span id="cb83-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
+<span id="cb83-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
+<span id="cb83-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
+<span id="cb83-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
+<span id="cb83-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb83-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Additionally, we need to create a helper method that we used inside the <code>handle_continue/2</code> callback called <code>fresh_trader_state/1</code>:</p>
+<div class="sourceCode" id="cb84"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb84-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb84-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this one above the `fetch_symbol_settings` function</span></span>
+<span id="cb84-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
+<span id="cb84-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-4" aria-hidden="true" tabindex="-1"></a>    struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings)</span>
+<span id="cb84-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Starting a new trader isn’t any different from the code that we already wrote to start a new <code>Naive.SymbolSupervisor</code>. We need to call the <code>DynamicSupervisor.start_child/2</code> function and start to monitor the process:</p>
+<div class="sourceCode" id="cb85"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb85-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb85-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> start_new_trader(%<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb85-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, pid} <span class="op">=</span></span>
+<span id="cb85-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-4" aria-hidden="true" tabindex="-1"></a>      <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child(</span>
+<span id="cb85-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-5" aria-hidden="true" tabindex="-1"></a>        :<span class="st">&quot;Naive.DynamicTraderSupervisor-</span><span class="ot">#{</span>state<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb85-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-6" aria-hidden="true" tabindex="-1"></a>        {<span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span>, state}</span>
+<span id="cb85-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-7" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb85-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-9" aria-hidden="true" tabindex="-1"></a>    ref <span class="op">=</span> <span class="cn">Process</span><span class="op">.</span>monitor(pid)</span>
+<span id="cb85-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-11" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">TraderData</span>{<span class="va">pid:</span> pid, <span class="va">ref:</span> ref, <span class="va">state:</span> state}</span>
+<span id="cb85-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 </div>
 <div id="updating-the-naive.trader-module" class="section level3" number="5.4.2">
 <h3><span class="header-section-number">5.4.2</span> Updating the <code>Naive.Trader</code> module</h3>
 <p>Now we can update the <code>Naive.Trader</code>, first, we will set restart to be temporary to avoid restarting it by the <code>Naive.DynamicTraderSupervisor</code>:</p>
-<div class="sourceCode" id="cb84"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb84-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb84-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span> <span class="kw">do</span></span>
-<span id="cb84-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span>, <span class="va">restart:</span> <span class="va">:temporary</span></span>
-<span id="cb84-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb84-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb86"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb86-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb86-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span> <span class="kw">do</span></span>
+<span id="cb86-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span>, <span class="va">restart:</span> <span class="va">:temporary</span></span>
+<span id="cb86-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 <p>Next, we will update the <code>start_link/1</code> and <code>init/1</code> functions to take the state instead of building it from args:</p>
-<div class="sourceCode" id="cb85"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb85-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb85-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(%<span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
-<span id="cb85-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(<span class="cn">__MODULE__</span>, state)</span>
-<span id="cb85-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb85-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%<span class="cn">State</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> state) <span class="kw">do</span></span>
-<span id="cb85-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-7" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
-<span id="cb85-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-9" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader for symbol(</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">)&quot;</span>)</span>
-<span id="cb85-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
-<span id="cb85-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-12" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb85-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb85-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb85-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-16" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, state}</span>
-<span id="cb85-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb85-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb87"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb87-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb87-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(%<span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb87-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(<span class="cn">__MODULE__</span>, state)</span>
+<span id="cb87-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb87-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%<span class="cn">State</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb87-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-7" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
+<span id="cb87-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-9" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader for symbol(</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">)&quot;</span>)</span>
+<span id="cb87-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe(</span>
+<span id="cb87-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-12" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb87-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb87-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb87-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-16" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, state}</span>
+<span id="cb87-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Next, we need to update two <code>handle_info/2</code> callbacks that change the state of the <code>Naive.Trader</code> process(when placing buy order and when placing sell order). They will need to notify the <code>Naive.Leader</code> that the state is changed before returning it:</p>
-<div class="sourceCode" id="cb86"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb86-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb86-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb86-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb86-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb86-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb86-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Placing buy order (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">@</span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">)&quot;</span>)</span>
-<span id="cb86-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb86-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-9" aria-hidden="true" tabindex="-1"></a>    new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">buy_order:</span> order}</span>
-<span id="cb86-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
-<span id="cb86-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-11" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
-<span id="cb86-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb86-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb86-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb86-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-16" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb86-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb86-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Buy order filled, placing sell order ...&quot;</span>)  </span>
-<span id="cb86-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb86-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-21" aria-hidden="true" tabindex="-1"></a>    new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">sell_order:</span> order}</span>
-<span id="cb86-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-22" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
-<span id="cb86-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-23" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
-<span id="cb86-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb86-25"><a href="enable-parallel-trading-on-multiple-symbols.html#cb86-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb88"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb88-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb88-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb88-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb88-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb88-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb88-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Placing buy order (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">@</span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">)&quot;</span>)</span>
+<span id="cb88-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb88-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-9" aria-hidden="true" tabindex="-1"></a>    new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">buy_order:</span> order}</span>
+<span id="cb88-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
+<span id="cb88-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-11" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
+<span id="cb88-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb88-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb88-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb88-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-16" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb88-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb88-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Buy order filled, placing sell order ...&quot;</span>)  </span>
+<span id="cb88-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb88-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-21" aria-hidden="true" tabindex="-1"></a>    new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">sell_order:</span> order}</span>
+<span id="cb88-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-22" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
+<span id="cb88-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-23" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
+<span id="cb88-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb88-25"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 </div>
 <div id="finalizing-naive.leader-implementation" class="section level3" number="5.4.3">
 <h3><span class="header-section-number">5.4.3</span> Finalizing <code>Naive.Leader</code> implementation</h3>
 <p>Now we need to get back to the <code>Naive.Leader</code> where we will implement the notifying logic. We will start with the notify function that will just call the <code>Naive.Leader</code> process:</p>
-<div class="sourceCode" id="cb87"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb87-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb87-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below init</span></span>
-<span id="cb87-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb87-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> notify(<span class="va">:trader_state_updated</span>, trader_state) <span class="kw">do</span></span>
-<span id="cb87-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>call(</span>
-<span id="cb87-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-6" aria-hidden="true" tabindex="-1"></a>      :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>trader_state<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb87-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:update_trader_state</span>, trader_state}</span>
-<span id="cb87-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-8" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb87-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb87-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb89"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb89-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb89-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below init</span></span>
+<span id="cb89-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb89-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> notify(<span class="va">:trader_state_updated</span>, trader_state) <span class="kw">do</span></span>
+<span id="cb89-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>call(</span>
+<span id="cb89-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-6" aria-hidden="true" tabindex="-1"></a>      :<span class="st">&quot;</span><span class="ot">#{</span><span class="cn">__MODULE__</span><span class="ot">}</span><span class="st">-</span><span class="ot">#{</span>trader_state<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb89-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:update_trader_state</span>, trader_state}</span>
+<span id="cb89-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb89-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Now, it’s time for a callback function that will handle the trader state update. As this is a <code>handle_call/3</code> callback we have access to the trader PID which sent the notification message. We will try to find that trader in the list of traders. If that’s successful we will update the cached state for that
 trader locally:</p>
-<div class="sourceCode" id="cb88"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb88-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb88-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below handle_continue</span></span>
-<span id="cb88-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
-<span id="cb88-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-4" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:update_trader_state</span>, new_trader_state},</span>
-<span id="cb88-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-5" aria-hidden="true" tabindex="-1"></a>    {trader_pid, _},</span>
-<span id="cb88-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-6" aria-hidden="true" tabindex="-1"></a>    %{<span class="va">traders:</span> traders} <span class="op">=</span> state</span>
-<span id="cb88-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
-<span id="cb88-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
-<span id="cb88-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb88-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-10" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(</span>
-<span id="cb88-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-11" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Tried to update the state of trader that leader is not aware of&quot;</span></span>
-<span id="cb88-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-12" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb88-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-13" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, state}</span>
-<span id="cb88-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-14" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb88-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-15" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
-<span id="cb88-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-16" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
-<span id="cb88-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-17" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
-<span id="cb88-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb88-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-19" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span></span>
-<span id="cb88-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-20" aria-hidden="true" tabindex="-1"></a>          <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)}}</span>
-<span id="cb88-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb88-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb88-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb90"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb90-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb90-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below handle_continue</span></span>
+<span id="cb90-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb90-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-4" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:update_trader_state</span>, new_trader_state},</span>
+<span id="cb90-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-5" aria-hidden="true" tabindex="-1"></a>    {trader_pid, _},</span>
+<span id="cb90-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-6" aria-hidden="true" tabindex="-1"></a>    %{<span class="va">traders:</span> traders} <span class="op">=</span> state</span>
+<span id="cb90-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb90-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
+<span id="cb90-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb90-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-10" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(</span>
+<span id="cb90-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-11" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Tried to update the state of trader that leader is not aware of&quot;</span></span>
+<span id="cb90-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-12" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb90-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-13" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, state}</span>
+<span id="cb90-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-14" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb90-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-15" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
+<span id="cb90-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-16" aria-hidden="true" tabindex="-1"></a>        old_trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
+<span id="cb90-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-17" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> %{old_trader_data <span class="op">|</span> <span class="va">:state</span> <span class="op">=&gt;</span> new_trader_state}</span>
+<span id="cb90-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-19" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">:traders</span> <span class="op">=&gt;</span></span>
+<span id="cb90-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-20" aria-hidden="true" tabindex="-1"></a>          <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)}}</span>
+<span id="cb90-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb90-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Another callback functions that we will need to provide are two <code>handle_info/2</code> functions that will handle the trade finished scenario as well as crashed trader.</p>
 <div style="page-break-after: always;"></div>
 <p>First, trade finished scenario. As previously, we will try to find the trader data in the traders list. If that’s successful, we will start a new trader with a fresh state. We will also overwrite existing trader data locally(as PID, ref, and state changed):</p>
-<div class="sourceCode" id="cb89"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb89-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb89-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below state updated handle_call callback</span></span>
-<span id="cb89-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb89-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-4" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:DOWN</span>, _ref, <span class="va">:process</span>, trader_pid, <span class="va">:normal</span>},</span>
-<span id="cb89-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-5" aria-hidden="true" tabindex="-1"></a>        %{<span class="va">traders:</span> traders, <span class="va">symbol:</span> symbol, <span class="va">settings:</span> settings} <span class="op">=</span> state</span>
-<span id="cb89-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb89-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader finished trade - restarting&quot;</span>)</span>
-<span id="cb89-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb89-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
-<span id="cb89-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-10" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb89-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(</span>
-<span id="cb89-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-12" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Tried to restart finished </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
-<span id="cb89-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;trader that leader is not aware of&quot;</span></span>
-<span id="cb89-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-14" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb89-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb89-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, state}</span>
-<span id="cb89-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb89-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-18" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
-<span id="cb89-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-19" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> start_new_trader(fresh_trader_state(settings))</span>
-<span id="cb89-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-20" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
-<span id="cb89-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb89-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">traders:</span> new_traders}}</span>
-<span id="cb89-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb89-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb89-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb91"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb91-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb91-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below state updated handle_call callback</span></span>
+<span id="cb91-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb91-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-4" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:DOWN</span>, _ref, <span class="va">:process</span>, trader_pid, <span class="va">:normal</span>},</span>
+<span id="cb91-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-5" aria-hidden="true" tabindex="-1"></a>        %{<span class="va">traders:</span> traders, <span class="va">symbol:</span> symbol, <span class="va">settings:</span> settings} <span class="op">=</span> state</span>
+<span id="cb91-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb91-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader finished trade - restarting&quot;</span>)</span>
+<span id="cb91-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
+<span id="cb91-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-10" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb91-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(</span>
+<span id="cb91-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-12" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Tried to restart finished </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb91-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;trader that leader is not aware of&quot;</span></span>
+<span id="cb91-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb91-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, state}</span>
+<span id="cb91-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-18" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
+<span id="cb91-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-19" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> start_new_trader(fresh_trader_state(settings))</span>
+<span id="cb91-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-20" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb91-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">traders:</span> new_traders}}</span>
+<span id="cb91-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb91-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Here we will assume that whenever the reason that the <code>Naive.Trader</code> process died is <code>:normal</code> that means that we stopped it after trade cycle finished.</p>
 <p>The final callback that we need to provide will handle the scenario where the trader crashed. We would like to find the cached state of the crashed trader and start a new one with the same state and then update the local cache as PID and ref will change for that trader:</p>
-<div class="sourceCode" id="cb90"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb90-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb90-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below trade finished handle_info callback</span></span>
-<span id="cb90-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb90-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-4" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:DOWN</span>, _ref, <span class="va">:process</span>, trader_pid, _reason},</span>
-<span id="cb90-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-5" aria-hidden="true" tabindex="-1"></a>        %{<span class="va">traders:</span> traders, <span class="va">symbol:</span> symbol} <span class="op">=</span> state</span>
-<span id="cb90-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb90-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>error(<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader died - trying to restart&quot;</span>)</span>
-<span id="cb90-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
-<span id="cb90-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-10" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb90-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(</span>
-<span id="cb90-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-12" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Tried to restart </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader &quot;</span> <span class="op">&lt;&gt;</span></span>
-<span id="cb90-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;but failed to find its cached state&quot;</span></span>
-<span id="cb90-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-14" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb90-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, state}</span>
-<span id="cb90-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-18" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
-<span id="cb90-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-19" aria-hidden="true" tabindex="-1"></a>        trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
-<span id="cb90-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-20" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> start_new_trader(trader_data<span class="op">.</span>state)</span>
-<span id="cb90-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-21" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
-<span id="cb90-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-23" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">traders:</span> new_traders}}</span>
-<span id="cb90-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb90-25"><a href="enable-parallel-trading-on-multiple-symbols.html#cb90-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb92"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb92-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb92-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># below trade finished handle_info callback</span></span>
+<span id="cb92-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb92-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-4" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:DOWN</span>, _ref, <span class="va">:process</span>, trader_pid, reason},</span>
+<span id="cb92-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-5" aria-hidden="true" tabindex="-1"></a>        %{<span class="va">traders:</span> traders, <span class="va">symbol:</span> symbol} <span class="op">=</span> state</span>
+<span id="cb92-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb92-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>error(<span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader died - reason </span><span class="ot">#{</span>reason<span class="ot">}</span><span class="st"> - trying to restart&quot;</span>)</span>
+<span id="cb92-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index(traders, <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid)) <span class="kw">do</span></span>
+<span id="cb92-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-10" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb92-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(</span>
+<span id="cb92-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-12" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Tried to restart </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> trader &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb92-13"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;but failed to find its cached state&quot;</span></span>
+<span id="cb92-14"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb92-15"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-16"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, state}</span>
+<span id="cb92-17"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-18"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-18" aria-hidden="true" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
+<span id="cb92-19"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-19" aria-hidden="true" tabindex="-1"></a>        trader_data <span class="op">=</span> <span class="cn">Enum</span><span class="op">.</span>at(traders, index)</span>
+<span id="cb92-20"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-20" aria-hidden="true" tabindex="-1"></a>        new_trader_data <span class="op">=</span> start_new_trader(trader_data<span class="op">.</span>state)</span>
+<span id="cb92-21"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-21" aria-hidden="true" tabindex="-1"></a>        new_traders <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>replace_at(traders, index, new_trader_data)</span>
+<span id="cb92-22"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-23"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-23" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">traders:</span> new_traders}}</span>
+<span id="cb92-24"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb92-25"><a href="enable-parallel-trading-on-multiple-symbols.html#cb92-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 </div>
 <div id="iex-testing" class="section level3" number="5.4.4">
 <h3><span class="header-section-number">5.4.4</span> IEx testing</h3>
 <p>That finishes the implementation part, let’s jump into the IEx session to see how it works.</p>
 <p>We will start the observer first, then we will start trading on any valid symbol.</p>
 <p>When our trader will start, you should be able to right-click and select “Kill process”(leave the reason as kill) and click “OK”. At that moment you should see that the PID of the trader changed and we can also see a log message from the leader.</p>
-<div class="sourceCode" id="cb91"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb91-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb91-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb91-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> :observer.start<span class="kw">()</span>             </span>
-<span id="cb91-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-4" aria-hidden="true" tabindex="-1"></a><span class="ex">:ok</span></span>
-<span id="cb91-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb91-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb91-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-7" aria-hidden="true" tabindex="-1"></a><span class="ex">00:04:35.041</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb91-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.455.0&gt;}</span></span>
-<span id="cb91-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-9" aria-hidden="true" tabindex="-1"></a><span class="ex">00:04:37.697</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb91-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-10" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span></span>
-<span id="cb91-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-11" aria-hidden="true" tabindex="-1"></a><span class="ex">00:08:01.476</span> [error] XRPUSDT trader died <span class="at">-</span> trying to restart</span>
-<span id="cb91-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb91-12" aria-hidden="true" tabindex="-1"></a><span class="ex">00:08:01.476</span> [info]  Initializing new trader for XRPUSDT</span></code></pre></div>
+<div class="sourceCode" id="cb93"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb93-1"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb93-2"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb93-3"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> :observer.start<span class="kw">()</span>             </span>
+<span id="cb93-4"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-4" aria-hidden="true" tabindex="-1"></a><span class="ex">:ok</span></span>
+<span id="cb93-5"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
+<span id="cb93-6"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-7"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-7" aria-hidden="true" tabindex="-1"></a><span class="ex">00:04:35.041</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
+<span id="cb93-8"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.455.0&gt;}</span></span>
+<span id="cb93-9"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-9" aria-hidden="true" tabindex="-1"></a><span class="ex">00:04:37.697</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb93-10"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-10" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span></span>
+<span id="cb93-11"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-11" aria-hidden="true" tabindex="-1"></a><span class="ex">00:08:01.476</span> [error] XRPUSDT trader died <span class="at">-</span> trying to restart</span>
+<span id="cb93-12"><a href="enable-parallel-trading-on-multiple-symbols.html#cb93-12" aria-hidden="true" tabindex="-1"></a><span class="ex">00:08:01.476</span> [info]  Initializing new trader for XRPUSDT</span></code></pre></div>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_05">Github</a></p>
 

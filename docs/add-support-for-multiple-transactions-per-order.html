@@ -358,6 +358,67 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
+<div class="quick-option">
+ 
+  <!-- Start Form Toolbar -->
+  <div class="form-toolbar">
+      <div class="inner">
+          <a class="trigger-option" href="#">
+              <img src="https://image.flaticon.com/icons/png/512/833/833472.png" width="40px" />
+          </a>
+      </div>
+  </div>
+  <!-- End Form Toolbar -->
+
+  <!-- Start Quick Form -->
+  <div class="form-option-wrapper">
+      <div class="form-panel-header">
+          <h4>This book wouldn't be possible without our great sponsors ❤️</h4>
+
+          <img src="https://avatars.githubusercontent.com/u/36407?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/212169?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/5660941?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/9498445?v=4" width="40px"/>
+          <img src="https://avatars.githubusercontent.com/u/65608642?s=200&v=4" width="40px"/>
+
+          <h5>Please consider supporting by:</h5>
+
+          <a class="notify-btn" href="https://github.com/sponsors/frathon"><b>DONATE VIA GITHUB</b></a>
+          <br/><br/>
+          <a class="notify-btn" href="https://gumroad.com/l/cSGdY"><b>BUY ON GUMROAD</b></a>
+
+          <h6>BTC</h6>
+          <h7>14YKWr2avF9QrKtyRMg2NdbnUy28B8RMYw</h7>
+
+          <h6>ETH(ERC 20)</h6>
+          <h7>0x4083c298442c2cc722797c86118b1f0a2644b653</h7>
+
+          <h6>ADA(Cardano)</h6>
+          <h7>DdzFFzCqrhshNEJzMsyUbN3jXkD7vnJUSGFCWRs4LezprJc4rrnUdUBURGEM7wjTnjsmXUFoSaGZrkHigXThjD8B8Evs2HtZYDiCpJG6</h7>
+
+          <h6>NEO(NEP5)</h6>
+          <h7>AbcLVaphAXgx2adcEFCWQ8oiE9ncezbnWW</h7>          
+      </div>
+  </div>
+  <!-- End Quick Link -->
+
+</div>
+
+<script>
+  $(".trigger-option").on("click", function (e) {
+      e.preventDefault(),
+          (function () {
+              $formOption.toggleClass("open");
+          })();
+  });
+
+  var $html = $("html"),
+    $formOption = $(".quick-option");
+  
+  if (window.location.href.indexOf("index.html") > 0) {
+    $formOption.toggleClass("open");
+  }
+</script>
 <div id="add-support-for-multiple-transactions-per-order" class="section level1" number="8">
 <h1><span class="header-section-number">Chapter 8</span> Add support for multiple transactions per order</h1>
 <div id="objectives-7" class="section level2" number="8.1">
@@ -389,88 +450,88 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="improve-buy-order-filled-callback" class="section level2" number="8.3">
 <h2><span class="header-section-number">8.3</span> Improve buy order filled callback</h2>
 <p>First, we need to modify the callback which monitors incoming trade events for ones filling its buy order and then places sell order. We need to remove pattern matching assuming that a single trade event will fill our buy order - we need to drop quantity check as well as add:</p>
-<div class="sourceCode" id="cb105"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb105-1"><a href="add-support-for-multiple-transactions-per-order.html#cb105-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb105-2"><a href="add-support-for-multiple-transactions-per-order.html#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb105-3"><a href="add-support-for-multiple-transactions-per-order.html#cb105-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
-<span id="cb105-4"><a href="add-support-for-multiple-transactions-per-order.html#cb105-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">buyer_order_id:</span> order_id <span class="co"># &lt;= quantity got removed from here</span></span>
-<span id="cb105-5"><a href="add-support-for-multiple-transactions-per-order.html#cb105-5" aria-hidden="true" tabindex="-1"></a>        },</span>
-<span id="cb105-6"><a href="add-support-for-multiple-transactions-per-order.html#cb105-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
-<span id="cb105-7"><a href="add-support-for-multiple-transactions-per-order.html#cb105-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
-<span id="cb105-8"><a href="add-support-for-multiple-transactions-per-order.html#cb105-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span></span>
-<span id="cb105-9"><a href="add-support-for-multiple-transactions-per-order.html#cb105-9" aria-hidden="true" tabindex="-1"></a>            %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
-<span id="cb105-10"><a href="add-support-for-multiple-transactions-per-order.html#cb105-10" aria-hidden="true" tabindex="-1"></a>              <span class="va">price:</span> buy_price,</span>
-<span id="cb105-11"><a href="add-support-for-multiple-transactions-per-order.html#cb105-11" aria-hidden="true" tabindex="-1"></a>              <span class="va">order_id:</span> order_id,</span>
-<span id="cb105-12"><a href="add-support-for-multiple-transactions-per-order.html#cb105-12" aria-hidden="true" tabindex="-1"></a>              <span class="va">orig_qty:</span> quantity,</span>
-<span id="cb105-13"><a href="add-support-for-multiple-transactions-per-order.html#cb105-13" aria-hidden="true" tabindex="-1"></a>              <span class="va">transact_time:</span> timestamp <span class="co"># &lt;= timestamp added to query order</span></span>
-<span id="cb105-14"><a href="add-support-for-multiple-transactions-per-order.html#cb105-14" aria-hidden="true" tabindex="-1"></a>            } <span class="op">=</span> buy_order, <span class="co"># &lt;= buy order to update it</span></span>
-<span id="cb105-15"><a href="add-support-for-multiple-transactions-per-order.html#cb105-15" aria-hidden="true" tabindex="-1"></a>          <span class="va">profit_interval:</span> profit_interval,</span>
-<span id="cb105-16"><a href="add-support-for-multiple-transactions-per-order.html#cb105-16" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size</span>
-<span id="cb105-17"><a href="add-support-for-multiple-transactions-per-order.html#cb105-17" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
-<span id="cb105-18"><a href="add-support-for-multiple-transactions-per-order.html#cb105-18" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
+<div class="sourceCode" id="cb107"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb107-1"><a href="add-support-for-multiple-transactions-per-order.html#cb107-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb107-2"><a href="add-support-for-multiple-transactions-per-order.html#cb107-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb107-3"><a href="add-support-for-multiple-transactions-per-order.html#cb107-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb107-4"><a href="add-support-for-multiple-transactions-per-order.html#cb107-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">buyer_order_id:</span> order_id <span class="co"># &lt;= quantity got removed from here</span></span>
+<span id="cb107-5"><a href="add-support-for-multiple-transactions-per-order.html#cb107-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb107-6"><a href="add-support-for-multiple-transactions-per-order.html#cb107-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb107-7"><a href="add-support-for-multiple-transactions-per-order.html#cb107-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
+<span id="cb107-8"><a href="add-support-for-multiple-transactions-per-order.html#cb107-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span></span>
+<span id="cb107-9"><a href="add-support-for-multiple-transactions-per-order.html#cb107-9" aria-hidden="true" tabindex="-1"></a>            %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb107-10"><a href="add-support-for-multiple-transactions-per-order.html#cb107-10" aria-hidden="true" tabindex="-1"></a>              <span class="va">price:</span> buy_price,</span>
+<span id="cb107-11"><a href="add-support-for-multiple-transactions-per-order.html#cb107-11" aria-hidden="true" tabindex="-1"></a>              <span class="va">order_id:</span> order_id,</span>
+<span id="cb107-12"><a href="add-support-for-multiple-transactions-per-order.html#cb107-12" aria-hidden="true" tabindex="-1"></a>              <span class="va">orig_qty:</span> quantity,</span>
+<span id="cb107-13"><a href="add-support-for-multiple-transactions-per-order.html#cb107-13" aria-hidden="true" tabindex="-1"></a>              <span class="va">transact_time:</span> timestamp <span class="co"># &lt;= timestamp added to query order</span></span>
+<span id="cb107-14"><a href="add-support-for-multiple-transactions-per-order.html#cb107-14" aria-hidden="true" tabindex="-1"></a>            } <span class="op">=</span> buy_order, <span class="co"># &lt;= buy order to update it</span></span>
+<span id="cb107-15"><a href="add-support-for-multiple-transactions-per-order.html#cb107-15" aria-hidden="true" tabindex="-1"></a>          <span class="va">profit_interval:</span> profit_interval,</span>
+<span id="cb107-16"><a href="add-support-for-multiple-transactions-per-order.html#cb107-16" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size</span>
+<span id="cb107-17"><a href="add-support-for-multiple-transactions-per-order.html#cb107-17" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb107-18"><a href="add-support-for-multiple-transactions-per-order.html#cb107-18" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
 <p>Now we can fetch our buy order to check is it already filled. We will get the <code>Binance.Order</code> struct instead of the <code>Binance.OrderResponse</code> that we normally deal with. At this moment we will simply update our <code>Binance.OrderResponse</code> struct from the state:</p>
-<div class="sourceCode" id="cb106"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb106-1"><a href="add-support-for-multiple-transactions-per-order.html#cb106-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb106-2"><a href="add-support-for-multiple-transactions-per-order.html#cb106-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
-<span id="cb106-3"><a href="add-support-for-multiple-transactions-per-order.html#cb106-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb106-4"><a href="add-support-for-multiple-transactions-per-order.html#cb106-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb106-5"><a href="add-support-for-multiple-transactions-per-order.html#cb106-5" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb106-6"><a href="add-support-for-multiple-transactions-per-order.html#cb106-6" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> current_buy_order} <span class="op">=</span></span>
-<span id="cb106-7"><a href="add-support-for-multiple-transactions-per-order.html#cb106-7" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_order(</span>
-<span id="cb106-8"><a href="add-support-for-multiple-transactions-per-order.html#cb106-8" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
-<span id="cb106-9"><a href="add-support-for-multiple-transactions-per-order.html#cb106-9" aria-hidden="true" tabindex="-1"></a>        timestamp,</span>
-<span id="cb106-10"><a href="add-support-for-multiple-transactions-per-order.html#cb106-10" aria-hidden="true" tabindex="-1"></a>        order_id</span>
-<span id="cb106-11"><a href="add-support-for-multiple-transactions-per-order.html#cb106-11" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb106-12"><a href="add-support-for-multiple-transactions-per-order.html#cb106-12" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb106-13"><a href="add-support-for-multiple-transactions-per-order.html#cb106-13" aria-hidden="true" tabindex="-1"></a>    buy_order <span class="op">=</span> %{buy_order <span class="op">|</span> <span class="va">status:</span> current_buy_order<span class="op">.</span>status}</span>
-<span id="cb106-14"><a href="add-support-for-multiple-transactions-per-order.html#cb106-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb108"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb108-1"><a href="add-support-for-multiple-transactions-per-order.html#cb108-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb108-2"><a href="add-support-for-multiple-transactions-per-order.html#cb108-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
+<span id="cb108-3"><a href="add-support-for-multiple-transactions-per-order.html#cb108-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb108-4"><a href="add-support-for-multiple-transactions-per-order.html#cb108-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb108-5"><a href="add-support-for-multiple-transactions-per-order.html#cb108-5" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb108-6"><a href="add-support-for-multiple-transactions-per-order.html#cb108-6" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> current_buy_order} <span class="op">=</span></span>
+<span id="cb108-7"><a href="add-support-for-multiple-transactions-per-order.html#cb108-7" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_order(</span>
+<span id="cb108-8"><a href="add-support-for-multiple-transactions-per-order.html#cb108-8" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
+<span id="cb108-9"><a href="add-support-for-multiple-transactions-per-order.html#cb108-9" aria-hidden="true" tabindex="-1"></a>        timestamp,</span>
+<span id="cb108-10"><a href="add-support-for-multiple-transactions-per-order.html#cb108-10" aria-hidden="true" tabindex="-1"></a>        order_id</span>
+<span id="cb108-11"><a href="add-support-for-multiple-transactions-per-order.html#cb108-11" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb108-12"><a href="add-support-for-multiple-transactions-per-order.html#cb108-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb108-13"><a href="add-support-for-multiple-transactions-per-order.html#cb108-13" aria-hidden="true" tabindex="-1"></a>    buy_order <span class="op">=</span> %{buy_order <span class="op">|</span> <span class="va">status:</span> current_buy_order<span class="op">.</span>status}</span>
+<span id="cb108-14"><a href="add-support-for-multiple-transactions-per-order.html#cb108-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>The rest of the logic inside this callback will depend on the <code>status</code> of the buy order. If our buy order is “filled” we would like to follow the existing logic but also update the <code>buy_order</code> field inside the state of the trader process. On the other hand, if our order is not yet filled the only thing to do is to update the <code>buy_order</code> field inside the state of the Trader process.</p>
 <div style="page-break-after: always;"></div>
 <p>Here’s an updated body below the above changes(few variables got renamed for clarity as we are now fetching the order):</p>
-<div class="sourceCode" id="cb107"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb107-1"><a href="add-support-for-multiple-transactions-per-order.html#cb107-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb107-2"><a href="add-support-for-multiple-transactions-per-order.html#cb107-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
-<span id="cb107-3"><a href="add-support-for-multiple-transactions-per-order.html#cb107-3" aria-hidden="true" tabindex="-1"></a>  buy_order <span class="op">=</span> <span class="op">....</span></span>
-<span id="cb107-4"><a href="add-support-for-multiple-transactions-per-order.html#cb107-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-5"><a href="add-support-for-multiple-transactions-per-order.html#cb107-5" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, new_state} <span class="op">=</span></span>
-<span id="cb107-6"><a href="add-support-for-multiple-transactions-per-order.html#cb107-6" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> buy_order<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;FILLED&quot;</span> <span class="kw">do</span></span>
-<span id="cb107-7"><a href="add-support-for-multiple-transactions-per-order.html#cb107-7" aria-hidden="true" tabindex="-1"></a>        sell_price <span class="op">=</span> calculate_sell_price(buy_price, profit_interval, tick_size)</span>
-<span id="cb107-8"><a href="add-support-for-multiple-transactions-per-order.html#cb107-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-9"><a href="add-support-for-multiple-transactions-per-order.html#cb107-9" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(</span>
-<span id="cb107-10"><a href="add-support-for-multiple-transactions-per-order.html#cb107-10" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Buy order filled, placing SELL order for &quot;</span> <span class="op">&lt;&gt;</span></span>
-<span id="cb107-11"><a href="add-support-for-multiple-transactions-per-order.html#cb107-11" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>sell_price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb107-12"><a href="add-support-for-multiple-transactions-per-order.html#cb107-12" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb107-13"><a href="add-support-for-multiple-transactions-per-order.html#cb107-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-14"><a href="add-support-for-multiple-transactions-per-order.html#cb107-14" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{} <span class="op">=</span> order} <span class="op">=</span></span>
-<span id="cb107-15"><a href="add-support-for-multiple-transactions-per-order.html#cb107-15" aria-hidden="true" tabindex="-1"></a>          <span class="ot">@binance_client</span><span class="op">.</span>order_limit_sell(symbol, quantity, sell_price, <span class="st">&quot;GTC&quot;</span>)</span>
-<span id="cb107-16"><a href="add-support-for-multiple-transactions-per-order.html#cb107-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-17"><a href="add-support-for-multiple-transactions-per-order.html#cb107-17" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">buy_order:</span> buy_order, <span class="va">sell_order:</span> order}}</span>
-<span id="cb107-18"><a href="add-support-for-multiple-transactions-per-order.html#cb107-18" aria-hidden="true" tabindex="-1"></a>      <span class="cf">else</span></span>
-<span id="cb107-19"><a href="add-support-for-multiple-transactions-per-order.html#cb107-19" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Buy order partially filled&quot;</span>)</span>
-<span id="cb107-20"><a href="add-support-for-multiple-transactions-per-order.html#cb107-20" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">buy_order:</span> buy_order}}</span>
-<span id="cb107-21"><a href="add-support-for-multiple-transactions-per-order.html#cb107-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span></span>
-<span id="cb107-22"><a href="add-support-for-multiple-transactions-per-order.html#cb107-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-23"><a href="add-support-for-multiple-transactions-per-order.html#cb107-23" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
-<span id="cb107-24"><a href="add-support-for-multiple-transactions-per-order.html#cb107-24" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
-<span id="cb107-25"><a href="add-support-for-multiple-transactions-per-order.html#cb107-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb109"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb109-1"><a href="add-support-for-multiple-transactions-per-order.html#cb109-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb109-2"><a href="add-support-for-multiple-transactions-per-order.html#cb109-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># inside the same callback</span></span>
+<span id="cb109-3"><a href="add-support-for-multiple-transactions-per-order.html#cb109-3" aria-hidden="true" tabindex="-1"></a>  buy_order <span class="op">=</span> <span class="op">....</span></span>
+<span id="cb109-4"><a href="add-support-for-multiple-transactions-per-order.html#cb109-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-5"><a href="add-support-for-multiple-transactions-per-order.html#cb109-5" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, new_state} <span class="op">=</span></span>
+<span id="cb109-6"><a href="add-support-for-multiple-transactions-per-order.html#cb109-6" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> buy_order<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;FILLED&quot;</span> <span class="kw">do</span></span>
+<span id="cb109-7"><a href="add-support-for-multiple-transactions-per-order.html#cb109-7" aria-hidden="true" tabindex="-1"></a>        sell_price <span class="op">=</span> calculate_sell_price(buy_price, profit_interval, tick_size)</span>
+<span id="cb109-8"><a href="add-support-for-multiple-transactions-per-order.html#cb109-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-9"><a href="add-support-for-multiple-transactions-per-order.html#cb109-9" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(</span>
+<span id="cb109-10"><a href="add-support-for-multiple-transactions-per-order.html#cb109-10" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;Buy order filled, placing SELL order for &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb109-11"><a href="add-support-for-multiple-transactions-per-order.html#cb109-11" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>sell_price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb109-12"><a href="add-support-for-multiple-transactions-per-order.html#cb109-12" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb109-13"><a href="add-support-for-multiple-transactions-per-order.html#cb109-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-14"><a href="add-support-for-multiple-transactions-per-order.html#cb109-14" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{} <span class="op">=</span> order} <span class="op">=</span></span>
+<span id="cb109-15"><a href="add-support-for-multiple-transactions-per-order.html#cb109-15" aria-hidden="true" tabindex="-1"></a>          <span class="ot">@binance_client</span><span class="op">.</span>order_limit_sell(symbol, quantity, sell_price, <span class="st">&quot;GTC&quot;</span>)</span>
+<span id="cb109-16"><a href="add-support-for-multiple-transactions-per-order.html#cb109-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-17"><a href="add-support-for-multiple-transactions-per-order.html#cb109-17" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">buy_order:</span> buy_order, <span class="va">sell_order:</span> order}}</span>
+<span id="cb109-18"><a href="add-support-for-multiple-transactions-per-order.html#cb109-18" aria-hidden="true" tabindex="-1"></a>      <span class="cf">else</span></span>
+<span id="cb109-19"><a href="add-support-for-multiple-transactions-per-order.html#cb109-19" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Buy order partially filled&quot;</span>)</span>
+<span id="cb109-20"><a href="add-support-for-multiple-transactions-per-order.html#cb109-20" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">buy_order:</span> buy_order}}</span>
+<span id="cb109-21"><a href="add-support-for-multiple-transactions-per-order.html#cb109-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">end</span></span>
+<span id="cb109-22"><a href="add-support-for-multiple-transactions-per-order.html#cb109-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-23"><a href="add-support-for-multiple-transactions-per-order.html#cb109-23" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
+<span id="cb109-24"><a href="add-support-for-multiple-transactions-per-order.html#cb109-24" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, new_state}</span>
+<span id="cb109-25"><a href="add-support-for-multiple-transactions-per-order.html#cb109-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>As we are branching our logic and both paths are updating the state, we will return it together with an <code>:ok</code> atom to be able to pattern match it and assign it as a new state.</p>
 </div>
 <div id="implement-buy-order-filled-callback" class="section level2" number="8.4">
 <h2><span class="header-section-number">8.4</span> Implement buy order “filled” callback</h2>
 <p>The above callback covers the case where we will get multiple transactions filling our buy order. We aren’t yet covering for the race condition described at the beginning of this chapter. When another trade event matching <code>buyer_order_id</code> would arrive, the above callback would be used and another sell order would be placed. To avoid that we need to add a new callback <em>ABOVE</em> the one that we just edited that will match <code>buyer_order_id</code> together with “filled” <code>status</code> and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:</p>
-<div class="sourceCode" id="cb108"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb108-1"><a href="add-support-for-multiple-transactions-per-order.html#cb108-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb108-2"><a href="add-support-for-multiple-transactions-per-order.html#cb108-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this callback ABOVE callback from previous section</span></span>
-<span id="cb108-3"><a href="add-support-for-multiple-transactions-per-order.html#cb108-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb108-4"><a href="add-support-for-multiple-transactions-per-order.html#cb108-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{</span>
-<span id="cb108-5"><a href="add-support-for-multiple-transactions-per-order.html#cb108-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">buyer_order_id:</span> order_id</span>
-<span id="cb108-6"><a href="add-support-for-multiple-transactions-per-order.html#cb108-6" aria-hidden="true" tabindex="-1"></a>        },</span>
-<span id="cb108-7"><a href="add-support-for-multiple-transactions-per-order.html#cb108-7" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
-<span id="cb108-8"><a href="add-support-for-multiple-transactions-per-order.html#cb108-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
-<span id="cb108-9"><a href="add-support-for-multiple-transactions-per-order.html#cb108-9" aria-hidden="true" tabindex="-1"></a>            <span class="va">order_id:</span> order_id, <span class="co"># &lt;= confirms that it&#39;s event for buy order</span></span>
-<span id="cb108-10"><a href="add-support-for-multiple-transactions-per-order.html#cb108-10" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span> <span class="co"># &lt;= confirms buy order filled</span></span>
-<span id="cb108-11"><a href="add-support-for-multiple-transactions-per-order.html#cb108-11" aria-hidden="true" tabindex="-1"></a>          },</span>
-<span id="cb108-12"><a href="add-support-for-multiple-transactions-per-order.html#cb108-12" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{} <span class="co"># &lt;= confirms sell order placed</span></span>
-<span id="cb108-13"><a href="add-support-for-multiple-transactions-per-order.html#cb108-13" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
-<span id="cb108-14"><a href="add-support-for-multiple-transactions-per-order.html#cb108-14" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb108-15"><a href="add-support-for-multiple-transactions-per-order.html#cb108-15" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, state}</span>
-<span id="cb108-16"><a href="add-support-for-multiple-transactions-per-order.html#cb108-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb110"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb110-1"><a href="add-support-for-multiple-transactions-per-order.html#cb110-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb110-2"><a href="add-support-for-multiple-transactions-per-order.html#cb110-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># place this callback ABOVE callback from previous section</span></span>
+<span id="cb110-3"><a href="add-support-for-multiple-transactions-per-order.html#cb110-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb110-4"><a href="add-support-for-multiple-transactions-per-order.html#cb110-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{</span>
+<span id="cb110-5"><a href="add-support-for-multiple-transactions-per-order.html#cb110-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">buyer_order_id:</span> order_id</span>
+<span id="cb110-6"><a href="add-support-for-multiple-transactions-per-order.html#cb110-6" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb110-7"><a href="add-support-for-multiple-transactions-per-order.html#cb110-7" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb110-8"><a href="add-support-for-multiple-transactions-per-order.html#cb110-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb110-9"><a href="add-support-for-multiple-transactions-per-order.html#cb110-9" aria-hidden="true" tabindex="-1"></a>            <span class="va">order_id:</span> order_id, <span class="co"># &lt;= confirms that it&#39;s event for buy order</span></span>
+<span id="cb110-10"><a href="add-support-for-multiple-transactions-per-order.html#cb110-10" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span> <span class="co"># &lt;= confirms buy order filled</span></span>
+<span id="cb110-11"><a href="add-support-for-multiple-transactions-per-order.html#cb110-11" aria-hidden="true" tabindex="-1"></a>          },</span>
+<span id="cb110-12"><a href="add-support-for-multiple-transactions-per-order.html#cb110-12" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{} <span class="co"># &lt;= confirms sell order placed</span></span>
+<span id="cb110-13"><a href="add-support-for-multiple-transactions-per-order.html#cb110-13" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb110-14"><a href="add-support-for-multiple-transactions-per-order.html#cb110-14" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb110-15"><a href="add-support-for-multiple-transactions-per-order.html#cb110-15" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, state}</span>
+<span id="cb110-16"><a href="add-support-for-multiple-transactions-per-order.html#cb110-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 </div>
 <div id="improve-sell-order-callback" class="section level2" number="8.5">
 <h2><span class="header-section-number">8.5</span> Improve sell order callback</h2>
@@ -482,20 +543,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>get <code>transact_time</code> out of the <code>sell_order</code> (used to fetch <code>get_order</code>) (#3)</li>
 <li>assign <code>sell_order</code> to a variable (#4)</li>
 </ul>
-<div class="sourceCode" id="cb109"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb109-1"><a href="add-support-for-multiple-transactions-per-order.html#cb109-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb109-2"><a href="add-support-for-multiple-transactions-per-order.html#cb109-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb109-3"><a href="add-support-for-multiple-transactions-per-order.html#cb109-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
-<span id="cb109-4"><a href="add-support-for-multiple-transactions-per-order.html#cb109-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">seller_order_id:</span> order_id <span class="co"># `quantity` check removed below (#1)</span></span>
-<span id="cb109-5"><a href="add-support-for-multiple-transactions-per-order.html#cb109-5" aria-hidden="true" tabindex="-1"></a>        },</span>
-<span id="cb109-6"><a href="add-support-for-multiple-transactions-per-order.html#cb109-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
-<span id="cb109-7"><a href="add-support-for-multiple-transactions-per-order.html#cb109-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol, (<span class="co">#2)</span></span>
-<span id="cb109-8"><a href="add-support-for-multiple-transactions-per-order.html#cb109-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span></span>
-<span id="cb109-9"><a href="add-support-for-multiple-transactions-per-order.html#cb109-9" aria-hidden="true" tabindex="-1"></a>            %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
-<span id="cb109-10"><a href="add-support-for-multiple-transactions-per-order.html#cb109-10" aria-hidden="true" tabindex="-1"></a>              <span class="va">order_id:</span> order_id,</span>
-<span id="cb109-11"><a href="add-support-for-multiple-transactions-per-order.html#cb109-11" aria-hidden="true" tabindex="-1"></a>              <span class="va">transact_time:</span> timestamp <span class="co"># `transact_time` to `get_order` (#3)</span></span>
-<span id="cb109-12"><a href="add-support-for-multiple-transactions-per-order.html#cb109-12" aria-hidden="true" tabindex="-1"></a>            } <span class="op">=</span> sell_order <span class="co"># to update order (#4)</span></span>
-<span id="cb109-13"><a href="add-support-for-multiple-transactions-per-order.html#cb109-13" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
-<span id="cb109-14"><a href="add-support-for-multiple-transactions-per-order.html#cb109-14" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
+<div class="sourceCode" id="cb111"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb111-1"><a href="add-support-for-multiple-transactions-per-order.html#cb111-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb111-2"><a href="add-support-for-multiple-transactions-per-order.html#cb111-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb111-3"><a href="add-support-for-multiple-transactions-per-order.html#cb111-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb111-4"><a href="add-support-for-multiple-transactions-per-order.html#cb111-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">seller_order_id:</span> order_id <span class="co"># `quantity` check removed below (#1)</span></span>
+<span id="cb111-5"><a href="add-support-for-multiple-transactions-per-order.html#cb111-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb111-6"><a href="add-support-for-multiple-transactions-per-order.html#cb111-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
+<span id="cb111-7"><a href="add-support-for-multiple-transactions-per-order.html#cb111-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol, (<span class="co">#2)</span></span>
+<span id="cb111-8"><a href="add-support-for-multiple-transactions-per-order.html#cb111-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span></span>
+<span id="cb111-9"><a href="add-support-for-multiple-transactions-per-order.html#cb111-9" aria-hidden="true" tabindex="-1"></a>            %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb111-10"><a href="add-support-for-multiple-transactions-per-order.html#cb111-10" aria-hidden="true" tabindex="-1"></a>              <span class="va">order_id:</span> order_id,</span>
+<span id="cb111-11"><a href="add-support-for-multiple-transactions-per-order.html#cb111-11" aria-hidden="true" tabindex="-1"></a>              <span class="va">transact_time:</span> timestamp <span class="co"># `transact_time` to `get_order` (#3)</span></span>
+<span id="cb111-12"><a href="add-support-for-multiple-transactions-per-order.html#cb111-12" aria-hidden="true" tabindex="-1"></a>            } <span class="op">=</span> sell_order <span class="co"># to update order (#4)</span></span>
+<span id="cb111-13"><a href="add-support-for-multiple-transactions-per-order.html#cb111-13" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
+<span id="cb111-14"><a href="add-support-for-multiple-transactions-per-order.html#cb111-14" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
 <p>Moving to the body of the function, we need to:</p>
 <ul>
 <li><p>fetch current state of our sell order</p></li>
@@ -511,43 +572,43 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul>
 <div style="page-break-after: always;"></div>
 <p>Here’s the full body of our callback:</p>
-<div class="sourceCode" id="cb110"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb110-1"><a href="add-support-for-multiple-transactions-per-order.html#cb110-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb110-2"><a href="add-support-for-multiple-transactions-per-order.html#cb110-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># inside the callabck</span></span>
-<span id="cb110-3"><a href="add-support-for-multiple-transactions-per-order.html#cb110-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> current_sell_order} <span class="op">=</span></span>
-<span id="cb110-4"><a href="add-support-for-multiple-transactions-per-order.html#cb110-4" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_order(</span>
-<span id="cb110-5"><a href="add-support-for-multiple-transactions-per-order.html#cb110-5" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
-<span id="cb110-6"><a href="add-support-for-multiple-transactions-per-order.html#cb110-6" aria-hidden="true" tabindex="-1"></a>        timestamp,</span>
-<span id="cb110-7"><a href="add-support-for-multiple-transactions-per-order.html#cb110-7" aria-hidden="true" tabindex="-1"></a>        order_id</span>
-<span id="cb110-8"><a href="add-support-for-multiple-transactions-per-order.html#cb110-8" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb110-9"><a href="add-support-for-multiple-transactions-per-order.html#cb110-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb110-10"><a href="add-support-for-multiple-transactions-per-order.html#cb110-10" aria-hidden="true" tabindex="-1"></a>    sell_order <span class="op">=</span> %{sell_order <span class="op">|</span> <span class="va">status:</span> current_sell_order<span class="op">.</span>status}</span>
-<span id="cb110-11"><a href="add-support-for-multiple-transactions-per-order.html#cb110-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb110-12"><a href="add-support-for-multiple-transactions-per-order.html#cb110-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sell_order<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;FILLED&quot;</span> <span class="kw">do</span></span>
-<span id="cb110-13"><a href="add-support-for-multiple-transactions-per-order.html#cb110-13" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Trade finished, trader will now exit&quot;</span>)</span>
-<span id="cb110-14"><a href="add-support-for-multiple-transactions-per-order.html#cb110-14" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:stop</span>, <span class="va">:normal</span>, state}</span>
-<span id="cb110-15"><a href="add-support-for-multiple-transactions-per-order.html#cb110-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
-<span id="cb110-16"><a href="add-support-for-multiple-transactions-per-order.html#cb110-16" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Sell order partially filled&quot;</span>)</span>
-<span id="cb110-17"><a href="add-support-for-multiple-transactions-per-order.html#cb110-17" aria-hidden="true" tabindex="-1"></a>      new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">sell_order:</span> sell_order}</span>
-<span id="cb110-18"><a href="add-support-for-multiple-transactions-per-order.html#cb110-18" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:noreply</span>, new_state}</span>
-<span id="cb110-19"><a href="add-support-for-multiple-transactions-per-order.html#cb110-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb112"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb112-1"><a href="add-support-for-multiple-transactions-per-order.html#cb112-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb112-2"><a href="add-support-for-multiple-transactions-per-order.html#cb112-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># inside the callabck</span></span>
+<span id="cb112-3"><a href="add-support-for-multiple-transactions-per-order.html#cb112-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> current_sell_order} <span class="op">=</span></span>
+<span id="cb112-4"><a href="add-support-for-multiple-transactions-per-order.html#cb112-4" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_order(</span>
+<span id="cb112-5"><a href="add-support-for-multiple-transactions-per-order.html#cb112-5" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
+<span id="cb112-6"><a href="add-support-for-multiple-transactions-per-order.html#cb112-6" aria-hidden="true" tabindex="-1"></a>        timestamp,</span>
+<span id="cb112-7"><a href="add-support-for-multiple-transactions-per-order.html#cb112-7" aria-hidden="true" tabindex="-1"></a>        order_id</span>
+<span id="cb112-8"><a href="add-support-for-multiple-transactions-per-order.html#cb112-8" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb112-9"><a href="add-support-for-multiple-transactions-per-order.html#cb112-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb112-10"><a href="add-support-for-multiple-transactions-per-order.html#cb112-10" aria-hidden="true" tabindex="-1"></a>    sell_order <span class="op">=</span> %{sell_order <span class="op">|</span> <span class="va">status:</span> current_sell_order<span class="op">.</span>status}</span>
+<span id="cb112-11"><a href="add-support-for-multiple-transactions-per-order.html#cb112-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb112-12"><a href="add-support-for-multiple-transactions-per-order.html#cb112-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sell_order<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;FILLED&quot;</span> <span class="kw">do</span></span>
+<span id="cb112-13"><a href="add-support-for-multiple-transactions-per-order.html#cb112-13" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Trade finished, trader will now exit&quot;</span>)</span>
+<span id="cb112-14"><a href="add-support-for-multiple-transactions-per-order.html#cb112-14" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:stop</span>, <span class="va">:normal</span>, state}</span>
+<span id="cb112-15"><a href="add-support-for-multiple-transactions-per-order.html#cb112-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb112-16"><a href="add-support-for-multiple-transactions-per-order.html#cb112-16" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Sell order partially filled&quot;</span>)</span>
+<span id="cb112-17"><a href="add-support-for-multiple-transactions-per-order.html#cb112-17" aria-hidden="true" tabindex="-1"></a>      new_state <span class="op">=</span> %{state <span class="op">|</span> <span class="va">sell_order:</span> sell_order}</span>
+<span id="cb112-18"><a href="add-support-for-multiple-transactions-per-order.html#cb112-18" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:noreply</span>, new_state}</span>
+<span id="cb112-19"><a href="add-support-for-multiple-transactions-per-order.html#cb112-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
 </div>
 <div id="test-the-implementation-1" class="section level2" number="8.6">
 <h2><span class="header-section-number">8.6</span> Test the implementation</h2>
 <p>Testing this feature is a bit tricky as it requires trading on real Binance exchange(as our BinanceMock always fills orders with a single transaction) as well as race condition to happen :) Not that easy but even without race condition we should still test that code works as expected with BinanceMock:</p>
-<div class="sourceCode" id="cb111"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb111-1"><a href="add-support-for-multiple-transactions-per-order.html#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb111-2"><a href="add-support-for-multiple-transactions-per-order.html#cb111-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb111-3"><a href="add-support-for-multiple-transactions-per-order.html#cb111-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb111-4"><a href="add-support-for-multiple-transactions-per-order.html#cb111-4" aria-hidden="true" tabindex="-1"></a><span class="ex">23:27:35.977</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb111-5"><a href="add-support-for-multiple-transactions-per-order.html#cb111-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.331.0&gt;}</span></span>
-<span id="cb111-6"><a href="add-support-for-multiple-transactions-per-order.html#cb111-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:27:39.073</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb111-7"><a href="add-support-for-multiple-transactions-per-order.html#cb111-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb111-8"><a href="add-support-for-multiple-transactions-per-order.html#cb111-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.345.0&gt;}</span></span>
-<span id="cb111-9"><a href="add-support-for-multiple-transactions-per-order.html#cb111-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:31:57.044</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb111-10"><a href="add-support-for-multiple-transactions-per-order.html#cb111-10" aria-hidden="true" tabindex="-1"></a><span class="ex">23:31:57.888</span> [info]  Placing BUY order for XRPUSDT @ 0.28031, quantity: 71.3</span>
-<span id="cb111-11"><a href="add-support-for-multiple-transactions-per-order.html#cb111-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:32:01.023</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.28053,</span>
-<span id="cb111-12"><a href="add-support-for-multiple-transactions-per-order.html#cb111-12" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 71.30000000</span>
-<span id="cb111-13"><a href="add-support-for-multiple-transactions-per-order.html#cb111-13" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  Trade finished, trader will now exit</span>
-<span id="cb111-14"><a href="add-support-for-multiple-transactions-per-order.html#cb111-14" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  XRPUSDT Trader finished <span class="at">-</span> restarting</span></code></pre></div>
+<div class="sourceCode" id="cb113"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb113-1"><a href="add-support-for-multiple-transactions-per-order.html#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb113-2"><a href="add-support-for-multiple-transactions-per-order.html#cb113-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb113-3"><a href="add-support-for-multiple-transactions-per-order.html#cb113-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb113-4"><a href="add-support-for-multiple-transactions-per-order.html#cb113-4" aria-hidden="true" tabindex="-1"></a><span class="ex">23:27:35.977</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
+<span id="cb113-5"><a href="add-support-for-multiple-transactions-per-order.html#cb113-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.331.0&gt;}</span></span>
+<span id="cb113-6"><a href="add-support-for-multiple-transactions-per-order.html#cb113-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:27:39.073</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb113-7"><a href="add-support-for-multiple-transactions-per-order.html#cb113-7" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb113-8"><a href="add-support-for-multiple-transactions-per-order.html#cb113-8" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.345.0&gt;}</span></span>
+<span id="cb113-9"><a href="add-support-for-multiple-transactions-per-order.html#cb113-9" aria-hidden="true" tabindex="-1"></a><span class="ex">23:31:57.044</span> [info]  Initializing new trader for XRPUSDT</span>
+<span id="cb113-10"><a href="add-support-for-multiple-transactions-per-order.html#cb113-10" aria-hidden="true" tabindex="-1"></a><span class="ex">23:31:57.888</span> [info]  Placing BUY order for XRPUSDT @ 0.28031, quantity: 71.3</span>
+<span id="cb113-11"><a href="add-support-for-multiple-transactions-per-order.html#cb113-11" aria-hidden="true" tabindex="-1"></a><span class="ex">23:32:01.023</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.28053,</span>
+<span id="cb113-12"><a href="add-support-for-multiple-transactions-per-order.html#cb113-12" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 71.30000000</span>
+<span id="cb113-13"><a href="add-support-for-multiple-transactions-per-order.html#cb113-13" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  Trade finished, trader will now exit</span>
+<span id="cb113-14"><a href="add-support-for-multiple-transactions-per-order.html#cb113-14" aria-hidden="true" tabindex="-1"></a><span class="ex">23:33:08.865</span> [info]  XRPUSDT Trader finished <span class="at">-</span> restarting</span></code></pre></div>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_08">Github</a></p>
 

@@ -486,10 +486,10 @@ The final callback that we need to provide will handle the scenario where the tr
   # /apps/naive/lib/naive/leader.ex
   # below trade finished handle_info callback
   def handle_info(
-        {:DOWN, _ref, :process, trader_pid, _reason},
+        {:DOWN, _ref, :process, trader_pid, reason},
         %{traders: traders, symbol: symbol} = state
       ) do
-    Logger.error("#{symbol} trader died - trying to restart")
+    Logger.error("#{symbol} trader died - reason #{reason} - trying to restart")
 
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
