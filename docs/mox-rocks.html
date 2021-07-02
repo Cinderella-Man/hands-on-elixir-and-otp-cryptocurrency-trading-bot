@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
-  <meta name="description" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <title>Chapter 17 Mox rocks | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 17 Mox rocks | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:title" content="Chapter 17 Mox rocks | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:title" content="Chapter 17 Mox rocks | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="twitter:site" content="@kamilskowron" />
   
   
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"/>
-<link rel="next" href="add-support-for-multiple-transactions-per-order.html"/>
+<link rel="prev" href="end-to-end-testing.html"/>
+
 <script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -428,165 +428,69 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     $formOption.toggleClass("open");
   }
 </script>
-<div id="introduce-a-trader-budget-and-calculating-the-quantity" class="section level1" number="7">
-<h1><span class="header-section-number">Chapter 7</span> Introduce a trader budget and calculating the quantity</h1>
-<div id="objectives-6" class="section level2" number="7.1">
-<h2><span class="header-section-number">7.1</span> Objectives</h2>
+<div id="mox-rocks" class="section level1" number="17">
+<h1><span class="header-section-number">Chapter 17</span> Mox rocks</h1>
+<div id="objectives-16" class="section level2" number="17.1">
+<h2><span class="header-section-number">17.1</span> Objectives</h2>
 <ul>
-<li>fetch step_size</li>
-<li>append budget and step_size to the <code>Trader</code>’s state compiled by the <code>Leader</code></li>
-<li>append budget and step_size to the <code>Trader</code>’s state</li>
-<li>calculate quantity</li>
+<li>briefly describe how the Mox package works</li>
+<li>fix configuration</li>
+<li>add the Mox package</li>
+<li>define behavior</li>
 </ul>
 </div>
-<div id="fetch-step_size" class="section level2" number="7.2">
-<h2><span class="header-section-number">7.2</span> Fetch <code>step_size</code></h2>
-<p>In the 2nd chapter we hardcoded <code>quantity</code> to 100, it’s time to refactor that. We will need <code>step_size</code> information from the Binance which we are
-already retrieving together with <code>tick_size</code> in the <code>exchangeInfo</code> call(but not getting it out from the response). So we will rename the <code>fetch_tick_size/1</code> function to <code>fetch_symbol_filters/1</code> which will allow us to return multiple filters(<code>tick_size</code> and <code>step_size</code>) from that function.</p>
-<div class="sourceCode" id="cb100"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb100-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb100-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb100-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
-<span id="cb100-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-4" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span> fetch_symbol_filters(symbol) <span class="co"># &lt;= updated fetch_tick_size</span></span>
-<span id="cb100-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb100-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
-<span id="cb100-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-7" aria-hidden="true" tabindex="-1"></a>      %{</span>
-<span id="cb100-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,</span>
-<span id="cb100-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">1</span>,</span>
-<span id="cb100-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">20</span>,</span>
-<span id="cb100-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.01% for quick testing</span></span>
-<span id="cb100-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>,</span>
-<span id="cb100-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing</span></span>
-<span id="cb100-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span></span>
-<span id="cb100-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-15" aria-hidden="true" tabindex="-1"></a>      },</span>
-<span id="cb100-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-16" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-17" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb100-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb100-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters(symbol) <span class="kw">do</span>  <span class="co"># &lt;= updated fetch_tick_size</span></span>
-<span id="cb100-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-21" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
-<span id="cb100-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-22" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
-<span id="cb100-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-23" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
-<span id="cb100-24"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
-<span id="cb100-25"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-25" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
-<span id="cb100-26"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-26" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
-<span id="cb100-27"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-28"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-28" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
-<span id="cb100-29"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-29" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-30"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-30" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
-<span id="cb100-31"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-31" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
-<span id="cb100-32"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-33"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-33" aria-hidden="true" tabindex="-1"></a>    step_size <span class="op">=</span></span>
-<span id="cb100-34"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-34" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-35"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-35" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span>))</span>
-<span id="cb100-36"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;stepSize&quot;</span>)</span>
-<span id="cb100-37"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-38"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-38" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb100-39"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-39" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size,</span>
-<span id="cb100-40"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-40" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
-<span id="cb100-41"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-41" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb100-42"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a <code>budget</code>(#2) which will be shared across all traders of the symbol. Also, we don’t need to assign <code>tick_size</code> here as it’s part of the settings that are merged.</p>
+<div id="briefly-describe-how-the-mox-package-works" class="section level2" number="17.2">
+<h2><span class="header-section-number">17.2</span> Briefly describe how the Mox package works</h2>
+<p>In the last chapter, we implemented a single end-to-end test, but as I pointed out, we should have the least amount of this type of test. Because of that, in this chapter, we will look into how we could test smaller parts of the code like <code>Naive.Trader</code> on its own by using the Mox package to mock dependencies.</p>
+<p>The <code>mox</code> package works by dynamically providing modules(based on our defined <code>expect</code>ations) with the same interface as the real implementation (in a very similar way to our manual implementation of the <code>BinanceMock</code> application).</p>
+<p>For <code>mox</code> to “know” what’s the interface of the module that we would like to mock, we need to provide it with an <code>behaviour</code>.</p>
+<p>There are a few steps to get the <code>mox</code> running:</p>
+<ul>
+<li>implement behaviours that we would like to mock(as most of the packages are not coming with those)</li>
+<li>define mock using the <code>Mox.defmock</code> function</li>
+<li>modify the application’s configuration to use the mocked module(s). Here we will stamp upon a problem as our test environment already uses the <code>BinanceMock</code> module to run the test that we’ve written in the last chapter. To fix that we will rename the current <code>test.exs</code> config file to <code>integration.exs</code> config file(which basically mean that we will use <code>intergration</code> environment to run integration test and <code>test</code> environment to run our new trully mocked out tests[using the <code>Mox</code> package])</li>
+<li>inside the test specify <code>expect</code>actions from the mock module</li>
+</ul>
+<p>Let’s move to the implementation starting with fixing the configuration.</p>
 </div>
-<div id="append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="section level2" number="7.3">
-<h2><span class="header-section-number">7.3</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></h2>
-<p>The <code>budget</code> needs to be added to the <code>%State{}</code>(<code>step_size</code> will be automatically passed on by <code>struct/2</code>) of the trader inside <code>fresh_trader_state/1</code>(where we initialize the state of traders). Before we will assign it we need to divide it by the number of chunks as each trader gets only a chunk of the budget:</p>
-<div class="sourceCode" id="cb101"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb101-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb101-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
-<span id="cb101-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb101-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-4" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings) <span class="op">|</span></span>
-<span id="cb101-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks)</span>
-<span id="cb101-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-6" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb101-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>In the code above we are using the <code>Decimal</code> module(aliased as <code>D</code>) to calculate the budget - we need to alias it at the top of <code>Naive.Leader</code>’s file:</p>
-<div class="sourceCode" id="cb102"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb102-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb102-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
-<span id="cb102-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
-<span id="cb102-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D <span class="co"># &lt;= add this line</span></span>
-<span id="cb102-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-6" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
-<span id="cb102-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div id="fix-configuration" class="section level2" number="17.3">
+<h2><span class="header-section-number">17.3</span> Fix configuration</h2>
+<p>As pointed out above we will rename the current <code>config/test.exs</code> file to <code>config/integration.exs</code>.</p>
+<p>At this moment we should still be able to run the end-to-end test from the last chapter but we need to remember that we now need to use the <code>integration</code> environment:</p>
+<div class="sourceCode" id="cb345"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb345-1"><a href="mox-rocks.html#cb345-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>integration <span class="ex">mix</span> test.integration</span></code></pre></div>
+<p>We can now create a new file for the <code>test</code> environment - <code>config/test.exs</code>:</p>
+<div class="sourceCode" id="cb346"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb346-1"><a href="mox-rocks.html#cb346-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb346-2"><a href="mox-rocks.html#cb346-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="cn">Config</span></span>
+<span id="cb346-3"><a href="mox-rocks.html#cb346-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb346-4"><a href="mox-rocks.html#cb346-4" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb346-5"><a href="mox-rocks.html#cb346-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">binance_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span></span></code></pre></div>
 </div>
-<div id="append-budget-and-step_size-to-the-traders-state" class="section level2" number="7.4">
-<h2><span class="header-section-number">7.4</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</h2>
-<p>We need to add both <code>budget</code> and <code>step_size</code> to the <code>Naive.Trader</code>’s state struct:</p>
-<div class="sourceCode" id="cb103"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb103-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb103-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb103-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
-<span id="cb103-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
-<span id="cb103-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
-<span id="cb103-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
-<span id="cb103-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
-<span id="cb103-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
-<span id="cb103-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
-<span id="cb103-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
-<span id="cb103-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-11" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb103-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
-<span id="cb103-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
-<span id="cb103-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
-<span id="cb103-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
-<span id="cb103-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
-<span id="cb103-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
-<span id="cb103-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
-<span id="cb103-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
-<span id="cb103-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
-<span id="cb103-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-21" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb103-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb103-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-23" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div id="add-the-mox-package" class="section level2" number="17.4">
+<h2><span class="header-section-number">17.4</span> Add the Mox package</h2>
+<p>The <code>Test.BinanceMock</code> doesn’t exist yet, it will be generate by the <code>mox</code> package. First let’s add it to the <code>naive</code> application’s dependencies:</p>
+<div class="sourceCode" id="cb347"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb347-1"><a href="mox-rocks.html#cb347-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/mix.exs</span></span>
+<span id="cb347-2"><a href="mox-rocks.html#cb347-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb347-3"><a href="mox-rocks.html#cb347-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb347-4"><a href="mox-rocks.html#cb347-4" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb347-5"><a href="mox-rocks.html#cb347-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb347-6"><a href="mox-rocks.html#cb347-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:mox</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>, <span class="va">only:</span> <span class="va">:test</span>},</span>
+<span id="cb347-7"><a href="mox-rocks.html#cb347-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
+<p>We can now run <code>mix deps.get</code> to fetch the <code>mox</code> package.</p>
 </div>
-<div id="calculate-quantity" class="section level2" number="7.5">
-<h2><span class="header-section-number">7.5</span> Calculate quantity</h2>
-<p>Jumping back to the <code>handle_info/2</code> where the <code>Naive.Trader</code> places a buy order, we need to pattern match on the <code>step_size</code> and <code>budget</code> then we will be able to swap hardcoded quantity with the result of calling the <code>calculate_quantity/3</code> function:</p>
-<div class="sourceCode" id="cb104"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb104-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb104-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb104-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb104-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="va">price:</span> price},</span>
-<span id="cb104-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-5" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
-<span id="cb104-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-6" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
-<span id="cb104-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">budget:</span> budget, <span class="co"># &lt;= add this line</span></span>
-<span id="cb104-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
-<span id="cb104-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-9" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_down_interval:</span> buy_down_interval,</span>
-<span id="cb104-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size,</span>
-<span id="cb104-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">step_size:</span> step_size <span class="co"># &lt;= add this line</span></span>
-<span id="cb104-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-12" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
-<span id="cb104-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-13" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb104-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb104-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-15" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> calculate_quantity(budget, price, step_size)</span>
-<span id="cb104-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>To calculate quantity we will just divide the <code>budget</code> by the <code>price</code> with a caveat that it’s possible (as with calculating the price) that it’s not a legal quantity value as it needs to be divisible by <code>step_size</code>:</p>
-<div class="sourceCode" id="cb105"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb105-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb105-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below at the bottom of the file</span></span>
-<span id="cb105-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb105-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_quantity(budget, price, step_size) <span class="kw">do</span></span>
-<span id="cb105-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># not necessarily legal quantity</span></span>
-<span id="cb105-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-6" aria-hidden="true" tabindex="-1"></a>    exact_target_quantity <span class="op">=</span> D<span class="op">.</span>div(budget, price)</span>
-<span id="cb105-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb105-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-8" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_string(</span>
-<span id="cb105-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-9" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
-<span id="cb105-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(exact_target_quantity, step_size),</span>
-<span id="cb105-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-11" aria-hidden="true" tabindex="-1"></a>        step_size</span>
-<span id="cb105-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-12" aria-hidden="true" tabindex="-1"></a>      ),</span>
-<span id="cb105-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:normal</span></span>
-<span id="cb105-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb105-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div id="iex-testing-2" class="section level3" number="7.5.1">
-<h3><span class="header-section-number">7.5.1</span> IEx testing</h3>
-<p>That finishes the <code>quantity</code>(and <code>budget</code>) implementation, we will jump into the IEx session to see how it works.</p>
-<p>First, start the streaming and trading on the same symbol and a moment later you should see a variable amount of quantity that more or less uses the full allowed budget:</p>
-<div class="sourceCode" id="cb106"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb106-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb106-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb106-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb106-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.313.0&gt;}</span></span>
-<span id="cb106-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb106-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-6" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:14.829</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb106-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:16.755</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb106-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-8" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:20.009</span> [info]  Placing BUY order for XRPUSDT @ 0.29506, quantity: 67.7</span>
-<span id="cb106-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:23.456</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29529,</span>
-<span id="cb106-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 67.7</span></code></pre></div>
-<p>As we can see our <code>Naive.Trader</code> process is now buying and selling based on passed budget.</p>
+<div id="define-behavior" class="section level2" number="17.5">
+<h2><span class="header-section-number">17.5</span> Define behavior</h2>
+<p>Before we will be able to call <code>Mox.defmock</code> function, we need to implement a behavior that needs to be passed to it.</p>
+<p>As the <code>Binance</code> module doesn’t provide we need to create a new module which specify the behaviour. Let’s start by creating a new file called <code>test.ex</code> inside the <code>/apps/binance_mock/lib/binance_mock</code> directory and fill it with the following:</p>
+<div class="sourceCode" id="cb348"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb348-1"><a href="mox-rocks.html#cb348-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/mix.exs</span></span>
+<span id="cb348-2"><a href="mox-rocks.html#cb348-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb348-3"><a href="mox-rocks.html#cb348-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb348-4"><a href="mox-rocks.html#cb348-4" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb348-5"><a href="mox-rocks.html#cb348-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb348-6"><a href="mox-rocks.html#cb348-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:mox</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>, <span class="va">only:</span> <span class="va">:test</span>},</span>
+<span id="cb348-7"><a href="mox-rocks.html#cb348-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>Source code for this chapter can be found at <a href="https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07">Github</a></p>
+<p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_17">Github</a></p>
 
-</div>
 </div>
 </div>
             </section>
@@ -594,8 +498,8 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
           </div>
         </div>
       </div>
-<a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="add-support-for-multiple-transactions-per-order.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="end-to-end-testing.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
@@ -627,7 +531,7 @@ gitbook.start({
 "size": 2
 },
 "edit": {
-"link": "https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/07-introduce-budget-and-quantity.Rmd",
+"link": "https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/17-mox-rocks.Rmd",
 "text": "Edit"
 },
 "history": {

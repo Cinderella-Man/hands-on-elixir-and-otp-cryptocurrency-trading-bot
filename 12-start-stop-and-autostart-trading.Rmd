@@ -398,8 +398,6 @@ Let's look at the updated implementation of the "end of trade" handler:
 
 As visible in the above code, whenever the `Naive.Trader` process will finish the trade cycle, the `Naive.Leader` process will check can it find a record of that trader in its state (no changes here). We will modify the callback so the leader process will check the `settings.status`. In the `shutdown` status it checks wheater it was the last trader in the `traders` list, to terminate the whole tree at that time(using the `Naive.stop_trading/1` function).
 
-\newpage
-
 The second callback that we need to modify is the `rebuy` triggered:
 
 ```{r, engine = 'elixir', eval = FALSE}

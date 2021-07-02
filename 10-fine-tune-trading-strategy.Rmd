@@ -54,14 +54,14 @@ services:
     image: postgres:latest
     restart: always
     environment:
-      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_PASSWORD: "hedgehogSecretPassword"
     ports:
       - 5432:5432
     volumes:
       - ../postgres-data:/var/lib/postgresql/data
 ```
 
-If you are new to docker here’s the gist of what the above will do:
+If you are new to docker here's the gist of what the above will do:
 
 - it will start a single service called "db"
 - "db" service will use the `latest` version of the `postgres` (image) inside the docker container (`latest` version as tagged per https://hub.docker.com/_/postgres/)
@@ -102,7 +102,7 @@ Let's start by adding database access to the `naive` application. The first step
       {:ecto_sql, "~> 3.0"},     # <= New line
       {:ecto_enum, "~> 1.4"},    # <= New line
       {:phoenix_pubsub, "~> 2.0"},
-      {:postgrex, ">= 0.0.0"},   # <= New line
+      {:postgrex, ">= 0.0"},     # <= New line
       {:streamer, in_umbrella: true}
     ]
   end
@@ -143,9 +143,9 @@ config :naive,                # <= added line
   binance_client: BinanceMock # <= merged from existing config
 
 config :naive, Naive.Repo,
-  database: "naive",    # <= updated
-  username: "postgres", # <= updated
-  password: "postgres", # <= updated
+  database: "naive",                  # <= updated
+  username: "postgres",               # <= updated
+  password: "hedgehogSecretPassword", # <= updated
   hostname: "localhost"
 ```
 

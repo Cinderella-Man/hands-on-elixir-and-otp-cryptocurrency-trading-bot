@@ -31,7 +31,7 @@
   
   
 <link rel="prev" href="backtest-trading-strategy.html"/>
-
+<link rel="next" href="mox-rocks.html"/>
 <script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -145,15 +145,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="./">Hands-on Elixir & OTP: Cryptocurrency trading bot</a></li>
 
 <li class="divider"></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Welcome </a>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface</a>
 <ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#want-to-learn-elixir-otp-by-creating-a-real-world-project"><i class="fa fa-check"></i>Want to learn Elixir &amp; OTP by creating a real-world project?</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata"><i class="fa fa-check"></i>Contributing / Errata</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#pdf-epub"><i class="fa fa-check"></i>PDF &amp; EPUB</a></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface-1"><i class="fa fa-check"></i>Preface</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
-<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code"><i class="fa fa-check"></i>Source code</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
 </ul></li>
 <li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
 <ul>
@@ -338,6 +338,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="16.7" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#update-seeding-scripts-to-use-the-binancemock"><i class="fa fa-check"></i><b>16.7</b> Update seeding scripts to use the BinanceMock</a></li>
 <li class="chapter" data-level="16.8" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-the-core-application"><i class="fa fa-check"></i><b>16.8</b> Introduce the Core application</a></li>
 </ul></li>
+<li class="chapter" data-level="17" data-path="mox-rocks.html"><a href="mox-rocks.html"><i class="fa fa-check"></i><b>17</b> Mox rocks</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="mox-rocks.html"><a href="mox-rocks.html#objectives-16"><i class="fa fa-check"></i><b>17.1</b> Objectives</a></li>
+<li class="chapter" data-level="17.2" data-path="mox-rocks.html"><a href="mox-rocks.html#briefly-describe-how-the-mox-package-works"><i class="fa fa-check"></i><b>17.2</b> Briefly describe how the Mox package works</a></li>
+<li class="chapter" data-level="17.3" data-path="mox-rocks.html"><a href="mox-rocks.html#fix-configuration"><i class="fa fa-check"></i><b>17.3</b> Fix configuration</a></li>
+<li class="chapter" data-level="17.4" data-path="mox-rocks.html"><a href="mox-rocks.html#add-the-mox-package"><i class="fa fa-check"></i><b>17.4</b> Add the Mox package</a></li>
+<li class="chapter" data-level="17.5" data-path="mox-rocks.html"><a href="mox-rocks.html#define-behavior"><i class="fa fa-check"></i><b>17.5</b> Define behavior</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -436,8 +444,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="decide-on-the-tested-functionality" class="section level2" number="16.2">
 <h2><span class="header-section-number">16.2</span> Decide on the tested functionality</h2>
-<p>We’ve reached the stage where we have a decent solution in place, and to ensure that it’s still working correctly after any future refactoring, we will add tests.</p>
-<p>We will start with the “integration”/“end-to-end”(E2E) test, which will confirm that the whole “trading” works.</p>
+<p>We’ve reached the stage where we have a decent solution in place, and to ensure that it’s still working correctly after any future refactoring, we will add tests. We will start with the “integration”/“end-to-end”(E2E) test, which will confirm that the whole “trading” works.</p>
+<p>To perform tests at this level, we will need to orchestrate databases together with processes and broadcast trade events from within the test to cause our trading strategy to place orders. We will be able to confirm the right behavior by checking the database after running the test.</p>
 <p>You should have the <strong>least</strong> amount of this type of test as they are very brittle and require substantial effort to set up and maintain. My personal rule of thumb is that only major “happy paths” should be tested this way.</p>
 <div style="page-break-after: always;"></div>
 <p>Let’s look at the current flow of data through our system:</p>
@@ -885,8 +893,8 @@ using the struct and PubSub process.</p>
           </div>
         </div>
       </div>
-<a href="backtest-trading-strategy.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-
+<a href="backtest-trading-strategy.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="mox-rocks.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

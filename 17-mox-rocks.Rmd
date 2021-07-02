@@ -1,0 +1,81 @@
+# Mox rocks
+
+## Objectives
+- briefly describe how the Mox package works
+- fix configuration
+- add the Mox package
+- define behavior
+
+## Briefly describe how the Mox package works
+
+In the previous chapter, we've implemented the end-to-end test that required a lot of prep work and we were able to clearly see the downsides of this type of test. In this chapter, we will focus on implementing a more granular test that will utilize the `mox` package to mock out dependencies of the `Naive.Trader`.
+
+The `mox` package works by dynamically providing modules(based on our defined `expect`ations) with the same interface as the real implementation (in a very similar way to our manual implementation of the `BinanceMock` application).
+
+For `mox` to "know" what's the interface of the module that we would like to mock,  we need to provide it with an `behaviour`.
+
+There are a few steps to get the `mox` running:
+
+- implement behaviours that we would like to mock(as most of the packages are not coming with those)
+- define mock using the `Mox.defmock` function
+- modify the application's configuration to use the mocked module(s). Here we will stamp upon a problem as our test environment already uses the `BinanceMock` module to run the test that we've written in the last chapter. To fix that we will rename the current `test.exs` config file to `integration.exs` config file(which basically mean that we will use `intergration` environment to run integration test and `test` environment to run our new trully mocked out tests[using the `Mox` package])
+- inside the test specify `expect`actions from the mock module 
+
+Let's move to the implementation starting with fixing the configuration.
+
+## Fix configuration
+
+As pointed out above we will rename the current `config/test.exs` file to `config/integration.exs`.
+
+At this moment we should still be able to run the end-to-end test from the last chapter but we need to remember that we now need to use the `integration` environment:
+
+```{r, engine = 'bash', eval = FALSE}
+MIX_ENV=integration mix test.integration
+```
+
+We can now create a new file for the `test` environment - `config/test.exs`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/test.exs
+import Config
+
+config :naive,
+  binance_client: Test.BinanceMock
+```
+
+## Add the Mox package
+
+The `Test.BinanceMock` doesn't exist yet, it will be generate by the `mox` package. First let's add it to the `naive` application's dependencies:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/mix.exs
+  ...
+  defp deps do
+    [
+      ...
+      {:mox, "~> 1.0", only: :test},
+      ...
+```
+
+We can now run `mix deps.get` to fetch the `mox` package.
+
+## Define behavior
+
+Before we will be able to call `Mox.defmock` function, we need to implement a behavior that needs to be passed to it.
+
+As the `Binance` module doesn't provide we need to create a new module which specify the behaviour. Let's start by creating a new file called `test.ex` inside the `/apps/binance_mock/lib/binance_mock` directory and fill it with the following:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/mix.exs
+  ...
+  defp deps do
+    [
+      ...
+      {:mox, "~> 1.0", only: :test},
+      ...
+```
+
+
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
+
+Source code for this chapter can be found at [Github](https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_17)
