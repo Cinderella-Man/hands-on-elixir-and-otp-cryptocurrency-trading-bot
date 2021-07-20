@@ -2,9 +2,9 @@
 
 ## Objectives
 - introduction to mock based tests
-- fix configuration
 - add the Mox package
-- define behaviour
+- investigate the `Naive.Trader` module
+  * mock binance client
 
 ## Introduction to mock based tests
 
@@ -124,22 +124,156 @@ First let's add the `mox` package to the `naive` application's dependencies:
 
 We can now run `mix deps.get` to fetch the `mox` package.
 
-## Define behavior
+## Investigate the `Naive.Trader` module
 
-Before we will be able to call `Mox.defmock` function, we need to implement a behavior that needs to be passed to it.
+Let's investigate the `Naive.Trader` module(`/apps/naive/lib/naive/trader.ex`). We are looking for all calls to other modules - we can see:
 
-As the `binance` module doesn't provide a behaviour, we need to create a new module where we will specify it based on the `binance`'s current implemention. Let's start by creating a new file called `test.ex` inside the `/apps/binance_mock/lib/binance_mock` directory and fill it with the following:
+- `Logger.info/2`
+- `Phoenix.PubSub.subscribe/2`
+- `@binance_client.order_limit_buy/4`
+- `Naive.Leader.notify/2`
+- `@binance_client.get_order/3`
+- `@binance_client.order_limit_sell/4`
+- `Phoenix.PubSub.broadcast/3`
+
+So the `Naive.Trader` relies on four modules:
+
+- `Logger`
+- `Phoenix.PubSub`
+- `Naive.Leader`
+- `@binance_client`(either `Binance` or `BinanceMock`)
+
+We will need to work through them one by one.
+
+### Mock the binance client
+
+Let's start with the binance client, as it's already a dynamic value based on the configuration.
+
+Neither the `Binance` nor the `BinanceMock`(our dummy implementation) module doesn't provide a behaviour - let's fix that by defining the `@callback` attributes at the top of the module before the structs:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /apps/naive/mix.exs
+# /apps/binance_mock/lib/binance_mock.ex
   ...
-  defp deps do
-    [
-      ...
-      {:mox, "~> 1.0", only: :test},
-      ...
+  alias Binance.Order
+  alias Binance.OrderResponse
+  alias Core.Struct.TradeEvent
+
+  @type symbol :: binary
+  @type quantity :: binary
+  @type price :: binary
+  @type time_in_force :: binary
+  @type timestamp :: non_neg_integer
+  @type order_id :: non_neg_integer
+  @type orig_client_order_id :: binary
+  @type recv_window :: binary
+
+  @callback order_limit_buy(
+    symbol,
+    quantity,
+    price,
+    time_in_force
+  ) :: {:ok, %OrderResponse{}} | {:error, term}
+
+  @callback order_limit_sell(
+    symbol,
+    quantity,
+    price,
+    time_in_force
+  ) :: {:ok, %OrderResponse{}} | {:error, term}
+
+  @callback get_order(
+    symbol,
+    timestamp,
+    order_id,
+    orig_client_order_id | nil,
+    recv_window | nil
+  ) :: {:ok, %Order{}} | {:error, term}
 ```
 
+In the above code, we added three `@callback` attributes that define the binance client behaviour. For clarity, we defined a distinct type for each of the arguments.
+
+As we now have a binance client behaviour defined, we can use it to define a mock using the `Mox.defmock/2` function inside the `test_helper.exs` file of the `naive` application:
+
+```{r, engine = 'elixir', eval = FALSE}
+ExUnit.start()
+
+Application.ensure_all_started(:mox) #1
+
+Mox.defmock(Test.BinanceMock, for: BinanceMock) #2
+```
+
+First(#1), we need to ensure that the `mox` application has been started. Then(#2), we can define the mock based on the `BinanceMock` behaviour.
+
+UPDATE CONFIG HERE
+
+### Mock the naive leader
+
+We can now move back to the `Naive.Trader` module to update all the hardcoded references to the `Naive.Leader` module with a dynamic attribute called `@leader` and add this attribute at the top of the module:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/lib/trader.ex
+  ...
+  @leader Application.get_env(:naive, :leader)
+  ...
+  
+```
+
+Neither the `Binance` nor the `BinanceMock`(our dummy implementation) module doesn't provide a behaviour - let's fix that by defining the `@callback` attributes at the top of the module before the structs:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/binance_mock/lib/binance_mock.ex
+  ...
+  alias Binance.Order
+  alias Binance.OrderResponse
+  alias Core.Struct.TradeEvent
+
+  @type symbol :: binary
+  @type quantity :: binary
+  @type price :: binary
+  @type time_in_force :: binary
+  @type timestamp :: non_neg_integer
+  @type order_id :: non_neg_integer
+  @type orig_client_order_id :: binary
+  @type recv_window :: binary
+
+  @callback order_limit_buy(
+    symbol,
+    quantity,
+    price,
+    time_in_force
+  ) :: {:ok, %OrderResponse{}} | {:error, term}
+
+  @callback order_limit_sell(
+    symbol,
+    quantity,
+    price,
+    time_in_force
+  ) :: {:ok, %OrderResponse{}} | {:error, term}
+
+  @callback get_order(
+    symbol,
+    timestamp,
+    order_id,
+    orig_client_order_id | nil,
+    recv_window | nil
+  ) :: {:ok, %Order{}} | {:error, term}
+```
+
+In the above code, we added three `@callback` attributes that define the binance client behaviour. For clarity, we defined a distinct type for each of the arguments.
+
+As we now have a binance client behaviour defined, we can use it to define a mock using the `Mox.defmock/2` function inside the `test_helper.exs` file of the `naive` application:
+
+```{r, engine = 'elixir', eval = FALSE}
+ExUnit.start()
+
+Application.ensure_all_started(:mox) #1
+
+Mox.defmock(Test.BinanceMock, for: BinanceMock) #2
+```
+
+First(#1), we need to ensure that the `mox` application has been started. Then(#2), we can define the mock based on the `BinanceMock` behaviour.
+
+UPDATE CONFIG HERE
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 
