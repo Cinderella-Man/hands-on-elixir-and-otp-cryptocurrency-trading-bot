@@ -237,10 +237,17 @@ Now we will create multiple config files, one for each environment:
 import Config
 ```
 
-* `/config/test.exs` for testing:
+* `/config/test.exs` for future "unit" testing:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
+import Config
+```
+
+* `/config/integration.exs` for end-to-end testing:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/integration.exs
 import Config
 
 config :streamer, Streamer.Repo, database: "streamer_test"
@@ -314,7 +321,7 @@ Inside the main `mix.exs` file of our umbrella, we will use those with usual `ec
 We can now safely run our test:
 
 ```{r, engine = 'bash', eval = FALSE}
-$ MIX_ENV=test mix test.integration
+$ MIX_ENV=integration mix test.integration
 ```
 
 Wait... Why do we need to set the `MIX_ENV` before calling our alias?
@@ -339,7 +346,7 @@ config :binance_mock,
 ```
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /config/test.exs
+# /config/integration.exs
 # add below lines under the `import Config` line 
 config :binance_mock,
   use_cached_exchange_info: true
