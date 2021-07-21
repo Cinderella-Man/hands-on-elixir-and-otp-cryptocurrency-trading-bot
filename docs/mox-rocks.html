@@ -343,7 +343,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="17.1" data-path="mox-rocks.html"><a href="mox-rocks.html#objectives-16"><i class="fa fa-check"></i><b>17.1</b> Objectives</a></li>
 <li class="chapter" data-level="17.2" data-path="mox-rocks.html"><a href="mox-rocks.html#introduction-to-mock-based-tests"><i class="fa fa-check"></i><b>17.2</b> Introduction to mock based tests</a></li>
 <li class="chapter" data-level="17.3" data-path="mox-rocks.html"><a href="mox-rocks.html#add-the-mox-package"><i class="fa fa-check"></i><b>17.3</b> Add the <code>mox</code> package</a></li>
-<li class="chapter" data-level="17.4" data-path="mox-rocks.html"><a href="mox-rocks.html#define-behavior"><i class="fa fa-check"></i><b>17.4</b> Define behavior</a></li>
+<li class="chapter" data-level="17.4" data-path="mox-rocks.html"><a href="mox-rocks.html#investigate-the-naive.trader-module"><i class="fa fa-check"></i><b>17.4</b> Investigate the <code>Naive.Trader</code> module</a>
+<ul>
+<li class="chapter" data-level="17.4.1" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-binance-module"><i class="fa fa-check"></i><b>17.4.1</b> Mock the <code>Binance</code> module</a></li>
+<li class="chapter" data-level="17.4.2" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-naiveleader-module"><i class="fa fa-check"></i><b>17.4.2</b> Mock the <code>NaiveLeader</code> module</a></li>
+<li class="chapter" data-level="17.4.3" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-phoenix.pubsub-module"><i class="fa fa-check"></i><b>17.4.3</b> Mock the <code>Phoenix.PubSub</code> module</a></li>
+<li class="chapter" data-level="17.4.4" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-logger-module"><i class="fa fa-check"></i><b>17.4.4</b> Mock the <code>Logger</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="17.5" data-path="mox-rocks.html"><a href="mox-rocks.html#implement-a-test-of-the-naive.trader-module"><i class="fa fa-check"></i><b>17.5</b> Implement a test of the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="17.6" data-path="mox-rocks.html"><a href="mox-rocks.html#define-an-alias-to-run-unit-tests"><i class="fa fa-check"></i><b>17.6</b> Define an alias to run unit tests</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -433,9 +441,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">17.1</span> Objectives</h2>
 <ul>
 <li>introduction to mock based tests</li>
-<li>fix configuration</li>
 <li>add the Mox package</li>
-<li>define behaviour</li>
+<li>investigate the <code>Naive.Trader</code> module
+<ul>
+<li>mock the <code>Binance</code> module</li>
+<li>mock the <code>NaiveLeader</code> module</li>
+<li>mock the <code>Phoenix.PubSub</code> module</li>
+<li>mock the <code>Logger</code> module</li>
+</ul></li>
+<li>implement a test of the <code>Naive.Trader</code> module</li>
+<li>define an alias to run unit tests</li>
 </ul>
 </div>
 <div id="introduction-to-mock-based-tests" class="section level2" number="17.2">
@@ -496,7 +511,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb349-2"><a href="mox-rocks.html#cb349-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@behaviour</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span><span class="op">.</span><span class="cn">PubSub</span></span>
 <span id="cb349-3"><a href="mox-rocks.html#cb349-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>Using the above will cause Elixir to validate at compile time that the <code>MyPubSub</code> module implements all functions defined inside the <code>Core.Test.PubSub</code> module(or it will cause compilation error).</p>
-<p>Back to the main topic. We figured out that we could mock all of the modules that the <code>Naive.Trader</code> depends on using the <code>mox</code> module.</p>
+<p>Let’s get back to the main topic. We figured out that we could mock all of the modules that the <code>Naive.Trader</code> depends on using the <code>mox</code> module.</p>
 <p>But, how would we tell the <code>Naive.Trader</code> to use the mocked modules instead of the “real” ones when we run tests?</p>
 <p>We could make all modules that the <code>Naive.Trader</code> depends on be dynamically injected from the configuration(based on the environment).</p>
 <p>The second requirement to make <code>mox</code> work is to define the mocks upfront using the <code>Mox.defmock/2</code> function. It will dynamically define a new module(first value) that will be limited by the passed behaviour(we will only be able to mock[inside tests] functions defined as a part of that behaviour).</p>
@@ -521,17 +536,442 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb350-7"><a href="mox-rocks.html#cb350-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>We can now run <code>mix deps.get</code> to fetch the <code>mox</code> package.</p>
 </div>
-<div id="define-behavior" class="section level2" number="17.4">
-<h2><span class="header-section-number">17.4</span> Define behavior</h2>
-<p>Before we will be able to call <code>Mox.defmock</code> function, we need to implement a behavior that needs to be passed to it.</p>
-<p>As the <code>binance</code> module doesn’t provide a behaviour, we need to create a new module where we will specify it based on the <code>binance</code>’s current implemention. Let’s start by creating a new file called <code>test.ex</code> inside the <code>/apps/binance_mock/lib/binance_mock</code> directory and fill it with the following:</p>
-<div class="sourceCode" id="cb351"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb351-1"><a href="mox-rocks.html#cb351-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/mix.exs</span></span>
+<div id="investigate-the-naive.trader-module" class="section level2" number="17.4">
+<h2><span class="header-section-number">17.4</span> Investigate the <code>Naive.Trader</code> module</h2>
+<p>Let’s investigate the <code>Naive.Trader</code> module(<code>/apps/naive/lib/naive/trader.ex</code>). We are looking for all calls to other modules - we can see:</p>
+<ul>
+<li><code>Logger.info/2</code></li>
+<li><code>Phoenix.PubSub.subscribe/2</code></li>
+<li><code>@binance_client.order_limit_buy/4</code></li>
+<li><code>Naive.Leader.notify/2</code></li>
+<li><code>@binance_client.get_order/3</code></li>
+<li><code>@binance_client.order_limit_sell/4</code></li>
+<li><code>Phoenix.PubSub.broadcast/3</code></li>
+</ul>
+<p>So the <code>Naive.Trader</code> relies on four modules:</p>
+<ul>
+<li><code>Logger</code></li>
+<li><code>Phoenix.PubSub</code></li>
+<li><code>Naive.Leader</code></li>
+<li><code>@binance_client</code>(either <code>Binance</code> or <code>BinanceMock</code>)</li>
+</ul>
+<p>We will need to work through them one by one.</p>
+<div id="mock-the-binance-module" class="section level3" number="17.4.1">
+<h3><span class="header-section-number">17.4.1</span> Mock the <code>Binance</code> module</h3>
+<p>Let’s start with the binance client, as it’s already a dynamic value based on the configuration.</p>
+<p>Neither the <code>Binance</code> nor the <code>BinanceMock</code>(our dummy implementation) module doesn’t provide a behaviour - let’s fix that by defining the <code>@callback</code> attributes at the top of the module before the structs:</p>
+<div class="sourceCode" id="cb351"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb351-1"><a href="mox-rocks.html#cb351-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb351-2"><a href="mox-rocks.html#cb351-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb351-3"><a href="mox-rocks.html#cb351-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
-<span id="cb351-4"><a href="mox-rocks.html#cb351-4" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb351-5"><a href="mox-rocks.html#cb351-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb351-6"><a href="mox-rocks.html#cb351-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:mox</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>, <span class="va">only:</span> <span class="va">:test</span>},</span>
-<span id="cb351-7"><a href="mox-rocks.html#cb351-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
+<span id="cb351-3"><a href="mox-rocks.html#cb351-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span></span>
+<span id="cb351-4"><a href="mox-rocks.html#cb351-4" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span></span>
+<span id="cb351-5"><a href="mox-rocks.html#cb351-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Struct</span><span class="op">.</span><span class="cn">TradeEvent</span></span>
+<span id="cb351-6"><a href="mox-rocks.html#cb351-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb351-7"><a href="mox-rocks.html#cb351-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> symbol :: binary</span>
+<span id="cb351-8"><a href="mox-rocks.html#cb351-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> quantity :: binary</span>
+<span id="cb351-9"><a href="mox-rocks.html#cb351-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> price :: binary</span>
+<span id="cb351-10"><a href="mox-rocks.html#cb351-10" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> time_in_force :: binary</span>
+<span id="cb351-11"><a href="mox-rocks.html#cb351-11" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> timestamp :: non_neg_integer</span>
+<span id="cb351-12"><a href="mox-rocks.html#cb351-12" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> order_id :: non_neg_integer</span>
+<span id="cb351-13"><a href="mox-rocks.html#cb351-13" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> orig_client_order_id :: binary</span>
+<span id="cb351-14"><a href="mox-rocks.html#cb351-14" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> recv_window :: binary</span>
+<span id="cb351-15"><a href="mox-rocks.html#cb351-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb351-16"><a href="mox-rocks.html#cb351-16" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_buy(</span>
+<span id="cb351-17"><a href="mox-rocks.html#cb351-17" aria-hidden="true" tabindex="-1"></a>    symbol,</span>
+<span id="cb351-18"><a href="mox-rocks.html#cb351-18" aria-hidden="true" tabindex="-1"></a>    quantity,</span>
+<span id="cb351-19"><a href="mox-rocks.html#cb351-19" aria-hidden="true" tabindex="-1"></a>    price,</span>
+<span id="cb351-20"><a href="mox-rocks.html#cb351-20" aria-hidden="true" tabindex="-1"></a>    time_in_force</span>
+<span id="cb351-21"><a href="mox-rocks.html#cb351-21" aria-hidden="true" tabindex="-1"></a>  ) :: {<span class="va">:ok</span>, %<span class="cn">OrderResponse</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb351-22"><a href="mox-rocks.html#cb351-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb351-23"><a href="mox-rocks.html#cb351-23" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_sell(</span>
+<span id="cb351-24"><a href="mox-rocks.html#cb351-24" aria-hidden="true" tabindex="-1"></a>    symbol,</span>
+<span id="cb351-25"><a href="mox-rocks.html#cb351-25" aria-hidden="true" tabindex="-1"></a>    quantity,</span>
+<span id="cb351-26"><a href="mox-rocks.html#cb351-26" aria-hidden="true" tabindex="-1"></a>    price,</span>
+<span id="cb351-27"><a href="mox-rocks.html#cb351-27" aria-hidden="true" tabindex="-1"></a>    time_in_force</span>
+<span id="cb351-28"><a href="mox-rocks.html#cb351-28" aria-hidden="true" tabindex="-1"></a>  ) :: {<span class="va">:ok</span>, %<span class="cn">OrderResponse</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb351-29"><a href="mox-rocks.html#cb351-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb351-30"><a href="mox-rocks.html#cb351-30" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> get_order(</span>
+<span id="cb351-31"><a href="mox-rocks.html#cb351-31" aria-hidden="true" tabindex="-1"></a>    symbol,</span>
+<span id="cb351-32"><a href="mox-rocks.html#cb351-32" aria-hidden="true" tabindex="-1"></a>    timestamp,</span>
+<span id="cb351-33"><a href="mox-rocks.html#cb351-33" aria-hidden="true" tabindex="-1"></a>    order_id,</span>
+<span id="cb351-34"><a href="mox-rocks.html#cb351-34" aria-hidden="true" tabindex="-1"></a>    orig_client_order_id <span class="op">|</span> <span class="cn">nil</span>,</span>
+<span id="cb351-35"><a href="mox-rocks.html#cb351-35" aria-hidden="true" tabindex="-1"></a>    recv_window <span class="op">|</span> <span class="cn">nil</span></span>
+<span id="cb351-36"><a href="mox-rocks.html#cb351-36" aria-hidden="true" tabindex="-1"></a>  ) :: {<span class="va">:ok</span>, %<span class="cn">Order</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span></code></pre></div>
+<p>In the above code, we added three <code>@callback</code> attributes that define the binance client behaviour. For clarity, we defined a distinct type for each of the arguments.</p>
+<p>As we now have a binance client behaviour defined, we can use it to define a mock using the <code>Mox.defmock/2</code> function inside the <code>test_helper.exs</code> file of the <code>naive</code> application:</p>
+<div class="sourceCode" id="cb352"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb352-1"><a href="mox-rocks.html#cb352-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
+<span id="cb352-2"><a href="mox-rocks.html#cb352-2" aria-hidden="true" tabindex="-1"></a><span class="cn">ExUnit</span><span class="op">.</span>start()</span>
+<span id="cb352-3"><a href="mox-rocks.html#cb352-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb352-4"><a href="mox-rocks.html#cb352-4" aria-hidden="true" tabindex="-1"></a><span class="cn">Application</span><span class="op">.</span>ensure_all_started(<span class="va">:mox</span>) <span class="co">#1</span></span>
+<span id="cb352-5"><a href="mox-rocks.html#cb352-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb352-6"><a href="mox-rocks.html#cb352-6" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="kw">for</span>: <span class="cn">BinanceMock</span>) <span class="co">#2</span></span></code></pre></div>
+<p>First(#1), we need to ensure that the <code>mox</code> application has been started. Then(#2), we can tell the <code>mox</code> package to define the <code>Test.BinanceMock</code> module based on the <code>BinanceMock</code> behaviour.</p>
+<p>As we defined the binance client behaviour and mock, we can update our configuration to use them. We want to keep using the <code>BinanceMock</code> module in the development environment, but for the <code>test</code> environment, we would like to set the mocked module generated by the <code>mox</code> package:</p>
+<div class="sourceCode" id="cb353"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb353-1"><a href="mox-rocks.html#cb353-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb353-2"><a href="mox-rocks.html#cb353-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb353-3"><a href="mox-rocks.html#cb353-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">binance_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span></span></code></pre></div>
+</div>
+<div id="mock-the-naiveleader-module" class="section level3" number="17.4.2">
+<h3><span class="header-section-number">17.4.2</span> Mock the <code>NaiveLeader</code> module</h3>
+<p>We can now move back to the <code>Naive.Trader</code> module to update all the hardcoded references to the <code>Naive.Leader</code> module with a dynamic attribute called <code>@leader</code> and add this attribute at the top of the module:</p>
+<div class="sourceCode" id="cb354"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb354-1"><a href="mox-rocks.html#cb354-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
+<span id="cb354-2"><a href="mox-rocks.html#cb354-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb354-3"><a href="mox-rocks.html#cb354-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:naive</span>, <span class="va">:leader</span>)</span>
+<span id="cb354-4"><a href="mox-rocks.html#cb354-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb354-5"><a href="mox-rocks.html#cb354-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
+<span id="cb354-6"><a href="mox-rocks.html#cb354-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb354-7"><a href="mox-rocks.html#cb354-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
+<span id="cb354-8"><a href="mox-rocks.html#cb354-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb354-9"><a href="mox-rocks.html#cb354-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:rebuy_triggered</span>, new_state)</span>
+<span id="cb354-10"><a href="mox-rocks.html#cb354-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>As it was in case of the <code>BinanceMock</code>(our dummy implementation) module, the <code>Naive.Leader</code> module doesn’t provide a behaviour - let’s fix that by defining the <code>@callback</code> attributes at the top of the module:</p>
+<div class="sourceCode" id="cb355"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb355-1"><a href="mox-rocks.html#cb355-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/leader.ex</span></span>
+<span id="cb355-2"><a href="mox-rocks.html#cb355-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb355-3"><a href="mox-rocks.html#cb355-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> event_type :: atom</span>
+<span id="cb355-4"><a href="mox-rocks.html#cb355-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> notify(event_type, %<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{}) :: <span class="va">:ok</span></span></code></pre></div>
+<p>In the above code, we added a single <code>@callback</code> attribute that defines the naive leader behaviour. For clarity, we defined a distinct type for the <code>event_type</code> arguments.</p>
+<p>As we now have a naive leader behaviour defined, we can use it to define a mock using the <code>Mox.defmock/2</code> function inside the <code>test_helper.exs</code> file of the <code>naive</code> application:</p>
+<div class="sourceCode" id="cb356"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb356-1"><a href="mox-rocks.html#cb356-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
+<span id="cb356-2"><a href="mox-rocks.html#cb356-2" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span>, <span class="kw">for</span>: <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>)</span></code></pre></div>
+<p>In the above code, we’ve told the <code>mox</code> package to define the <code>Test.Naive.LeaderMock</code> module based on the <code>Naive.Leader</code> behaviour.</p>
+<p>We are moving on to the configuration. As the <code>Naive.Leader</code> wasn’t part of the configuration, we need to add it to the default config and test config file.</p>
+<p>First, let’s add the <code>:leader</code> key inside the <code>config :naive</code> in the default <code>/config/config.exs</code> configuration file:</p>
+<div class="sourceCode" id="cb357"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb357-1"><a href="mox-rocks.html#cb357-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb357-2"><a href="mox-rocks.html#cb357-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb357-3"><a href="mox-rocks.html#cb357-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb357-4"><a href="mox-rocks.html#cb357-4" aria-hidden="true" tabindex="-1"></a> <span class="va">binance_client:</span> <span class="cn">BinanceMock</span>,</span>
+<span id="cb357-5"><a href="mox-rocks.html#cb357-5" aria-hidden="true" tabindex="-1"></a> <span class="va">leader:</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>,                <span class="co"># &lt;= added</span></span>
+<span id="cb357-6"><a href="mox-rocks.html#cb357-6" aria-hidden="true" tabindex="-1"></a> <span class="op">...</span></span></code></pre></div>
+<p>and then we need to apply the same update to the <code>/config/test.exs</code> configuration file(it will point to the module generated by the <code>mox</code> package - <code>Test.Naive.LeaderMock</code>):</p>
+<div class="sourceCode" id="cb358"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb358-1"><a href="mox-rocks.html#cb358-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb358-2"><a href="mox-rocks.html#cb358-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb358-3"><a href="mox-rocks.html#cb358-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb358-4"><a href="mox-rocks.html#cb358-4" aria-hidden="true" tabindex="-1"></a><span class="va">binance_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>,</span>
+<span id="cb358-5"><a href="mox-rocks.html#cb358-5" aria-hidden="true" tabindex="-1"></a><span class="va">leader:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span> <span class="co"># &lt;= added</span></span>
+<span id="cb358-6"><a href="mox-rocks.html#cb358-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+</div>
+<div id="mock-the-phoenix.pubsub-module" class="section level3" number="17.4.3">
+<h3><span class="header-section-number">17.4.3</span> Mock the <code>Phoenix.PubSub</code> module</h3>
+<p>Mocking the <code>Phoenix.PubSub</code> dependency inside the <code>Naive.Trader</code> module will look very similar to the last two mocked modules.</p>
+<div style="page-break-after: always;"></div>
+<p>Inside the <code>Naive.Trader</code> module we need to update all the references to the <code>Phoenix.PubSub</code> to an <code>@pubsub_client</code> attribute with value dependent on the configuration:</p>
+<div class="sourceCode" id="cb359"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb359-1"><a href="mox-rocks.html#cb359-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
+<span id="cb359-2"><a href="mox-rocks.html#cb359-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb359-3"><a href="mox-rocks.html#cb359-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@pubsub_client</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:core</span>, <span class="va">:pubsub_client</span>)</span>
+<span id="cb359-4"><a href="mox-rocks.html#cb359-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb359-5"><a href="mox-rocks.html#cb359-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>subscribe(</span>
+<span id="cb359-6"><a href="mox-rocks.html#cb359-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb359-7"><a href="mox-rocks.html#cb359-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb359-8"><a href="mox-rocks.html#cb359-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb359-9"><a href="mox-rocks.html#cb359-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb359-10"><a href="mox-rocks.html#cb359-10" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast(</span>
+<span id="cb359-11"><a href="mox-rocks.html#cb359-11" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb359-12"><a href="mox-rocks.html#cb359-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;ORDERS:</span><span class="ot">#{</span>order<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb359-13"><a href="mox-rocks.html#cb359-13" aria-hidden="true" tabindex="-1"></a>      order</span>
+<span id="cb359-14"><a href="mox-rocks.html#cb359-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb359-15"><a href="mox-rocks.html#cb359-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>The <code>Phoenix.PubSub</code> module doesn’t provide a behaviour. As we can’t modify its source, we need to create a new module to define the PubSub behaviour. Let’s create a new file called <code>test.ex</code> inside the <code>/apps/core/lib/core</code> directory with the following behaviour definition:</p>
+<div class="sourceCode" id="cb360"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb360-1"><a href="mox-rocks.html#cb360-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/core/lib/core/test.ex</span></span>
+<span id="cb360-2"><a href="mox-rocks.html#cb360-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span> <span class="kw">do</span></span>
+<span id="cb360-3"><a href="mox-rocks.html#cb360-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb360-4"><a href="mox-rocks.html#cb360-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">PubSub</span> <span class="kw">do</span></span>
+<span id="cb360-5"><a href="mox-rocks.html#cb360-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> t :: atom</span>
+<span id="cb360-6"><a href="mox-rocks.html#cb360-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> topic :: binary</span>
+<span id="cb360-7"><a href="mox-rocks.html#cb360-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> message :: term</span>
+<span id="cb360-8"><a href="mox-rocks.html#cb360-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb360-9"><a href="mox-rocks.html#cb360-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> subscribe(t, topic) :: <span class="va">:ok</span> <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb360-10"><a href="mox-rocks.html#cb360-10" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> broadcast(t, topic, message) :: <span class="va">:ok</span> <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb360-11"><a href="mox-rocks.html#cb360-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb360-12"><a href="mox-rocks.html#cb360-12" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>As previously, we defined a couple of callbacks and additional types for each of their arguments.</p>
+<p>Next, we will use the above behaviour to define a mock using the <code>Mox.defmock/2</code> function inside the <code>test_helper.exs</code> file of the <code>naive</code> application:</p>
+<div class="sourceCode" id="cb361"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb361-1"><a href="mox-rocks.html#cb361-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
+<span id="cb361-2"><a href="mox-rocks.html#cb361-2" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span>, <span class="kw">for</span>: <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span><span class="op">.</span><span class="cn">PubSub</span>)</span></code></pre></div>
+<p>In the above code, we’ve told the <code>mox</code> package to define the <code>Test.PubSubMock</code> module based on the <code>Core.Test.PubSub</code> behaviour.</p>
+<p>The final step will be to append the <code>:core, :pubsub_client</code> configuration to the <code>/config/config.exs</code> file:</p>
+<div class="sourceCode" id="cb362"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb362-1"><a href="mox-rocks.html#cb362-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb362-2"><a href="mox-rocks.html#cb362-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb362-3"><a href="mox-rocks.html#cb362-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   <span class="co"># &lt;= added</span></span>
+<span id="cb362-4"><a href="mox-rocks.html#cb362-4" aria-hidden="true" tabindex="-1"></a> <span class="va">pubsub_client:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span> <span class="co"># &lt;= added</span></span>
+<span id="cb362-5"><a href="mox-rocks.html#cb362-5" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<p>and the test <code>/config/test.exs</code> configuration file:</p>
+<div class="sourceCode" id="cb363"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb363-1"><a href="mox-rocks.html#cb363-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb363-2"><a href="mox-rocks.html#cb363-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb363-3"><a href="mox-rocks.html#cb363-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb363-4"><a href="mox-rocks.html#cb363-4" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                      <span class="co"># &lt;= added</span></span>
+<span id="cb363-5"><a href="mox-rocks.html#cb363-5" aria-hidden="true" tabindex="-1"></a><span class="va">pubsub_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span> <span class="co"># &lt;= added</span></span>
+<span id="cb363-6"><a href="mox-rocks.html#cb363-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+</div>
+<div id="mock-the-logger-module" class="section level3" number="17.4.4">
+<h3><span class="header-section-number">17.4.4</span> Mock the <code>Logger</code> module</h3>
+<p>Before we dive in, we should ask ourselves why we would mock the <code>Logger</code> module?</p>
+<p>We could raise the logging level to <code>error</code> be done with it. Yes, that would fix all debug/info/warning logs, but we would also miss an opportunity to confirm a few details (depends on what’s necessary for our use case):</p>
+<ul>
+<li>you can ensure that the log was called when the tested function was run</li>
+<li>you can pattern match the logging level</li>
+<li>you can check the message. This could be useful if you don’t want to put sensitive information like banking details etc. inside log messages</li>
+</ul>
+<p>Mocking the <code>Logger</code> dependency inside the <code>Naive.Trader</code> module will follow the same steps as the previous updates.</p>
+<p>Inside the <code>Naive.Trader</code> module we need to update all the references to the <code>Logger</code> to an <code>@logger</code> attribute with value dependent on the configuration:</p>
+<div class="sourceCode" id="cb364"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb364-1"><a href="mox-rocks.html#cb364-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
+<span id="cb364-2"><a href="mox-rocks.html#cb364-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-3"><a href="mox-rocks.html#cb364-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@logger</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:core</span>, <span class="va">:logger</span>)</span>
+<span id="cb364-4"><a href="mox-rocks.html#cb364-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-5"><a href="mox-rocks.html#cb364-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb364-6"><a href="mox-rocks.html#cb364-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-7"><a href="mox-rocks.html#cb364-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(</span>
+<span id="cb364-8"><a href="mox-rocks.html#cb364-8" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;The trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) is placing a BUY order &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb364-9"><a href="mox-rocks.html#cb364-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb364-10"><a href="mox-rocks.html#cb364-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb364-11"><a href="mox-rocks.html#cb364-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-12"><a href="mox-rocks.html#cb364-12" aria-hidden="true" tabindex="-1"></a>        <span class="ot">@logger</span><span class="op">.</span>info(</span>
+<span id="cb364-13"><a href="mox-rocks.html#cb364-13" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;The trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) is placing a SELL order for &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb364-14"><a href="mox-rocks.html#cb364-14" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> @ </span><span class="ot">#{</span>sell_price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">.&quot;</span></span>
+<span id="cb364-15"><a href="mox-rocks.html#cb364-15" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb364-16"><a href="mox-rocks.html#cb364-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-17"><a href="mox-rocks.html#cb364-17" aria-hidden="true" tabindex="-1"></a>        <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Trader&#39;s(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st"> </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> buy order got partially filled&quot;</span>)</span>
+<span id="cb364-18"><a href="mox-rocks.html#cb364-18" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-19"><a href="mox-rocks.html#cb364-19" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) finished trade cycle for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb364-20"><a href="mox-rocks.html#cb364-20" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-21"><a href="mox-rocks.html#cb364-21" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Trader&#39;s(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st"> </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> SELL order got partially filled&quot;</span>)</span>
+<span id="cb364-22"><a href="mox-rocks.html#cb364-22" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb364-23"><a href="mox-rocks.html#cb364-23" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Rebuy triggered for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> by the trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">)&quot;</span>)</span>
+<span id="cb364-24"><a href="mox-rocks.html#cb364-24" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>The <code>Logger</code> module doesn’t provide a behaviour. As we can’t modify its source, we need to create a new module to define the Logger behaviour. Let’s place it inside the <code>Core.Test</code> namespace in the <code>/apps/core/lib/core/test.ex</code> file side by side with the PubSub behaviour with the following definition:</p>
+<div class="sourceCode" id="cb365"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb365-1"><a href="mox-rocks.html#cb365-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/core/lib/core/test.ex</span></span>
+<span id="cb365-2"><a href="mox-rocks.html#cb365-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span> <span class="kw">do</span></span>
+<span id="cb365-3"><a href="mox-rocks.html#cb365-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb365-4"><a href="mox-rocks.html#cb365-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">Logger</span> <span class="kw">do</span></span>
+<span id="cb365-5"><a href="mox-rocks.html#cb365-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> message :: binary</span>
+<span id="cb365-6"><a href="mox-rocks.html#cb365-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb365-7"><a href="mox-rocks.html#cb365-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> info(message) :: <span class="va">:ok</span></span>
+<span id="cb365-8"><a href="mox-rocks.html#cb365-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb365-9"><a href="mox-rocks.html#cb365-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>As previously, we defined a callback and additional type for the <code>message</code> argument.</p>
+<p>Next, we will use the above behaviour to define a mock using the <code>Mox.defmock/2</code> function inside the <code>test_helper.exs</code> file of the <code>naive</code> application:</p>
+<div class="sourceCode" id="cb366"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb366-1"><a href="mox-rocks.html#cb366-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
+<span id="cb366-2"><a href="mox-rocks.html#cb366-2" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span>, <span class="kw">for</span>: <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span><span class="op">.</span><span class="cn">Logger</span>)</span></code></pre></div>
+<p>In the above code, we’ve told the <code>mox</code> package to define the <code>Test.LoggerMock</code> module based on the <code>Core.Test.Logger</code> behaviour.</p>
+<p>The final step will be to append the <code>:core, :logger</code> configuration to the <code>/config/config.exs</code> file:</p>
+<div class="sourceCode" id="cb367"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb367-1"><a href="mox-rocks.html#cb367-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb367-2"><a href="mox-rocks.html#cb367-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb367-3"><a href="mox-rocks.html#cb367-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
+<span id="cb367-4"><a href="mox-rocks.html#cb367-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Logger</span>,                            <span class="co"># &lt;= added</span></span>
+<span id="cb367-5"><a href="mox-rocks.html#cb367-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">pubsub_client:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span></span>
+<span id="cb367-6"><a href="mox-rocks.html#cb367-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<p>and the test <code>/config/test.exs</code> configuration file:</p>
+<div class="sourceCode" id="cb368"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb368-1"><a href="mox-rocks.html#cb368-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb368-2"><a href="mox-rocks.html#cb368-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb368-3"><a href="mox-rocks.html#cb368-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb368-4"><a href="mox-rocks.html#cb368-4" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
+<span id="cb368-5"><a href="mox-rocks.html#cb368-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span>,              <span class="co"># &lt;= added</span></span>
+<span id="cb368-6"><a href="mox-rocks.html#cb368-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">pubsub_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span></span>
+<span id="cb368-7"><a href="mox-rocks.html#cb368-7" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<p>This finishes the updates to the <code>Naive.Trader</code> module. We made all dependencies based on the configuration values. We can now progress to writing the test.</p>
+</div>
+</div>
+<div id="implement-a-test-of-the-naive.trader-module" class="section level2" number="17.5">
+<h2><span class="header-section-number">17.5</span> Implement a test of the <code>Naive.Trader</code> module</h2>
+<p>Finally, we can implement the unit test for the <code>Naive.Trader</code> module.</p>
+<p>We will create a folder called <code>naive</code> inside the <code>/apps/naive/test</code> directory and a new file called <code>trader_test.exs</code> inside it.</p>
+<p>Let’s start with an empty skeleton of the test tagged as <code>unit</code>:</p>
+<div class="sourceCode" id="cb369"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb369-1"><a href="mox-rocks.html#cb369-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb369-2"><a href="mox-rocks.html#cb369-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">TraderTest</span> <span class="kw">do</span></span>
+<span id="cb369-3"><a href="mox-rocks.html#cb369-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></span>
+<span id="cb369-4"><a href="mox-rocks.html#cb369-4" aria-hidden="true" tabindex="-1"></a>  doctest <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
+<span id="cb369-5"><a href="mox-rocks.html#cb369-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb369-6"><a href="mox-rocks.html#cb369-6" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb369-7"><a href="mox-rocks.html#cb369-7" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Placing buy order test&quot;</span> <span class="kw">do</span></span>
+<span id="cb369-8"><a href="mox-rocks.html#cb369-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb369-9"><a href="mox-rocks.html#cb369-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>Let’s add the <code>mox</code> related code above the <code>@tag :unit</code> line:</p>
+<div class="sourceCode" id="cb370"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb370-1"><a href="mox-rocks.html#cb370-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb370-2"><a href="mox-rocks.html#cb370-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Mox</span>                                <span class="co"># &lt;= 1 </span></span>
+<span id="cb370-3"><a href="mox-rocks.html#cb370-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb370-4"><a href="mox-rocks.html#cb370-4" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:set_mox_from_context</span> <span class="co"># &lt;= 2</span></span>
+<span id="cb370-5"><a href="mox-rocks.html#cb370-5" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:verify_on_exit!</span>               <span class="co"># &lt;= 3</span></span></code></pre></div>
+<p>In the above code, we are:</p>
+<ul>
+<li>importing the <code>mox</code> module so we will be able to use functions like <code>expect/3</code></li>
+<li>allowing any process to consume mocks defined by the test. This is crucial as tests are run as separate processes that would normally be the only ones allowed to use mocks that they define. Inside our test, we will start a new <code>Naive.Trader</code> process that needs to be able to access mocks defined in the test - hence this update</li>
+<li>telling <code>mox</code> to verify that all the mocks defined in the tests have been called from within those tests. Otherwise, it will flag such cases as test errors</li>
+</ul>
+<p>Inside our test, we need to define implementation for all the functions that the <code>Naive.Trader</code> relies on:</p>
+<div class="sourceCode" id="cb371"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb371-1"><a href="mox-rocks.html#cb371-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb371-2"><a href="mox-rocks.html#cb371-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb371-3"><a href="mox-rocks.html#cb371-3" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Placing buy order test&quot;</span> <span class="kw">do</span></span>
+<span id="cb371-4"><a href="mox-rocks.html#cb371-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span></span>
+<span id="cb371-5"><a href="mox-rocks.html#cb371-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:subscribe</span>, <span class="kw">fn</span> (_module, <span class="st">&quot;TRADE_EVENTS:XRPUSDT&quot;</span>) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 1</span></span>
+<span id="cb371-6"><a href="mox-rocks.html#cb371-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:broadcast</span>, <span class="kw">fn</span> (_module, <span class="st">&quot;ORDERS:XRPUSDT&quot;</span>, _order) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>)</span>
+<span id="cb371-7"><a href="mox-rocks.html#cb371-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb371-8"><a href="mox-rocks.html#cb371-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span></span>
+<span id="cb371-9"><a href="mox-rocks.html#cb371-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:order_limit_buy</span>, <span class="kw">fn</span> (<span class="st">&quot;XRPUSDT&quot;</span>, <span class="st">&quot;464.360&quot;</span>, <span class="st">&quot;0.4307&quot;</span>, <span class="st">&quot;GTC&quot;</span>)  <span class="op">-&gt;</span> <span class="co"># &lt;= 2</span></span>
+<span id="cb371-10"><a href="mox-rocks.html#cb371-10" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, <span class="cn">BinanceMock</span><span class="op">.</span>generate_fake_order(</span>
+<span id="cb371-11"><a href="mox-rocks.html#cb371-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb371-12"><a href="mox-rocks.html#cb371-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;464.360&quot;</span>,</span>
+<span id="cb371-13"><a href="mox-rocks.html#cb371-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;0.4307&quot;</span>,</span>
+<span id="cb371-14"><a href="mox-rocks.html#cb371-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;BUY&quot;</span></span>
+<span id="cb371-15"><a href="mox-rocks.html#cb371-15" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb371-16"><a href="mox-rocks.html#cb371-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">BinanceMock</span><span class="op">.</span>convert_order_to_order_response()}</span>
+<span id="cb371-17"><a href="mox-rocks.html#cb371-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
+<span id="cb371-18"><a href="mox-rocks.html#cb371-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb371-19"><a href="mox-rocks.html#cb371-19" aria-hidden="true" tabindex="-1"></a>    test_pid <span class="op">=</span> self() <span class="co"># &lt;= 3</span></span>
+<span id="cb371-20"><a href="mox-rocks.html#cb371-20" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span></span>
+<span id="cb371-21"><a href="mox-rocks.html#cb371-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:notify</span>, <span class="kw">fn</span> (<span class="va">:trader_state_updated</span>, %<span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{}) <span class="op">-&gt;</span></span>
+<span id="cb371-22"><a href="mox-rocks.html#cb371-22" aria-hidden="true" tabindex="-1"></a>      send(test_pid, <span class="va">:ok</span>) <span class="co"># &lt;= 3</span></span>
+<span id="cb371-23"><a href="mox-rocks.html#cb371-23" aria-hidden="true" tabindex="-1"></a>      <span class="va">:ok</span></span>
+<span id="cb371-24"><a href="mox-rocks.html#cb371-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
+<span id="cb371-25"><a href="mox-rocks.html#cb371-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb371-26"><a href="mox-rocks.html#cb371-26" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span></span>
+<span id="cb371-27"><a href="mox-rocks.html#cb371-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:info</span>, <span class="dv">2</span>, <span class="kw">fn</span> (_message) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 4</span></span>
+<span id="cb371-28"><a href="mox-rocks.html#cb371-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<p>It’s important to note that we defined the mocked function with expected values in the above code. We expect our test to subscribe to a specific topic and broadcast to the other(#1). We are also expecting that process will place an order at the exact values that we calculated upfront. This way, our mock becomes an integral part of the test, asserting that the correct values will be passed to other parts of the system(dependencies of the <code>Naive.Trader</code> module).</p>
+<p>Another “trick”(#3) that we can use in our mocks is to leverage the fact that we can send a message to the test process from within the mocked function. We will leverage this idea to know precisely when the trader process finished its work as the <code>notify/1</code> is the last function call inside the process’ callback(<code>handle_info/2</code> inside the <code>Naive.Trader</code> module). We will assert that we should receive the message, and the test will be waiting for it before exiting(the default waiting time is 100ms) instead of using hardcoded <code>sleep</code> to “hack” it to work.</p>
+<p>The final part(#4) tells the <code>mox</code> package that <code>Logger.info/1</code> will be called twice inside the test. The <code>mox</code> will verify the number of calls to the mocked function and error if it doesn’t much the expected amount.</p>
+<p>The second part of the test is preparing the initial state for the <code>Naive.Trader</code> process, generating trade event and sending it to the process:</p>
+<div class="sourceCode" id="cb372"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb372-1"><a href="mox-rocks.html#cb372-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb372-2"><a href="mox-rocks.html#cb372-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb372-3"><a href="mox-rocks.html#cb372-3" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Placing buy order test&quot;</span> <span class="kw">do</span></span>
+<span id="cb372-4"><a href="mox-rocks.html#cb372-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb372-5"><a href="mox-rocks.html#cb372-5" aria-hidden="true" tabindex="-1"></a>    trader_state <span class="op">=</span> dummy_trader_state()</span>
+<span id="cb372-6"><a href="mox-rocks.html#cb372-6" aria-hidden="true" tabindex="-1"></a>    trade_event <span class="op">=</span> generate_event(<span class="dv">1</span>, <span class="st">&quot;0.43183010&quot;</span>, <span class="st">&quot;213.10000000&quot;</span>)</span>
+<span id="cb372-7"><a href="mox-rocks.html#cb372-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb372-8"><a href="mox-rocks.html#cb372-8" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, trader_pid} <span class="op">=</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span><span class="op">.</span>start_link(trader_state)</span>
+<span id="cb372-9"><a href="mox-rocks.html#cb372-9" aria-hidden="true" tabindex="-1"></a>    send(trader_pid, trade_event)</span>
+<span id="cb372-10"><a href="mox-rocks.html#cb372-10" aria-hidden="true" tabindex="-1"></a>    assert_receive <span class="va">:ok</span></span>
+<span id="cb372-11"><a href="mox-rocks.html#cb372-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>As described above, the <code>assert_receive/1</code> function will cause the test to wait for the message for 100ms before quitting.</p>
+<p>Here are the helper functions that we used to generate the initial trader state and trade event:</p>
+<div class="sourceCode" id="cb373"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb373-1"><a href="mox-rocks.html#cb373-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb373-2"><a href="mox-rocks.html#cb373-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb373-3"><a href="mox-rocks.html#cb373-3" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Placing buy order test&quot;</span> <span class="kw">do</span></span>
+<span id="cb373-4"><a href="mox-rocks.html#cb373-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb373-5"><a href="mox-rocks.html#cb373-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb373-6"><a href="mox-rocks.html#cb373-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb373-7"><a href="mox-rocks.html#cb373-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> dummy_trader_state() <span class="kw">do</span></span>
+<span id="cb373-8"><a href="mox-rocks.html#cb373-8" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{</span>
+<span id="cb373-9"><a href="mox-rocks.html#cb373-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">id:</span> <span class="dv">100_000_000</span>,</span>
+<span id="cb373-10"><a href="mox-rocks.html#cb373-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb373-11"><a href="mox-rocks.html#cb373-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">budget:</span> <span class="st">&quot;200&quot;</span>,</span>
+<span id="cb373-12"><a href="mox-rocks.html#cb373-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb373-13"><a href="mox-rocks.html#cb373-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">sell_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb373-14"><a href="mox-rocks.html#cb373-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.0025&quot;</span>),</span>
+<span id="cb373-15"><a href="mox-rocks.html#cb373-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.001&quot;</span>),</span>
+<span id="cb373-16"><a href="mox-rocks.html#cb373-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">rebuy_interval:</span> <span class="cn">Decimal</span><span class="op">.</span>new(<span class="st">&quot;0.006&quot;</span>),</span>
+<span id="cb373-17"><a href="mox-rocks.html#cb373-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">rebuy_notified:</span> <span class="cn">false</span>,</span>
+<span id="cb373-18"><a href="mox-rocks.html#cb373-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> <span class="st">&quot;0.0001&quot;</span>,</span>
+<span id="cb373-19"><a href="mox-rocks.html#cb373-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> <span class="st">&quot;0.001&quot;</span></span>
+<span id="cb373-20"><a href="mox-rocks.html#cb373-20" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb373-21"><a href="mox-rocks.html#cb373-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb373-22"><a href="mox-rocks.html#cb373-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb373-23"><a href="mox-rocks.html#cb373-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> generate_event(id, price, quantity) <span class="kw">do</span></span>
+<span id="cb373-24"><a href="mox-rocks.html#cb373-24" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Core</span><span class="op">.</span><span class="cn">Struct</span><span class="op">.</span><span class="cn">TradeEvent</span>{</span>
+<span id="cb373-25"><a href="mox-rocks.html#cb373-25" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_type:</span> <span class="st">&quot;trade&quot;</span>,</span>
+<span id="cb373-26"><a href="mox-rocks.html#cb373-26" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_time:</span> <span class="dv">1_000</span> <span class="op">+</span> id <span class="op">*</span> <span class="dv">10</span>,</span>
+<span id="cb373-27"><a href="mox-rocks.html#cb373-27" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb373-28"><a href="mox-rocks.html#cb373-28" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_id:</span> <span class="dv">2_000</span> <span class="op">+</span> id <span class="op">*</span> <span class="dv">10</span>,</span>
+<span id="cb373-29"><a href="mox-rocks.html#cb373-29" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> price,</span>
+<span id="cb373-30"><a href="mox-rocks.html#cb373-30" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> quantity,</span>
+<span id="cb373-31"><a href="mox-rocks.html#cb373-31" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> <span class="dv">3_000</span> <span class="op">+</span> id <span class="op">*</span> <span class="dv">10</span>,</span>
+<span id="cb373-32"><a href="mox-rocks.html#cb373-32" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> <span class="dv">4_000</span> <span class="op">+</span> id <span class="op">*</span> <span class="dv">10</span>,</span>
+<span id="cb373-33"><a href="mox-rocks.html#cb373-33" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_time:</span> <span class="dv">5_000</span> <span class="op">+</span> id <span class="op">*</span> <span class="dv">10</span>,</span>
+<span id="cb373-34"><a href="mox-rocks.html#cb373-34" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
+<span id="cb373-35"><a href="mox-rocks.html#cb373-35" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb373-36"><a href="mox-rocks.html#cb373-36" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The above code finishes the implementation of the test, but inside it, we used functions from the <code>BinanceMock</code> module that are private. We need to update the module by making the <code>generate_fake_order/4</code> and <code>convert_order_to_order_response/1</code> function public(and moving them up in the module, so they are next to other public functions):</p>
+<div class="sourceCode" id="cb374"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb374-1"><a href="mox-rocks.html#cb374-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb374-2"><a href="mox-rocks.html#cb374-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb374-3"><a href="mox-rocks.html#cb374-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_order(symbol, time, order_id) <span class="kw">do</span></span>
+<span id="cb374-4"><a href="mox-rocks.html#cb374-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb374-5"><a href="mox-rocks.html#cb374-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb374-6"><a href="mox-rocks.html#cb374-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb374-7"><a href="mox-rocks.html#cb374-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_fake_order(symbol, quantity, price, side) <span class="co"># &lt;= updated to public</span></span>
+<span id="cb374-8"><a href="mox-rocks.html#cb374-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb374-9"><a href="mox-rocks.html#cb374-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb374-10"><a href="mox-rocks.html#cb374-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb374-11"><a href="mox-rocks.html#cb374-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> convert_order_to_order_response(%<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order) <span class="kw">do</span> <span class="co"># &lt;= updated to public</span></span>
+<span id="cb374-12"><a href="mox-rocks.html#cb374-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb374-13"><a href="mox-rocks.html#cb374-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb374-14"><a href="mox-rocks.html#cb374-14" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<p>We updated both of the methods to public and moved them up after the <code>get_order/3</code> function.</p>
+</div>
+<div id="define-an-alias-to-run-unit-tests" class="section level2" number="17.6">
+<h2><span class="header-section-number">17.6</span> Define an alias to run unit tests</h2>
+<p>Our unit test should be run without running the whole application, so we need to run them with the <code>--no-start</code> argument. We should also select unit tests by tag(<code>--only unit</code>). Let’s create an alias that will hide those details:</p>
+<div class="sourceCode" id="cb375"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb375-1"><a href="mox-rocks.html#cb375-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
+<span id="cb375-2"><a href="mox-rocks.html#cb375-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> aliases <span class="kw">do</span></span>
+<span id="cb375-3"><a href="mox-rocks.html#cb375-3" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb375-4"><a href="mox-rocks.html#cb375-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb375-5"><a href="mox-rocks.html#cb375-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;test.unit&quot;</span>: [</span>
+<span id="cb375-6"><a href="mox-rocks.html#cb375-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;test --only unit --no-start&quot;</span></span>
+<span id="cb375-7"><a href="mox-rocks.html#cb375-7" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb375-8"><a href="mox-rocks.html#cb375-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb375-9"><a href="mox-rocks.html#cb375-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We can now run our test using a terminal:</p>
+<div class="sourceCode" id="cb376"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb376-1"><a href="mox-rocks.html#cb376-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>test <span class="ex">mix</span> test.unit</span></code></pre></div>
+<p>We should see the following error:</p>
+<div class="sourceCode" id="cb377"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb377-1"><a href="mox-rocks.html#cb377-1" aria-hidden="true" tabindex="-1"></a><span class="ex">21:22:03.811</span> [error] GenServer <span class="co">#PID&lt;0.641.0&gt; terminating</span></span>
+<span id="cb377-2"><a href="mox-rocks.html#cb377-2" aria-hidden="true" tabindex="-1"></a><span class="ex">**</span> <span class="er">(</span><span class="ex">stop</span><span class="kw">)</span> <span class="ex">exited</span> in: GenServer.call<span class="er">(</span><span class="ex">BinanceMock,</span> :generate_id, 5000<span class="kw">)</span></span>
+<span id="cb377-3"><a href="mox-rocks.html#cb377-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">**</span> <span class="er">(</span><span class="ex">EXIT</span><span class="kw">)</span> <span class="ex">no</span> process: the process is not alive or there<span class="st">&#39;s no process currently associated with the given name, possibly because its application isn&#39;</span>t started</span></code></pre></div>
+<p>One of the <code>BinanceMock</code> module’s functions is sending a message to the process that doesn’t exist(as we are running our tests without starting the supervision tree[the <code>--no-start</code> argument]) to generate a unique id.</p>
+<p>There are two ways to handle this issue:</p>
+<ul>
+<li>inside the <code>/apps/naive/test/test_helper.exs</code> file we could ensure that the <code>BinanceMock</code> is up and running by adding <code>Application.ensure_all_started(:binance_mock)</code> function call - this is a hack</li>
+<li>we could refactor the <code>BinanceMock.generate_fake_order/4</code> to accept id as an argument instead of sending the message internally - this should be a much better solution. Let’s give it a shot.</li>
+</ul>
+<p>First, let’s update the <code>BinanceMock</code> module:</p>
+<div class="sourceCode" id="cb378"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb378-1"><a href="mox-rocks.html#cb378-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb378-2"><a href="mox-rocks.html#cb378-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_fake_order(order_id, symbol, quantity, price, side) <span class="co"># &lt;= order_id added</span></span>
+<span id="cb378-3"><a href="mox-rocks.html#cb378-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb378-4"><a href="mox-rocks.html#cb378-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># remove the call to GenServer from the body</span></span>
+<span id="cb378-5"><a href="mox-rocks.html#cb378-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb378-6"><a href="mox-rocks.html#cb378-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb378-7"><a href="mox-rocks.html#cb378-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb378-8"><a href="mox-rocks.html#cb378-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
+<span id="cb378-9"><a href="mox-rocks.html#cb378-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb378-10"><a href="mox-rocks.html#cb378-10" aria-hidden="true" tabindex="-1"></a>      generate_fake_order(</span>
+<span id="cb378-11"><a href="mox-rocks.html#cb378-11" aria-hidden="true" tabindex="-1"></a>        <span class="cn">GenServer</span><span class="op">.</span>call(<span class="cn">__MODULE__</span>, <span class="va">:generate_id</span>), <span class="co"># &lt;= order_id generation added</span></span>
+<span id="cb378-12"><a href="mox-rocks.html#cb378-12" aria-hidden="true" tabindex="-1"></a>        symbol,</span>
+<span id="cb378-13"><a href="mox-rocks.html#cb378-13" aria-hidden="true" tabindex="-1"></a>        quantity,</span>
+<span id="cb378-14"><a href="mox-rocks.html#cb378-14" aria-hidden="true" tabindex="-1"></a>        price,</span>
+<span id="cb378-15"><a href="mox-rocks.html#cb378-15" aria-hidden="true" tabindex="-1"></a>        side</span>
+<span id="cb378-16"><a href="mox-rocks.html#cb378-16" aria-hidden="true" tabindex="-1"></a>      )</span></code></pre></div>
+<p>Now we need to update our test to pass some dummy order id from the mocked function:</p>
+<div class="sourceCode" id="cb379"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb379-1"><a href="mox-rocks.html#cb379-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb379-2"><a href="mox-rocks.html#cb379-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb379-3"><a href="mox-rocks.html#cb379-3" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Placing buy order test&quot;</span> <span class="kw">do</span></span>
+<span id="cb379-4"><a href="mox-rocks.html#cb379-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb379-5"><a href="mox-rocks.html#cb379-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, <span class="cn">BinanceMock</span><span class="op">.</span>generate_fake_order(</span>
+<span id="cb379-6"><a href="mox-rocks.html#cb379-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;12345&quot;</span>,                        <span class="co"># &lt;= order_id added</span></span>
+<span id="cb379-7"><a href="mox-rocks.html#cb379-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb379-8"><a href="mox-rocks.html#cb379-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;464.360&quot;</span>,</span>
+<span id="cb379-9"><a href="mox-rocks.html#cb379-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;0.4307&quot;</span>,</span>
+<span id="cb379-10"><a href="mox-rocks.html#cb379-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;BUY&quot;</span></span>
+<span id="cb379-11"><a href="mox-rocks.html#cb379-11" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb379-12"><a href="mox-rocks.html#cb379-12" aria-hidden="true" tabindex="-1"></a>   <span class="op">...</span></span>
+<span id="cb379-13"><a href="mox-rocks.html#cb379-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We can now rerun our test:</p>
+<div class="sourceCode" id="cb380"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb380-1"><a href="mox-rocks.html#cb380-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>test <span class="ex">mix</span> test.unit</span>
+<span id="cb380-2"><a href="mox-rocks.html#cb380-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb380-3"><a href="mox-rocks.html#cb380-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Finished</span> in 0.1 seconds <span class="er">(</span><span class="ex">0.00s</span> async, 0.1s sync<span class="kw">)</span></span>
+<span id="cb380-4"><a href="mox-rocks.html#cb380-4" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
+<p>Congrats! We just successfully tested placing an order without any dependencies. To avoid explicitly passing the <code>MIX_ENV=test</code> environment variable, we will add the prefered environment for our alias inside the <code>mix.exs</code> file:</p>
+<div class="sourceCode" id="cb381"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb381-1"><a href="mox-rocks.html#cb381-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
+<span id="cb381-2"><a href="mox-rocks.html#cb381-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> project <span class="kw">do</span></span>
+<span id="cb381-3"><a href="mox-rocks.html#cb381-3" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb381-4"><a href="mox-rocks.html#cb381-4" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb381-5"><a href="mox-rocks.html#cb381-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">preferred_cli_env:</span> [</span>
+<span id="cb381-6"><a href="mox-rocks.html#cb381-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;test.unit&quot;</span>: <span class="va">:test</span></span>
+<span id="cb381-7"><a href="mox-rocks.html#cb381-7" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb381-8"><a href="mox-rocks.html#cb381-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now we can run our tests by:</p>
+<div class="sourceCode" id="cb382"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb382-1"><a href="mox-rocks.html#cb382-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mix</span> test.unit</span>
+<span id="cb382-2"><a href="mox-rocks.html#cb382-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb382-3"><a href="mox-rocks.html#cb382-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Finished</span> in 0.06 seconds <span class="er">(</span><span class="ex">0.00s</span> async, 0.06s sync<span class="kw">)</span></span>
+<span id="cb382-4"><a href="mox-rocks.html#cb382-4" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
+<p>That’s all for this chapter - to sum up, the main advantages from the <code>mox</code> based tests:
+- we were able to test a standalone process ignoring all of its dependencies
+- we were able to confirm that dependent functions were call and expected values were passed to them
+- we were able to create a feedback look where mock was sending a message back to the test, because of which we didn’t need to use <code>sleep</code>, and that causes massive speed gains</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_17">Github</a></p>
 
