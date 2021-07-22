@@ -107,8 +107,6 @@ We will now add an interface method to the `Naive` module that will instruct
   end
 ```
 
-\newpage
-
 ## Implement `Naive.SymbolSupervisor`
 
 Next, time for the `Naive.SymbolSupervisor`, the first step will be to create a file called `symbol_supervisor.ex` inside `apps/naive/lib/naive` directory. There's no point in using the [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html), as we know the children that we would like to start automatically on init. This is a full implementation of the supervisor and it's a simple as just listing child processes inside the init function:
@@ -152,8 +150,6 @@ We registered the `Naive.SymbolSupervisor` processes with names, which will help
 
 As mentioned previously whenever either the `Naive.Leader` or `Naive.DynamicSymbolSupervisor-#{symbol}` would crash we would like to kill the other child process as we won't be able to recover the state - it's just easier to init both again.
 
-\newpage
-
 ## Implement `Naive.Leader`
 
 It's time for the `Naive.Leader` module, again, the first step will be to create a file called the `leader.ex` inside `apps/naive/lib/naive` directory. At this moment it will be a skeleton GenServer implementation just to get the code to compile:
@@ -186,13 +182,13 @@ $ iex -S mix
 iex(1)> :observer.start()
 ```
 
+\newpage
+
 The above function will open a new window looking as follows:
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_06_new_observer.png")
 ```
-
-\newpage
 
 To clearly see the supervision tree we will click on the "Applications" tab at the top - the following tree of processes will be shown on the left:
 
@@ -222,8 +218,6 @@ We can see that two new branches were created:
 * `SymbolSupervisor-XRPUSDT`
 
 Each of them contains a `Naive.Leader` and `DynamicTraderSupervisor`.
-
-\newpage
 
 ### Updating the `leader` module
 
@@ -281,8 +275,6 @@ The `Naive.Leader` will fetch symbol settings and based on them, it will build t
   end
 ```
 
-\newpage
-
 Fetching symbol settings will be hardcoded for time being to keep this chapter focused. We will also move the code responsible for fetching tick
 size from the `Naive.Trader` to the `Naive.Leader` and hardcode the rest of the values:
 
@@ -310,6 +302,8 @@ size from the `Naive.Trader` to the `Naive.Leader` and hardcode the rest of the 
     |> Map.get("tickSize")
   end
 ```
+
+\newpage
 
 Additionally, we need to create a helper method that we used inside the `handle_continue/2` callback called `fresh_trader_state/1`:
 

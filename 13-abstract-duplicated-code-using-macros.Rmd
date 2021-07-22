@@ -15,6 +15,8 @@ We will write an "extension" of the `DynamicSupervisor` that allows to start, st
 
 Our new `Core.ServiceSupervisor` module will hold all the logic responsible for starting, stopping, and autostarting worker processes. To limit the boilerplate inside the implementation modules (like `Naive.DynamicSymbolSupervisor` or `Streamer.DynamicStreamerSupervisor`) we will utilize the `use` macro that will dynamically generate low-level wiring for us.
 
+\newpage
+
 ## Pseudo generalize Core.ServiceSupervisor module
 
 Let's start by creating a new *non-supervised* application called `core` inside our umbrella project. At this moment our "abstraction code" will sit inside it just to keep things simple as otherwise, we would need to create a new repo and jump between codebases which we will avoid for time being:
@@ -183,7 +185,7 @@ Before we will jump back to the `naive`'s application modules we need to add the
 
 Let's get back to the `Naive.DynamicSymbolSupervisor` where we expect functions that we just cut out to exist like `start_trading/1` or `stop_trading/1`.
 
-\newpage
+
 
 Let's reimplement more generic versions of those functions as just simple calls to the                       
 `Core.ServiceSupervisor` module:
@@ -329,7 +331,8 @@ Moving on to full generalization of the `Core.ServiceSupervisor` module. We will
   end
 ```
 
-The `fetch_symbols_to_start/0` function uses `Repo` and `Settings` that are aliased at the top of the `Core.ServiceSupervisor` module. This just won't work with any other applications as Streamer will require its own `Repo` and `Settings` modules etc.
+The `fetch_symbols_to_start/0` function uses `Repo` and `Settings` that are aliased at the top of the                    
+`Core.ServiceSupervisor` module. This just won't work with any other applications as Streamer will require its own `Repo` and `Settings` modules etc.
 
 To fix that we will *pass* both `repo` and `schema` as arguments to the `fetch_symbols_to_start/0` function which will become `fetch_symbols_to_start/2`:
 
@@ -372,6 +375,8 @@ Going even further down the line, `autostart_workers/0` is referenced by the `au
 
 This finishes the first of multiple paths that we need to follow to fully refactor the `Core.ServiceSupervisor` module.
 
+\newpage
+
 ### Second path starting with the `update_status/2`
 
 Let's don't waste time and start from the other helper function inside the `Core.ServiceSupervisor` module. This time we will make the `update_status/2` function fully generic:
@@ -390,7 +395,7 @@ As previously we added `repo` and `schema` as arguments and modified the body of
 
 In the same fashion as previously, we need to check "who" is using the `update_status/2` and update those calls to `update_status/4`.
 
-\newpage
+
 
 The function is used inside the `start_worker/1` and the `stop_worker/1` inside the                     
 `Core.ServiceSupervisor` module so as previously we need to bubble them up(pass via arguments to both `start_worker/1` and `stop_worker/1` functions):
@@ -415,6 +420,8 @@ The function is used inside the `start_worker/1` and the `stop_worker/1` inside 
 ```
 
 As we modified both `start_worker/1` and `stop_worker/1` by adding two additional arguments we need to update all references to them and here is where things branch out a bit.
+
+\newpage
 
 We will start with `start_worker/1` function (which is now `start_worker/3`) - it's used by the `autostart_workers/2` inside `Core.ServiceSupervisor` module. The `autostart_workers/2` function already has `repo` and `schema` so we can just pass them to the `start_worker/3`:
 
@@ -655,7 +662,7 @@ defmodule Naive.DynamicSymbolSupervisor do
   use Core.ServiceSupervisor
 ```
 
-\newpage
+
 
 To be able to `use` the `Core.ServiceSupervisor` module it needs to provide the `__using__/1` macro. As the simplest content of that macro, we can use here would be just to use the `DynamicSupervisor` inside:
 
@@ -676,6 +683,8 @@ At this moment(after swapping to `use Core.ServiceSupervisor`) our code still wo
 As the `autostart_workers/0` function is a part of the boilerplate, we will move it from the `Naive.DynamicSymbolSupervisor` module to the `Core.ServiceSupervisor` module inside the `__using__/1` macro. 
 
 Ok, but it has all of those other `naive` application-specific arguments - where will we get those?
+
+\newpage
 
 That's what that `opts` argument is for inside the `__using__/1` macro. When we call                            
 `use Core.ServiceSupervisor` we can pass an additional keyword list which will contain all `naive` application-specific details:
@@ -775,8 +784,7 @@ We can apply that to all of the passed variables inside the `autostart_workers/0
 You can think about the above macro that it will substitute the `unquote(..)` parts with passed values and then it will grab the whole contents between `quote ... do` and `end` and it will paste it to the `Naive.DynamicSymbolSupervisor` module at compile-time - we can visualize generated/"pasted" code as:
 
 ```{r, engine = 'elixir', eval = FALSE}
-  # code generated by the `__using__/1` macro that
-  # will be "pasted" to the `Naive.DynamicSymbolSupervisor` module
+  # generated by the `__using__/1` macro injected into the `Naive.DynamicSymbolSupervisor`
   use DynamicSupervisor
 
   def autostart_workers do
@@ -791,12 +799,12 @@ You can think about the above macro that it will substitute the `unquote(..)` pa
 
 This is exactly the code that we had before inside the `Naive.DynamicSymbolSupervisor` module but now it's stored away inside the `Core.ServiceSupervisor`'s `__using__/1` macro and it doesn't need to be implemented/copied across twice into two apps anymore.
 
-We can now follow the same principle and move `start_worker/1` and `stop_worker/1` from the `Naive.DynamicSymbolSupervisor` module into `__using__/1` macro inside the `Core.ServiceSupervisor` module:
+We can now follow the same principle and move `start_worker/1` and `stop_worker/1` from the                     
+`Naive.DynamicSymbolSupervisor` module into `__using__/1` macro inside the `Core.ServiceSupervisor` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
       # /apps/core/lib/core/service_supervisor.ex
-      # inside the __using__/1 macro
-      ...
+      # append the below before the end of the __using__/1 macro
       def start_worker(symbol) do
         Core.ServiceSupervisor.start_worker(
           symbol, # <= this needs to stay as variable
@@ -820,7 +828,8 @@ We can now follow the same principle and move `start_worker/1` and `stop_worker/
 
 Here we have an example of an execution time variable called `symbol` that we should *not* `unquote` as it will be different per function call (source code should have `symbol` variable there not for example `"NEOUSDT"`).
 
-At this moment the `Naive.DynamicSymbolSupervisor` consists of only `start_link/1`, `init/1` and `shutdown_worker/1`, it's under 50 lines of code and works exactly as before refactoring. All of the boilerplate was moved to the `Core.ServiceSupervisor` module.
+At this moment the `Naive.DynamicSymbolSupervisor` consists of only `start_link/1`, `init/1` and                          
+`shutdown_worker/1`, it's under 50 lines of code and works exactly as before refactoring. All of the boilerplate was moved to the `Core.ServiceSupervisor` module.
 
 We left the `shutdown_worker/1` function as it's specific to the `naive` application, but inside it, we utilize both the `get_pid/2` and the `update_status/4` functions where we are passing the `naive` application-specific variables(like `Naive.Repo`).
 
@@ -943,6 +952,8 @@ We need to start with adding the `core` application to the list of dependencies 
       ...
 ```
 
+\newpage
+
 We can now move on to the `Streamer.DynamicStreamerSupervisor` where we will remove everything (really everything including `import`s, `alias`es and even `require`) beside the `start_link/1` and the `init/1`. As with the `Naive.DynamicSymbolSupervisor` we will `use` the `Core.ServiceSupervisor` and pass all required options - *full* implementation of the `Streamer.DynamicStreamerSupervisor` module should look as follows:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -980,6 +991,8 @@ As with the `naive` application, we need to update the Task function inside the 
        end}
       ...
 ```
+
+\newpage
 
 As well as main `Streamer` module needs to forward calls instead of delegating:
 

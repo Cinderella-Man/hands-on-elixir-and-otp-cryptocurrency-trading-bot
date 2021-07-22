@@ -11,9 +11,9 @@
 
 ## Decide on the tested functionality
 
-We've reached the stage where we have a decent solution in place, and to ensure that it's still working correctly after any future refactoring, we will add tests.
+We've reached the stage where we have a decent solution in place, and to ensure that it's still working correctly after any future refactoring, we will add tests. We will start with the "integration"/"end-to-end"(E2E) test, which will confirm that the whole "trading" works.
 
-We will start with the "integration"/"end-to-end"(E2E) test, which will confirm that the whole "trading" works.
+To perform tests at this level, we will need to orchestrate databases together with processes and broadcast trade events from within the test to cause our trading strategy to place orders. We will be able to confirm the right behavior by checking the database after running the test.
 
 You should have the **least** amount of this type of test as they are very brittle and require substantial effort to set up and maintain. My personal rule of thumb is that only major "happy paths" should be tested this way.
 
@@ -26,6 +26,8 @@ knitr::include_graphics("images/chapter_16_01_current_flow.png")
 ```
 
 Currently, the `Streamer.Binance` establishes a WebSocket connection with Binance. It decodes the incoming trade events and broadcasts them to PubSub(`TRADE_EVENTS:#{symbol}` topics). PubSub then sends them to the `Naive.Trader` processes. As those processes place orders(or orders get filled), they broadcast orders to the PubSub(`ORDERS:#{symbol}` topics). The `DataWarehouse.Subscriber.Worker` processes subscribe to the broadcasted orders and store them in the database.
+
+\newpage
 
 What we could do is to stop all the `Streamer.Binance` processes and broadcast trade events directly from the test. We would then be able to fine-tune the prices inside those events to run through the full trade cycle:
 
@@ -50,6 +52,8 @@ First, we will need to alias multiple modules that we will use to either initial
   import Ecto.Query, only: [from: 2]
 ```
 
+\newpage
+
 Now we can update the generated test to have a tag in front of it:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -60,7 +64,7 @@ Now we can update the generated test to have a tag in front of it:
 
 We will use this tag to select only this test when we are running the integration tests.
 
-\newpage
+
 
 The first step will be to update the trading settings to values that will cause trading activity:
 
@@ -96,6 +100,8 @@ As we updated the trading settings, we can now start trading:
 
     Naive.start_trading(symbol)
 ```
+
+\newpage
 
 Before we start broadcasting events, we need to ensure that the `DataWarehouse` application will store resulting orders into the database:
 
@@ -176,7 +182,7 @@ It should cause 3 orders to be placed at specific prices. In the last step, we w
     assert buy_2 == ["0.43100000", "BUY", "NEW"]
 ```
 
-\newpage
+
 
 That finishes the test function. The final addition inside the `NaiveTest` module will be to add a private helper function that generates trade event for the passed values:
 
@@ -226,7 +232,7 @@ Configuration for our applications lives in `config/config.exs` configuration fi
 import_config "#{config_env()}.exs"
 ```
 
-\newpage
+
 
 Now we will create multiple config files, one for each environment:
 
@@ -237,10 +243,19 @@ Now we will create multiple config files, one for each environment:
 import Config
 ```
 
-* `/config/test.exs` for testing:
+\newpage
+
+* `/config/test.exs` for future "unit" testing:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
+import Config
+```
+
+* `/config/integration.exs` for end-to-end testing:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/integration.exs
 import Config
 
 config :streamer, Streamer.Repo, database: "streamer_test"
@@ -314,7 +329,7 @@ Inside the main `mix.exs` file of our umbrella, we will use those with usual `ec
 We can now safely run our test:
 
 ```{r, engine = 'bash', eval = FALSE}
-$ MIX_ENV=test mix test.integration
+$ MIX_ENV=integration mix test.integration
 ```
 
 Wait... Why do we need to set the `MIX_ENV` before calling our alias?
@@ -339,7 +354,7 @@ config :binance_mock,
 ```
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /config/test.exs
+# /config/integration.exs
 # add below lines under the `import Config` line 
 config :binance_mock,
   use_cached_exchange_info: true
@@ -390,7 +405,7 @@ As the `binance_mock` app wasn't using the `jason` package before, we need to ad
 
 The above change will take care of flipping between serving the live/cached exchange info data, but we still need to manually save the current response to the file (to be used as a cached version later).
 
-\newpage
+
 
 Let's open the IEx terminal to fetch the exchange info data and serialize it to JSON:
 
@@ -501,7 +516,7 @@ config :streamer,
   binance_client: Binance
 ```
 
-\newpage
+
 
 as well as swap the `binance` to the `BinanceMock` inside the list of dependencies of the `Streamer` app:
 
@@ -534,13 +549,15 @@ This is quite typical in daily work as a software engineer. One of the common pr
 I believe that it should be neither of them as those applications use the PubSub and TradeEvent struct. I believe that they should be placed in neither of those applications as those applications are only
 using the struct and PubSub process.
 
-\newpage
+
 
 What we should do instead is to create a new supervised application where we can attach the PubSub to the supervision tree and hold the system-wide structs(like TradeEvent) so every app can depend on it instead of each other:
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_16_04_core.png")
 ```
+
+\newpage
 
 ## Introduce the Core application
 
@@ -572,7 +589,7 @@ As we moved the `TradeEvent` struct over to the `Core` application, we need to:
 * add the `core` to the dependencies list of the `streamer` application
 * remove the `streamer` from the dependencies list of all apps in the umbrella
 
-\newpage
+
 
 The final step will be to move the PubSub process from the supervision tree of the Streamer application to the supervision of the Core application.
 
@@ -634,7 +651,7 @@ mix setup
 
 Yay! :)
 
-\newpage
+
 
 It's worth reiterating the downsides of the end-to-end tests:
 

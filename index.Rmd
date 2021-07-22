@@ -1,7 +1,7 @@
 --- 
 title: "Hands-on Elixir & OTP: Cryptocurrency trading bot"
 author: "Kamil Skowron"
-date: "0.2.1"
+date: "0.3.0"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
 documentclass: book
@@ -16,21 +16,21 @@ twitter-handle: kamilskowron
 monofont: Consolas.ttf
 ---
 
-# Welcome \emoji{wave} {-}
+# Preface {-}
 
-This website is the home of **Hands-on Elixir & OTP: Cryptocurrency trading bot** book.
+### Want to learn Elixir & OTP by creating a real-world project? {-}
 
 <img src="images/cover.png" width="250" height="324" alt="The book cover" align="right" style="margin: 0 1em 0 1em"/>
 
-**This book is 75% complete** - chapters 1-16 are finished but I'm planning to add more content soon.
+With "Hands-on Elixir & OTP: Cryptocurrency trading bot", you will **gain hands-on experience by writing an interesting software project from scratch.** We will explore all the key abstractions and essential principles through iterative implementation improvements.
 
-Want to learn Elixir & OTP by creating a real-world project? With *Hands-on Elixir & OTP: Cryptocurrency trading bot* you will gain hands-on experience by working on an interesting software project. We will explore all the key abstractions and essential principles through iterative implementation improvements.
+We will start by creating a new umbrella application, subscribing to WebSocket streams, implementing a basic trading flow, and focusing on improving it by expanding on the topics like supervision trees, resiliency, refactoring using macros, utilising the Registry, testing and others.
 
-This book is based on [Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video series released on YouTube.
+**This book is 80% complete - chapters 1-17 are finished,** and I'll add more content soon. It's also a loosely written representation of the [Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video course released on YouTube.
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
-**To get notified about updates** to this book just "watch" the [source code's repository](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot) and don't forget to leave a \emoji{star}star:
+**To get notified about updates** to this book just "watch" the [source code's repository](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot) and don't forget to leave a star:
 
 ```{r, fig.align="center", out.width="60%", echo=FALSE}
 knitr::include_graphics("images/watch_book_howto.png")
@@ -43,10 +43,6 @@ knitr::include_graphics("images/watch_book_howto.png")
 **THIS BOOK IS NOT FINANCIAL ADVICE**
 
 THE SOFTWARE/BOOK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE/BOOK OR THE USE OR OTHER DEALINGS IN THE SOFTWARE/BOOK.
-
-## Contributing / Errata {-}
-
-The book is written using [R Markdown](http://rmarkdown.rstudio.com/)(it's a very similar syntax to the GitHub markdown but supports many more features including code execution, etc.) and converted to final form (for example PDF) using the [bookdown](https://www.bookdown.org/) app. This means that editing a chapter is as simple as editing the markdown for that chapter - there is even an edit button at the top of the page to do exactly that. I would love to follow the standard process of forking, making changes, opening PR, merging, and releasing a new version of the book. I invite people to open issues as well with suggestions.
 
 ## PDF & EPUB {-}
 
@@ -78,23 +74,19 @@ So, if you've already gone through the motions and learned Elixir and OTP but st
 
 ## What this book covers {-}
 
-This book is a loosely written representation of "[Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ)" video course released on YouTube.
+This book is an ongoing project, and at present, it contains the following chapters:
 
-It's still an ongoing production and will be continued in the upcoming months, at this moment it contains:
+* Chapter 1 - Stream live cryptocurrency prices from the Binance WSS
 
-* Chapter 1 - Stream live crypto prices from Binance WSS
-
-Stream live cryptocurrency prices (trade events) from the Binance exchange. Starting grounds up, we will create a new umbrella project and a `streamer` application inside it. The streamer application will use a Websocket client called `WebSockex` to establish a connection with the Binance API and receive a live feed. After receiving the event as JSON string, we will decode it using the `jason` library and convert it to our own data struct. At the end of the chapter, we will see decoded trade events being logged to the terminal.
+Stream live cryptocurrency prices (trade events) from the Binance exchange. Starting grounds up, we will create a new umbrella project and a `streamer` application inside it. The streamer application will use a Websocket client called `WebSockex` to connect with the Binance API and receive a live feed. After receiving the event as a JSON string, we will decode it using the `jason` library and convert it to our data struct. At the end of the chapter, we will see decoded trade events being logged to the terminal.
 
 * Chapter 2 - Create a naive trading strategy - single trader without supervision
 
-In this chapter, we will create our first *naive* trading strategy. We will create another application inside our umbrella called `naive`. We will put data streamed to our `streamer` application to good use by sending it over to the `naive` application. We will start with a very basic solution consisting of a single process called `trader` that will utilize the `GenServer` behavior. It will allow us to go through the full trading cycle and will give us something that "works".
+In this chapter, we will create our first *naive* trading strategy. We will create another application inside our umbrella called `naive`. We will put data streamed to our `streamer` application to good use by sending it over to the `naive` application. We will start with a very basic solution consisting of a single process called `trader` that will utilize the `GenServer` behaviour. It will allow us to go through the full trading cycle and give us something that "works".
 
 * Chapter 3 - Introduce PubSub as a communication method
 
 To allow our trading strategy to scale to multiple parallel traders, we need to find a way to distribute the latest prices (trade events) to those multiple traders. We will introduce PubSub to broadcast messages from the streamer(s) to the trader(s). PubSub will allow us to break hardcoded references between applications in our umbrella and that will become a pattern that we will utilize moving forward.
-
-\newpage
 
 * Chapter 4 - Mock the Binance API
 
@@ -146,13 +138,26 @@ Then we will move on to adding supervision similar to the one from the `naive` a
 
 In this chapter, we will be backtesting our trading strategy by developing a publisher inside the DataWarehouse application. It will stream trade events from the database to broadcast them to the `TRADE_EVENTS:#{symbol}` PubSub topic. It will use the same topic as data would be streamed directly from the Binance. From the trader's perspective, it won't any difference and will cause normal trading activity that will be stored inside the database to be analyzed later.
 
-## Source code {-}
+* Chapter 16 - End-to-end testing
 
-The source code for this book is hosted on Github:
+We've reached the stage where we have a decent solution in place, and to ensure that it's still working correctly after any future refactoring, we will add tests. We will start with the "integration"/"end-to-end"(E2E) test, which will confirm that the whole "trading" works. To perform tests at this level, we will need to orchestrate databases together with processes and broadcast trade events from within the test to cause our trading strategy to place orders. We will be able to confirm the right behaviour by checking the database after running the test.
 
-https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code
+* Chapter 17 - Mox rocks
 
-The final code of each chapter has its own branch.
+In the previous chapter, we’ve implemented the end-to-end test that required a lot of prep work, and we were able to see the downsides of this type of test clearly. This chapter will focus on implementing a more granular test that will utilize the mox package to mock out the dependencies of the `Naive.Trader`. We will look into how the mox works and how we will need to modify our code to use it.
+
+## Contributing, Errata and Source code {-}
+
+The book is written using [R Markdown](http://rmarkdown.rstudio.com/)(it's a very similar syntax to the GitHub markdown but supports many more features including code execution, etc.) and converted to final form (for example PDF) using the [bookdown](https://www.bookdown.org/) app. This means that editing a chapter is as simple as editing the markdown source of that chapter.
+
+There are two repositories related to this book(both hosted on Github):
+
+* [source code of the book itself](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
+* [code written across the book where the final code of each chapter has its own branch](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
+
+In regards to contributions - I would love to follow the standard process of forking, making changes, opening PR(please look is there a branch for the next version and point to it instead of `main`), merging, and releasing a new version of the book.
+
+This books has also the **GitHub Discussions** enabled for both the [book's repo](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions) as well as [source code's repo](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions), please feel welcome to start any discussions related to book there. 
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages

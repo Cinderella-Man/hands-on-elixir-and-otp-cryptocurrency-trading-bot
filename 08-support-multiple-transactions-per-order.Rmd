@@ -41,7 +41,7 @@ What we need to do is to update the status of the buy order after the first fetc
 
 The same issue will appear when placing a sell order and dealing with multiple simultaneous transactions.
 
-\newpage
+
 
 ## Improve buy order filled callback
 
@@ -89,7 +89,7 @@ Now we can fetch our buy order to check is it already filled. We will get the `B
 
 The rest of the logic inside this callback will depend on the `status` of the buy order. If our buy order is "filled" we would like to follow the existing logic but also update the `buy_order` field inside the state of the trader process. On the other hand, if our order is not yet filled the only thing to do is to update the `buy_order` field inside the state of the Trader process.
 
-\newpage
+
 
 Here's an updated body below the above changes(few variables got renamed for clarity as we are now fetching the order):
 
@@ -122,6 +122,8 @@ Here's an updated body below the above changes(few variables got renamed for cla
 ```
 
 As we are branching our logic and both paths are updating the state, we will return it together with an `:ok` atom to be able to pattern match it and assign it as a new state.
+
+\newpage
 
 ## Implement buy order "filled" callback
 
@@ -187,7 +189,7 @@ Moving to the body of the function, we need to:
   
   - update the state with new `sell_order` and continue
 
-\newpage
+
 
 Here's the full body of our callback:
 

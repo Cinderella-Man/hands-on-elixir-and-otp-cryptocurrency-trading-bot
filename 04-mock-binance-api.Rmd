@@ -165,11 +165,10 @@ The "order_limit" helper function will:
   end
 ```
 
-We can now move on to the implementation of the `handle_cast/2` callback to `:add_order` to the order book for the symbol from the order.
-It needs to do two things:
+\newpage
 
-* subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from the order
-* add the order to the correct order book
+We can now move on to implementing the `handle_cast/2` callback to `:add_order` to the order book for the symbol from the order.
+It needs to subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from the order and add the order to the correct order book:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -293,6 +292,8 @@ Starting with the `generate_fake_orders`, it's a function that takes a symbol, q
   end
 ```
 
+\newpage
+
 We can now focus on converting the `Binance.Order` to the `Binance.OrderResponse` struct. As `Binance.Order` struct contains almost all of the same fields that the `Binance.OrderResponse` struct, we can use `struct` function without exclamation mark to ignore all additional fields. The only field that has a different name is `transact_time` field which is called `time` in the `Binance.Order` struct - we can fix that separately:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -335,6 +336,8 @@ We can now move on to retrieving the orders. First, we need to add an interface 
   end
 ```
 
+\newpage
+
 The callback itself is pretty straightforward. We will need to get an order book for the passed symbol. As we don't know the order's side, we will concat all 3 lists(buy_side, sell_side, and historical) and try to find an order that will
 match passed symbol, time, and order_id:
 
@@ -375,8 +378,6 @@ Finally, we need to handle incoming trade events(streamed from the PubSub topic)
 * use the `take_while/2` function again, this time to sell orders with prices *less* than the current price, we will also update their statuses to filled.
 * concat both lists of filled orders, convert them to trade events, and broadcast them to the PubSub's TRADE_EVENTS topic.
 * remove the filled orders from buy and sell lists and put them into the historical list.
-
-\newpage
 
 Here we can clearly see the benefit of sorting the lists, we can use functions like `take_while/2` and `drop/2` instead of `filter/2`
 and `reject/2`(later ones will go through whole lists which could become a bottleneck when multiple open orders would be active):
@@ -486,8 +487,6 @@ the children list of the application so it starts automatically:
 end
 ```
 
-\newpage
-
 ## Upgrade trader and config
 
 We can move on to the `Naive.Trader` module where we will add an attribute that will point to the Binance client dictated by config:
@@ -510,6 +509,8 @@ We need to replace all direct calls to the `Binance` module for calls to the `@b
   @binance_client.get_exchange_info()
 ...
 ```
+
+\newpage
 
 As the `Naive.Trader` is now relying on the config to specify which Binance client should they use, we need to add it to the config:
 
@@ -536,8 +537,6 @@ The last modification to our system will be to modify the `mix.exs` of the `bina
 ...
 ```
 
-\newpage
-
 We also add `:binance_mock` to the list of deps of the `naive` app(as the Naive app will use either `Binance` or `BinanceMock` to "trade"):
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -552,6 +551,8 @@ We also add `:binance_mock` to the list of deps of the `naive` app(as the Naive 
   end
 ...
 ```
+
+\newpage
 
 ## Test the implementation
 

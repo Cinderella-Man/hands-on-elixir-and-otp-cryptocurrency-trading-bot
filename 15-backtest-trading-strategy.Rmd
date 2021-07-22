@@ -11,7 +11,11 @@ In the last chapter, we started storing trade events and orders in the database 
 
 Backtesting is a procedure of running historical data through the system and observing how our strategy would perform as if we would run it "in the past". Backtesting works on assumption that the market will behave in a similar fashion in the future as it was in the past.
 
-At this moment we are receiving the trade events from the Binance through WebSocket. The `Streamer.Binance` process is handling those messages by parsing them from JSON string to map, then converting them to structs and broadcasting them to the `TRADE_EVENTS:#{symbol}` PubSub topic. The `Naive.Trader` subscribes to the `TRADE_EVENTS:#{symbol}` topic and takes decisions based on incoming data. As it places buy and sell orders it broadcasts them to the `ORDERS:#{symbol}` PubSub topic. The `DataWarehouse.Subscriber.Worker` processes subscribe to both trade events and orders topics and store incoming data inside the database - we can visualize that flow like that:
+At this moment we are receiving the trade events from the Binance through WebSocket. The `Streamer.Binance` process is handling those messages by parsing them from JSON string to map, then converting them to structs and broadcasting them to the `TRADE_EVENTS:#{symbol}` PubSub topic. The `Naive.Trader` subscribes to the `TRADE_EVENTS:#{symbol}` topic and takes decisions based on incoming data. As it places buy and sell orders it broadcasts them to the `ORDERS:#{symbol}` PubSub topic. The `DataWarehouse.Subscriber.Worker` processes subscribe to both trade events and orders topics and store incoming data inside the database.
+
+\newpage
+
+We can visualize this flow like that:
 
 ```{r, fig.align="center", out.width="60%", echo=FALSE}
 knitr::include_graphics("images/chapter_14_02_current_pubsub.png")
@@ -44,6 +48,8 @@ defmodule DataWarehouse.Publisher do
   end
 end
 ```
+
+\newpage
 
 To be able to query the database we will import `Ecto` and require `Logger` for logging:
 
@@ -107,7 +113,6 @@ Next, we will select data from the database but because of possibly hundreds of 
         ...
       }) do
     ...
-
     DataWarehouse.Repo.transaction(
       fn ->
         from(te in DataWarehouse.Schema.TradeEvent,
@@ -156,7 +161,7 @@ Finally, the above code uses the `publish_trade_event/1` helper function which c
   end
 ```
 
-\newpage
+
 
 We also need to remember about keeping the interface tidy so we will add `publish_data` to the `DataWarehouse` module:
 
@@ -181,11 +186,13 @@ $ wget https://github.com/Cinderella-Man/binance-trade-events \
 /raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz
 ```
 
+\newpage
+
 We can now uncompress the archive and load those trade events into our database:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ gunzip XRPUSDT-2019-06-03.csv.gz
-$ PGPASSWORD=postgres psql -Upostgres -h localhost -ddata_warehouse \
+$ PGPASSWORD=hedgehogSecretPassword psql -Upostgres -h localhost -ddata_warehouse \
 -c "\COPY trade_events FROM '/tmp/XRPUSDT-2019-06-03.csv' WITH (FORMAT csv, delimiter ';');"
 COPY 206115
 ```

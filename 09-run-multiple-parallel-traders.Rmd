@@ -22,6 +22,8 @@ At this moment, inside the `Naive.Leader` we have a silly code that starts all o
 
 All the changes we made in this episode will enable us to fix this.
 
+\newpage
+
 Let's say that we placed a buy order that got filled and the price has fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:
 
 ```{r, fig.align="center", out.height="20%", echo=FALSE}
@@ -93,7 +95,6 @@ Rebuy logic should be placed almost as the last callback just before the one tha
       ) do
 
   end
-
   # catch all callback here
 ```
 
@@ -176,7 +177,7 @@ There are few important details to make note of:
 * we need the trader's PID to be able to find it details inside the list of traders
 * we need settings to confirm the number of chunks to be able to limit the maximum number of parallel traders
 
-\newpage
+
 
 Moving on to the body of our callback. As with other ones, we will check can we find a trader inside the list of traders, and based on that we will either start another one(if we didn't reach the limit of chunks) or ignore it:
 

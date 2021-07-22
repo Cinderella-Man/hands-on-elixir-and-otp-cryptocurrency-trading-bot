@@ -48,7 +48,6 @@ We can now follow similar steps as previously and add required dependencies (lik
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/mix.exs
-  ...
   defp deps do
     [
       {:ecto_sql, "~> 3.0"},
@@ -58,7 +57,6 @@ We can now follow similar steps as previously and add required dependencies (lik
       {:streamer, in_umbrella: true}
     ]
   end
-  ...
 ```
 
 Additionally, we added the `phoenix_pubsub` module to be able to subscribe to the PubSub topic and the `streamer` application to be able to use its `Streamer.Binance.TradeEvent` struct.
@@ -84,9 +82,9 @@ config :data_warehouse,            # <= added line
   ecto_repos: [DataWarehouse.Repo] # <= added line
 
 config :data_warehouse, DataWarehouse.Repo,
-  database: "data_warehouse", # <= updated line
-  username: "postgres",       # <= updated line
-  password: "postgres",       # <= updated line
+  database: "data_warehouse",         # <= updated line
+  username: "postgres",               # <= updated line
+  password: "hedgehogSecretPassword", # <= updated line
   hostname: "localhost"
 ...
 ```
@@ -105,6 +103,8 @@ and add the `DataWarehouse.Repo` module to the children list of the `DataWarehou
 The last step will be to create a database by running `mix ecto.create -r DataWarehouse.Repo` command.
 
 This ends up the setup of the `Ecto` - we can now move on to the implementation of storing the orders and the trade events.
+
+\newpage
 
 ## Store trade events' data
 
@@ -152,6 +152,8 @@ Let's run the migration so it will create a new `trade_events` table for us:
 $ mix ecto.migrate
 ```
 
+\newpage
+
 The next step will be to create a new directory called `schema` inside the                              
 `apps/data_warehouse/lib/data_warehouse` directory. Inside it, we need to create a new schema file called `trade_event.ex`. We can copy across the same columns from the migration straight to schema:
 
@@ -195,6 +197,8 @@ Currently, we can already store the trade events' data inside the database so we
 ```
 
 We will implement a `subscriber` process that will be given a PubSub topic and will store incoming data inside the database.
+
+\newpage
 
 Let's start by creating a new folder called `subscriber` inside the                              
 `apps/data_warehouse/lib/data_warehouse` directory together with a new file called `worker.ex` inside it:
@@ -241,6 +245,8 @@ At this moment it's just a box standard implementation of the `GenServer` with a
     )
     ...
 ```
+
+\newpage
 
 Next, we need to add a handler for received messages:
 
@@ -345,7 +351,7 @@ end
 
 We updated all of the shortened names like `orig_qty` to full names like `original_quantity`.
 
-\newpage
+
 
 Let's run the migration so it will create a new `orders` table for us:
 
@@ -382,6 +388,8 @@ defmodule DataWarehouse.Schema.Order do
   end
 end
 ```
+
+\newpage
 
 We can now add a handler to our `DataWarehouse.Subscriber.Worker` that will convert the `Binance.Order` struct to `DataWarehouse.Schema.Order` and store data inside the database:
 
@@ -514,6 +522,8 @@ quantity: 5.326
 quantity: 5.326.
 ```
 
+\newpage
+
 At this moment inside the DataWarehouse's database we should see orders:
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -590,6 +600,8 @@ $ cd apps/data_warehouse
 $ mix ecto.gen.migration create_subscriber_settings
 * creating priv/repo/migrations/20210227230123_create_subscriber_settings.exs
 ```
+
+\newpage
 
 At this moment we can copy the code to create the `settings` table(enum and index as well) from the `streamer` application and tweak it to fit the `data_warehouse` application. So the first important change (besides updating namespaces from `Streamer` to `DataWarehouse`) will be to make a note that we have a setting per topic - not per symbol as for the `naive` and `streamer` applications:
 
@@ -668,6 +680,8 @@ We can now focus on drafting a supervision tree for the `data_warehouse` applica
 
 As it was with the case of `naive` and `streamer` applications, we will need an additional level of supervision to cater for "autostarting" `Task` as well as, in the case of the `data_warehouse` application the `Registry`.
 
+\newpage
+
 The full supervision tree will look as follows:
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
@@ -742,7 +756,7 @@ We can move on to implementing `autostart_workers/0` which will look very simila
 
 We can see that we are querying the database for a list of `topic`s(not symbols) and we are calling `start_child/2` for each result.
 
-\newpage
+
 
 The `start_worker/1` is where the `Registry` will shine as we won't need to check is there already a process running for that topic - we can leave that check to the `Registry`. If there's a process already running for that topic it will just return a tuple starting with `:error` atom:
 
@@ -791,7 +805,7 @@ Last function in this module will be `stop_worker/1` which uses private `stop_ch
 
 That is a full implementation of the `DataWarehouse.Subscriber.DynamicSupervisor` module and it's almost as slim as one from the last chapter where we leveraged macros to achieve that lightness. Using the `Registry` is the preferred way to manage a list of identifiable processes. We won't run into an issue of overusing the atoms(as they are not garbage collected, we could hit that limit sooner or later).
 
-\newpage
+
 
 ### Register Worker processes using :via
 
