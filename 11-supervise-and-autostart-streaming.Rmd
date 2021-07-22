@@ -22,7 +22,7 @@ We will create a new `Streamer.DynamicStreamerSupervisor` module inside our `str
 
 Next, we will consider a list of functionalities that we would like it to provide:
 
-- start streaming. This will require a new `Streamer.Binance` process started under the
+- start streaming. This will require a new `Streamer.Binance` process started under the                           
 `Streamer.DynamicStreamerSupervisor`. We will put logic responsible for starting that process inside the `Streamer.DynamicStreamerSupervisor` module.
 - stop streaming. To be able to stop the `Streamer.Binance` process streaming on a specific symbol, we will need to know that process' PID based only on symbol string(ie. "ETHUSDT"). To make that possible, we will need to register every `Streamer.Binance` process with a name that we will be able to "reverse-engineer" based only on symbol string for example: `:"#{__MODULE__}-#{symbol}"`
 - autostart streaming. At the start of streaming on a symbol, we should persist that action as a symbol's streaming setting inside the database. We will need to generate a new Ecto.Repo, configure, create and migrate DB (just like in the last chapter for the `naive` app) to be able to retrieve that list. We will write a logic that will fetch settings of the symbols, autostart the ones that are enabled and place all that logic inside the `Streamer.DynamicStreamerSupervisor` module. We will introduce a [Task](https://hexdocs.pm/elixir/master/Task.html) child process that will utilize the logic from the `Streamer.DynamicStreamerSupervisor` to fetch those enabled symbols and start `Streamer.Binance` processes on startup - we will describe all of this separately in its section in this chapter.
@@ -332,6 +332,8 @@ The last step to get the above function to work(and future ones in this module) 
   alias Streamer.Schema.Settings
 ```
 
+\newpage
+
 As we added a new `start_streaming/1` logic inside the `Streamer.DynamicStreamerSupervisor`, we need to replace the `start_streaming/1` implementation inside the `Streamer` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -522,7 +524,7 @@ The final update in this chapter will be to replace the `Streamer.DynamicStreame
     ...
 ```
 
-\newpage
+
 
 ## Test the implementation
 

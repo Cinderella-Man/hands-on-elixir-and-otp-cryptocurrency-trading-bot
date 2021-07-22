@@ -155,13 +155,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
 </ul></li>
-<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
 <ul>
-<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
-<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
-<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
-<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
-<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
@@ -458,7 +458,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>We will create a new <code>Streamer.DynamicStreamerSupervisor</code> module inside our <code>streamer</code> application that will supervise the <code>Streamer.Binance</code> processes.</p>
 <p>Next, we will consider a list of functionalities that we would like it to provide:</p>
 <ul>
-<li>start streaming. This will require a new <code>Streamer.Binance</code> process started under the
+<li>start streaming. This will require a new <code>Streamer.Binance</code> process started under the<br />
 <code>Streamer.DynamicStreamerSupervisor</code>. We will put logic responsible for starting that process inside the <code>Streamer.DynamicStreamerSupervisor</code> module.</li>
 <li>stop streaming. To be able to stop the <code>Streamer.Binance</code> process streaming on a specific symbol, we will need to know that process’ PID based only on symbol string(ie. “ETHUSDT”). To make that possible, we will need to register every <code>Streamer.Binance</code> process with a name that we will be able to “reverse-engineer” based only on symbol string for example: <code>:"#{__MODULE__}-#{symbol}"</code></li>
 <li>autostart streaming. At the start of streaming on a symbol, we should persist that action as a symbol’s streaming setting inside the database. We will need to generate a new Ecto.Repo, configure, create and migrate DB (just like in the last chapter for the <code>naive</code> app) to be able to retrieve that list. We will write a logic that will fetch settings of the symbols, autostart the ones that are enabled and place all that logic inside the <code>Streamer.DynamicStreamerSupervisor</code> module. We will introduce a <a href="https://hexdocs.pm/elixir/master/Task.html">Task</a> child process that will utilize the logic from the <code>Streamer.DynamicStreamerSupervisor</code> to fetch those enabled symbols and start <code>Streamer.Binance</code> processes on startup - we will describe all of this separately in its section in this chapter.</li>
@@ -702,6 +702,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb172-5"><a href="supervise-and-autostart-streaming.html#cb172-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb172-6"><a href="supervise-and-autostart-streaming.html#cb172-6" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span></span>
 <span id="cb172-7"><a href="supervise-and-autostart-streaming.html#cb172-7" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>As we added a new <code>start_streaming/1</code> logic inside the <code>Streamer.DynamicStreamerSupervisor</code>, we need to replace the <code>start_streaming/1</code> implementation inside the <code>Streamer</code> module:</p>
 <div class="sourceCode" id="cb173"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb173-1"><a href="supervise-and-autostart-streaming.html#cb173-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer.ex</span></span>
 <span id="cb173-2"><a href="supervise-and-autostart-streaming.html#cb173-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -840,7 +841,6 @@ At init both will start, the <code>Streamer.DynamicStreamerSupervisor</code> fir
 <span id="cb181-11"><a href="supervise-and-autostart-streaming.html#cb181-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb181-12"><a href="supervise-and-autostart-streaming.html#cb181-12" aria-hidden="true" tabindex="-1"></a>    opts <span class="op">=</span> [<span class="va">strategy:</span> <span class="va">:one_for_one</span>, <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Application</span>] <span class="co"># &lt;= updated name</span></span>
 <span id="cb181-13"><a href="supervise-and-autostart-streaming.html#cb181-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 </div>
 <div id="test-the-implementation-3" class="section level2" number="11.10">
 <h2><span class="header-section-number">11.10</span> Test the implementation</h2>

@@ -18,9 +18,11 @@ In the previous chapter, we've implemented the end-to-end test. It required a lo
 - we will be unable to run more than one end-to-end test in parallel as they rely on the database's state
 - we need to set up the database before every test run
 - we need to start processes in the correct order with the suitable parameters
-- we needed to wait a (guessed) hardcoded amount of time that it will take to finish the trading(this is extremely bad as it will cause randomly failing tests as people will make the time shorter to speed up tests)
+- we need to wait a (guessed) hardcoded amount of time that it will take to finish the trading(this is extremely bad as it will cause randomly failing tests as people will make the time shorter to speed up tests)
 - we wouldn't be able to quickly pinpoint which part error originated from as the test spans over a vast amount of the system
 - logging was polluting our test output
+
+\newpage
 
 How could we fix the above issues?
 
@@ -30,7 +32,7 @@ Focusing on a single trader process would remove the requirement for starting mu
 
 Let's look at a concrete example:
 
-When the `Naive.Trader` process starts, it subscribes to the `TRADE_EVENTS:#{symbol}` PubSub topic. It also broadcasts updates of the orders it's placed to the `ORDERS:#{symbol}` PubSub topic.
+When the `Naive.Trader` process starts, it subscribes to the `TRADE_EVENTS:#{symbol}` PubSub topic. It also broadcasts updates of the orders it placed to the `ORDERS:#{symbol}` PubSub topic.
 
 How could we break the link between the `Naive.Trader` and the PubSub(or any other module it depends on)?
 
@@ -47,8 +49,8 @@ end
 
 The above module would satisfy the PubSub's functionality required by the `Naive.Trader` module, but this solution comes with a couple of drawbacks:
 
-- it doesn't validate incoming arguments. It just ignores them, which is a missed opportunity to confirm that the PubSub module was called with the expected values.
-- we cannot define the results of calling the above functions specific to test, for example, if the first argument is `true` return `false`, otherwise `true`.
+- it doesn't the passed values. It just ignores them, which is a missed opportunity to confirm that the PubSub module was called with the expected values.
+- we can't define a custom implemention specific to test. This is possible by extending the implemention with test related returns(hack!)
 
 Using the `mox` module would fix both of the problems mentioned above. With the `mox` module we can define add-hoc function implemention per test:
 
@@ -60,11 +62,13 @@ Using the `mox` module would fix both of the problems mentioned above. With the 
         |> expect(:broadcast, fn (_module, "ORDERS:XRPUSDT", _order) -> :ok end)
 ```
 
+\newpage
+
 There are multiple benefits to using the `mox` module instead of handcrafting the implementation:
 
 - it allows defining functions that will pattern match values specific to each test(as in the case of the "usual" pattern matching, they will break when called with unexpected values)
 - it allows defining implementations of the mocked functions based on incoming(test specific) values
-- it can validate that all defined mocked functions have been called when the test was run
+- it can validate that all defined mocked functions have been called by the test
 - it comes with its own tests, so we don't need to test it as it would need with our custom handcrafted mimicking module implementation
 
 But there's a catch* ;)
@@ -94,7 +98,7 @@ def MyPubSub do
     ...
 ```
 
-Using the above will cause Elixir to validate at compile time that the `MyPubSub` module implements all functions defined inside the `Core.Test.PubSub` module(or it will cause compilation error).
+Using the above will cause Elixir to validate at compile time that the `MyPubSub` module implements all functions defined inside the `Core.Test.PubSub` module(otherwise it will raise compilation error).
 
 Let's get back to the main topic. We figured out that we could mock all of the modules that the `Naive.Trader` depends on using the `mox` module. 
 
@@ -102,12 +106,14 @@ But, how would we tell the `Naive.Trader` to use the mocked modules instead of t
 
 We could make all modules that the `Naive.Trader` depends on be dynamically injected from the configuration(based on the environment).
 
-The second requirement to make `mox` work is to define the mocks upfront using the `Mox.defmock/2` function. It will dynamically define a new module(first value) that will be limited by the passed behaviour(we will only be able to mock[inside tests] functions defined as a part of that behaviour). 
+Another requirement to make `mox` work is to define the mocks upfront using the `Mox.defmock/2` function. It will dynamically define a new module that will be limited by the passed behaviour(we will only be able to mock[inside tests] functions defined as a part of that behaviour). 
+
+\newpage
 
 To sum up, there are a few steps to get the `mox` running:
 
 - implement behaviours that we would like to mock(as most of the packages[like `Phoenix.PubSub`] are not coming with those)
-- define mock module using the `Mox.defmock` function
+- define mock modules using the `Mox.defmock` function
 - modify the application's configuration to use the mocked module(s)
 - specify mocked module's expectation inside the test
 
@@ -154,7 +160,7 @@ We will need to work through them one by one.
 
 Let's start with the binance client, as it's already a dynamic value based on the configuration.
 
-Neither the `Binance` nor the `BinanceMock`(our dummy implementation) module doesn't provide a behaviour - let's fix that by defining the `@callback` attributes at the top of the module before the structs:
+Neither the `Binance` nor the `BinanceMock`(our dummy implementation) module doesn't provide a behaviour - let's fix that by defining the `@callback` attributes at the top of the `BinanceMock` module before the structs:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -264,7 +270,7 @@ First, let's add the `:leader` key inside the `config :naive` in the default `/c
 ...
 config :naive,
   binance_client: BinanceMock,
-  leader: Naive.Leader,                # <= added
+  leader: Naive.Leader,        # <= added
   ...
 ``` 
 
@@ -275,7 +281,7 @@ and then we need to apply the same update to the `/config/test.exs` configuratio
 ...
 config :naive,
   binance_client: Test.BinanceMock,
-  leader: Test.Naive.LeaderMock # <= added
+  leader: Test.Naive.LeaderMock     # <= added
   ...
 ``` 
 
@@ -283,7 +289,7 @@ config :naive,
 
 Mocking the `Phoenix.PubSub` dependency inside the `Naive.Trader` module will look very similar to the last two mocked modules.
 
-\newpage
+
 
 Inside the `Naive.Trader` module we need to update all the references to the `Phoenix.PubSub` to an `@pubsub_client` attribute with value dependent on the configuration:
 
@@ -337,28 +343,23 @@ The final step will be to append the `:core, :pubsub_client` configuration to th
 
  ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
-...
-config :core,                                   # <= added
+config :core,                  # <= added
   pubsub_client: Phoenix.PubSub # <= added
-...
 ``` 
 
 and the test `/config/test.exs` configuration file:
 
   ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
-...
-...
-config :core,                                      # <= added
+config :core,                  # <= added
   pubsub_client: Test.PubSubMock # <= added
-...
 ```
 
 ### Mock the `Logger` module
 
 Before we dive in, we should ask ourselves why we would mock the `Logger` module?
 
-We could raise the logging level to `error` be done with it. Yes, that would fix all debug/info/warning logs, but we would also miss an opportunity to confirm a few details (depends on what's necessary for our use case):
+We could raise the logging level to `error` and be done with it. Yes, that would fix all debug/info/warning logs, but we would also miss an opportunity to confirm a few details (depends on what's necessary for our use case):
 
 - you can ensure that the log was called when the tested function was run
 - you can pattern match the logging level
@@ -424,23 +425,18 @@ The final step will be to append the `:core, :logger` configuration to the `/con
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
-...
 config :core,                                   
-  logger: Logger,                            # <= added
+  logger: Logger,                # <= added
   pubsub_client: Phoenix.PubSub
-...
 ``` 
 
 and the test `/config/test.exs` configuration file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
-...
-...
 config :core,                                   
-  logger: Test.LoggerMock,              # <= added
+  logger: Test.LoggerMock,        # <= added
   pubsub_client: Test.PubSubMock
-...
 ```
 
 This finishes the updates to the `Naive.Trader` module. We made all dependencies based on the configuration values. We can now progress to writing the test.
@@ -469,10 +465,10 @@ Let's add the `mox` related code above the `@tag :unit` line:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
-  import Mox                                # <= 1 
+  import Mox                   # <= 1 
 
-  setup :set_mox_from_context # <= 2
-  setup :verify_on_exit!               # <= 3
+  setup :set_mox_from_context  # <= 2
+  setup :verify_on_exit!       # <= 3
 ```
 
 In the above code, we are:
@@ -516,7 +512,7 @@ Inside our test, we need to define implementation for all the functions that the
 
 It's important to note that we defined the mocked function with expected values in the above code. We expect our test to subscribe to a specific topic and broadcast to the other(#1). We are also expecting that process will place an order at the exact values that we calculated upfront. This way, our mock becomes an integral part of the test, asserting that the correct values will be passed to other parts of the system(dependencies of the `Naive.Trader` module).
 
-Another "trick"(#3) that we can use in our mocks is to leverage the fact that we can send a message to the test process from within the mocked function. We will leverage this idea to know precisely when the trader process finished its work as the `notify/1` is the last function call inside the process' callback(`handle_info/2` inside the `Naive.Trader` module). We will assert that we should receive the message, and the test will be waiting for it before exiting(the default waiting time is 100ms) instead of using hardcoded `sleep` to "hack" it to work.
+Another "trick"(#3) that we can use in our mocks is to leverage the fact that we can send a message to the test process from within the mocked function. We will leverage this idea to know precisely when the trader process finished its work as the `notify/1` is the last function call inside the process' callback(`handle_info/2` inside the `Naive.Trader` module). We will assert that we should receive the message, and the test will be waiting for it before exiting(the default timeout is 100ms) instead of using hardcoded `sleep` to "hack" it to work.
 
 The final part(#4) tells the `mox` package that `Logger.info/1` will be called twice inside the test. The `mox` will verify the number of calls to the mocked function and error if it doesn't much the expected amount.  
 
@@ -579,7 +575,8 @@ Here are the helper functions that we used to generate the initial trader state 
   end
 ```
 
-The above code finishes the implementation of the test, but inside it, we used functions from the `BinanceMock` module that are private. We need to update the module by making the `generate_fake_order/4` and `convert_order_to_order_response/1` function public(and moving them up in the module, so they are next to other public functions):
+The above code finishes the implementation of the test, but inside it, we used functions from the `BinanceMock` module that are private. We need to update the module by making the `generate_fake_order/4` and                       
+`convert_order_to_order_response/1` function public(and moving them up in the module, so they are next to other public functions):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -616,6 +613,8 @@ Our unit test should be run without running the whole application, so we need to
   end
 ```
 
+\newpage
+
 We can now run our test using a terminal:
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -627,15 +626,16 @@ We should see the following error:
 ```{r, engine = 'bash', eval = FALSE}
 21:22:03.811 [error] GenServer #PID<0.641.0> terminating
 ** (stop) exited in: GenServer.call(BinanceMock, :generate_id, 5000)
-    ** (EXIT) no process: the process is not alive or there's no process currently associated with the given name, possibly because its application isn't started
+    ** (EXIT) no process: the process is not alive or there's no process currently
+       associated with the given name, possibly because its application isn't started
 ```
 
-One of the `BinanceMock` module's functions is sending a message to the process that doesn't exist(as we are running our tests without starting the supervision tree[the `--no-start` argument]) to generate a unique id.
+One of the `BinanceMock` module's functions is sending a message to generate a unique id to the process that doesn't exist(as we are running our tests without starting the supervision tree[the `--no-start` argument]).
 
 There are two ways to handle this issue:
 
 - inside the `/apps/naive/test/test_helper.exs` file we could ensure that the `BinanceMock` is up and running by adding `Application.ensure_all_started(:binance_mock)` function call - this is a hack
-- we could refactor the `BinanceMock.generate_fake_order/4` to accept id as an argument instead of sending the message internally - this should be a much better solution. Let's give it a shot.
+- we could refactor the `BinanceMock.generate_fake_order/4` to accept `order_id` as an argument instead of sending the message internally - this should be a much better solution. Let's give it a shot.
 
 First, let's update the `BinanceMock` module:
 
@@ -657,6 +657,8 @@ First, let's update the `BinanceMock` module:
         side
       )
 ```
+
+\newpage
 
 Now we need to update our test to pass some dummy order id from the mocked function:
 
@@ -707,10 +709,13 @@ Finished in 0.06 seconds (0.00s async, 0.06s sync)
 2 tests, 0 failures, 1 excluded
 ```
 
+\newpage
+
 That's all for this chapter - to sum up, the main advantages from the `mox` based tests:
-- we were able to test a standalone process ignoring all of its dependencies
-- we were able to confirm that dependent functions were call and expected values were passed to them
-- we were able to create a feedback look where mock was sending a message back to the test, because of which we didn't need to use `sleep`, and that causes massive speed gains
+
+- we were able to test a standalone process/module ignoring all of its dependencies
+- we were able to confirm that dependent functions were called and expected values were passed to them
+- we were able to create a feedback loop where mock was sending a message back to the test, because of which, we didn't need to use `sleep`, and that resulted in a massive speed gains
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 

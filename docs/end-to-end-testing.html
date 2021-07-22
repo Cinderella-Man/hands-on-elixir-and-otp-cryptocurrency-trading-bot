@@ -155,13 +155,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
 </ul></li>
-<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
 <ul>
-<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
-<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
-<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
-<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
-<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
@@ -458,6 +458,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Let’s look at the current flow of data through our system:</p>
 <p><img src="images/chapter_16_01_current_flow.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>Currently, the <code>Streamer.Binance</code> establishes a WebSocket connection with Binance. It decodes the incoming trade events and broadcasts them to PubSub(<code>TRADE_EVENTS:#{symbol}</code> topics). PubSub then sends them to the <code>Naive.Trader</code> processes. As those processes place orders(or orders get filled), they broadcast orders to the PubSub(<code>ORDERS:#{symbol}</code> topics). The <code>DataWarehouse.Subscriber.Worker</code> processes subscribe to the broadcasted orders and store them in the database.</p>
+<div style="page-break-after: always;"></div>
 <p>What we could do is to stop all the <code>Streamer.Binance</code> processes and broadcast trade events directly from the test. We would then be able to fine-tune the prices inside those events to run through the full trade cycle:</p>
 <p><img src="images/chapter_16_02_test.png" width="100%" style="display: block; margin: auto;" /></p>
 <p>This would allow us to fetch orders from the database to confirm that trading indeed happened.</p>
@@ -473,12 +474,12 @@ First, we will need to alias multiple modules that we will use to either initial
 <span id="cb306-5"><a href="end-to-end-testing.html#cb306-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span></span>
 <span id="cb306-6"><a href="end-to-end-testing.html#cb306-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb306-7"><a href="end-to-end-testing.html#cb306-7" aria-hidden="true" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Query</span>, <span class="va">only:</span> [<span class="va">from:</span> <span class="dv">2</span>]</span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>Now we can update the generated test to have a tag in front of it:</p>
 <div class="sourceCode" id="cb307"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb307-1"><a href="end-to-end-testing.html#cb307-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive_test.exs</span></span>
 <span id="cb307-2"><a href="end-to-end-testing.html#cb307-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb307-3"><a href="end-to-end-testing.html#cb307-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">integration:</span> <span class="cn">true</span></span></code></pre></div>
 <p>We will use this tag to select only this test when we are running the integration tests.</p>
-<div style="page-break-after: always;"></div>
 <p>The first step will be to update the trading settings to values that will cause trading activity:</p>
 <div class="sourceCode" id="cb308"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb308-1"><a href="end-to-end-testing.html#cb308-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive_test.exs</span></span>
 <span id="cb308-2"><a href="end-to-end-testing.html#cb308-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -506,6 +507,7 @@ First, we will need to alias multiple modules that we will use to either initial
 <span id="cb309-4"><a href="end-to-end-testing.html#cb309-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Step 2 - Start trading on symbol</span></span>
 <span id="cb309-5"><a href="end-to-end-testing.html#cb309-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb309-6"><a href="end-to-end-testing.html#cb309-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Naive</span><span class="op">.</span>start_trading(symbol)</span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>Before we start broadcasting events, we need to ensure that the <code>DataWarehouse</code> application will store resulting orders into the database:</p>
 <div class="sourceCode" id="cb310"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb310-1"><a href="end-to-end-testing.html#cb310-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/test/naive_test.exs</span></span>
 <span id="cb310-2"><a href="end-to-end-testing.html#cb310-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># `test` function continued</span></span>
@@ -572,7 +574,6 @@ It should cause 3 orders to be placed at specific prices. In the last step, we w
 <span id="cb312-15"><a href="end-to-end-testing.html#cb312-15" aria-hidden="true" tabindex="-1"></a>    assert buy_1 <span class="op">==</span> [<span class="st">&quot;0.43070000&quot;</span>, <span class="st">&quot;BUY&quot;</span>, <span class="st">&quot;FILLED&quot;</span>]</span>
 <span id="cb312-16"><a href="end-to-end-testing.html#cb312-16" aria-hidden="true" tabindex="-1"></a>    assert sell_1 <span class="op">==</span> [<span class="st">&quot;0.43190000&quot;</span>, <span class="st">&quot;SELL&quot;</span>, <span class="st">&quot;FILLED&quot;</span>]</span>
 <span id="cb312-17"><a href="end-to-end-testing.html#cb312-17" aria-hidden="true" tabindex="-1"></a>    assert buy_2 <span class="op">==</span> [<span class="st">&quot;0.43100000&quot;</span>, <span class="st">&quot;BUY&quot;</span>, <span class="st">&quot;NEW&quot;</span>]</span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>That finishes the test function. The final addition inside the <code>NaiveTest</code> module will be to add a private helper function that generates trade event for the passed values:</p>
 <div class="sourceCode" id="cb313"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb313-1"><a href="end-to-end-testing.html#cb313-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive_test.exs</span></span>
 <span id="cb313-2"><a href="end-to-end-testing.html#cb313-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -608,13 +609,13 @@ It should cause 3 orders to be placed at specific prices. In the last step, we w
 <span id="cb315-2"><a href="end-to-end-testing.html#cb315-2" aria-hidden="true" tabindex="-1"></a><span class="co"># add the below at the end of the file</span></span>
 <span id="cb315-3"><a href="end-to-end-testing.html#cb315-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb315-4"><a href="end-to-end-testing.html#cb315-4" aria-hidden="true" tabindex="-1"></a>import_config <span class="st">&quot;</span><span class="ot">#{</span>config_env()<span class="ot">}</span><span class="st">.exs&quot;</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>Now we will create multiple config files, one for each environment:</p>
 <ul>
 <li><code>/config/dev.exs</code> for development:</li>
 </ul>
 <div class="sourceCode" id="cb316"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb316-1"><a href="end-to-end-testing.html#cb316-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/dev.exs</span></span>
 <span id="cb316-2"><a href="end-to-end-testing.html#cb316-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="cn">Config</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <ul>
 <li><code>/config/test.exs</code> for future “unit” testing:</li>
 </ul>
@@ -735,7 +736,6 @@ It should cause 3 orders to be placed at specific prices. In the last step, we w
 <span id="cb326-5"><a href="end-to-end-testing.html#cb326-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:jason</span>, <span class="st">&quot;~&gt; 1.2&quot;</span>},</span>
 <span id="cb326-6"><a href="end-to-end-testing.html#cb326-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>The above change will take care of flipping between serving the live/cached exchange info data, but we still need to manually save the current response to the file (to be used as a cached version later).</p>
-<div style="page-break-after: always;"></div>
 <p>Let’s open the IEx terminal to fetch the exchange info data and serialize it to JSON:</p>
 <div class="sourceCode" id="cb327"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb327-1"><a href="end-to-end-testing.html#cb327-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb327-2"><a href="end-to-end-testing.html#cb327-2" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Binance.get_exchange_info<span class="kw">()</span> <span class="kw">|</span><span class="op">&gt;</span> elem<span class="kw">(</span><span class="ex">1</span><span class="kw">)</span> <span class="kw">|</span><span class="op">&gt;</span> Jason.encode!</span></code></pre></div>
@@ -812,7 +812,6 @@ It should cause 3 orders to be placed at specific prices. In the last step, we w
 <span id="cb334-2"><a href="end-to-end-testing.html#cb334-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb334-3"><a href="end-to-end-testing.html#cb334-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
 <span id="cb334-4"><a href="end-to-end-testing.html#cb334-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">binance_client:</span> <span class="cn">Binance</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>as well as swap the <code>binance</code> to the <code>BinanceMock</code> inside the list of dependencies of the <code>Streamer</code> app:</p>
 <div class="sourceCode" id="cb335"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb335-1"><a href="end-to-end-testing.html#cb335-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs</span></span>
 <span id="cb335-2"><a href="end-to-end-testing.html#cb335-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
@@ -829,9 +828,9 @@ It should cause 3 orders to be placed at specific prices. In the last step, we w
 <p>This is quite typical in daily work as a software engineer. One of the common problems(besides naming things) is deciding where things belong. For example, do PubSub and TradeEvent belong in the Streamer app? Or maybe we should put it in the BinanceMock?</p>
 <p>I believe that it should be neither of them as those applications use the PubSub and TradeEvent struct. I believe that they should be placed in neither of those applications as those applications are only
 using the struct and PubSub process.</p>
-<div style="page-break-after: always;"></div>
 <p>What we should do instead is to create a new supervised application where we can attach the PubSub to the supervision tree and hold the system-wide structs(like TradeEvent) so every app can depend on it instead of each other:</p>
 <p><img src="images/chapter_16_04_core.png" width="100%" style="display: block; margin: auto;" /></p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="introduce-the-core-application" class="section level2" number="16.8">
 <h2><span class="header-section-number">16.8</span> Introduce the Core application</h2>
@@ -851,7 +850,6 @@ using the struct and PubSub process.</p>
 <li>add the <code>core</code> to the dependencies list of the <code>streamer</code> application</li>
 <li>remove the <code>streamer</code> from the dependencies list of all apps in the umbrella</li>
 </ul>
-<div style="page-break-after: always;"></div>
 <p>The final step will be to move the PubSub process from the supervision tree of the Streamer application to the supervision of the Core application.</p>
 <div class="sourceCode" id="cb340"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb340-1"><a href="end-to-end-testing.html#cb340-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
 <span id="cb340-2"><a href="end-to-end-testing.html#cb340-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start(_type, _args) <span class="kw">do</span></span>
@@ -887,7 +885,6 @@ using the struct and PubSub process.</p>
 <p>The additional benefit of all the time that we put in the implementation of this test is that we won’t need to remember how to set up local environment anymore as it’s as simple as:</p>
 <div class="sourceCode" id="cb345"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb345-1"><a href="end-to-end-testing.html#cb345-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mix</span> setup</span></code></pre></div>
 <p>Yay! :)</p>
-<div style="page-break-after: always;"></div>
 <p>It’s worth reiterating the downsides of the end-to-end tests:</p>
 <ul>
 <li>lack of visibility over what’s broken - most of the time, we will see the result of error but not the error itself</li>

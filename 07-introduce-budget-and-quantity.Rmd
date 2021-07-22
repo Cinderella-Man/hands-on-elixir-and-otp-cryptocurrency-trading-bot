@@ -59,6 +59,8 @@ already retrieving together with `tick_size` in the `exchangeInfo` call(but not 
 
 Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a `budget`(#2) which will be shared across all traders of the symbol. Also, we don't need to assign `tick_size` here as it's part of the settings that are merged.
 
+\newpage
+
 ## Append `budget` and `step_size` to the `Trader`'s state inside the `Leader` 
 
 The `budget` needs to be added to the `%State{}`(`step_size` will be automatically passed on by `struct/2`) of the trader inside `fresh_trader_state/1`(where we initialize the state of traders). Before we will assign it we need to divide it by the number of chunks as each trader gets only a chunk of the budget:

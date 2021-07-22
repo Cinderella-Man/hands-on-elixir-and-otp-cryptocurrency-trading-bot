@@ -69,6 +69,8 @@ If you are new to docker here's the gist of what the above will do:
 - we set up environmental variable inside the docker container that will be used by the Postgres app as a password for the default (`postgres`) user
 - `volumes` option maps the directory from inside of the container to the host. This way we will keep the state of the database between restarts.
 
+\newpage
+
 We can now start the service using `docker-compose`:
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -86,7 +88,7 @@ PORTS                    NAMES
 0.0.0.0:5432->5432/tcp   hedgehog_db_1
 ```
 
-\newpage
+
 
 ## Set up `ecto` inside the `naive` app
 
@@ -206,6 +208,8 @@ At this moment we just copied the settings and converted them to columns using t
       add(:id, :uuid, primary_key: true)
       ...
 ```
+
+\newpage
 
 We will also add create and update timestamps that come as a bundle when using the `timestamps()` function inside the `create table` macro:
 
@@ -335,7 +339,10 @@ config :naive,
   }
 ```
 
-Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the `/apps/naive/lib/naive/priv/` directory. Let's start by aliasing the required modules and requiring the `Logger`:
+\newpage
+
+Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the                           
+`/apps/naive/lib/naive/priv/` directory. Let's start by aliasing the required modules and requiring the `Logger`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -354,7 +361,7 @@ Next, we will get the Binance client from the config:
 binance_client = Application.get_env(:naive, :binance_client)
 ```
 
-\newpage
+
 
 Now, it's time to fetch all the symbols(pairs) that Binance supports:
 
@@ -403,7 +410,7 @@ base_settings = %{
 }
 ```
 
-\newpage
+
 
 We will now map each of the retrieved symbols and inject them to the `base_settings` structs and pushing all of those to the `Repo.insert_all/3` function:
 

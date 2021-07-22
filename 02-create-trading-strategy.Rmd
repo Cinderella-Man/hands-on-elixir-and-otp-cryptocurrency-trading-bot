@@ -64,6 +64,8 @@ Our trader needs to know:
 
 Our strategy won't be able to work without symbol, profit_interval nor tick_size so we added them to the `@enforce_keys` attribute. This will ensure that we won't create an invalid `%State{}` without those values.
 
+\newpage
+
 As now we know that our GenServer will need to receive those details via args, we can update pattern matching in `start_link/1` and `init/1` functions to confirm that passed values are indeed maps:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -76,8 +78,6 @@ As now we know that our GenServer will need to receive those details via args, w
     ...
   end
 ```
-
-\newpage
 
 As we are already in the `init/1` function we will need to modify it to fetch the `tick_size` for the passed symbol and initialize a fresh state:
 
@@ -154,6 +154,8 @@ We are using `get_exchange_info/0` to fetch the list of symbols, which we will f
 }}
 ```
 
+\newpage
+
 ## How trading strategy will work?
 
 Our trader process has an internal state that will serve as an indicator of its step in the trade cycle. The following diagram shows 3 possible trader states that trader will progress through from left to right:
@@ -170,8 +172,6 @@ We will focus on a trader in 3 different states:
 * a new trader without any orders
 * a trader with a buy order placed
 * a trader with a sell order placed.
-
-\newpage
 
 **First state - A new trader**
 
@@ -272,8 +272,6 @@ To calculate the sell price we will need to use precise math and that will requi
 # /apps/naive/lib/naive/trader.ex
 alias Decimal, as: D
 ```
-
-\newpage
 
 Now to calculate the correct sell price, we can use the following formula which gets me pretty close to expected value:
 

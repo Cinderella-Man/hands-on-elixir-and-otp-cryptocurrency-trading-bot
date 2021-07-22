@@ -1,16 +1,16 @@
-# Stream live crypto prices from Binance WSS
+# Stream live cryptocurrency prices from the Binance WSS
 
 ## Objectives
 
-- create an umbrella app
+- create a new umbrella app
 - create a supervised application inside an umbrella
 - connect to Binance's WebSocket Stream using the WebSockex module
 - define a TradeEvent struct that will hold incoming data
 - decode incoming events using the Jason module
 
-## Create an umbrella app
+## Create a new umbrella app
 
-In the beginning, there was nothing... so we need to create an umbrella project:
+As we are starting from scratch, we need to create a new umbrella project:
 
 ```{r, engine = 'bash', eval = FALSE}
 mix new hedgehog --umbrella
@@ -28,8 +28,6 @@ mix new streamer --sup
 ## Connect to Binance's WebSocket Stream using the WebSockex module
 
 To establish a connection to Binance API's stream, we will need to use a WebSocket client. The module that we will use is called [WebSockex](https://github.com/Azolo/websockex). Scrolling down to the `Installation` section inside the module's readme on Github, we are instructed what dependency we need to add to our project.
-
-\newpage
 
 We will append `:websockex` to the `deps` function inside the `mix.exs` file of the `streamer` application:
 
@@ -71,6 +69,8 @@ end
 
 We will copy the whole code above across to our new `binance.ex` file.
 
+\newpage
+
 The first step will be to update the module name to match our file name:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -111,6 +111,8 @@ Together, our full URL looks like: "wss://stream.binance.com:9443/ws/<symbol>@tr
 To give a concrete example: the raw trade events stream URL for symbol XRPUSDT is:
 "wss://stream.binance.com:9443/ws/xrpusdt@trade" (remember that symbols need to be lowercased, otherwise no trade events will get streamed - there's *no* error).
 
+\newpage
+
 Back to the IDE, we will now modify the `start_link/2` function to use Binance API's URL:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -138,9 +140,6 @@ iex(1)> Streamer.Binance.start_link("xrpusdt")
 Received Message - Type: :text -- Message: "{\"e\":\"trade\", \"E\":1603226394741,
   \"s\":\"XRPUSDT\",\"t\":74608889,\"p\":\"0.24373000\",\"q\":\"200.00000000\",
   \"b\":948244411,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
-Received Message - Type: :text -- Message: "{\"e\":\"trade\",\"E\":1603226394741,
-  \"s\":\"XRPUSDT\",\"t\":74608890,\"p\":\"0.24372000\",\"q\":\"143.20000000\",
-  \"b\":948244412,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
 ```
 
 We can see the messages logged above because we copied the sample implementation from [WebSockex's readme](https://github.com/Azolo/websockex) where `handle_frame/2` function uses `IO.puts/1` to print out all incoming data. The lesson here is that every incoming message from Binance will cause the `handle_frame/2` callback to be called with the message and the process' state.
@@ -204,6 +203,8 @@ We will go a little bit off-topic but I would highly recommend those sorts of jo
     Decoder.parse(input, format_decode_opts(opts))
   end
 ```
+
+\newpage
 
 It looks like it uses the `parse/2` function of a `Decoder` module, let's scroll back up and check where it's coming from. At line 6:
 
@@ -338,6 +339,8 @@ Inside the header of the function, we will pattern match on event type(a field c
 
 We added the `Logger.debug/2` function to be able to see logs of incoming trade events.
 
+\newpage
+
 Lastly, before testing our implementation, let's add a nice interface to our `streamer` application that allows starting streaming:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -354,8 +357,6 @@ end
 ```
 
 The final version of the `Streamer.Binance` module should look like [this](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex).
-
-\newpage
 
 The last step will be to add the `Logger` configuration into the main `config/config.exs` file. We will set the `Logger` level to `:debug` for a moment to be able to see incoming trade events:
 

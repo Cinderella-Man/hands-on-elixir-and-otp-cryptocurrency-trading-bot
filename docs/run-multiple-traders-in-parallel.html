@@ -155,13 +155,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
 </ul></li>
-<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
 <ul>
-<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
-<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
-<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
-<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
-<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
@@ -456,6 +456,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb114-5"><a href="run-multiple-traders-in-parallel.html#cb114-5" aria-hidden="true" tabindex="-1"></a>          <span class="kw">do</span>: start_new_trader(trader_state)</span>
 <span id="cb114-6"><a href="run-multiple-traders-in-parallel.html#cb114-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>All the changes we made in this episode will enable us to fix this.</p>
+<div style="page-break-after: always;"></div>
 <p>Let’s say that we placed a buy order that got filled and the price has fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:</p>
 <p><img src="images/chapter_09_01_single_trader.png" height="20%" style="display: block; margin: auto;" /></p>
 <p>We will implement an additional trade event callback inside the <code>Naive.Trader</code> that will keep checking the price after the buy order has been filled. Whenever a price drops below the <code>buy_order</code>’s <code>price</code> by <code>rebuy_interval</code> we will notify the <code>Naive.Leader</code> to start the new <code>Naive.Trader</code> process:</p>
@@ -512,8 +513,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb116-17"><a href="run-multiple-traders-in-parallel.html#cb116-17" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
 <span id="cb116-18"><a href="run-multiple-traders-in-parallel.html#cb116-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb116-19"><a href="run-multiple-traders-in-parallel.html#cb116-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb116-20"><a href="run-multiple-traders-in-parallel.html#cb116-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb116-21"><a href="run-multiple-traders-in-parallel.html#cb116-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># catch all callback here</span></span></code></pre></div>
+<span id="cb116-20"><a href="run-multiple-traders-in-parallel.html#cb116-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># catch all callback here</span></span></code></pre></div>
 <p>We need to calculate is the current price below the rebuy interval. If yes we will notify the leader and update the boolean flag. We will abstract calculation to separate function(for readability) that we will write below:</p>
 <div class="sourceCode" id="cb117"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb117-1"><a href="run-multiple-traders-in-parallel.html#cb117-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb117-2"><a href="run-multiple-traders-in-parallel.html#cb117-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># body of the above callback</span></span>
@@ -573,7 +573,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>we need the trader’s PID to be able to find it details inside the list of traders</li>
 <li>we need settings to confirm the number of chunks to be able to limit the maximum number of parallel traders</li>
 </ul>
-<div style="page-break-after: always;"></div>
 <p>Moving on to the body of our callback. As with other ones, we will check can we find a trader inside the list of traders, and based on that we will either start another one(if we didn’t reach the limit of chunks) or ignore it:</p>
 <div class="sourceCode" id="cb122"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb122-1"><a href="run-multiple-traders-in-parallel.html#cb122-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
 <span id="cb122-2"><a href="run-multiple-traders-in-parallel.html#cb122-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># body of our callback</span></span>

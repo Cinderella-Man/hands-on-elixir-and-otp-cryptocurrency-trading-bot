@@ -26,7 +26,9 @@ knitr::include_graphics("images/chapter_12_02_sup_diagram.png")
 
 ## (Re-)Implement the start trading functionality
 
-To (re-)implement the `start_trading/1` functionality we will need to create a new file called `dynamic_symbol_supervisor.ex` inside the `/apps/naive/lib/naive` directory that will use the `DynamicSupervisor` behavior. Previously we have been using default `DynamicSupervisor` implementation(one of the children of the `Naive.Application` - to be substituted with the below module):
+To (re-)implement the `start_trading/1` functionality we will need to create a new file called                        
+`dynamic_symbol_supervisor.ex` inside the `/apps/naive/lib/naive` directory that will use the                            
+`DynamicSupervisor` behavior. Previously we have been using default `DynamicSupervisor` implementation(one of the children of the `Naive.Application` - to be substituted with the below module):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -74,6 +76,8 @@ Our `start_trading/1` implementation is almost the same as one for the `streamer
   end
   ...
 ```
+
+\newpage
 
 together with additional helper functions:
 
@@ -210,6 +214,8 @@ Now we need to swap the `Naive.DynamicSymbolSupervisor` to `Naive.Supervisor` in
     opts = [strategy: :one_for_one, name: Naive.Application] # <= name updated
 ```
 
+\newpage
+
 Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSymbolSupervisor` module as our new `Task` refers to it:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -243,7 +249,7 @@ At this moment we can already see our implementation in action:
 knitr::include_graphics("images/chapter_12_01_autostarting_sup_tree.png")
 ```
 
-\newpage
+
 
 At this moment we are able to test the current implementation inside the IEx:
 
@@ -291,7 +297,7 @@ Last but not least, we will move on to the `shutdown_trading/1` functionality. L
   ...
 ```
 
-\newpage
+
 
 Next, we will create a `shutdown_trading/1` function inside the `Naive.DynamicSymbolSupervisor` module where we will check is there any trading going on for that symbol(the same as for start/stop), and in case of trading happening we will inform the `Naive.Leader` process handling that symbol that settings have been updated:
 
@@ -452,7 +458,7 @@ $ mix ecto.gen.migration update_trading_status
 * creating priv/repo/migrations/20210205232303_update_trading_status.exs
 ```
 
-\newpage
+
 
 Inside the generated migration file we need to excute a raw SQL command:
 

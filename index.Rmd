@@ -30,7 +30,7 @@ We will start by creating a new umbrella application, subscribing to WebSocket s
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
-**To get notified about updates** to this book just "watch" the [source code's repository](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot) and don't forget to leave a \emoji{star}star:
+**To get notified about updates** to this book just "watch" the [source code's repository](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot) and don't forget to leave a star:
 
 ```{r, fig.align="center", out.width="60%", echo=FALSE}
 knitr::include_graphics("images/watch_book_howto.png")
@@ -76,19 +76,17 @@ So, if you've already gone through the motions and learned Elixir and OTP but st
 
 This book is an ongoing project, and at present, it contains the following chapters:
 
-* Chapter 1 - Stream live crypto prices from Binance WSS
+* Chapter 1 - Stream live cryptocurrency prices from the Binance WSS
 
-Stream live cryptocurrency prices (trade events) from the Binance exchange. Starting grounds up, we will create a new umbrella project and a `streamer` application inside it. The streamer application will use a Websocket client called `WebSockex` to establish a connection with the Binance API and receive a live feed. After receiving the event as JSON string, we will decode it using the `jason` library and convert it to our own data struct. At the end of the chapter, we will see decoded trade events being logged to the terminal.
+Stream live cryptocurrency prices (trade events) from the Binance exchange. Starting grounds up, we will create a new umbrella project and a `streamer` application inside it. The streamer application will use a Websocket client called `WebSockex` to connect with the Binance API and receive a live feed. After receiving the event as a JSON string, we will decode it using the `jason` library and convert it to our data struct. At the end of the chapter, we will see decoded trade events being logged to the terminal.
 
 * Chapter 2 - Create a naive trading strategy - single trader without supervision
 
-In this chapter, we will create our first *naive* trading strategy. We will create another application inside our umbrella called `naive`. We will put data streamed to our `streamer` application to good use by sending it over to the `naive` application. We will start with a very basic solution consisting of a single process called `trader` that will utilize the `GenServer` behavior. It will allow us to go through the full trading cycle and will give us something that "works".
+In this chapter, we will create our first *naive* trading strategy. We will create another application inside our umbrella called `naive`. We will put data streamed to our `streamer` application to good use by sending it over to the `naive` application. We will start with a very basic solution consisting of a single process called `trader` that will utilize the `GenServer` behaviour. It will allow us to go through the full trading cycle and give us something that "works".
 
 * Chapter 3 - Introduce PubSub as a communication method
 
 To allow our trading strategy to scale to multiple parallel traders, we need to find a way to distribute the latest prices (trade events) to those multiple traders. We will introduce PubSub to broadcast messages from the streamer(s) to the trader(s). PubSub will allow us to break hardcoded references between applications in our umbrella and that will become a pattern that we will utilize moving forward.
-
-\newpage
 
 * Chapter 4 - Mock the Binance API
 

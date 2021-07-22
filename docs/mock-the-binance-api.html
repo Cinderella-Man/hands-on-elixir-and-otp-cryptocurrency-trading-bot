@@ -155,13 +155,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
 </ul></li>
-<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
 <ul>
-<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
-<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
-<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
-<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
-<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
@@ -562,12 +562,9 @@ the same for both order sides:</p>
 <span id="cb55-16"><a href="mock-the-binance-api.html#cb55-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb55-17"><a href="mock-the-binance-api.html#cb55-17" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, convert_order_to_order_response(fake_order)}</span>
 <span id="cb55-18"><a href="mock-the-binance-api.html#cb55-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We can now move on to the implementation of the <code>handle_cast/2</code> callback to <code>:add_order</code> to the order book for the symbol from the order.
-It needs to do two things:</p>
-<ul>
-<li>subscribe to the <code>TRADE_EVENTS:#{symbol}</code> topic for the symbol from the order</li>
-<li>add the order to the correct order book</li>
-</ul>
+<div style="page-break-after: always;"></div>
+<p>We can now move on to implementing the <code>handle_cast/2</code> callback to <code>:add_order</code> to the order book for the symbol from the order.
+It needs to subscribe to the <code>TRADE_EVENTS:#{symbol}</code> topic for the symbol from the order and add the order to the correct order book:</p>
 <div class="sourceCode" id="cb56"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb56-1"><a href="mock-the-binance-api.html#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb56-2"><a href="mock-the-binance-api.html#cb56-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
 <span id="cb56-3"><a href="mock-the-binance-api.html#cb56-3" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:add_order</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order},</span>
@@ -674,6 +671,7 @@ previously - those are <code>generate_fake_order</code> and <code>convert_order_
 <span id="cb59-27"><a href="mock-the-binance-api.html#cb59-27" aria-hidden="true" tabindex="-1"></a>      <span class="va">is_working:</span> <span class="cn">true</span></span>
 <span id="cb59-28"><a href="mock-the-binance-api.html#cb59-28" aria-hidden="true" tabindex="-1"></a>    })</span>
 <span id="cb59-29"><a href="mock-the-binance-api.html#cb59-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>We can now focus on converting the <code>Binance.Order</code> to the <code>Binance.OrderResponse</code> struct. As <code>Binance.Order</code> struct contains almost all of the same fields that the <code>Binance.OrderResponse</code> struct, we can use <code>struct</code> function without exclamation mark to ignore all additional fields. The only field that has a different name is <code>transact_time</code> field which is called <code>time</code> in the <code>Binance.Order</code> struct - we can fix that separately:</p>
 <div class="sourceCode" id="cb60"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb60-1"><a href="mock-the-binance-api.html#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb60-2"><a href="mock-the-binance-api.html#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_order_response(%<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order) <span class="kw">do</span></span>
@@ -705,6 +703,7 @@ previously - those are <code>generate_fake_order</code> and <code>convert_order_
 <span id="cb62-5"><a href="mock-the-binance-api.html#cb62-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:get_order</span>, symbol, time, order_id}</span>
 <span id="cb62-6"><a href="mock-the-binance-api.html#cb62-6" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb62-7"><a href="mock-the-binance-api.html#cb62-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>The callback itself is pretty straightforward. We will need to get an order book for the passed symbol. As we don’t know the order’s side, we will concat all 3 lists(buy_side, sell_side, and historical) and try to find an order that will
 match passed symbol, time, and order_id:</p>
 <div class="sourceCode" id="cb63"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb63-1"><a href="mock-the-binance-api.html#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
@@ -743,7 +742,6 @@ match passed symbol, time, and order_id:</p>
 <li>concat both lists of filled orders, convert them to trade events, and broadcast them to the PubSub’s TRADE_EVENTS topic.</li>
 <li>remove the filled orders from buy and sell lists and put them into the historical list.</li>
 </ul>
-<div style="page-break-after: always;"></div>
 <p>Here we can clearly see the benefit of sorting the lists, we can use functions like <code>take_while/2</code> and <code>drop/2</code> instead of <code>filter/2</code>
 and <code>reject/2</code>(later ones will go through whole lists which could become a bottleneck when multiple open orders would be active):</p>
 <div class="sourceCode" id="cb64"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb64-1"><a href="mock-the-binance-api.html#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
@@ -835,7 +833,6 @@ the children list of the application so it starts automatically:</p>
 <span id="cb67-7"><a href="mock-the-binance-api.html#cb67-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb67-8"><a href="mock-the-binance-api.html#cb67-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb67-9"><a href="mock-the-binance-api.html#cb67-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 </div>
 <div id="upgrade-trader-and-config" class="section level2" number="4.8">
 <h2><span class="header-section-number">4.8</span> Upgrade trader and config</h2>
@@ -852,6 +849,7 @@ the children list of the application so it starts automatically:</p>
 <span id="cb69-7"><a href="mock-the-binance-api.html#cb69-7" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb69-8"><a href="mock-the-binance-api.html#cb69-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
 <span id="cb69-9"><a href="mock-the-binance-api.html#cb69-9" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>As the <code>Naive.Trader</code> is now relying on the config to specify which Binance client should they use, we need to add it to the config:</p>
 <div class="sourceCode" id="cb70"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb70-1"><a href="mock-the-binance-api.html#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
 <span id="cb70-2"><a href="mock-the-binance-api.html#cb70-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -869,7 +867,6 @@ the children list of the application so it starts automatically:</p>
 <span id="cb71-9"><a href="mock-the-binance-api.html#cb71-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb71-10"><a href="mock-the-binance-api.html#cb71-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb71-11"><a href="mock-the-binance-api.html#cb71-11" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>We also add <code>:binance_mock</code> to the list of deps of the <code>naive</code> app(as the Naive app will use either <code>Binance</code> or <code>BinanceMock</code> to “trade”):</p>
 <div class="sourceCode" id="cb72"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb72-1"><a href="mock-the-binance-api.html#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/mix.exs</span></span>
 <span id="cb72-2"><a href="mock-the-binance-api.html#cb72-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
@@ -881,6 +878,7 @@ the children list of the application so it starts automatically:</p>
 <span id="cb72-8"><a href="mock-the-binance-api.html#cb72-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb72-9"><a href="mock-the-binance-api.html#cb72-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb72-10"><a href="mock-the-binance-api.html#cb72-10" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="test-the-implementation" class="section level2" number="4.9">
 <h2><span class="header-section-number">4.9</span> Test the implementation</h2>

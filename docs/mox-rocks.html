@@ -155,13 +155,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
 </ul></li>
-<li class="chapter" data-level="1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live crypto prices from Binance WSS</a>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
 <ul>
-<li class="chapter" data-level="1.1" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
-<li class="chapter" data-level="1.2" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-an-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create an umbrella app</a></li>
-<li class="chapter" data-level="1.3" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
-<li class="chapter" data-level="1.4" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
-<li class="chapter" data-level="1.5" data-path="stream-live-crypto-prices-from-binance-wss.html"><a href="stream-live-crypto-prices-from-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
@@ -460,15 +460,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>we will be unable to run more than one end-to-end test in parallel as they rely on the database’s state</li>
 <li>we need to set up the database before every test run</li>
 <li>we need to start processes in the correct order with the suitable parameters</li>
-<li>we needed to wait a (guessed) hardcoded amount of time that it will take to finish the trading(this is extremely bad as it will cause randomly failing tests as people will make the time shorter to speed up tests)</li>
+<li>we need to wait a (guessed) hardcoded amount of time that it will take to finish the trading(this is extremely bad as it will cause randomly failing tests as people will make the time shorter to speed up tests)</li>
 <li>we wouldn’t be able to quickly pinpoint which part error originated from as the test spans over a vast amount of the system</li>
 <li>logging was polluting our test output</li>
 </ul>
+<div style="page-break-after: always;"></div>
 <p>How could we fix the above issues?</p>
 <p>The most common way is to limit the scope of the test. Instead of testing the whole trading flow, we could focus on testing a single <code>Naive.Trader</code> process.</p>
 <p>Focusing on a single trader process would remove the requirement for starting multiple processes before testing, but it would also bring its own challenges.</p>
 <p>Let’s look at a concrete example:</p>
-<p>When the <code>Naive.Trader</code> process starts, it subscribes to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic. It also broadcasts updates of the orders it’s placed to the <code>ORDERS:#{symbol}</code> PubSub topic.</p>
+<p>When the <code>Naive.Trader</code> process starts, it subscribes to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic. It also broadcasts updates of the orders it placed to the <code>ORDERS:#{symbol}</code> PubSub topic.</p>
 <p>How could we break the link between the <code>Naive.Trader</code> and the PubSub(or any other module it depends on)?</p>
 <p>We could utilize the trick that we used for the <code>Binance</code> module. We could create a module that provides the same functions as the <code>PubSub</code> module.</p>
 <p>We know that the trader process calls <code>Phoenix.PubSub.subscribe/2</code> and <code>Phoenix.PubSub.broadcast/3</code> functions. We could implement a module that contains the same functions:</p>
@@ -478,8 +479,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb346-4"><a href="mox-rocks.html#cb346-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>The above module would satisfy the PubSub’s functionality required by the <code>Naive.Trader</code> module, but this solution comes with a couple of drawbacks:</p>
 <ul>
-<li>it doesn’t validate incoming arguments. It just ignores them, which is a missed opportunity to confirm that the PubSub module was called with the expected values.</li>
-<li>we cannot define the results of calling the above functions specific to test, for example, if the first argument is <code>true</code> return <code>false</code>, otherwise <code>true</code>.</li>
+<li>it doesn’t the passed values. It just ignores them, which is a missed opportunity to confirm that the PubSub module was called with the expected values.</li>
+<li>we can’t define a custom implemention specific to test. This is possible by extending the implemention with test related returns(hack!)</li>
 </ul>
 <p>Using the <code>mox</code> module would fix both of the problems mentioned above. With the <code>mox</code> module we can define add-hoc function implemention per test:</p>
 <div class="sourceCode" id="cb347"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb347-1"><a href="mox-rocks.html#cb347-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># inside test file</span></span>
@@ -487,11 +488,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb347-3"><a href="mox-rocks.html#cb347-3" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span></span>
 <span id="cb347-4"><a href="mox-rocks.html#cb347-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> expect(<span class="va">:subscribe</span>, <span class="kw">fn</span> (_module, <span class="st">&quot;TRADE_EVENTS:XRPUSDT&quot;</span>) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>)</span>
 <span id="cb347-5"><a href="mox-rocks.html#cb347-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> expect(<span class="va">:broadcast</span>, <span class="kw">fn</span> (_module, <span class="st">&quot;ORDERS:XRPUSDT&quot;</span>, _order) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>)</span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>There are multiple benefits to using the <code>mox</code> module instead of handcrafting the implementation:</p>
 <ul>
 <li>it allows defining functions that will pattern match values specific to each test(as in the case of the “usual” pattern matching, they will break when called with unexpected values)</li>
 <li>it allows defining implementations of the mocked functions based on incoming(test specific) values</li>
-<li>it can validate that all defined mocked functions have been called when the test was run</li>
+<li>it can validate that all defined mocked functions have been called by the test</li>
 <li>it comes with its own tests, so we don’t need to test it as it would need with our custom handcrafted mimicking module implementation</li>
 </ul>
 <p>But there’s a catch* ;)</p>
@@ -510,15 +512,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb349"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb349-1"><a href="mox-rocks.html#cb349-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="cn">MyPubSub</span> <span class="kw">do</span></span>
 <span id="cb349-2"><a href="mox-rocks.html#cb349-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@behaviour</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span><span class="op">.</span><span class="cn">PubSub</span></span>
 <span id="cb349-3"><a href="mox-rocks.html#cb349-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>Using the above will cause Elixir to validate at compile time that the <code>MyPubSub</code> module implements all functions defined inside the <code>Core.Test.PubSub</code> module(or it will cause compilation error).</p>
+<p>Using the above will cause Elixir to validate at compile time that the <code>MyPubSub</code> module implements all functions defined inside the <code>Core.Test.PubSub</code> module(otherwise it will raise compilation error).</p>
 <p>Let’s get back to the main topic. We figured out that we could mock all of the modules that the <code>Naive.Trader</code> depends on using the <code>mox</code> module.</p>
 <p>But, how would we tell the <code>Naive.Trader</code> to use the mocked modules instead of the “real” ones when we run tests?</p>
 <p>We could make all modules that the <code>Naive.Trader</code> depends on be dynamically injected from the configuration(based on the environment).</p>
-<p>The second requirement to make <code>mox</code> work is to define the mocks upfront using the <code>Mox.defmock/2</code> function. It will dynamically define a new module(first value) that will be limited by the passed behaviour(we will only be able to mock[inside tests] functions defined as a part of that behaviour).</p>
+<p>Another requirement to make <code>mox</code> work is to define the mocks upfront using the <code>Mox.defmock/2</code> function. It will dynamically define a new module that will be limited by the passed behaviour(we will only be able to mock[inside tests] functions defined as a part of that behaviour).</p>
+<div style="page-break-after: always;"></div>
 <p>To sum up, there are a few steps to get the <code>mox</code> running:</p>
 <ul>
 <li>implement behaviours that we would like to mock(as most of the packages[like <code>Phoenix.PubSub</code>] are not coming with those)</li>
-<li>define mock module using the <code>Mox.defmock</code> function</li>
+<li>define mock modules using the <code>Mox.defmock</code> function</li>
 <li>modify the application’s configuration to use the mocked module(s)</li>
 <li>specify mocked module’s expectation inside the test</li>
 </ul>
@@ -559,7 +562,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="mock-the-binance-module" class="section level3" number="17.4.1">
 <h3><span class="header-section-number">17.4.1</span> Mock the <code>Binance</code> module</h3>
 <p>Let’s start with the binance client, as it’s already a dynamic value based on the configuration.</p>
-<p>Neither the <code>Binance</code> nor the <code>BinanceMock</code>(our dummy implementation) module doesn’t provide a behaviour - let’s fix that by defining the <code>@callback</code> attributes at the top of the module before the structs:</p>
+<p>Neither the <code>Binance</code> nor the <code>BinanceMock</code>(our dummy implementation) module doesn’t provide a behaviour - let’s fix that by defining the <code>@callback</code> attributes at the top of the <code>BinanceMock</code> module before the structs:</p>
 <div class="sourceCode" id="cb351"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb351-1"><a href="mox-rocks.html#cb351-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb351-2"><a href="mox-rocks.html#cb351-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb351-3"><a href="mox-rocks.html#cb351-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span></span>
@@ -639,20 +642,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb357-2"><a href="mox-rocks.html#cb357-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb357-3"><a href="mox-rocks.html#cb357-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
 <span id="cb357-4"><a href="mox-rocks.html#cb357-4" aria-hidden="true" tabindex="-1"></a> <span class="va">binance_client:</span> <span class="cn">BinanceMock</span>,</span>
-<span id="cb357-5"><a href="mox-rocks.html#cb357-5" aria-hidden="true" tabindex="-1"></a> <span class="va">leader:</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>,                <span class="co"># &lt;= added</span></span>
+<span id="cb357-5"><a href="mox-rocks.html#cb357-5" aria-hidden="true" tabindex="-1"></a> <span class="va">leader:</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>,        <span class="co"># &lt;= added</span></span>
 <span id="cb357-6"><a href="mox-rocks.html#cb357-6" aria-hidden="true" tabindex="-1"></a> <span class="op">...</span></span></code></pre></div>
 <p>and then we need to apply the same update to the <code>/config/test.exs</code> configuration file(it will point to the module generated by the <code>mox</code> package - <code>Test.Naive.LeaderMock</code>):</p>
 <div class="sourceCode" id="cb358"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb358-1"><a href="mox-rocks.html#cb358-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
 <span id="cb358-2"><a href="mox-rocks.html#cb358-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb358-3"><a href="mox-rocks.html#cb358-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
 <span id="cb358-4"><a href="mox-rocks.html#cb358-4" aria-hidden="true" tabindex="-1"></a><span class="va">binance_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>,</span>
-<span id="cb358-5"><a href="mox-rocks.html#cb358-5" aria-hidden="true" tabindex="-1"></a><span class="va">leader:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span> <span class="co"># &lt;= added</span></span>
+<span id="cb358-5"><a href="mox-rocks.html#cb358-5" aria-hidden="true" tabindex="-1"></a><span class="va">leader:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span>     <span class="co"># &lt;= added</span></span>
 <span id="cb358-6"><a href="mox-rocks.html#cb358-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
 </div>
 <div id="mock-the-phoenix.pubsub-module" class="section level3" number="17.4.3">
 <h3><span class="header-section-number">17.4.3</span> Mock the <code>Phoenix.PubSub</code> module</h3>
 <p>Mocking the <code>Phoenix.PubSub</code> dependency inside the <code>Naive.Trader</code> module will look very similar to the last two mocked modules.</p>
-<div style="page-break-after: always;"></div>
 <p>Inside the <code>Naive.Trader</code> module we need to update all the references to the <code>Phoenix.PubSub</code> to an <code>@pubsub_client</code> attribute with value dependent on the configuration:</p>
 <div class="sourceCode" id="cb359"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb359-1"><a href="mox-rocks.html#cb359-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
 <span id="cb359-2"><a href="mox-rocks.html#cb359-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -689,22 +691,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>In the above code, we’ve told the <code>mox</code> package to define the <code>Test.PubSubMock</code> module based on the <code>Core.Test.PubSub</code> behaviour.</p>
 <p>The final step will be to append the <code>:core, :pubsub_client</code> configuration to the <code>/config/config.exs</code> file:</p>
 <div class="sourceCode" id="cb362"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb362-1"><a href="mox-rocks.html#cb362-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
-<span id="cb362-2"><a href="mox-rocks.html#cb362-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb362-3"><a href="mox-rocks.html#cb362-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   <span class="co"># &lt;= added</span></span>
-<span id="cb362-4"><a href="mox-rocks.html#cb362-4" aria-hidden="true" tabindex="-1"></a> <span class="va">pubsub_client:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span> <span class="co"># &lt;= added</span></span>
-<span id="cb362-5"><a href="mox-rocks.html#cb362-5" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<span id="cb362-2"><a href="mox-rocks.html#cb362-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                  <span class="co"># &lt;= added</span></span>
+<span id="cb362-3"><a href="mox-rocks.html#cb362-3" aria-hidden="true" tabindex="-1"></a> <span class="va">pubsub_client:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span> <span class="co"># &lt;= added</span></span></code></pre></div>
 <p>and the test <code>/config/test.exs</code> configuration file:</p>
 <div class="sourceCode" id="cb363"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb363-1"><a href="mox-rocks.html#cb363-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
-<span id="cb363-2"><a href="mox-rocks.html#cb363-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb363-3"><a href="mox-rocks.html#cb363-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb363-4"><a href="mox-rocks.html#cb363-4" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                      <span class="co"># &lt;= added</span></span>
-<span id="cb363-5"><a href="mox-rocks.html#cb363-5" aria-hidden="true" tabindex="-1"></a><span class="va">pubsub_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span> <span class="co"># &lt;= added</span></span>
-<span id="cb363-6"><a href="mox-rocks.html#cb363-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<span id="cb363-2"><a href="mox-rocks.html#cb363-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                  <span class="co"># &lt;= added</span></span>
+<span id="cb363-3"><a href="mox-rocks.html#cb363-3" aria-hidden="true" tabindex="-1"></a><span class="va">pubsub_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span> <span class="co"># &lt;= added</span></span></code></pre></div>
 </div>
 <div id="mock-the-logger-module" class="section level3" number="17.4.4">
 <h3><span class="header-section-number">17.4.4</span> Mock the <code>Logger</code> module</h3>
 <p>Before we dive in, we should ask ourselves why we would mock the <code>Logger</code> module?</p>
-<p>We could raise the logging level to <code>error</code> be done with it. Yes, that would fix all debug/info/warning logs, but we would also miss an opportunity to confirm a few details (depends on what’s necessary for our use case):</p>
+<p>We could raise the logging level to <code>error</code> and be done with it. Yes, that would fix all debug/info/warning logs, but we would also miss an opportunity to confirm a few details (depends on what’s necessary for our use case):</p>
 <ul>
 <li>you can ensure that the log was called when the tested function was run</li>
 <li>you can pattern match the logging level</li>
@@ -753,19 +750,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>In the above code, we’ve told the <code>mox</code> package to define the <code>Test.LoggerMock</code> module based on the <code>Core.Test.Logger</code> behaviour.</p>
 <p>The final step will be to append the <code>:core, :logger</code> configuration to the <code>/config/config.exs</code> file:</p>
 <div class="sourceCode" id="cb367"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb367-1"><a href="mox-rocks.html#cb367-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
-<span id="cb367-2"><a href="mox-rocks.html#cb367-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb367-3"><a href="mox-rocks.html#cb367-3" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
-<span id="cb367-4"><a href="mox-rocks.html#cb367-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Logger</span>,                            <span class="co"># &lt;= added</span></span>
-<span id="cb367-5"><a href="mox-rocks.html#cb367-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">pubsub_client:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span></span>
-<span id="cb367-6"><a href="mox-rocks.html#cb367-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<span id="cb367-2"><a href="mox-rocks.html#cb367-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
+<span id="cb367-3"><a href="mox-rocks.html#cb367-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Logger</span>,                <span class="co"># &lt;= added</span></span>
+<span id="cb367-4"><a href="mox-rocks.html#cb367-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">pubsub_client:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span></span></code></pre></div>
 <p>and the test <code>/config/test.exs</code> configuration file:</p>
 <div class="sourceCode" id="cb368"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb368-1"><a href="mox-rocks.html#cb368-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
-<span id="cb368-2"><a href="mox-rocks.html#cb368-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb368-3"><a href="mox-rocks.html#cb368-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb368-4"><a href="mox-rocks.html#cb368-4" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
-<span id="cb368-5"><a href="mox-rocks.html#cb368-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span>,              <span class="co"># &lt;= added</span></span>
-<span id="cb368-6"><a href="mox-rocks.html#cb368-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">pubsub_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span></span>
-<span id="cb368-7"><a href="mox-rocks.html#cb368-7" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<span id="cb368-2"><a href="mox-rocks.html#cb368-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
+<span id="cb368-3"><a href="mox-rocks.html#cb368-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span>,        <span class="co"># &lt;= added</span></span>
+<span id="cb368-4"><a href="mox-rocks.html#cb368-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">pubsub_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span></span></code></pre></div>
 <p>This finishes the updates to the <code>Naive.Trader</code> module. We made all dependencies based on the configuration values. We can now progress to writing the test.</p>
 </div>
 </div>
@@ -785,10 +777,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb369-9"><a href="mox-rocks.html#cb369-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>Let’s add the <code>mox</code> related code above the <code>@tag :unit</code> line:</p>
 <div class="sourceCode" id="cb370"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb370-1"><a href="mox-rocks.html#cb370-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
-<span id="cb370-2"><a href="mox-rocks.html#cb370-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Mox</span>                                <span class="co"># &lt;= 1 </span></span>
+<span id="cb370-2"><a href="mox-rocks.html#cb370-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Mox</span>                   <span class="co"># &lt;= 1 </span></span>
 <span id="cb370-3"><a href="mox-rocks.html#cb370-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb370-4"><a href="mox-rocks.html#cb370-4" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:set_mox_from_context</span> <span class="co"># &lt;= 2</span></span>
-<span id="cb370-5"><a href="mox-rocks.html#cb370-5" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:verify_on_exit!</span>               <span class="co"># &lt;= 3</span></span></code></pre></div>
+<span id="cb370-4"><a href="mox-rocks.html#cb370-4" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:set_mox_from_context</span>  <span class="co"># &lt;= 2</span></span>
+<span id="cb370-5"><a href="mox-rocks.html#cb370-5" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:verify_on_exit!</span>       <span class="co"># &lt;= 3</span></span></code></pre></div>
 <p>In the above code, we are:</p>
 <ul>
 <li>importing the <code>mox</code> module so we will be able to use functions like <code>expect/3</code></li>
@@ -825,7 +817,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb371-27"><a href="mox-rocks.html#cb371-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:info</span>, <span class="dv">2</span>, <span class="kw">fn</span> (_message) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 4</span></span>
 <span id="cb371-28"><a href="mox-rocks.html#cb371-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>It’s important to note that we defined the mocked function with expected values in the above code. We expect our test to subscribe to a specific topic and broadcast to the other(#1). We are also expecting that process will place an order at the exact values that we calculated upfront. This way, our mock becomes an integral part of the test, asserting that the correct values will be passed to other parts of the system(dependencies of the <code>Naive.Trader</code> module).</p>
-<p>Another “trick”(#3) that we can use in our mocks is to leverage the fact that we can send a message to the test process from within the mocked function. We will leverage this idea to know precisely when the trader process finished its work as the <code>notify/1</code> is the last function call inside the process’ callback(<code>handle_info/2</code> inside the <code>Naive.Trader</code> module). We will assert that we should receive the message, and the test will be waiting for it before exiting(the default waiting time is 100ms) instead of using hardcoded <code>sleep</code> to “hack” it to work.</p>
+<p>Another “trick”(#3) that we can use in our mocks is to leverage the fact that we can send a message to the test process from within the mocked function. We will leverage this idea to know precisely when the trader process finished its work as the <code>notify/1</code> is the last function call inside the process’ callback(<code>handle_info/2</code> inside the <code>Naive.Trader</code> module). We will assert that we should receive the message, and the test will be waiting for it before exiting(the default timeout is 100ms) instead of using hardcoded <code>sleep</code> to “hack” it to work.</p>
 <p>The final part(#4) tells the <code>mox</code> package that <code>Logger.info/1</code> will be called twice inside the test. The <code>mox</code> will verify the number of calls to the mocked function and error if it doesn’t much the expected amount.</p>
 <p>The second part of the test is preparing the initial state for the <code>Naive.Trader</code> process, generating trade event and sending it to the process:</p>
 <div class="sourceCode" id="cb372"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb372-1"><a href="mox-rocks.html#cb372-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
@@ -877,7 +869,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb373-34"><a href="mox-rocks.html#cb373-34" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
 <span id="cb373-35"><a href="mox-rocks.html#cb373-35" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb373-36"><a href="mox-rocks.html#cb373-36" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The above code finishes the implementation of the test, but inside it, we used functions from the <code>BinanceMock</code> module that are private. We need to update the module by making the <code>generate_fake_order/4</code> and <code>convert_order_to_order_response/1</code> function public(and moving them up in the module, so they are next to other public functions):</p>
+<p>The above code finishes the implementation of the test, but inside it, we used functions from the <code>BinanceMock</code> module that are private. We need to update the module by making the <code>generate_fake_order/4</code> and<br />
+<code>convert_order_to_order_response/1</code> function public(and moving them up in the module, so they are next to other public functions):</p>
 <div class="sourceCode" id="cb374"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb374-1"><a href="mox-rocks.html#cb374-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb374-2"><a href="mox-rocks.html#cb374-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb374-3"><a href="mox-rocks.html#cb374-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_order(symbol, time, order_id) <span class="kw">do</span></span>
@@ -906,17 +899,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb375-7"><a href="mox-rocks.html#cb375-7" aria-hidden="true" tabindex="-1"></a>      ]</span>
 <span id="cb375-8"><a href="mox-rocks.html#cb375-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb375-9"><a href="mox-rocks.html#cb375-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>We can now run our test using a terminal:</p>
 <div class="sourceCode" id="cb376"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb376-1"><a href="mox-rocks.html#cb376-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>test <span class="ex">mix</span> test.unit</span></code></pre></div>
 <p>We should see the following error:</p>
 <div class="sourceCode" id="cb377"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb377-1"><a href="mox-rocks.html#cb377-1" aria-hidden="true" tabindex="-1"></a><span class="ex">21:22:03.811</span> [error] GenServer <span class="co">#PID&lt;0.641.0&gt; terminating</span></span>
 <span id="cb377-2"><a href="mox-rocks.html#cb377-2" aria-hidden="true" tabindex="-1"></a><span class="ex">**</span> <span class="er">(</span><span class="ex">stop</span><span class="kw">)</span> <span class="ex">exited</span> in: GenServer.call<span class="er">(</span><span class="ex">BinanceMock,</span> :generate_id, 5000<span class="kw">)</span></span>
-<span id="cb377-3"><a href="mox-rocks.html#cb377-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">**</span> <span class="er">(</span><span class="ex">EXIT</span><span class="kw">)</span> <span class="ex">no</span> process: the process is not alive or there<span class="st">&#39;s no process currently associated with the given name, possibly because its application isn&#39;</span>t started</span></code></pre></div>
-<p>One of the <code>BinanceMock</code> module’s functions is sending a message to the process that doesn’t exist(as we are running our tests without starting the supervision tree[the <code>--no-start</code> argument]) to generate a unique id.</p>
+<span id="cb377-3"><a href="mox-rocks.html#cb377-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">**</span> <span class="er">(</span><span class="ex">EXIT</span><span class="kw">)</span> <span class="ex">no</span> process: the process is not alive or there<span class="st">&#39;s no process currently</span></span>
+<span id="cb377-4"><a href="mox-rocks.html#cb377-4" aria-hidden="true" tabindex="-1"></a><span class="st">       associated with the given name, possibly because its application isn&#39;</span>t started</span></code></pre></div>
+<p>One of the <code>BinanceMock</code> module’s functions is sending a message to generate a unique id to the process that doesn’t exist(as we are running our tests without starting the supervision tree[the <code>--no-start</code> argument]).</p>
 <p>There are two ways to handle this issue:</p>
 <ul>
 <li>inside the <code>/apps/naive/test/test_helper.exs</code> file we could ensure that the <code>BinanceMock</code> is up and running by adding <code>Application.ensure_all_started(:binance_mock)</code> function call - this is a hack</li>
-<li>we could refactor the <code>BinanceMock.generate_fake_order/4</code> to accept id as an argument instead of sending the message internally - this should be a much better solution. Let’s give it a shot.</li>
+<li>we could refactor the <code>BinanceMock.generate_fake_order/4</code> to accept <code>order_id</code> as an argument instead of sending the message internally - this should be a much better solution. Let’s give it a shot.</li>
 </ul>
 <p>First, let’s update the <code>BinanceMock</code> module:</p>
 <div class="sourceCode" id="cb378"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb378-1"><a href="mox-rocks.html#cb378-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
@@ -935,6 +930,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb378-14"><a href="mox-rocks.html#cb378-14" aria-hidden="true" tabindex="-1"></a>        price,</span>
 <span id="cb378-15"><a href="mox-rocks.html#cb378-15" aria-hidden="true" tabindex="-1"></a>        side</span>
 <span id="cb378-16"><a href="mox-rocks.html#cb378-16" aria-hidden="true" tabindex="-1"></a>      )</span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>Now we need to update our test to pass some dummy order id from the mocked function:</p>
 <div class="sourceCode" id="cb379"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb379-1"><a href="mox-rocks.html#cb379-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
 <span id="cb379-2"><a href="mox-rocks.html#cb379-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -968,10 +964,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb382-2"><a href="mox-rocks.html#cb382-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb382-3"><a href="mox-rocks.html#cb382-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Finished</span> in 0.06 seconds <span class="er">(</span><span class="ex">0.00s</span> async, 0.06s sync<span class="kw">)</span></span>
 <span id="cb382-4"><a href="mox-rocks.html#cb382-4" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
-<p>That’s all for this chapter - to sum up, the main advantages from the <code>mox</code> based tests:
-- we were able to test a standalone process ignoring all of its dependencies
-- we were able to confirm that dependent functions were call and expected values were passed to them
-- we were able to create a feedback look where mock was sending a message back to the test, because of which we didn’t need to use <code>sleep</code>, and that causes massive speed gains</p>
+<div style="page-break-after: always;"></div>
+<p>That’s all for this chapter - to sum up, the main advantages from the <code>mox</code> based tests:</p>
+<ul>
+<li>we were able to test a standalone process/module ignoring all of its dependencies</li>
+<li>we were able to confirm that dependent functions were called and expected values were passed to them</li>
+<li>we were able to create a feedback loop where mock was sending a message back to the test, because of which, we didn’t need to use <code>sleep</code>, and that resulted in a massive speed gains</li>
+</ul>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_17">Github</a></p>
 
