@@ -114,7 +114,7 @@ Inside the trader on init we need to subscribe to the "TRADE_EVENTS" PubSub chan
   end
 ```
 
-Next, we need to convert all `handle_call` callbacks to `handle_info` inside our `Trader` module as PubSub doesn't use `GenServer.cast/2` to send messages over to subscribers.
+Next, we need to convert all `handle_cast` callbacks to `handle_info` inside our `Trader` module as PubSub doesn't use `GenServer.cast/2` to send messages over to subscribers.
 
 The final change will be to remove the `send_event` function from the `Naive`
 module as it's no longer required.
