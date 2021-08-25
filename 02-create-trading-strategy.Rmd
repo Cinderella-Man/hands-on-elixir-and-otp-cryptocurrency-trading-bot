@@ -23,7 +23,7 @@ Let's start with a skeleton of a GenServer:
 # /apps/naive/lib/naive/trader.ex
 defmodule Naive.Trader do
   use GenServer
-  
+
   require Logger
 
   def start_link(args) do
@@ -140,7 +140,7 @@ We are using `get_exchange_info/0` to fetch the list of symbols, which we will f
 ```
 {:ok, %{
   ...
-  "symbols": [
+  symbols: [
     %{
       "symbol": "ETHUSDT",
       ...
@@ -191,14 +191,14 @@ When a trade event matching the order id of trader's sell order will arrive, whi
 
 ### Implementation of the first scenario
 
-Enough theory :) back to the editor, we will implement the first scenario. Before doing that let's alias Streamer's TradeEvent struct as we will rely on it heavily in pattern matching. 
+Enough theory :) back to the editor, we will implement the first scenario. Before doing that let's alias Streamer's TradeEvent struct as we will rely on it heavily in pattern matching.
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   alias Streamer.Binance.TradeEvent
 ```
 
-We are also aliasing the `%Streamer.Binance.TradeEvent{}` struct as we will rely on it heavily in pattern matching. 
+We are also aliasing the `%Streamer.Binance.TradeEvent{}` struct as we will rely on it heavily in pattern matching.
 
 
 To confirm that we are dealing with a "new" trader, we will pattern match on `buy_order: nil` from its state:
@@ -430,7 +430,7 @@ iex(1)> Naive.Trader.start_link(%{symbol: "XRPUSDT", profit_interval: "-0.01"})
 {:ok, #PID<0.355.0>}
 iex(2)> Streamer.start_streaming("xrpusdt")
 {:ok, #PID<0.372.0>}
-iex(3)> 
+iex(3)>
 13:45:32.561 [info] Placing BUY order for XRPUSDT @ 0.25979000, quantity: 100
 13:45:32.831 [info] Buy order filled, placing SELL order for XRPUSDT @ 0.2577, quantity: 100
 13:45:33.094 [info] Trade finished, trader will now exit
