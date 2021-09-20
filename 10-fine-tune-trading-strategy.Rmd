@@ -82,7 +82,7 @@ To validate that it works we can run:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ docker ps -a
-CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS        
+CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS
 PORTS                    NAMES
 98558827b80b   postgres:latest   "docker-entrypoint.sh"   4 seconds ago   Up 4 seconds
 0.0.0.0:5432->5432/tcp   hedgehog_db_1
@@ -104,7 +104,7 @@ Let's start by adding database access to the `naive` application. The first step
       {:ecto_sql, "~> 3.0"},     # <= New line
       {:ecto_enum, "~> 1.4"},    # <= New line
       {:phoenix_pubsub, "~> 2.0"},
-      {:postgrex, ">= 0.0"},     # <= New line
+      {:postgrex, ">= 0.0.0"},     # <= New line
       {:streamer, in_umbrella: true}
     ]
   end
@@ -260,7 +260,7 @@ defmodule Naive.Repo.Migrations.CreateSettings do
       add(:profit_interval, :decimal, null: false)
       add(:rebuy_interval, :decimal, null: false)
       add(:status, TradingStatusEnum.type(), default: "off", null: false)
-      
+
       timestamps()
     end
 
@@ -341,7 +341,7 @@ config :naive,
 
 \newpage
 
-Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the                           
+Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the
 `/apps/naive/lib/naive/priv/` directory. Let's start by aliasing the required modules and requiring the `Logger`:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -470,7 +470,7 @@ We can verify that records were indeed inserted into the database by connecting 
 
 ```{r, engine = 'bash', eval = FALSE}
 $ psql -Upostgres -hlocalhost
-Password for user postgres: # <= use 'postgres' password here 
+Password for user postgres: # <= use 'postgres' password here
 ...
 postgres=# \c naive
 You are now connected to database "naive" as user "postgres".
