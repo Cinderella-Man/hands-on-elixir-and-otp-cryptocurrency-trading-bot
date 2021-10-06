@@ -263,10 +263,10 @@ Starting with the `generate_fake_orders`, it's a function that takes a symbol, q
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   defp generate_fake_order(symbol, quantity, price, side)
-       when is_binary(symbol) and
-              is_binary(quantity) and
-              is_binary(price) and
-              (side == "BUY" or side == "SELL") do
+      when is_binary(symbol) and
+             is_binary(quantity) and
+             is_binary(price) and
+             (side == "BUY" or side == "SELL") do
     current_timestamp = :os.system_time(:millisecond)
     order_id = GenServer.call(__MODULE__, :generate_id)
     client_order_id = :crypto.hash(:md5, "#{order_id}") |> Base.encode16()

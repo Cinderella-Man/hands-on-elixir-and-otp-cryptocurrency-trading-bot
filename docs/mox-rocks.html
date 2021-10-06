@@ -535,9 +535,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb350-3"><a href="mox-rocks.html#cb350-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb350-4"><a href="mox-rocks.html#cb350-4" aria-hidden="true" tabindex="-1"></a>    [</span>
 <span id="cb350-5"><a href="mox-rocks.html#cb350-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb350-6"><a href="mox-rocks.html#cb350-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:mox</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>, <span class="va">only:</span> <span class="va">:test</span>},</span>
+<span id="cb350-6"><a href="mox-rocks.html#cb350-6" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:mox</span>, <span class="st">&quot;~&gt; 1.0&quot;</span>, <span class="va">only:</span> [<span class="va">:test</span>, <span class="va">:integration</span>]},</span>
 <span id="cb350-7"><a href="mox-rocks.html#cb350-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>We can now run <code>mix deps.get</code> to fetch the <code>mox</code> package.</p>
+<p>[Note] As we will add the <code>mox</code>’s mocking code into the <code>test_helper.exs</code> file, we need to
+make <code>mox</code> available in all test environments(both <code>test</code> and <code>integration</code>).</p>
 </div>
 <div id="investigate-the-naive.trader-module" class="section level2" number="17.4">
 <h2><span class="header-section-number">17.4</span> Investigate the <code>Naive.Trader</code> module</h2>
@@ -579,26 +581,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb351-14"><a href="mox-rocks.html#cb351-14" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@type</span> recv_window :: binary</span>
 <span id="cb351-15"><a href="mox-rocks.html#cb351-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb351-16"><a href="mox-rocks.html#cb351-16" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_buy(</span>
-<span id="cb351-17"><a href="mox-rocks.html#cb351-17" aria-hidden="true" tabindex="-1"></a>    symbol,</span>
-<span id="cb351-18"><a href="mox-rocks.html#cb351-18" aria-hidden="true" tabindex="-1"></a>    quantity,</span>
-<span id="cb351-19"><a href="mox-rocks.html#cb351-19" aria-hidden="true" tabindex="-1"></a>    price,</span>
-<span id="cb351-20"><a href="mox-rocks.html#cb351-20" aria-hidden="true" tabindex="-1"></a>    time_in_force</span>
-<span id="cb351-21"><a href="mox-rocks.html#cb351-21" aria-hidden="true" tabindex="-1"></a>  ) :: {<span class="va">:ok</span>, %<span class="cn">OrderResponse</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb351-17"><a href="mox-rocks.html#cb351-17" aria-hidden="true" tabindex="-1"></a>              symbol,</span>
+<span id="cb351-18"><a href="mox-rocks.html#cb351-18" aria-hidden="true" tabindex="-1"></a>              quantity,</span>
+<span id="cb351-19"><a href="mox-rocks.html#cb351-19" aria-hidden="true" tabindex="-1"></a>              price,</span>
+<span id="cb351-20"><a href="mox-rocks.html#cb351-20" aria-hidden="true" tabindex="-1"></a>              time_in_force</span>
+<span id="cb351-21"><a href="mox-rocks.html#cb351-21" aria-hidden="true" tabindex="-1"></a>            ) :: {<span class="va">:ok</span>, %<span class="cn">OrderResponse</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span>
 <span id="cb351-22"><a href="mox-rocks.html#cb351-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb351-23"><a href="mox-rocks.html#cb351-23" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_sell(</span>
-<span id="cb351-24"><a href="mox-rocks.html#cb351-24" aria-hidden="true" tabindex="-1"></a>    symbol,</span>
-<span id="cb351-25"><a href="mox-rocks.html#cb351-25" aria-hidden="true" tabindex="-1"></a>    quantity,</span>
-<span id="cb351-26"><a href="mox-rocks.html#cb351-26" aria-hidden="true" tabindex="-1"></a>    price,</span>
-<span id="cb351-27"><a href="mox-rocks.html#cb351-27" aria-hidden="true" tabindex="-1"></a>    time_in_force</span>
-<span id="cb351-28"><a href="mox-rocks.html#cb351-28" aria-hidden="true" tabindex="-1"></a>  ) :: {<span class="va">:ok</span>, %<span class="cn">OrderResponse</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb351-24"><a href="mox-rocks.html#cb351-24" aria-hidden="true" tabindex="-1"></a>              symbol,</span>
+<span id="cb351-25"><a href="mox-rocks.html#cb351-25" aria-hidden="true" tabindex="-1"></a>              quantity,</span>
+<span id="cb351-26"><a href="mox-rocks.html#cb351-26" aria-hidden="true" tabindex="-1"></a>              price,</span>
+<span id="cb351-27"><a href="mox-rocks.html#cb351-27" aria-hidden="true" tabindex="-1"></a>              time_in_force</span>
+<span id="cb351-28"><a href="mox-rocks.html#cb351-28" aria-hidden="true" tabindex="-1"></a>            ) :: {<span class="va">:ok</span>, %<span class="cn">OrderResponse</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span>
 <span id="cb351-29"><a href="mox-rocks.html#cb351-29" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb351-30"><a href="mox-rocks.html#cb351-30" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> get_order(</span>
-<span id="cb351-31"><a href="mox-rocks.html#cb351-31" aria-hidden="true" tabindex="-1"></a>    symbol,</span>
-<span id="cb351-32"><a href="mox-rocks.html#cb351-32" aria-hidden="true" tabindex="-1"></a>    timestamp,</span>
-<span id="cb351-33"><a href="mox-rocks.html#cb351-33" aria-hidden="true" tabindex="-1"></a>    order_id,</span>
-<span id="cb351-34"><a href="mox-rocks.html#cb351-34" aria-hidden="true" tabindex="-1"></a>    orig_client_order_id <span class="op">|</span> <span class="cn">nil</span>,</span>
-<span id="cb351-35"><a href="mox-rocks.html#cb351-35" aria-hidden="true" tabindex="-1"></a>    recv_window <span class="op">|</span> <span class="cn">nil</span></span>
-<span id="cb351-36"><a href="mox-rocks.html#cb351-36" aria-hidden="true" tabindex="-1"></a>  ) :: {<span class="va">:ok</span>, %<span class="cn">Order</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span></code></pre></div>
+<span id="cb351-31"><a href="mox-rocks.html#cb351-31" aria-hidden="true" tabindex="-1"></a>              symbol,</span>
+<span id="cb351-32"><a href="mox-rocks.html#cb351-32" aria-hidden="true" tabindex="-1"></a>              timestamp,</span>
+<span id="cb351-33"><a href="mox-rocks.html#cb351-33" aria-hidden="true" tabindex="-1"></a>              order_id,</span>
+<span id="cb351-34"><a href="mox-rocks.html#cb351-34" aria-hidden="true" tabindex="-1"></a>              orig_client_order_id <span class="op">|</span> <span class="cn">nil</span>,</span>
+<span id="cb351-35"><a href="mox-rocks.html#cb351-35" aria-hidden="true" tabindex="-1"></a>              recv_window <span class="op">|</span> <span class="cn">nil</span></span>
+<span id="cb351-36"><a href="mox-rocks.html#cb351-36" aria-hidden="true" tabindex="-1"></a>            ) :: {<span class="va">:ok</span>, %<span class="cn">Order</span>{}} <span class="op">|</span> {<span class="va">:error</span>, term}</span></code></pre></div>
 <p>In the above code, we added three <code>@callback</code> attributes that define the binance client behaviour. For clarity, we defined a distinct type for each of the arguments.</p>
 <p>As we now have a binance client behaviour defined, we can use it to define a mock using the <code>Mox.defmock/2</code> function inside the <code>test_helper.exs</code> file of the <code>naive</code> application:</p>
 <div class="sourceCode" id="cb352"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb352-1"><a href="mox-rocks.html#cb352-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
@@ -651,6 +653,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb358-4"><a href="mox-rocks.html#cb358-4" aria-hidden="true" tabindex="-1"></a><span class="va">binance_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>,</span>
 <span id="cb358-5"><a href="mox-rocks.html#cb358-5" aria-hidden="true" tabindex="-1"></a><span class="va">leader:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span>     <span class="co"># &lt;= added</span></span>
 <span id="cb358-6"><a href="mox-rocks.html#cb358-6" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="mock-the-phoenix.pubsub-module" class="section level3" number="17.4.3">
 <h3><span class="header-section-number">17.4.3</span> Mock the <code>Phoenix.PubSub</code> module</h3>
@@ -674,17 +677,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>The <code>Phoenix.PubSub</code> module doesn’t provide a behaviour. As we can’t modify its source, we need to create a new module to define the PubSub behaviour. Let’s create a new file called <code>test.ex</code> inside the <code>/apps/core/lib/core</code> directory with the following behaviour definition:</p>
 <div class="sourceCode" id="cb360"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb360-1"><a href="mox-rocks.html#cb360-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/core/lib/core/test.ex</span></span>
 <span id="cb360-2"><a href="mox-rocks.html#cb360-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span> <span class="kw">do</span></span>
-<span id="cb360-3"><a href="mox-rocks.html#cb360-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb360-4"><a href="mox-rocks.html#cb360-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">PubSub</span> <span class="kw">do</span></span>
-<span id="cb360-5"><a href="mox-rocks.html#cb360-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> t :: atom</span>
-<span id="cb360-6"><a href="mox-rocks.html#cb360-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> topic :: binary</span>
-<span id="cb360-7"><a href="mox-rocks.html#cb360-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> message :: term</span>
-<span id="cb360-8"><a href="mox-rocks.html#cb360-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb360-9"><a href="mox-rocks.html#cb360-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> subscribe(t, topic) :: <span class="va">:ok</span> <span class="op">|</span> {<span class="va">:error</span>, term}</span>
-<span id="cb360-10"><a href="mox-rocks.html#cb360-10" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> broadcast(t, topic, message) :: <span class="va">:ok</span> <span class="op">|</span> {<span class="va">:error</span>, term}</span>
-<span id="cb360-11"><a href="mox-rocks.html#cb360-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb360-12"><a href="mox-rocks.html#cb360-12" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<span id="cb360-3"><a href="mox-rocks.html#cb360-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">PubSub</span> <span class="kw">do</span></span>
+<span id="cb360-4"><a href="mox-rocks.html#cb360-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> t :: atom</span>
+<span id="cb360-5"><a href="mox-rocks.html#cb360-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> topic :: binary</span>
+<span id="cb360-6"><a href="mox-rocks.html#cb360-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> message :: term</span>
+<span id="cb360-7"><a href="mox-rocks.html#cb360-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb360-8"><a href="mox-rocks.html#cb360-8" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> subscribe(t, topic) :: <span class="va">:ok</span> <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb360-9"><a href="mox-rocks.html#cb360-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@callback</span> broadcast(t, topic, message) :: <span class="va">:ok</span> <span class="op">|</span> {<span class="va">:error</span>, term}</span>
+<span id="cb360-10"><a href="mox-rocks.html#cb360-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb360-11"><a href="mox-rocks.html#cb360-11" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>As previously, we defined a couple of callbacks and additional types for each of their arguments.</p>
+<div style="page-break-after: always;"></div>
 <p>Next, we will use the above behaviour to define a mock using the <code>Mox.defmock/2</code> function inside the <code>test_helper.exs</code> file of the <code>naive</code> application:</p>
 <div class="sourceCode" id="cb361"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb361-1"><a href="mox-rocks.html#cb361-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
 <span id="cb361-2"><a href="mox-rocks.html#cb361-2" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span>, <span class="kw">for</span>: <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span><span class="op">.</span><span class="cn">PubSub</span>)</span></code></pre></div>
@@ -748,6 +751,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb366"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb366-1"><a href="mox-rocks.html#cb366-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
 <span id="cb366-2"><a href="mox-rocks.html#cb366-2" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span>, <span class="kw">for</span>: <span class="cn">Core</span><span class="op">.</span><span class="cn">Test</span><span class="op">.</span><span class="cn">Logger</span>)</span></code></pre></div>
 <p>In the above code, we’ve told the <code>mox</code> package to define the <code>Test.LoggerMock</code> module based on the <code>Core.Test.Logger</code> behaviour.</p>
+<div style="page-break-after: always;"></div>
 <p>The final step will be to append the <code>:core, :logger</code> configuration to the <code>/config/config.exs</code> file:</p>
 <div class="sourceCode" id="cb367"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb367-1"><a href="mox-rocks.html#cb367-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
 <span id="cb367-2"><a href="mox-rocks.html#cb367-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:core</span>,                                   </span>
@@ -781,6 +785,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb370-3"><a href="mox-rocks.html#cb370-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb370-4"><a href="mox-rocks.html#cb370-4" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:set_mox_from_context</span>  <span class="co"># &lt;= 2</span></span>
 <span id="cb370-5"><a href="mox-rocks.html#cb370-5" aria-hidden="true" tabindex="-1"></a>  setup <span class="va">:verify_on_exit!</span>       <span class="co"># &lt;= 3</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>In the above code, we are:</p>
 <ul>
 <li>importing the <code>mox</code> module so we will be able to use functions like <code>expect/3</code></li>
@@ -792,30 +797,32 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb371-2"><a href="mox-rocks.html#cb371-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb371-3"><a href="mox-rocks.html#cb371-3" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Placing buy order test&quot;</span> <span class="kw">do</span></span>
 <span id="cb371-4"><a href="mox-rocks.html#cb371-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">PubSubMock</span></span>
-<span id="cb371-5"><a href="mox-rocks.html#cb371-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:subscribe</span>, <span class="kw">fn</span> (_module, <span class="st">&quot;TRADE_EVENTS:XRPUSDT&quot;</span>) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 1</span></span>
-<span id="cb371-6"><a href="mox-rocks.html#cb371-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:broadcast</span>, <span class="kw">fn</span> (_module, <span class="st">&quot;ORDERS:XRPUSDT&quot;</span>, _order) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>)</span>
+<span id="cb371-5"><a href="mox-rocks.html#cb371-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:subscribe</span>, <span class="kw">fn</span> _module, <span class="st">&quot;TRADE_EVENTS:XRPUSDT&quot;</span> <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 1</span></span>
+<span id="cb371-6"><a href="mox-rocks.html#cb371-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:broadcast</span>, <span class="kw">fn</span> _module, <span class="st">&quot;ORDERS:XRPUSDT&quot;</span>, _order <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>)</span>
 <span id="cb371-7"><a href="mox-rocks.html#cb371-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb371-8"><a href="mox-rocks.html#cb371-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span></span>
-<span id="cb371-9"><a href="mox-rocks.html#cb371-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:order_limit_buy</span>, <span class="kw">fn</span> (<span class="st">&quot;XRPUSDT&quot;</span>, <span class="st">&quot;464.360&quot;</span>, <span class="st">&quot;0.4307&quot;</span>, <span class="st">&quot;GTC&quot;</span>)  <span class="op">-&gt;</span> <span class="co"># &lt;= 2</span></span>
-<span id="cb371-10"><a href="mox-rocks.html#cb371-10" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, <span class="cn">BinanceMock</span><span class="op">.</span>generate_fake_order(</span>
-<span id="cb371-11"><a href="mox-rocks.html#cb371-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;XRPUSDT&quot;</span>,</span>
-<span id="cb371-12"><a href="mox-rocks.html#cb371-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;464.360&quot;</span>,</span>
-<span id="cb371-13"><a href="mox-rocks.html#cb371-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;0.4307&quot;</span>,</span>
-<span id="cb371-14"><a href="mox-rocks.html#cb371-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;BUY&quot;</span></span>
-<span id="cb371-15"><a href="mox-rocks.html#cb371-15" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb371-16"><a href="mox-rocks.html#cb371-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">BinanceMock</span><span class="op">.</span>convert_order_to_order_response()}</span>
-<span id="cb371-17"><a href="mox-rocks.html#cb371-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
-<span id="cb371-18"><a href="mox-rocks.html#cb371-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb371-19"><a href="mox-rocks.html#cb371-19" aria-hidden="true" tabindex="-1"></a>    test_pid <span class="op">=</span> self() <span class="co"># &lt;= 3</span></span>
-<span id="cb371-20"><a href="mox-rocks.html#cb371-20" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span></span>
-<span id="cb371-21"><a href="mox-rocks.html#cb371-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:notify</span>, <span class="kw">fn</span> (<span class="va">:trader_state_updated</span>, %<span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{}) <span class="op">-&gt;</span></span>
-<span id="cb371-22"><a href="mox-rocks.html#cb371-22" aria-hidden="true" tabindex="-1"></a>      send(test_pid, <span class="va">:ok</span>) <span class="co"># &lt;= 3</span></span>
-<span id="cb371-23"><a href="mox-rocks.html#cb371-23" aria-hidden="true" tabindex="-1"></a>      <span class="va">:ok</span></span>
-<span id="cb371-24"><a href="mox-rocks.html#cb371-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
-<span id="cb371-25"><a href="mox-rocks.html#cb371-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb371-26"><a href="mox-rocks.html#cb371-26" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span></span>
-<span id="cb371-27"><a href="mox-rocks.html#cb371-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:info</span>, <span class="dv">2</span>, <span class="kw">fn</span> (_message) <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 4</span></span>
-<span id="cb371-28"><a href="mox-rocks.html#cb371-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<span id="cb371-9"><a href="mox-rocks.html#cb371-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:order_limit_buy</span>, <span class="kw">fn</span> <span class="st">&quot;XRPUSDT&quot;</span>, <span class="st">&quot;464.360&quot;</span>, <span class="st">&quot;0.4307&quot;</span>, <span class="st">&quot;GTC&quot;</span> <span class="op">-&gt;</span> <span class="co"># &lt;= 2</span></span>
+<span id="cb371-10"><a href="mox-rocks.html#cb371-10" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>,</span>
+<span id="cb371-11"><a href="mox-rocks.html#cb371-11" aria-hidden="true" tabindex="-1"></a>       <span class="cn">BinanceMock</span><span class="op">.</span>generate_fake_order(</span>
+<span id="cb371-12"><a href="mox-rocks.html#cb371-12" aria-hidden="true" tabindex="-1"></a>         <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb371-13"><a href="mox-rocks.html#cb371-13" aria-hidden="true" tabindex="-1"></a>         <span class="st">&quot;464.360&quot;</span>,</span>
+<span id="cb371-14"><a href="mox-rocks.html#cb371-14" aria-hidden="true" tabindex="-1"></a>         <span class="st">&quot;0.4307&quot;</span>,</span>
+<span id="cb371-15"><a href="mox-rocks.html#cb371-15" aria-hidden="true" tabindex="-1"></a>         <span class="st">&quot;BUY&quot;</span></span>
+<span id="cb371-16"><a href="mox-rocks.html#cb371-16" aria-hidden="true" tabindex="-1"></a>       )</span>
+<span id="cb371-17"><a href="mox-rocks.html#cb371-17" aria-hidden="true" tabindex="-1"></a>       <span class="op">|&gt;</span> <span class="cn">BinanceMock</span><span class="op">.</span>convert_order_to_order_response()}</span>
+<span id="cb371-18"><a href="mox-rocks.html#cb371-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
+<span id="cb371-19"><a href="mox-rocks.html#cb371-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb371-20"><a href="mox-rocks.html#cb371-20" aria-hidden="true" tabindex="-1"></a>    test_pid <span class="op">=</span> self() <span class="co"># &lt;= 3</span></span>
+<span id="cb371-21"><a href="mox-rocks.html#cb371-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb371-22"><a href="mox-rocks.html#cb371-22" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span></span>
+<span id="cb371-23"><a href="mox-rocks.html#cb371-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:notify</span>, <span class="kw">fn</span> <span class="va">:trader_state_updated</span>, %<span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>{} <span class="op">-&gt;</span></span>
+<span id="cb371-24"><a href="mox-rocks.html#cb371-24" aria-hidden="true" tabindex="-1"></a>      send(test_pid, <span class="va">:ok</span>) <span class="co"># &lt;= 3</span></span>
+<span id="cb371-25"><a href="mox-rocks.html#cb371-25" aria-hidden="true" tabindex="-1"></a>      <span class="va">:ok</span></span>
+<span id="cb371-26"><a href="mox-rocks.html#cb371-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
+<span id="cb371-27"><a href="mox-rocks.html#cb371-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb371-28"><a href="mox-rocks.html#cb371-28" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Test</span><span class="op">.</span><span class="cn">LoggerMock</span></span>
+<span id="cb371-29"><a href="mox-rocks.html#cb371-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> expect(<span class="va">:info</span>, <span class="dv">2</span>, <span class="kw">fn</span> _message <span class="op">-&gt;</span> <span class="va">:ok</span> <span class="kw">end</span>) <span class="co"># &lt;= 4</span></span>
+<span id="cb371-30"><a href="mox-rocks.html#cb371-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>It’s important to note that we defined the mocked function with expected values in the above code. We expect our test to subscribe to a specific topic and broadcast to the other(#1). We are also expecting that process will place an order at the exact values that we calculated upfront. This way, our mock becomes an integral part of the test, asserting that the correct values will be passed to other parts of the system(dependencies of the <code>Naive.Trader</code> module).</p>
 <p>Another “trick”(#3) that we can use in our mocks is to leverage the fact that we can send a message to the test process from within the mocked function. We will leverage this idea to know precisely when the trader process finished its work as the <code>notify/1</code> is the last function call inside the process’ callback(<code>handle_info/2</code> inside the <code>Naive.Trader</code> module). We will assert that we should receive the message, and the test will be waiting for it before exiting(the default timeout is 100ms) instead of using hardcoded <code>sleep</code> to “hack” it to work.</p>
 <p>The final part(#4) tells the <code>mox</code> package that <code>Logger.info/1</code> will be called twice inside the test. The <code>mox</code> will verify the number of calls to the mocked function and error if it doesn’t much the expected amount.</p>
@@ -899,7 +906,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb375-7"><a href="mox-rocks.html#cb375-7" aria-hidden="true" tabindex="-1"></a>      ]</span>
 <span id="cb375-8"><a href="mox-rocks.html#cb375-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb375-9"><a href="mox-rocks.html#cb375-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>We can now run our test using a terminal:</p>
 <div class="sourceCode" id="cb376"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb376-1"><a href="mox-rocks.html#cb376-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>test <span class="ex">mix</span> test.unit</span></code></pre></div>
 <p>We should see the following error:</p>
@@ -930,7 +936,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb378-14"><a href="mox-rocks.html#cb378-14" aria-hidden="true" tabindex="-1"></a>        price,</span>
 <span id="cb378-15"><a href="mox-rocks.html#cb378-15" aria-hidden="true" tabindex="-1"></a>        side</span>
 <span id="cb378-16"><a href="mox-rocks.html#cb378-16" aria-hidden="true" tabindex="-1"></a>      )</span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>Now we need to update our test to pass some dummy order id from the mocked function:</p>
 <div class="sourceCode" id="cb379"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb379-1"><a href="mox-rocks.html#cb379-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
 <span id="cb379-2"><a href="mox-rocks.html#cb379-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -950,7 +955,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb380-2"><a href="mox-rocks.html#cb380-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb380-3"><a href="mox-rocks.html#cb380-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Finished</span> in 0.1 seconds <span class="er">(</span><span class="ex">0.00s</span> async, 0.1s sync<span class="kw">)</span></span>
 <span id="cb380-4"><a href="mox-rocks.html#cb380-4" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
-<p>Congrats! We just successfully tested placing an order without any dependencies. To avoid explicitly passing the <code>MIX_ENV=test</code> environment variable, we will add the prefered environment for our alias inside the <code>mix.exs</code> file:</p>
+<p>Congrats! We just successfully tested placing an order without any dependencies. To avoid explicitly passing the <code>MIX_ENV=test</code> environment variable, we will add the preferred environment for our alias inside the <code>mix.exs</code> file:</p>
 <div class="sourceCode" id="cb381"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb381-1"><a href="mox-rocks.html#cb381-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
 <span id="cb381-2"><a href="mox-rocks.html#cb381-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> project <span class="kw">do</span></span>
 <span id="cb381-3"><a href="mox-rocks.html#cb381-3" aria-hidden="true" tabindex="-1"></a>    [</span>
@@ -964,7 +969,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb382-2"><a href="mox-rocks.html#cb382-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb382-3"><a href="mox-rocks.html#cb382-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Finished</span> in 0.06 seconds <span class="er">(</span><span class="ex">0.00s</span> async, 0.06s sync<span class="kw">)</span></span>
 <span id="cb382-4"><a href="mox-rocks.html#cb382-4" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>That’s all for this chapter - to sum up, the main advantages from the <code>mox</code> based tests:</p>
 <ul>
 <li>we were able to test a standalone process/module ignoring all of its dependencies</li>

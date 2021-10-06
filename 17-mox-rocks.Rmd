@@ -129,11 +129,14 @@ First let's add the `mox` package to the `naive` application's dependencies:
   defp deps do
     [
       ...
-      {:mox, "~> 1.0", only: :test},
+      {:mox, "~> 1.0", only: [:test, :integration]},
       ...
 ```
 
 We can now run `mix deps.get` to fetch the `mox` package.
+
+[Note] As we will add the `mox`'s mocking code into the `test_helper.exs` file, we need to
+make `mox` available in all test environments(both `test` and `integration`).
 
 ## Investigate the `Naive.Trader` module
 
@@ -179,26 +182,26 @@ Neither the `Binance` nor the `BinanceMock`(our dummy implementation) module doe
   @type recv_window :: binary
 
   @callback order_limit_buy(
-    symbol,
-    quantity,
-    price,
-    time_in_force
-  ) :: {:ok, %OrderResponse{}} | {:error, term}
+              symbol,
+              quantity,
+              price,
+              time_in_force
+            ) :: {:ok, %OrderResponse{}} | {:error, term}
 
   @callback order_limit_sell(
-    symbol,
-    quantity,
-    price,
-    time_in_force
-  ) :: {:ok, %OrderResponse{}} | {:error, term}
+              symbol,
+              quantity,
+              price,
+              time_in_force
+            ) :: {:ok, %OrderResponse{}} | {:error, term}
 
   @callback get_order(
-    symbol,
-    timestamp,
-    order_id,
-    orig_client_order_id | nil,
-    recv_window | nil
-  ) :: {:ok, %Order{}} | {:error, term}
+              symbol,
+              timestamp,
+              order_id,
+              orig_client_order_id | nil,
+              recv_window | nil
+            ) :: {:ok, %Order{}} | {:error, term}
 ```
 
 In the above code, we added three `@callback` attributes that define the binance client behaviour. For clarity, we defined a distinct type for each of the arguments.
@@ -285,6 +288,8 @@ config :naive,
   ...
 ``` 
 
+\newpage
+
 ### Mock the `Phoenix.PubSub` module
 
 Mocking the `Phoenix.PubSub` dependency inside the `Naive.Trader` module will look very similar to the last two mocked modules.
@@ -316,7 +321,6 @@ The `Phoenix.PubSub` module doesn't provide a behaviour. As we can't modify its 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/test.ex
 defmodule Core.Test do
-
   defmodule PubSub do
     @type t :: atom
     @type topic :: binary
@@ -329,6 +333,8 @@ end
 ```
 
 As previously, we defined a couple of callbacks and additional types for each of their arguments.
+
+\newpage
 
 Next, we will use the above behaviour to define a mock using the `Mox.defmock/2` function inside the `test_helper.exs` file of the `naive` application:
 
@@ -421,6 +427,8 @@ Mox.defmock(Test.LoggerMock, for: Core.Test.Logger)
 
 In the above code, we've told the `mox` package to define the `Test.LoggerMock` module based on the `Core.Test.Logger` behaviour.
 
+\newpage
+
 The final step will be to append the `:core, :logger` configuration to the `/config/config.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -471,6 +479,8 @@ Let's add the `mox` related code above the `@tag :unit` line:
   setup :verify_on_exit!       # <= 3
 ```
 
+\newpage
+
 In the above code, we are:
 
 - importing the `mox` module so we will be able to use functions like `expect/3`
@@ -484,29 +494,31 @@ Inside our test, we need to define implementation for all the functions that the
   ...
   test "Placing buy order test" do
     Test.PubSubMock
-    |> expect(:subscribe, fn (_module, "TRADE_EVENTS:XRPUSDT") -> :ok end) # <= 1
-    |> expect(:broadcast, fn (_module, "ORDERS:XRPUSDT", _order) -> :ok end)
+    |> expect(:subscribe, fn _module, "TRADE_EVENTS:XRPUSDT" -> :ok end) # <= 1
+    |> expect(:broadcast, fn _module, "ORDERS:XRPUSDT", _order -> :ok end)
 
     Test.BinanceMock
-    |> expect(:order_limit_buy, fn ("XRPUSDT", "464.360", "0.4307", "GTC")  -> # <= 2
-      {:ok, BinanceMock.generate_fake_order(
-        "XRPUSDT",
-        "464.360",
-        "0.4307",
-        "BUY"
-      )
-      |> BinanceMock.convert_order_to_order_response()}
+    |> expect(:order_limit_buy, fn "XRPUSDT", "464.360", "0.4307", "GTC" -> # <= 2
+      {:ok,
+       BinanceMock.generate_fake_order(
+         "XRPUSDT",
+         "464.360",
+         "0.4307",
+         "BUY"
+       )
+       |> BinanceMock.convert_order_to_order_response()}
     end)
 
     test_pid = self() # <= 3
+
     Test.Naive.LeaderMock
-    |> expect(:notify, fn (:trader_state_updated, %Naive.Trader.State{}) ->
+    |> expect(:notify, fn :trader_state_updated, %Naive.Trader.State{} ->
       send(test_pid, :ok) # <= 3
       :ok
     end)
 
     Test.LoggerMock
-    |> expect(:info, 2, fn (_message) -> :ok end) # <= 4
+    |> expect(:info, 2, fn _message -> :ok end) # <= 4
     ...
 ```
 
@@ -613,8 +625,6 @@ Our unit test should be run without running the whole application, so we need to
   end
 ```
 
-\newpage
-
 We can now run our test using a terminal:
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -658,8 +668,6 @@ First, let's update the `BinanceMock` module:
       )
 ```
 
-\newpage
-
 Now we need to update our test to pass some dummy order id from the mocked function:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -687,7 +695,7 @@ Finished in 0.1 seconds (0.00s async, 0.1s sync)
 2 tests, 0 failures, 1 excluded
 ```
 
-Congrats! We just successfully tested placing an order without any dependencies. To avoid explicitly passing the `MIX_ENV=test` environment variable, we will add the prefered environment for our alias inside the `mix.exs` file:
+Congrats! We just successfully tested placing an order without any dependencies. To avoid explicitly passing the `MIX_ENV=test` environment variable, we will add the preferred environment for our alias inside the `mix.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /mix.exs
@@ -708,8 +716,6 @@ mix test.unit
 Finished in 0.06 seconds (0.00s async, 0.06s sync)
 2 tests, 0 failures, 1 excluded
 ```
-
-\newpage
 
 That's all for this chapter - to sum up, the main advantages from the `mox` based tests:
 
