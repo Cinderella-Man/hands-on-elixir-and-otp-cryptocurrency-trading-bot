@@ -24,9 +24,9 @@ The book is written using [R Markdown](http://rmarkdown.rstudio.com/)(it's a ver
 
 There are two repositories related to this book(both hosted on Github):
 
-* [source code of the book itself](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
-* [code written across the book where the final code of each chapter has its own branch](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
+* [source code of the book itself](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
+* [code written across the book where the final code of each chapter has its own branch](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
 
 In regards to contributions - I would love to follow the standard process of forking, making changes, opening PR(please look is there a branch for the next version and point to it instead of `main`), merging, and releasing a new version of the book.
 
-This books has also the **GitHub Discussions** enabled for both the [book's repo](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions) as well as [source code's repo](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions), please feel welcome to start any discussions related to book there.
+This books has also the **GitHub Discussions** enabled for both the [book's repo](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions) as well as [source code's repo](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions), please feel welcome to start any discussions related to book there.
