@@ -156,7 +156,7 @@ We can now move to the next callback, similar to the last one we could describe 
 
 The first function takes care of terminating the trader. The second function is fetching the sell order.
 
-That finishes our first refactoring round, but I need to admit that our change impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we *won't* immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.
+That finishes our first refactoring round, but I need to admit that our change impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we **won't** immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.
 
 Changes like this require approval from the business in a work situation, but it's a good showcase of the situation where we can propose a solution that will simplify the code(the benefits will become evident in the following sections).
 
@@ -167,7 +167,7 @@ MIX_ENV=integration mix test.integration
 ...
   1) test Naive trader full trade(buy + sell) test (NaiveTest)
      apps/naive/test/naive_test.exs:12
-     ** (MatchError) no match of right hand side value: [["0.43070000", "BUY", "FILLED"], ["0.43190000", "SELL", "FILLED"]]
+     ** (MatchError) no match of right hand side value: [["0.43070000", "BUY", "FILLED"]...
      code: [buy_1, sell_1, buy_2] = DataWarehouse.Repo.all(query)
      stacktrace:
        test/naive_test.exs:83: (test)
@@ -197,9 +197,9 @@ In our adventure to make our code more functional, we should strive to separate(
 
 The `Naive.Trader` module is a GenServer that receives trade events via messages. Based on them and the current state, using pattern-matching, it decides what action should be performed(place a buy order, fetch a buy order, place a sell order, fetch sell order, terminate trader, trigger rebuy or ignore event).
 
-Each of the pattern-matches inside the callback functions' headers is a *strategy* specific business logic that got mixed with the fact that it's executed by a GenServer that receives messages.
+Each of the pattern-matches inside the callback functions' headers is a **strategy** specific business logic that got mixed with the fact that it's executed by a GenServer that receives messages.
 
-We will create a new file called `strategy.exs` inside the `apps/naive/lib/naive/` directory, where we will *copy* all of the `handle_info/2` callback functions from the `Naive.Trader` module:
+We will create a new file called `strategy.exs` inside the `apps/naive/lib/naive/` directory, where we will **copy** all of the `handle_info/2` callback functions from the `Naive.Trader` module:
 
 ```
 # /apps/naive/lib/naive/strategy.ex
@@ -669,7 +669,7 @@ Let's move the `generate_decision/2` function(together with all functions that i
 
 As the `generate_decision/2` function is causing side effects, we don't want it to be called directly from the outside of the module, so we will need to make it private.
 
-Changing the `execute_decision/2` function(now inside the `Naive.Strategy` module) to private will cause a problem with the `handle_info/2` callback function inside the `Naive.Trader` module as it relies on the `execute_decision/2` function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn't share with the `Naive.Trader` module. That's why we will move the *body* of the `handle_info/2` callback function into a new function called `execute/2` inside the `Naive.Strategy` module:
+Changing the `execute_decision/2` function(now inside the `Naive.Strategy` module) to private will cause a problem with the `handle_info/2` callback function inside the `Naive.Trader` module as it relies on the `execute_decision/2` function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn't share with the `Naive.Trader` module. That's why we will move the **body** of the `handle_info/2` callback function into a new function called `execute/2` inside the `Naive.Strategy` module:
 
 ```
 # /apps/naive/lib/naive/strategy.ex
@@ -714,7 +714,7 @@ Let's look at how this would look in practice. We need to look into the `execute
 
 As we aren't calling the `execute_decision/2` directly, we need to pass all of the above functions as arguments to the `execute/2` function, which will pass them onward to the `execute_decision/2`.
 
-We can see that even with default values pointing to the "real" implementation, that's still a *lot* of noise to make testing easier. It will negatively impact the maintenance of the code - here's an example of what this would look like(don't bother typing it):
+We can see that even with default values pointing to the "real" implementation, that's still **a lot** of noise to make testing easier. It will negatively impact the maintenance of the code - here's an example of what this would look like(don't bother typing it):
 
 ```
 # /apps/naive/lib/naive/strategy.ex
@@ -733,7 +733,7 @@ def execute(
 There are already four functions, and we only took care of side-effects causing functions from the first `execute_decision/2` clause. We can easily see how this very quickly becomes just unmanageable as there would be 10+ "injected" arguments going from the `execute/2` to `execute_decision/2`, and only some of them would be used in each clause.
 
 Additional downsides:
-when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function *multiple times with different arities*. An example could be passing `Logger.info/1` and `Logger.info/2`
+when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function **multiple times with different arities**. An example could be passing `Logger.info/1` and `Logger.info/2`
 we need to give a name to every passed function, sometimes multiple arities (again, how should variables for `Logger.info/1` and `Logger.info/2` be called? `logger_info_2`?
 share amount of arguments negatively impacts code readability
 
@@ -783,7 +783,7 @@ Sadly we still need to use the `Map` function to get the modules out of `"contex
     leader = Map.get(context, :leader, &Leader) # <= fetch from context
 ```
 
-This is much better, but we will still need to do a fair amount of additional work to get the modules out. Also, our code will be full of the "default" modules(as *each* of the clauses retrieving them from the context will need to specify defaults).
+This is much better, but we will still need to do a fair amount of additional work to get the modules out. Also, our code will be full of the "default" modules(as **each** of the clauses retrieving them from the context will need to specify defaults).
 
 ### Injecting modules to module's attributes based on the configuration
 
@@ -804,7 +804,7 @@ We looked into different ways to inject dependencies to understand their downsid
 
 Sometimes, injecting values(like modules) as module attributes can feel like a "global state", "singleton", or similar antipattern. We need to understand that each programming language provides different ways to solve common programming problems. Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules' attributes.
 
-As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there's just *no better way* to do it in Elixir, and now we know why(based on the issues with alternative approaches).
+As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there's just **no better way** to do it in Elixir, and now we know why(based on the issues with alternative approaches).
 
 Together with the module attributes, our code should be now fully functional.
 
@@ -873,7 +873,7 @@ To achieve the same results, Elixir provides the `with` statement:
   end
 ```
 
-The above code provides *the same* functionality as the one before with `Either`. We can clearly understand it *without* any knowledge about how `Either` works, `mapping`, `flatMapping` etc. It's just standard Elixir.
+The above code provides **the same** functionality as the one before with `Either`. We can clearly understand it **without** any knowledge about how `Either` works, `mapping`, `flatMapping` etc. It's just standard Elixir.
 
 Again, as in the case of modules' attributes. Elixir provides a pragmatic way of dealing with errors - just return a tuple with an `:error` atom. It also provides utility functions like `with` to deal with errors in an idiomatic way. There's no reason to introduce concepts like `Either` as language has built-in concepts/patterns taking care of error situations.
 
@@ -900,7 +900,7 @@ In a nutshell, what we would end up with is a function containing a function con
 
 In statically typed languages, there's an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effect full code.
 
-In the Elixir without strong typing and with a massive impact on how the code is written and how easy it is to understand, there's just *no* reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.
+In the Elixir without strong typing and with a massive impact on how the code is written and how easy it is to understand, there's just **no** reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.
 
 ## Final thoughts
 
@@ -910,8 +910,8 @@ Elixir provides excellent tools to handle both of those concerns using the `with
 
 Without a type system, there's no practical reason why anybody would introduce category theory-based abstraction like Monads. The resulting code will be complicated to deal with, and as in the case of many other programming languages like Ocaml or Clojure, the pragmatic way is to execute side effects.
 
-*It's the developers' responsibility to design code in a way that maximizes the amount of pure code and push side effects to the edge.* The typical pattern would be to "prepare" (group all logic before side effects) or to "post process" the results of multiple side effects (group pure logic after side effects).
+**It's the developers' responsibility to design code in a way that maximizes the amount of pure code and push side effects to the edge.** The typical pattern would be to "prepare" (group all logic before side effects) or to "post process" the results of multiple side effects (group pure logic after side effects).
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 
-Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_18)
+Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18)

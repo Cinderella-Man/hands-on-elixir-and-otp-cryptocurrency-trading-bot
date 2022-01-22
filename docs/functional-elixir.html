@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
-  <meta name="description" content="Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <title>Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:title" content="Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:title" content="Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="twitter:site" content="@kamilskowron" />
   
   
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="index.html"/>
-<link rel="next" href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"/>
+<link rel="prev" href="mox-rocks.html"/>
+
 <script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -462,279 +462,747 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     $formOption.toggleClass("open");
   }
 </script>
-<div id="stream-live-cryptocurrency-prices-from-the-binance-wss" class="section level1" number="1">
-<h1><span class="header-section-number">Chapter 1</span> Stream live cryptocurrency prices from the Binance WSS</h1>
-<div id="objectives" class="section level2" number="1.1">
-<h2><span class="header-section-number">1.1</span> Objectives</h2>
+<div id="functional-elixir" class="section level1" number="18">
+<h1><span class="header-section-number">Chapter 18</span> Functional Elixir</h1>
+<div id="objectives-17" class="section level2" number="18.1">
+<h2><span class="header-section-number">18.1</span> Objectives</h2>
 <ul>
-<li>create a new umbrella app</li>
-<li>create a supervised application inside an umbrella</li>
-<li>connect to Binance’s WebSocket Stream using the WebSockex module</li>
-<li>define a TradeEvent struct that will hold incoming data</li>
-<li>decode incoming events using the Jason module</li>
+<li>the reasoning behind the functional approach</li>
+<li>simplifying by splitting</li>
+<li>abstracting the “pure” logic</li>
+<li>dealing with dirty code</li>
+<li>making dirty code testable</li>
+<li>the power with-in</li>
+<li>do or not to do</li>
+<li>final thoughts</li>
 </ul>
 </div>
-<div id="create-a-new-umbrella-app" class="section level2" number="1.2">
-<h2><span class="header-section-number">1.2</span> Create a new umbrella app</h2>
-<p>As we are starting from scratch, we need to create a new umbrella project:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mix</span> new hedgehog <span class="at">--umbrella</span></span></code></pre></div>
+<div id="the-reasoning-behind-the-functional-approach" class="section level2" number="18.2">
+<h2><span class="header-section-number">18.2</span> The reasoning behind the functional approach</h2>
+<p>Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a good reason[clear focus on OTP]) the conversation about functional programming.</p>
+<p>But wait, what? We are already using concepts like higher-order functions - isn’t that enough?</p>
+<p>We indeed use some functional patterns, but we never dug deeper into what Elixir developers <strong>should</strong> know(and apply) and, most importantly, why.</p>
+<p>In a nutshell, the selling point of functional programming is that applying it will make your code easier to reason about and test. Tests dramatically improve software quality. The easier they are to write, there’s less excuse not to write them - as simple as that.</p>
+<p>We will start from the basics and look into different ways of implementing functional concepts, considering Elixir’s strengths and weaknesses.</p>
 </div>
-<div id="create-a-supervised-application-inside-an-umbrella" class="section level2" number="1.3">
-<h2><span class="header-section-number">1.3</span> Create a supervised application inside an umbrella</h2>
-<p>We can now proceed with creating a new supervised application called <code>streamer</code> inside our umbrella:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> hedgehog/apps</span>
-<span id="cb2-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mix</span> new streamer <span class="at">--sup</span></span></code></pre></div>
+<div id="simplifying-by-splitting" class="section level2" number="18.3">
+<h2><span class="header-section-number">18.3</span> Simplifying by splitting</h2>
+<p>Note: This section can appear to be a bit “random”, but I added it to aid continuity of refactoring steps(refactoring those callbacks later would cause a fair amount of complexity).</p>
+<p>Let’s look at our strategy inside the <code>Naive.Trader</code> module. In this section, we will focus on its callback(<code>handle_info/2</code>) functions.</p>
+<p>We are looking for functions that do more than “one thing” to split them into multiple functions.</p>
+<p>The first callback places a buy order - it has a single responsibility and is easy to follow.</p>
+<p>The second callback takes care of race conditions - the same story, easy to understand.</p>
+<p>The third callback is the one we will focus on. It has branching using the <code>if</code> statement, and we could describe it as “fetch and maybe place a sell order” function. The “and” in the description clearly indicates that it’s really two functions glued together. We will split it to “fetch buy order” and “place a sell order” functions(below code replaces the 3rd <code>handle_info/2</code> callback):</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def handle_info(
+        %TradeEvent{},
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order: %Binance.OrderResponse{
+            price: buy_price,
+            orig_qty: quantity,
+            status: &quot;FILLED&quot;
+          },
+          sell_order: nil,
+          profit_interval: profit_interval,
+          tick_size: tick_size
+        } = state
+      ) do
+    sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
+
+    @logger.info(
+      &quot;The trader(#{id}) is placing a SELL order for &quot; &lt;&gt;
+        &quot;#{symbol} @ #{sell_price}, quantity: #{quantity}.&quot;
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, &quot;GTC&quot;)
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | sell_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+
+  def handle_info(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = buy_order
+        } = state
+      ) do
+    {:ok, %Binance.Order{} = current_buy_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_buy_order)
+
+    buy_order = %{buy_order | status: current_buy_order.status}
+
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
+    new_state = %{state | buy_order: buy_order}
+
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+<p>The first function takes care of placing a sell order. The second one fetches the buy order.</p>
+<p>We can now move to the next callback, similar to the last one we could describe as “fetch the sell order and maybe terminate the trader”. We will split it into two callbacks: “fetch the sell order” and “terminate trader”. The code below replaces the 5th <code>handle_info/2</code> callback:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def handle_info(
+        %TradeEvent{},
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order: %Binance.OrderResponse{
+            status: &quot;FILLED&quot;
+          }
+        } = state
+      ) do
+    @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
+    {:stop, :normal, state}
+  end
+
+  def handle_info(
+        %TradeEvent{
+          seller_order_id: order_id
+        },
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = sell_order
+        } = state
+      ) do
+    {:ok, %Binance.Order{} = current_sell_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_sell_order)
+
+    sell_order = %{sell_order | status: current_sell_order.status}
+
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
+    new_state = %{state | sell_order: sell_order}
+    {:noreply, new_state}
+  end</code></pre>
+<p>The first function takes care of terminating the trader. The second function is fetching the sell order.</p>
+<p>That finishes our first refactoring round, but I need to admit that our change impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we <strong>won’t</strong> immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.</p>
+<p>Changes like this require approval from the business in a work situation, but it’s a good showcase of the situation where we can propose a solution that will simplify the code(the benefits will become evident in the following sections).</p>
+<p>We can confirm that we have broken our tests by running our integration testsuite:</p>
+<div class="sourceCode" id="cb385"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb385-1"><a href="functional-elixir.html#cb385-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>integration <span class="ex">mix</span> test.integration</span>
+<span id="cb385-2"><a href="functional-elixir.html#cb385-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb385-3"><a href="functional-elixir.html#cb385-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">1</span><span class="er">)</span> <span class="bu">test</span> Naive trader full trade<span class="er">(</span><span class="ex">buy</span> + sell<span class="kw">)</span> <span class="bu">test</span> <span class="er">(</span><span class="ex">NaiveTest</span><span class="kw">)</span></span>
+<span id="cb385-4"><a href="functional-elixir.html#cb385-4" aria-hidden="true" tabindex="-1"></a>     <span class="ex">apps/naive/test/naive_test.exs:12</span></span>
+<span id="cb385-5"><a href="functional-elixir.html#cb385-5" aria-hidden="true" tabindex="-1"></a>     <span class="ex">**</span> <span class="er">(</span><span class="ex">MatchError</span><span class="kw">)</span> <span class="ex">no</span> match of right hand side value: [[<span class="st">&quot;0.43070000&quot;</span>, <span class="st">&quot;BUY&quot;</span>, <span class="st">&quot;FILLED&quot;</span>]...</span>
+<span id="cb385-6"><a href="functional-elixir.html#cb385-6" aria-hidden="true" tabindex="-1"></a>     <span class="ex">code:</span> [buy_1, sell_1, buy_2] = DataWarehouse.Repo.all<span class="er">(</span><span class="ex">query</span><span class="kw">)</span></span>
+<span id="cb385-7"><a href="functional-elixir.html#cb385-7" aria-hidden="true" tabindex="-1"></a>     <span class="ex">stacktrace:</span></span>
+<span id="cb385-8"><a href="functional-elixir.html#cb385-8" aria-hidden="true" tabindex="-1"></a>       <span class="ex">test/naive_test.exs:83:</span> <span class="er">(</span><span class="bu">test</span><span class="kw">)</span></span></code></pre></div>
+<p>(Subject to acceptance by the business) we will fix the integration test in the following way:</p>
+<pre><code># /apps/naive/test/naive_test.exs
+  test &quot;Naive trader full trade(buy + sell) test&quot; do
+    ...
+    # Step 4 - Broadcast 10 events # &lt;= updated comment
+    [
+       ...
+      generate_event(8, &quot;0.43205&quot;, &quot;345.14235000&quot;),
+      # this one should trigger buy order for a new trader process
+      generate_event(9, &quot;0.43205&quot;, &quot;345.14235000&quot;), # &lt;= added line
+      generate_event(10, &quot;0.43210&quot;, &quot;3201.86480000&quot;) # &lt;= updated id
+    ]</code></pre>
+<p>We added an event at the same price(as the sell order’s price) that will trigger placing a buy order by the new trader and make our test green again.</p>
 </div>
-<div id="connect-to-binances-websocket-stream-using-the-websockex-module" class="section level2" number="1.4">
-<h2><span class="header-section-number">1.4</span> Connect to Binance’s WebSocket Stream using the WebSockex module</h2>
-<p>To establish a connection to Binance API’s stream, we will need to use a WebSocket client. The module that we will use is called <a href="https://github.com/Azolo/websockex">WebSockex</a>. Scrolling down to the <code>Installation</code> section inside the module’s readme on Github, we are instructed what dependency we need to add to our project.</p>
-<p>We will append <code>:websockex</code> to the <code>deps</code> function inside the <code>mix.exs</code> file of the <code>streamer</code> application:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb3-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb3-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/mix.exs</span></span>
-<span id="cb3-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
-<span id="cb3-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb3-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb3-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb3-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:websockex</span>, <span class="st">&quot;~&gt; 0.4&quot;</span>}</span>
-<span id="cb3-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb3-5" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb3-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>As we added a dependency to our project, we need to fetch it using <code>mix deps.get</code>.</p>
-<p>We can now progress with creating a module that will be responsible for streaming. We will create a new file called <code>binance.ex</code> inside the <code>apps/streamer/lib/streamer</code> directory.</p>
-<p>From the readme of <a href="https://github.com/Azolo/websockex">WebSockex</a> module, we can see that to use it we need to create a module that will implement the <code>WebSockex</code> behavior:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb4-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># WebSockex&#39;s readme</span></span>
-<span id="cb4-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">WebSocketExample</span> <span class="kw">do</span></span>
-<span id="cb4-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">WebSockex</span></span>
-<span id="cb4-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(url, state) <span class="kw">do</span></span>
-<span id="cb4-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">WebSockex</span><span class="op">.</span>start_link(url, <span class="cn">__MODULE__</span>, state)</span>
-<span id="cb4-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb4-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_frame({type, msg}, state) <span class="kw">do</span></span>
-<span id="cb4-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">IO</span><span class="op">.</span>puts <span class="st">&quot;Received Message - Type: </span><span class="ot">#{</span>inspect type<span class="ot">}</span><span class="st"> -- Message: </span><span class="ot">#{</span>inspect msg<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb4-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-11" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, state}</span>
-<span id="cb4-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb4-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast({<span class="va">:send</span>, {type, msg} <span class="op">=</span> frame}, state) <span class="kw">do</span></span>
-<span id="cb4-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="cn">IO</span><span class="op">.</span>puts <span class="st">&quot;Sending </span><span class="ot">#{</span>type<span class="ot">}</span><span class="st"> frame with payload: </span><span class="ot">#{</span>msg<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb4-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-16" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, frame, state}</span>
-<span id="cb4-17"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb4-18"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>We will copy the whole code above across to our new <code>binance.ex</code> file.</p>
-<div style="page-break-after: always;"></div>
-<p>The first step will be to update the module name to match our file name:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb5-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb5-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span> <span class="kw">do</span></span></code></pre></div>
-<p>In the spirit of keeping things tidy - we will now remove the <code>handle_cast/2</code> function (the last function in our module) as we won’t be sending any messages back to Binance via WebSocket (to place orders etc - Binance provides a REST API which we will use in the next chapter).</p>
-<p>Next, let’s look up what URL should we use to connect to Binance’s API. Binance has a separate WSS (Web Socket Streams) documentation at <a href="https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md">Github</a>.</p>
-<p>Scrolling down we can see the <code>General WSS information</code> section where 3 important pieces of information are listed:</p>
-<ul>
-<li>The base endpoint is: <code>wss://stream.binance.com:9443</code></li>
-<li>Raw streams are accessed at <code>/ws/&lt;streamName&gt;</code></li>
-<li>All symbols for streams are <em>lowercase</em></li>
-</ul>
-<p>We can see that the full endpoint for raw streams(we will be using a “raw” stream) will be <code>wss://stream.binance.com:9443/ws/</code> with stream name at the end (together with lowercased symbol).</p>
-<p>Note: In the context of Binance API, “raw” means that no aggregation was performed before broadcasting the data on WebSocket.</p>
-<p>Let’s introduce a module attribute that will hold the full raw stream endpoint which will be used across the module:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb6-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb6-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ot">@stream_endpoint</span> <span class="st">&quot;wss://stream.binance.com:9443/ws/&quot;</span></span></code></pre></div>
-<p>Now back in <a href="https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md">Binance’s WSS documentation</a> we need to search for “Trade Streams”. “trade” in the context of this documentation means an exchange of assets(coins/tokens) by two sides (buyer and seller). Our future trading strategy will be interested in the “latest price” which is simply the last trade event’s price.</p>
-<p>We can see that docs are pointing to the following stream name:</p>
-<pre><code>Stream Name: &lt;symbol&gt;@trade</code></pre>
-<p>Together, our full URL looks like: “<a href="wss://stream.binance.com:9443/ws/" class="uri">wss://stream.binance.com:9443/ws/</a><symbol><span class="citation">@trade</span>”.
-To give a concrete example: the raw trade events stream URL for symbol XRPUSDT is:
-“<a href="wss://stream.binance.com:9443/ws/xrpusdt@trade" class="uri">wss://stream.binance.com:9443/ws/xrpusdt@trade</a>” (remember that symbols need to be lowercased, otherwise no trade events will get streamed - there’s <em>no</em> error).</p>
-<div style="page-break-after: always;"></div>
-<p>Back to the IDE, we will now modify the <code>start_link/2</code> function to use Binance API’s URL:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb8-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb8-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
-<span id="cb8-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>downcase(symbol)</span>
-<span id="cb8-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">WebSockex</span><span class="op">.</span>start_link(</span>
-<span id="cb8-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{@stream_endpoint}#{</span>symbol<span class="ot">}</span><span class="st">@trade&quot;</span>,</span>
-<span id="cb8-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
-<span id="cb8-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span></span>
-<span id="cb8-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-9" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb8-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Instead of passing an URL, we modified the function to accept a <code>symbol</code>, downcase it and use it together with the module’s <code>@stream_endpoint</code> attribute to build a full URL.</p>
-<p>At this moment streaming of trade events already works which we can test using <code>iex</code>:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb9-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb9-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.Binance.start_link<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb9-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.335.0&gt;}</span></span>
-<span id="cb9-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Received</span> Message <span class="at">-</span> Type: :text <span class="at">--</span> Message: <span class="st">&quot;{</span><span class="dt">\&quot;</span><span class="st">e</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">trade</span><span class="dt">\&quot;</span><span class="st">, </span><span class="dt">\&quot;</span><span class="st">E</span><span class="dt">\&quot;</span><span class="st">:1603226394741,</span></span>
-<span id="cb9-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="st">  </span><span class="dt">\&quot;</span><span class="st">s</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">XRPUSDT</span><span class="dt">\&quot;</span><span class="st">,</span><span class="dt">\&quot;</span><span class="st">t</span><span class="dt">\&quot;</span><span class="st">:74608889,</span><span class="dt">\&quot;</span><span class="st">p</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">0.24373000</span><span class="dt">\&quot;</span><span class="st">,</span><span class="dt">\&quot;</span><span class="st">q</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">200.00000000</span><span class="dt">\&quot;</span><span class="st">,</span></span>
-<span id="cb9-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="st">  </span><span class="dt">\&quot;</span><span class="st">b</span><span class="dt">\&quot;</span><span class="st">:948244411,</span><span class="dt">\&quot;</span><span class="st">a</span><span class="dt">\&quot;</span><span class="st">:948244502,</span><span class="dt">\&quot;</span><span class="st">T</span><span class="dt">\&quot;</span><span class="st">:1603226394739,</span><span class="dt">\&quot;</span><span class="st">m</span><span class="dt">\&quot;</span><span class="st">:true,</span><span class="dt">\&quot;</span><span class="st">M</span><span class="dt">\&quot;</span><span class="st">:true}&quot;</span></span></code></pre></div>
-<p>We can see the messages logged above because we copied the sample implementation from <a href="https://github.com/Azolo/websockex">WebSockex’s readme</a> where <code>handle_frame/2</code> function uses <code>IO.puts/1</code> to print out all incoming data. The lesson here is that every incoming message from Binance will cause the <code>handle_frame/2</code> callback to be called with the message and the process’ state.</p>
-<p>Just for reference, our module should look currently as follows:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb10-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb10-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span> <span class="kw">do</span></span>
-<span id="cb10-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">WebSockex</span></span>
-<span id="cb10-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@stream_endpoint</span> <span class="st">&quot;wss://stream.binance.com:9443/ws/&quot;</span></span>
-<span id="cb10-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span></span>
-<span id="cb10-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-8" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>downcase(symbol)</span>
-<span id="cb10-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">WebSockex</span><span class="op">.</span>start_link(</span>
-<span id="cb10-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-11" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{@stream_endpoint}#{</span>symbol<span class="ot">}</span><span class="st">@trade&quot;</span>,</span>
-<span id="cb10-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-12" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
-<span id="cb10-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-13" aria-hidden="true" tabindex="-1"></a>      <span class="cn">nil</span></span>
-<span id="cb10-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb10-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb10-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-17"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_frame({type, msg}, state) <span class="kw">do</span></span>
-<span id="cb10-18"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="cn">IO</span><span class="op">.</span>puts <span class="st">&quot;Received Message - Type: </span><span class="ot">#{</span>inspect type<span class="ot">}</span><span class="st"> -- Message: </span><span class="ot">#{</span>inspect msg<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb10-19"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-19" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, state}</span>
-<span id="cb10-20"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb10-21"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div id="abstracting-the-pure-logic" class="section level2" number="18.4">
+<h2><span class="header-section-number">18.4</span> Abstracting the “pure” logic</h2>
+<p>In our adventure to make our code more functional, we should strive to separate(as much as possible) pure business logic from side effects and boilerplate.</p>
+<p>The <code>Naive.Trader</code> module is a GenServer that receives trade events via messages. Based on them and the current state, using pattern-matching, it decides what action should be performed(place a buy order, fetch a buy order, place a sell order, fetch sell order, terminate trader, trigger rebuy or ignore event).</p>
+<p>Each of the pattern-matches inside the callback functions’ headers is a <strong>strategy</strong> specific business logic that got mixed with the fact that it’s executed by a GenServer that receives messages.</p>
+<p>We will create a new file called <code>strategy.exs</code> inside the <code>apps/naive/lib/naive/</code> directory, where we will <strong>copy</strong> all of the <code>handle_info/2</code> callback functions from the <code>Naive.Trader</code> module:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+defmodule Naive.Strategy do
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= place a buy order logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= race condition fix logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= place a sell order logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= fetch the buy order logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= terminate trader logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= fetch the sell order logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= trigger rebuy order logic
+  end
+
+  def handle_info(
+    ...
+  ) do
+    ... # &lt;= ignore trade event logic
+  end</code></pre>
+<p>First, we will rename all of the <code>handle_info/2</code> functions inside the <code>Naive.Strategy</code> module to <code>generate_decision/2</code>. Next, we will go through them one by one, leaving the pure parts and limiting them to returning the decision.</p>
+<div id="place-a-buy-order-rules" class="section level3" number="18.4.1">
+<h3><span class="header-section-number">18.4.1</span> Place a buy order rules</h3>
+<p>The first function decides should the trader place a buy order. We can see that price and quantity calculations are pure functions based on the incoming data. We will remove everything below those two as it’s causing side effects.</p>
+<p>As now we are dealing with a function generating a decision, we will return a tuple with data that, together with state, will be used to place a buy order.</p>
+<p>After removing some of the pattern-matching that we used to retrieve data(no longer needed), our first function should look like this:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the first clause
+  def generate_decision(
+        %TradeEvent{price: price},
+        %State{
+          budget: budget,
+          buy_order: nil,
+          buy_down_interval: buy_down_interval,
+          tick_size: tick_size,
+          step_size: step_size
+        }
+      ) do
+    price = calculate_buy_price(price, buy_down_interval, tick_size)
+
+    quantity = calculate_quantity(budget, price, step_size)
+
+    {:place_buy_order, price, quantity}
+  end</code></pre>
 </div>
-<div id="decode-incoming-events-using-the-jason-module" class="section level2" number="1.5">
-<h2><span class="header-section-number">1.5</span> Decode incoming events using the Jason module</h2>
-<p>Currently, all incoming data from WebSocket is encoded as a JSON. To decode JSON we will use the <a href="https://github.com/michalmuskala/jason">jason</a> module.</p>
-<p>Scrolling down to the <code>Installation</code> section inside the module’s readme, we can see that we need to add it to the dependencies and we can start to use it right away.</p>
-<p>Let’s open the <code>mix.exs</code> file of the <code>streamer</code> application and append the <code>:jason</code> dependency to the list inside <code>deps</code> function:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb11-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/mix.exs</span></span>
-<span id="cb11-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
-<span id="cb11-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-3" aria-hidden="true" tabindex="-1"></a>    [</span>
-<span id="cb11-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:jason</span>, <span class="st">&quot;~&gt; 1.2&quot;</span>},</span>
-<span id="cb11-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:websockex</span>, <span class="st">&quot;~&gt; 0.4&quot;</span>}</span>
-<span id="cb11-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-6" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb11-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>As previously, don’t forget to run <code>mix deps.get</code> to fetch the new dependency.</p>
-<p>Looking through the documentation of the Jason module we can see <code>encode!/2</code> and <code>decode!/2</code> functions, both of them have exclamation marks which indicate that they will throw an error whenever they will be unable to successfully encode or decode the passed value.</p>
-<p>This is less than perfect for our use case as we would like to handle those errors in our own way(technically we could just use try/rescue but as we will find out both <code>encode/2</code> and <code>decode/2</code> are available).</p>
-<p>We will go a little bit off-topic but I would highly recommend those sorts of journeys around somebody’s code. Let’s look inside the <a href="https://github.com/michalmuskala/jason/blob/master/lib/jason.ex">Jason</a> module. Scrolling down in search of <code>decode/2</code> (without the exclamation mark) we can see it about line 54:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb12-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /lib/jason.ex</span></span>
-<span id="cb12-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> decode(input, opts \\ []) <span class="kw">do</span></span>
-<span id="cb12-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-3" aria-hidden="true" tabindex="-1"></a>    input <span class="op">=</span> <span class="cn">IO</span><span class="op">.</span>iodata_to_binary(input)</span>
-<span id="cb12-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Decoder</span><span class="op">.</span>parse(input, format_decode_opts(opts))</span>
-<span id="cb12-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
-<p>It looks like it uses the <code>parse/2</code> function of a <code>Decoder</code> module, let’s scroll back up and check where it’s coming from. At line 6:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb13-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /lib/jason.ex</span></span>
-<span id="cb13-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Jason</span><span class="op">.</span>{<span class="cn">Encode</span>, <span class="cn">Decoder</span>, <span class="cn">DecodeError</span>, <span class="cn">EncodeError</span>, <span class="cn">Formatter</span>}</span></code></pre></div>
-<p>we can see that <code>Decoder</code> is an alias of the <a href="https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex"><code>Jason.Decoder</code></a>. Scrolling down to the <code>Jason.Decoder</code> module we will find a <code>parse/2</code> function about line 43:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb14-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /lib/decoder.ex</span></span>
-<span id="cb14-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> parse(data, opts) <span class="kw">when</span> is_binary(data) <span class="kw">do</span></span>
-<span id="cb14-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-3" aria-hidden="true" tabindex="-1"></a>    key_decode <span class="op">=</span> key_decode_function(opts)</span>
-<span id="cb14-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-4" aria-hidden="true" tabindex="-1"></a>    string_decode <span class="op">=</span> string_decode_function(opts)</span>
-<span id="cb14-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> <span class="kw">do</span></span>
-<span id="cb14-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-6" aria-hidden="true" tabindex="-1"></a>      value(data, data, <span class="dv">0</span>, [<span class="ot">@terminate</span>], key_decode, string_decode)</span>
-<span id="cb14-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">catch</span></span>
-<span id="cb14-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-8" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:position</span>, position} <span class="op">-&gt;</span></span>
-<span id="cb14-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-9" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:error</span>, %<span class="cn">DecodeError</span>{<span class="va">position:</span> position, <span class="va">data:</span> data}}</span>
-<span id="cb14-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-10" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:token</span>, token, position} <span class="op">-&gt;</span></span>
-<span id="cb14-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-11" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:error</span>, %<span class="cn">DecodeError</span>{<span class="va">token:</span> token, <span class="va">position:</span> position, <span class="va">data:</span> data}}</span>
-<span id="cb14-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
-<span id="cb14-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-13" aria-hidden="true" tabindex="-1"></a>      value <span class="op">-&gt;</span></span>
-<span id="cb14-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-14" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, value}</span>
-<span id="cb14-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb14-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Based on the result of decoding it will either return <code>{:ok, value}</code> or <code>{:error, %Decode.Error{...}}</code> we can confirm that by digging through documentation of the module on the <a href="https://hexdocs.pm/jason/Jason.html#decode/2">hexdocs</a>.</p>
-<p>Once again, the point of this lengthy investigation was to show that Elixir code is readable and easy to understand so don’t be thrown off when documentation is a little bit light, quite opposite, contribute to docs and code as you gain a better understanding of the codebase.</p>
-<p>We can now get back to our <code>Streamer.Binance</code> module and modify the <code>handle_frame/2</code> function to decode the incoming JSON message. Based on the result of <code>Jason.decode/2</code> we will either call the <code>process_event/2</code> function or log an error. Here’s the new version of the <code>handle_frame/2</code> function:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb15-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb15-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_frame({_type, msg}, state) <span class="kw">do</span></span>
-<span id="cb15-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Jason</span><span class="op">.</span>decode(msg) <span class="kw">do</span></span>
-<span id="cb15-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, event} <span class="op">-&gt;</span> process_event(event)</span>
-<span id="cb15-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:error</span>, _} <span class="op">-&gt;</span> <span class="cn">Logger</span><span class="op">.</span>error(<span class="st">&quot;Unable to parse msg: </span><span class="ot">#{</span>msg<span class="ot">}</span><span class="st">&quot;</span>)</span>
-<span id="cb15-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb15-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-8" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, state}</span>
-<span id="cb15-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Please make note that <code>type</code> is now prefixed with an underscore as we aren’t using it at the moment.</p>
-<p>The second important thing to note is that we are using <code>Logger</code> so it needs to be <code>require</code>d at the beginning of the module:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb16-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb16-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb16-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span></code></pre></div>
-<p>Before implementing the <code>process_event/2</code> function we need to create a structure that will hold the incoming trade event’s data.</p>
-<p>Let’s create a new directory called <code>binance</code> inside the <code>apps/streamer/lib/streamer/</code> and a new file called <code>trade_event.ex</code> inside it.</p>
-<p>Our new module will hold all the trade event’s information but we will also use readable field names(you will see the incoming data below). We can start by writing a skeleton module code:</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb17-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance/trade_event.ex</span></span>
-<span id="cb17-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span> <span class="kw">do</span></span>
-<span id="cb17-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defstruct</span> []</span>
-<span id="cb17-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>We can refer to <a href="https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#trade-streams">Binance’s docs</a> to get a list of fields:</p>
-<pre><code>{
-  &quot;e&quot;: &quot;trade&quot;,     // Event type
-  &quot;E&quot;: 123456789,   // Event time
-  &quot;s&quot;: &quot;BNBUSDT&quot;,   // Symbol
-  &quot;t&quot;: 12345,       // Trade ID
-  &quot;p&quot;: &quot;0.001&quot;,     // Price
-  &quot;q&quot;: &quot;100&quot;,       // Quantity
-  &quot;b&quot;: 88,          // Buyer order ID
-  &quot;a&quot;: 50,          // Seller order ID
-  &quot;T&quot;: 123456785,   // Trade time
-  &quot;m&quot;: true,        // Is the buyer the market maker?
-  &quot;M&quot;: true         // Ignore
-}</code></pre>
-<p>Let’s copy them across and convert the comments to update the <code>defstruct</code> inside the<br />
-<code>Streamer.Binance.TradeEvent</code> module’s struct to following:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb19-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance/trade_event.ex</span></span>
-<span id="cb19-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defstruct</span> [</span>
-<span id="cb19-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">:event_type</span>,</span>
-<span id="cb19-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">:event_time</span>,</span>
-<span id="cb19-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">:symbol</span>,</span>
-<span id="cb19-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">:trade_id</span>,</span>
-<span id="cb19-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="va">:price</span>,</span>
-<span id="cb19-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">:quantity</span>,</span>
-<span id="cb19-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">:buyer_order_id</span>,</span>
-<span id="cb19-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-10" aria-hidden="true" tabindex="-1"></a>    <span class="va">:seller_order_id</span>,</span>
-<span id="cb19-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="va">:trade_time</span>,</span>
-<span id="cb19-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">:buyer_market_maker</span></span>
-<span id="cb19-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-13" aria-hidden="true" tabindex="-1"></a>  ]</span></code></pre></div>
-<p>That’s all for this struct, we can now get back to implementing the <code>process_event/2</code> function inside the <code>Streamer.Binance</code> module. We will map every field of the response map to the <code>%Streamer.Binance.TradeEvent</code> struct. A useful trick here would be to copy the list of fields once again from the struct and assign the incoming fields one by one.
-Inside the header of the function, we will pattern match on event type(a field called “e” in the message) to confirm that indeed we received a trade event). In the end, the <code>process_event/2</code> function should look as follows:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb20-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb20-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> process_event(%{<span class="st">&quot;e&quot;</span> <span class="op">=&gt;</span> <span class="st">&quot;trade&quot;</span>} <span class="op">=</span> event) <span class="kw">do</span></span>
-<span id="cb20-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-3" aria-hidden="true" tabindex="-1"></a>    trade_event <span class="op">=</span> %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>{</span>
-<span id="cb20-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-4" aria-hidden="true" tabindex="-1"></a>      <span class="va">:event_type</span> <span class="op">=&gt;</span> event[<span class="st">&quot;e&quot;</span>],</span>
-<span id="cb20-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:event_time</span> <span class="op">=&gt;</span> event[<span class="st">&quot;E&quot;</span>],</span>
-<span id="cb20-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span> <span class="op">=&gt;</span> event[<span class="st">&quot;s&quot;</span>],</span>
-<span id="cb20-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:trade_id</span> <span class="op">=&gt;</span> event[<span class="st">&quot;t&quot;</span>],</span>
-<span id="cb20-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:price</span> <span class="op">=&gt;</span> event[<span class="st">&quot;p&quot;</span>],</span>
-<span id="cb20-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:quantity</span> <span class="op">=&gt;</span> event[<span class="st">&quot;q&quot;</span>],</span>
-<span id="cb20-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buyer_order_id</span> <span class="op">=&gt;</span> event[<span class="st">&quot;b&quot;</span>],</span>
-<span id="cb20-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">:seller_order_id</span> <span class="op">=&gt;</span> event[<span class="st">&quot;a&quot;</span>],</span>
-<span id="cb20-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">:trade_time</span> <span class="op">=&gt;</span> event[<span class="st">&quot;T&quot;</span>],</span>
-<span id="cb20-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buyer_market_maker</span> <span class="op">=&gt;</span> event[<span class="st">&quot;m&quot;</span>]</span>
-<span id="cb20-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-14" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb20-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>debug(</span>
-<span id="cb20-17"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-17" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;Trade event received &quot;</span> <span class="op">&lt;&gt;</span></span>
-<span id="cb20-18"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">@</span><span class="ot">#{</span>trade_event<span class="op">.</span>price<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb20-19"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-19" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb20-20"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We added the <code>Logger.debug/2</code> function to be able to see logs of incoming trade events.</p>
-<div style="page-break-after: always;"></div>
-<p>Lastly, before testing our implementation, let’s add a nice interface to our <code>streamer</code> application that allows starting streaming:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb21-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer.ex</span></span>
-<span id="cb21-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span> <span class="kw">do</span></span>
-<span id="cb21-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@moduledoc &quot;&quot;&quot;</span></span>
-<span id="cb21-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co">  Documentation for </span><span class="in">`Streamer`</span><span class="co">.</span></span>
-<span id="cb21-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="ot">&quot;&quot;&quot;</span></span>
-<span id="cb21-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_streaming(symbol) <span class="kw">do</span></span>
-<span id="cb21-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span>start_link(symbol)</span>
-<span id="cb21-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb21-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>The final version of the <code>Streamer.Binance</code> module should look like <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex">this</a>.</p>
-<p>The last step will be to add the <code>Logger</code> configuration into the main <code>config/config.exs</code> file. We will set the <code>Logger</code> level to <code>:debug</code> for a moment to be able to see incoming trade events:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb22-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
-<span id="cb22-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb22-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
-<span id="cb22-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">level:</span> <span class="va">:debug</span></span></code></pre></div>
-<p>This finishes the implementation part of this chapter, we can now give our implementation a whirl using <code>iex</code>:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb23-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb23-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb23-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.251.0&gt;}</span></span>
-<span id="cb23-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="ex">23:14:32.217</span> [debug] Trade event received XRPUSDT@0.25604000</span>
-<span id="cb23-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="ex">23:14:33.381</span> [debug] Trade event received XRPUSDT@0.25604000</span>
-<span id="cb23-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="ex">23:14:35.380</span> [debug] Trade event received XRPUSDT@0.25605000</span>
-<span id="cb23-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="ex">23:14:36.386</span> [debug] Trade event received XRPUSDT@0.25606000</span></code></pre></div>
-<p>As we can see, the streamer is establishing a WebSocket connection with Binance’s API and its receiving trade events. It decodes them from JSON to <code>%Streamer.Binance.TradeEvent</code> struct and logs a compiled message. Also, our interface hides implementation details from the “user” of our application.</p>
-<p>We will now flip the <code>Logger</code> level back to <code>info</code> so the output won’t every incoming trade event:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb24-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
-<span id="cb24-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb24-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
-<span id="cb24-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">level:</span> <span class="va">:info</span></span></code></pre></div>
+<div id="race-condition-rules" class="section level3" number="18.4.2">
+<h3><span class="header-section-number">18.4.2</span> Race condition rules</h3>
+<p>The second function deals with the race condition when multiple transactions fill the buy order. The original callback ignores those trade events, so the <code>generate_decision/2</code> function should return the same “decision”:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the second clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id,
+            status: &quot;FILLED&quot;
+          },
+          sell_order: %Binance.OrderResponse{}
+        }
+      ) do
+    :skip
+  end</code></pre>
+</div>
+<div id="place-a-sell-order-rules" class="section level3" number="18.4.3">
+<h3><span class="header-section-number">18.4.3</span> Place a sell order rules</h3>
+<p>We will follow the same logic for the 3rd clause of the <code>generate_decision/2</code> function. We will leave only the sell price calculation as it’s pure and return a tuple together with the decision:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the third clause
+  def generate_decision(
+        %TradeEvent{},
+        %State{
+          buy_order: %Binance.OrderResponse{
+            status: &quot;FILLED&quot;,
+            price: buy_price
+          },
+          sell_order: nil,
+          profit_interval: profit_interval,
+          tick_size: tick_size
+        }
+      ) do
+    sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
+    {:place_sell_order, sell_price}
+  end</code></pre>
+</div>
+<div id="fetch-the-buy-order-rules" class="section level3" number="18.4.4">
+<h3><span class="header-section-number">18.4.4</span> Fetch the buy order rules</h3>
+<p>For the 4th clause, we will return only an atom as there’s no pure logic besides the pattern-match in the header itself:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the fourth clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id
+          }
+        }
+      ) do
+    :fetch_buy_order
+  end</code></pre>
+</div>
+<div id="terminate-trader-rules" class="section level3" number="18.4.5">
+<h3><span class="header-section-number">18.4.5</span> Terminate trader rules</h3>
+<p>For the 5th clause, we will indicate that trader needs to terminate:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the fifth clause
+  def generate_decision(
+        %TradeEvent{},
+        %State{
+          sell_order: %Binance.OrderResponse{
+            status: &quot;FILLED&quot;
+          }
+        }
+      ) do
+    :exit
+  end</code></pre>
+</div>
+<div id="fetch-the-sell-order-rules" class="section level3" number="18.4.6">
+<h3><span class="header-section-number">18.4.6</span> Fetch the sell order rules</h3>
+<p>For the 6th clause, we will indicate that trader needs to fetch the sell order:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the sixth clause
+  def generate_decision(
+        %TradeEvent{
+          seller_order_id: order_id
+        },
+        %State{
+          sell_order: %Binance.OrderResponse{
+            order_id: order_id
+          }
+        }
+      ) do
+    :fetch_sell_order
+  end</code></pre>
+</div>
+<div id="trigger-rebuy-rules" class="section level3" number="18.4.7">
+<h3><span class="header-section-number">18.4.7</span> Trigger rebuy rules</h3>
+<p>Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps. We couldn’t refactor this function by splitting it (as we’ve done in the first section) as we need to call the <code>trigger_rebuy?/3</code> function to check should rebuy be triggered. The functions that we refactored in the first section of this chapter were splittable as they relied on pattern-matching in the function headers where calling functions is not allowed):</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the seventh clause
+  def generate_decision(
+        %TradeEvent{
+          price: current_price
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            price: buy_price
+          },
+          rebuy_interval: rebuy_interval,
+          rebuy_notified: false
+        }
+      ) do
+    if trigger_rebuy?(buy_price, current_price, rebuy_interval) do
+      :rebuy
+    else
+      :skip
+    end
+  end</code></pre>
+</div>
+<div id="the-final-clause-rules" class="section level3" number="18.4.8">
+<h3><span class="header-section-number">18.4.8</span> The final clause rules</h3>
+<p>The final (8th) clause will just ignore the trade event as it’s of no interest:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the final(8th) clause
+  def generate_decision(%TradeEvent{}, %State{}) do
+    :skip
+  end</code></pre>
+<p>This finishes the changes to the <code>generate_decision/2</code> clauses. We extracted a fair amount of logic into an easily testable pure function. We now need to use it inside the <code>Naive.Trader</code> module.</p>
+</div>
+<div id="changes-to-the-naive.trader-module" class="section level3" number="18.4.9">
+<h3><span class="header-section-number">18.4.9</span> Changes to the <code>Naive.Trader</code> module</h3>
+<p>We will start by moving all of the calculation functions to the <code>Naive.Strategy</code> module as we are using them from the <code>generate_decision/2</code> function. Those will be:
+calculate_sell_price/3
+calculate_buy_price/3
+calculate_quantity/3
+trigger_rebuy?/3</p>
+<p>They can now be changed to public functions as they are pure and fit the “interface” of the <code>Naive.Strategy</code> module(it feels ok[and it’s safe as they are pure] to “expose” them to be called from other modules).</p>
+<p>We need to remember about moving the <code>Decimal</code> alias into the <code>Naive.Strategy</code> module together with a copy of the <code>TradeEvent</code> struct alias and add the alias for the <code>Naive.Trader.State</code> struct:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  alias Decimal, as: D
+  alias Core.Struct.TradeEvent
+  alias Naive.Trader.State</code></pre>
+<p>The next step will be to rename all the <code>handle_info/2</code> callback functions inside the <code>Naive.Trader</code> module to <code>execute_decision/2</code>, which we will get back to in a moment.</p>
+<p>First, we need to add a single <code>handle_info/2</code> callback after the <code>init/1</code> function that will pattern match only the fact that the received message contains the <code>TradeEvent</code> struct and the state is the correct <code>State</code> struct:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+# add after the `init/1` function
+  def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
+    Naive.Strategy.generate_decision(trade_event, state)
+    |&gt; execute_decision(state)
+  end</code></pre>
+<p>So, the <code>Naive.Strategy</code> module will decide what the trader server should do based on its pure business logic. That decision will be passed forward with the state to the <code>execute_decision/2</code> function (at this moment, it’s just the old <code>handle_info/2</code> function renamed, but we will update it next).</p>
+</div>
+<div id="naive.trader---place-buy-order" class="section level3" number="18.4.10">
+<h3><span class="header-section-number">18.4.10</span> <code>Naive.Trader</code> - place buy order</h3>
+<p>We will update the <code>execute_decision/2</code> function to take a decision + state and execute the correct action based on pattern-match of the decision. Starting with the 1st clause, we need to pattern match a tuple:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+# the first execute clause
+  def execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state
+      ) do
+    @logger.info(
+      &quot;The trader(#{id}) is placing a BUY order &quot; &lt;&gt;
+        &quot;for #{symbol} @ #{price}, quantity: #{quantity}&quot;
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_buy(symbol, quantity, price, &quot;GTC&quot;)
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | buy_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+<p>The amount of pattern matching will be much smaller as part of the original callback has been moved inside the <code>Naive.Strategy</code>’s logic(to calculate the price and quantity).</p>
+</div>
+<div id="naive.trader---race-condition-clause" class="section level3" number="18.4.11">
+<h3><span class="header-section-number">18.4.11</span> <code>Naive.Trader</code> - Race condition clause</h3>
+<p>As for both the race condition events and the “non interesting” events, we are using the <code>:skip</code> “decision”, we can safely remove this clause as we will implement skipping as the last clause.</p>
+</div>
+<div id="naive.trader---place-a-sell-order" class="section level3" number="18.4.12">
+<h3><span class="header-section-number">18.4.12</span> <code>Naive.Trader</code> - Place a sell order</h3>
+<p>In case of placing a sell order, we will pattern match on a tuple containing the <code>:place_sell_order</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+        {:place_sell_order, sell_price},
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order: %Binance.OrderResponse{
+            orig_qty: quantity
+          }
+        } = state
+      ) do
+    @logger.info(
+      &quot;The trader(#{id}) is placing a SELL order for &quot; &lt;&gt;
+        &quot;#{symbol} @ #{sell_price}, quantity: #{quantity}.&quot;
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, &quot;GTC&quot;)
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | sell_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---fetch-the-buy-order" class="section level3" number="18.4.13">
+<h3><span class="header-section-number">18.4.13</span> <code>Naive.Trader</code> - Fetch the buy order</h3>
+<p>In case of fetching the buy order, we will pattern match on a <code>:fetch_buy_order</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+        :fetch_buy_order,
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = buy_order
+        } = state
+      ) do
+    {:ok, %Binance.Order{} = current_buy_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_buy_order)
+
+    buy_order = %{buy_order | status: current_buy_order.status}
+
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
+    new_state = %{state | buy_order: buy_order}
+
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---terminate-the-trader" class="section level3" number="18.4.14">
+<h3><span class="header-section-number">18.4.14</span> <code>Naive.Trader</code> - Terminate the trader</h3>
+<p>In case of terminating the trader, we will pattern match on a <code>:exit</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+        :exit,
+        %State{
+          id: id,
+          symbol: symbol
+        } = state
+      ) do
+    @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
+    {:stop, :normal, state}
+  end</code></pre>
+</div>
+<div id="naive.trader---fetch-the-sell-order" class="section level3" number="18.4.15">
+<h3><span class="header-section-number">18.4.15</span> <code>Naive.Trader</code> - Fetch the sell order</h3>
+<p>In case of fetching the sell order, we will pattern match on a <code>:fetch_sell_order</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+        :fetch_sell_order,
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = sell_order
+        } = state
+      ) do
+    {:ok, %Binance.Order{} = current_sell_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_sell_order)
+
+    sell_order = %{sell_order | status: current_sell_order.status}
+
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
+    new_state = %{state | sell_order: sell_order}
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---triggering-rebuy" class="section level3" number="18.4.16">
+<h3><span class="header-section-number">18.4.16</span> <code>Naive.Trader</code> - Triggering rebuy</h3>
+<p>In case of triggering the rebuy procedure, we will pattern match on a <code>:rebuy</code> atom, slim down on pattern matching and simplify the function a fair bit(no branching required anymore - yay!):</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+        :rebuy,
+        %State{
+          id: id,
+          symbol: symbol
+        } = state
+      ) do
+    @logger.info(&quot;Rebuy triggered for #{symbol} by the trader(#{id})&quot;)
+    new_state = %{state | rebuy_notified: true}
+    @leader.notify(:rebuy_triggered, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---the-final-ignore-clause" class="section level3" number="18.4.17">
+<h3><span class="header-section-number">18.4.17</span> <code>Naive.Trader</code> - The final ignore clause</h3>
+<p>The final ignore clause will <code>:skip</code> all events:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(:skip, state) do
+    {:noreply, state}
+  end</code></pre>
+<p>The ignore clause finishes our current refactoring round, which showcased that sometimes abstracting pattern matching into a separate function is a valid strategy to increase the amount of pure code.</p>
+<p>Note: The fact that we could abstract the logic from pattern matches is quite a unique situation to our application. I would not advise abstracting GenServer pattern matching into a separate module if dealing with different structs/actions(in our case, all our pattern matches were “making a trading decision”, it’s a single “action”, that’s why we abstracted them).</p>
+</div>
+</div>
+<div id="dealing-with-dirty-code" class="section level2" number="18.5">
+<h2><span class="header-section-number">18.5</span> Dealing with dirty code</h2>
+<p>In the last section, we converted all the <code>handle_info/2</code> callback functions into the <code>generate_decision/2</code> function. That’s excellent progress, but we still have the strategy logic inside the <code>Naive.Trader</code> module.</p>
+<p>Let’s move the <code>generate_decision/2</code> function(together with all functions that it depends on, like the <code>broadcast_order/1</code> and the <code>require Logger</code>) from the <code>Naive.Trader</code> module to the <code>Naive.Strategy</code> module.</p>
+<p>As the <code>generate_decision/2</code> function is causing side effects, we don’t want it to be called directly from the outside of the module, so we will need to make it private.</p>
+<p>Changing the <code>execute_decision/2</code> function(now inside the <code>Naive.Strategy</code> module) to private will cause a problem with the <code>handle_info/2</code> callback function inside the <code>Naive.Trader</code> module as it relies on the <code>execute_decision/2</code> function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn’t share with the <code>Naive.Trader</code> module. That’s why we will move the <strong>body</strong> of the <code>handle_info/2</code> callback function into a new function called <code>execute/2</code> inside the <code>Naive.Strategy</code> module:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  def execute(%TradeEvent{} = trade_event, %State{} = state) do
+    generate_decision(trade_event, state)
+    |&gt; execute_decision(state)
+  end</code></pre>
+<p>Before we update the <code>Naive.Trader</code> module to use the <code>execute/2</code> function, we need to address another issue that moving the <code>execute_decision/2</code> caused. At this moment, all of the clauses return GenServer specific structs. What we really need to return to the trader is an atom indicating should it continue or terminate and the updated state:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# last lines inside the `execute_decision/2` functions
+{:ok, new_state} # &lt;= previously {:noreply, new_state} (6 times)
+:exit # &lt;= previously {:stop, :normal, state}</code></pre>
+<p>We can now update the <code>handle_info/2</code> callback function to call the new “interface” of the <code>Naive.Strategy</code> module that we just created and act accordingly to the result:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
+    case Naive.Strategy.execute(trade_event, state) do
+      {:ok, new_state} -&gt; {:noreply, new_state}
+      :exit -&gt; {:stop, :normal, state}
+    end
+  end</code></pre>
+<p>At this moment, we could just copy/move module attributes from the <code>Naive.Trader</code> module to the <code>Naive.Strategy</code> module and our code would start to work again. Still, before we will do that, we will use this opportunity to look into how to make our dirty code testable.</p>
+</div>
+<div id="making-dirty-code-testable" class="section level2" number="18.6">
+<h2><span class="header-section-number">18.6</span> Making dirty code testable</h2>
+<p>Making dirty code testable is very closely linked with injecting dependencies. In the testing environment, we would like to use dummy implementations instead of executing the side-effect-causing code to simplify the tests. We will look into the different ways that we can pass side-effect-causing “code” into impure functions.</p>
+<div id="passing-functions-arguments" class="section level3" number="18.6.1">
+<h3><span class="header-section-number">18.6.1</span> Passing functions arguments</h3>
+<p>Functions are first-class citizens in Elixir, which means that we can pass them as arguments into functions. This way, we can pass side-effect causing functions into our <code>Naive.Strategy</code> module.</p>
+<p>Let’s look at how this would look in practice. We need to look into the <code>execute_decision/2</code> function as it’s the place side effects happen. Looking at the 1st clause(responsible for placing a buy order), we can see that it’s calling the <code>Logger.info/1</code>, <code>Binance.order_limit_buy/4</code>, <code>PubSub.broadcast/3</code>(via the <code>broadcast_order/1</code> function) and <code>Leader.notify/2</code> functions. To make our code easily testable, we would need to be able to pass dummy implementations for all of those.</p>
+<p>As we aren’t calling the <code>execute_decision/2</code> directly, we need to pass all of the above functions as arguments to the <code>execute/2</code> function, which will pass them onward to the <code>execute_decision/2</code>.</p>
+<p>We can see that even with default values pointing to the “real” implementation, that’s still <strong>a lot</strong> of noise to make testing easier. It will negatively impact the maintenance of the code - here’s an example of what this would look like(don’t bother typing it):</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# injecting dummy implementation, fallback to real implementation
+def execute(
+  %TradeEvent{} = trade_event,
+  %State{} = state,
+  logger_info \\ &amp;Logger.info/1, # &lt;= function injected
+  order_limit_buy \\ &amp;Binance.order_limit_buy/4, # &lt;= function injected
+  pubsub_broadcast \\ PubSub.broadcast/3, # &lt;= function injected
+  notify_leader \\ &amp;Leader.notify/2 # &lt;= function injected
+) do
+  ...</code></pre>
+<p>There are already four functions, and we only took care of side-effects causing functions from the first <code>execute_decision/2</code> clause. We can easily see how this very quickly becomes just unmanageable as there would be 10+ “injected” arguments going from the <code>execute/2</code> to <code>execute_decision/2</code>, and only some of them would be used in each clause.</p>
+<p>Additional downsides:
+when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function <strong>multiple times with different arities</strong>. An example could be passing <code>Logger.info/1</code> and <code>Logger.info/2</code>
+we need to give a name to every passed function, sometimes multiple arities (again, how should variables for <code>Logger.info/1</code> and <code>Logger.info/2</code> be called? <code>logger_info_2</code>?
+share amount of arguments negatively impacts code readability</p>
+<p>We can see that passing functions as arguments is just a bad idea in case of making our code testable. It will have the opposite effect, decreasing readability making our code difficult to maintain and follow.</p>
+<p>Important note: Passing functions as arguments is not always bad! A good example could be when different actions need to be performed based on runtime data.</p>
+</div>
+<div id="passing-grouped-functions-as-a-context" class="section level3" number="18.6.2">
+<h3><span class="header-section-number">18.6.2</span> Passing grouped functions as a context</h3>
+<p>The natural next step would be to put all of those functions into some structure like Map or Keyword list. Whichever we would choose, we will end up with the same problems of naming keys(this time inside the map/keyword list), multiple functions because of different arity but also default values inside each clause of the <code>execute_decision/2</code> function:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state,
+        %{} = context # &lt;= context added
+      ) do
+    logger_info = Map.get(context, :logger_info, &amp;Logger.info/1) # &lt;= fetch from context
+    order_limit_buy = Map.get(context, :order_limit_buy, &amp;Binance.order_limit_buy/4) # &lt;= fetch from context
+    leader_notify = Map.get(context, :leader_notify, &amp;Leader.notify/2) # &lt;= fetch from context</code></pre>
+<p>Again this looks like a bad idea. It’s probably marginally better than just sending functions one by one, but not much.</p>
+</div>
+<div id="passing-grouped-modules-as-a-context" class="section level3" number="18.6.3">
+<h3><span class="header-section-number">18.6.3</span> Passing grouped modules as a context</h3>
+<p>The significant advantage of passing modules as arguments instead of functions is that we no longer have a problem with naming keys or caring about different functions’ arities. There will also be substantially fewer modules used in comparison to functions.</p>
+<p>Sadly we still need to use the <code>Map</code> function to get the modules out of <code>"context"</code>:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state,
+        %{} = context # &lt;= context added
+      ) do
+    logger = Map.get(context, :logger, &amp;Logger) # &lt;= fetch from context
+    binance = Map.get(context, :binance, Binance) # &lt;= fetch from context
+    leader = Map.get(context, :leader, &amp;Leader) # &lt;= fetch from context</code></pre>
+<p>This is much better, but we will still need to do a fair amount of additional work to get the modules out. Also, our code will be full of the “default” modules(as <strong>each</strong> of the clauses retrieving them from the context will need to specify defaults).</p>
+</div>
+<div id="injecting-modules-to-modules-attributes-based-on-the-configuration" class="section level3" number="18.6.4">
+<h3><span class="header-section-number">18.6.4</span> Injecting modules to module’s attributes based on the configuration</h3>
+<p>And we finally got there - we have come full circle. This is the approach that we previously used inside the <code>Naive.Trader</code> module(you can go ahead and add them to the <code>Naive.Strategy</code> module):</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+defmodule Naive.Strategy do
+  ...
+
+  @binance_client Application.compile_env(:naive, :binance_client)
+  @leader Application.get_env(:naive, :leader)
+  @logger Application.get_env(:core, :logger)
+  @pubsub_client Application.get_env(:core, :pubsub_client)</code></pre>
+<p>We looked into different ways to inject dependencies to understand their downsides.</p>
+<p>Sometimes, injecting values(like modules) as module attributes can feel like a “global state”, “singleton”, or similar antipattern. We need to understand that each programming language provides different ways to solve common programming problems. Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules’ attributes.</p>
+<p>As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there’s just <strong>no better way</strong> to do it in Elixir, and now we know why(based on the issues with alternative approaches).</p>
+<p>Together with the module attributes, our code should be now fully functional.</p>
+</div>
+</div>
+<div id="the-power-with-in" class="section level2" number="18.7">
+<h2><span class="header-section-number">18.7</span> The power with-in</h2>
+<p>In the last section, we looked into different ways to inject modules’ dependencies to avoid side-effects causing functions inside the tests. Besides side-effect causing functions, in functional programming, error handling is also done in a specific manner.</p>
+<p>Many languages introduced concepts like <code>Either</code>, which is a struct that can be either <code>Left</code>(error result) or <code>Right</code>(success result). Those quite nicely fit to the standard Elixir results like <code>{:error, reason}</code> and <code>{:ok, result}</code>. Further, those languages provide multiple functions to work with the <code>Either</code>, like <code>map</code>.</p>
+<pre><code>safeDivide(2, 0) # &lt;= returns Left(&quot;Dividing error&quot;)
+.then(Either.map(&amp;(&amp;1 * 2))) &lt;= still Left(&quot;Dividing error&quot;)
+
+safeDivide(2, 1) # &lt;= returns Right(2)
+.then(Either.map(&amp;(&amp;1 * 2))) &lt;= returns Right(4)</code></pre>
+<p>The above code will use hypothetical <code>Left('Dividing error')</code> or <code>Right(result)</code>. The <code>Either.map/2</code> is a special <code>map</code> function that runs the passed function if it’s <code>Right</code> or completely ignores it when it’s <code>Left</code> - it could be visualized as:</p>
+<pre><code>def map(%Either.Left{} = left, _fun), do: left
+def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
+<p>This is nice and great, but what if the function inside the <code>Either.map/2</code> returns another <code>Either</code>? Like:</p>
+<pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
+.then(Either.map(&amp;(safeDivide(&amp;1, 1)))) &lt;= still Right(Right(2))</code></pre>
+<p>Now we need to understand those abstractions to be able to decide should we <code>map</code> or <code>flatMap</code>(that’s the function that will not wrap the function result into the <code>Right</code>):</p>
+<pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
+.then(Either.flatMap(&amp;(safeDivide(&amp;1, 1)))) &lt;= still Right(2)</code></pre>
+<p>And that is just the beginning of the complexities that those abstractions bring.</p>
+<p>Furthermore, let’s say that inside the first <code>Either.map/2</code> callback, we will have some variable(s) that we would like to use later on. We are now deep inside closures world like the following:</p>
+<pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
+.then(Either.flatMap(
+    # x = some data generated here
+       safeDivide(2, 1)
+       .then(Either.map(&amp;(&amp;1 * 2)))
+       .then(Either.map(&amp;(&amp;1 * x))) # &lt;= a clause to have access to x
+))</code></pre>
+<p>The above example is obviously simplified and silly but should give us a gist of what sort of complexity we will very soon get involved in. And, again, we just scratched the surface - there are so many more functions that the <code>Either</code> provides. Besides, writing code in this fashion in Elixir would cause a lot of friction in the team as it’s difficult to find any advantages of using it.</p>
+<div id="idiomatic-error-handling" class="section level3" number="18.7.1">
+<h3><span class="header-section-number">18.7.1</span> Idiomatic error handling</h3>
+<p>To achieve the same results, Elixir provides the <code>with</code> statement:</p>
+<pre><code>  with {:ok, divide_result} &lt;- safeDiv(2,1),
+          {:ok, divide_result_2} &lt;- safeDivide(2, 1)
+  do
+    divide_result_2 * 2 * divide_result
+  else
+    err -&gt; err
+  end</code></pre>
+<p>The above code provides <strong>the same</strong> functionality as the one before with <code>Either</code>. We can clearly understand it <strong>without</strong> any knowledge about how <code>Either</code> works, <code>mapping</code>, <code>flatMapping</code> etc. It’s just standard Elixir.</p>
+<p>Again, as in the case of modules’ attributes. Elixir provides a pragmatic way of dealing with errors - just return a tuple with an <code>:error</code> atom. It also provides utility functions like <code>with</code> to deal with errors in an idiomatic way. There’s no reason to introduce concepts like <code>Either</code> as language has built-in concepts/patterns taking care of error situations.</p>
+</div>
+</div>
+<div id="do-or-not-to-do" class="section level2" number="18.8">
+<h2><span class="header-section-number">18.8</span> Do or not to do</h2>
+<p>In the last section, we discussed wrapping the results in the <code>Either</code> structs to be able to map, flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing side effects at all?</p>
+<p>That’s the basic idea behind all the category theory related abstractions like the infamous IO Monad.</p>
+<p>I won’t go into a huge amount of details but we can think about it as every time we are calling a <em>special</em> <code>map</code> or <code>flatMap</code>, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:</p>
+<pre><code>  def map(acc, function) do
+    fn -&gt;
+      case acc.() do
+        {:ok, data} -&gt; {:ok, function.(data)}
+        {:error, error} -&gt; {:error, error}
+      end
+    end
+  end</code></pre>
+<p>In a nutshell, what we would end up with is a function containing a function containing a function… At this moment, I find it very difficult to find any practical reason why somebody would want to do something like this in a dynamically typed language.</p>
+<p>In statically typed languages, there’s an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effect full code.</p>
+<p>In the Elixir without strong typing and with a massive impact on how the code is written and how easy it is to understand, there’s just <strong>no</strong> reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.</p>
+</div>
+<div id="final-thoughts" class="section level2" number="18.9">
+<h2><span class="header-section-number">18.9</span> Final thoughts</h2>
+<p>Every programming language needs to provide tools to handle common concerns like errors or dependency injection.</p>
+<p>Elixir provides excellent tools to handle both of those concerns using the <code>with</code> statement and modules’ attributes.</p>
+<p>Without a type system, there’s no practical reason why anybody would introduce category theory-based abstraction like Monads. The resulting code will be complicated to deal with, and as in the case of many other programming languages like Ocaml or Clojure, the pragmatic way is to execute side effects.</p>
+<p><strong>It’s the developers’ responsibility to design code in a way that maximizes the amount of pure code and push side effects to the edge.</strong> The typical pattern would be to “prepare” (group all logic before side effects) or to “post process” the results of multiple side effects (group pure logic after side effects).</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_01">Github</a></p>
+<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18">Github</a></p>
 
 </div>
 </div>
@@ -743,8 +1211,8 @@ Inside the header of the function, we will pattern match on event type(a field c
           </div>
         </div>
       </div>
-<a href="index.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="mox-rocks.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
@@ -776,7 +1244,7 @@ gitbook.start({
 "size": 2
 },
 "edit": {
-"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/01-stream-crypto-prices.Rmd",
+"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/18-functional-elixir.Rmd",
 "text": "Edit"
 },
 "history": {
