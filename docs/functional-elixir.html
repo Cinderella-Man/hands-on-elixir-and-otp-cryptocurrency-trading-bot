@@ -386,7 +386,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="18.6.3" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-modules-as-a-context"><i class="fa fa-check"></i><b>18.6.3</b> Passing grouped modules as a context</a></li>
 <li class="chapter" data-level="18.6.4" data-path="functional-elixir.html"><a href="functional-elixir.html#injecting-modules-to-modules-attributes-based-on-the-configuration"><i class="fa fa-check"></i><b>18.6.4</b> Injecting modules to module’s attributes based on the configuration</a></li>
 </ul></li>
-<li class="chapter" data-level="18.7" data-path="functional-elixir.html"><a href="functional-elixir.html#the-power-with-in"><i class="fa fa-check"></i><b>18.7</b> The power with-in</a>
+<li class="chapter" data-level="18.7" data-path="functional-elixir.html"><a href="functional-elixir.html#the-power-with-in"><i class="fa fa-check"></i><b>18.7</b> The power <code>with</code>-in</a>
 <ul>
 <li class="chapter" data-level="18.7.1" data-path="functional-elixir.html"><a href="functional-elixir.html#idiomatic-error-handling"><i class="fa fa-check"></i><b>18.7.1</b> Idiomatic error handling</a></li>
 </ul></li>
@@ -483,14 +483,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>abstracting the “pure” logic</li>
 <li>dealing with dirty code</li>
 <li>making dirty code testable</li>
-<li>the power with-in</li>
+<li>the power <code>with</code>-in</li>
 <li>do or not to do</li>
 <li>final thoughts</li>
 </ul>
 </div>
 <div id="the-reasoning-behind-the-functional-approach" class="section level2" number="18.2">
 <h2><span class="header-section-number">18.2</span> The reasoning behind the functional approach</h2>
-<p>Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a good reason[clear focus on OTP]) the conversation about functional programming.</p>
+<p>Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a the good reason - a clear focus on OTP) the conversation about functional programming.</p>
 <p>But wait, what? We are already using concepts like higher-order functions - isn’t that enough?</p>
 <p>We indeed use some functional patterns, but we never dug deeper into what Elixir developers <strong>should</strong> know(and apply) and, most importantly, why.</p>
 <p>In a nutshell, the selling point of functional programming is that applying it will make your code easier to reason about and test. Tests dramatically improve software quality. The easier they are to write, there’s less excuse not to write them - as simple as that.</p>
@@ -498,12 +498,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="simplifying-by-splitting" class="section level2" number="18.3">
 <h2><span class="header-section-number">18.3</span> Simplifying by splitting</h2>
-<p>Note: This section can appear to be a bit “random”, but I added it to aid continuity of refactoring steps(refactoring those callbacks later would cause a fair amount of complexity).</p>
-<p>Let’s look at our strategy inside the <code>Naive.Trader</code> module. In this section, we will focus on its callback(<code>handle_info/2</code>) functions.</p>
+<p>Note: This section could appear to be a bit “random”, but I added it to aid continuity of refactoring steps(refactoring those callbacks later would cause a fair amount of complexity).</p>
+<p>Let’s look at our strategy inside the <code>Naive.Trader</code> module. In this section, we will focus on its (<code>handle_info/2</code>) callback functions.</p>
 <p>We are looking for functions that do more than “one thing” to split them into multiple functions.</p>
 <p>The first callback places a buy order - it has a single responsibility and is easy to follow.</p>
 <p>The second callback takes care of race conditions - the same story, easy to understand.</p>
-<p>The third callback is the one we will focus on. It has branching using the <code>if</code> statement, and we could describe it as “fetch and maybe place a sell order” function. The “and” in the description clearly indicates that it’s really two functions glued together. We will split it to “fetch buy order” and “place a sell order” functions(below code replaces the 3rd <code>handle_info/2</code> callback):</p>
+<p>The third callback is the one we will focus on. It branches using the <code>if</code> statement, and we could describe it as “fetch and maybe place a sell order” function. The “and” in the description clearly indicates that it’s really two functions glued together. We will split it into “fetch buy order” and “place a sell order” functions(below code replaces the 3rd <code>handle_info/2</code> callback):</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def handle_info(
         %TradeEvent{},
@@ -569,7 +569,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     {:noreply, new_state}
   end</code></pre>
 <p>The first function takes care of placing a sell order. The second one fetches the buy order.</p>
-<p>We can now move to the next callback, similar to the last one we could describe as “fetch the sell order and maybe terminate the trader”. We will split it into two callbacks: “fetch the sell order” and “terminate trader”. The code below replaces the 5th <code>handle_info/2</code> callback:</p>
+<p>We can now move to the next callback, similar to the last one we could describe as “fetch the sell order and maybe terminate the trader”. We will split it into two callbacks: “fetch the sell order” and “terminate trader”.</p>
+<div style="page-break-after: always;"></div>
+<p>The code below replaces the 5th <code>handle_info/2</code> callback:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def handle_info(
         %TradeEvent{},
@@ -639,6 +641,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       generate_event(10, &quot;0.43210&quot;, &quot;3201.86480000&quot;) # &lt;= updated id
     ]</code></pre>
 <p>We added an event at the same price(as the sell order’s price) that will trigger placing a buy order by the new trader and make our test green again.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="abstracting-the-pure-logic" class="section level2" number="18.4">
 <h2><span class="header-section-number">18.4</span> Abstracting the “pure” logic</h2>
@@ -649,51 +652,35 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <pre><code># /apps/naive/lib/naive/strategy.ex
 defmodule Naive.Strategy do
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= place a buy order logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= race condition fix logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= place a sell order logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= fetch the buy order logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= terminate trader logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= fetch the sell order logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= trigger rebuy order logic
   end
 
-  def handle_info(
-    ...
-  ) do
+  def handle_info(...) do
     ... # &lt;= ignore trade event logic
   end</code></pre>
 <p>First, we will rename all of the <code>handle_info/2</code> functions inside the <code>Naive.Strategy</code> module to <code>generate_decision/2</code>. Next, we will go through them one by one, leaving the pure parts and limiting them to returning the decision.</p>
@@ -720,6 +707,7 @@ defmodule Naive.Strategy do
 
     {:place_buy_order, price, quantity}
   end</code></pre>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="race-condition-rules" class="section level3" number="18.4.2">
 <h3><span class="header-section-number">18.4.2</span> Race condition rules</h3>
@@ -816,7 +804,7 @@ defmodule Naive.Strategy do
 </div>
 <div id="trigger-rebuy-rules" class="section level3" number="18.4.7">
 <h3><span class="header-section-number">18.4.7</span> Trigger rebuy rules</h3>
-<p>Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps. We couldn’t refactor this function by splitting it (as we’ve done in the first section) as we need to call the <code>trigger_rebuy?/3</code> function to check should rebuy be triggered. The functions that we refactored in the first section of this chapter were splittable as they relied on pattern-matching in the function headers where calling functions is not allowed):</p>
+<p>Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps. We couldn’t refactor this function by splitting it (as we’ve done in the first section) as we need to call the <code>trigger_rebuy?/3</code> function to check should rebuy be triggered. The functions that we refactored in the first section of this chapter were splittable as they relied on pattern-matching in the function headers where calling local functions is not allowed):</p>
 <pre><code># /apps/naive/lib/naive/strategy.ex
 # the seventh clause
   def generate_decision(
@@ -837,6 +825,7 @@ defmodule Naive.Strategy do
       :skip
     end
   end</code></pre>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="the-final-clause-rules" class="section level3" number="18.4.8">
 <h3><span class="header-section-number">18.4.8</span> The final clause rules</h3>
@@ -850,11 +839,13 @@ defmodule Naive.Strategy do
 </div>
 <div id="changes-to-the-naive.trader-module" class="section level3" number="18.4.9">
 <h3><span class="header-section-number">18.4.9</span> Changes to the <code>Naive.Trader</code> module</h3>
-<p>We will start by moving all of the calculation functions to the <code>Naive.Strategy</code> module as we are using them from the <code>generate_decision/2</code> function. Those will be:
-calculate_sell_price/3
-calculate_buy_price/3
-calculate_quantity/3
-trigger_rebuy?/3</p>
+<p>We will start by moving all of the calculation functions to the <code>Naive.Strategy</code> module as we are using them from the <code>generate_decision/2</code> function. Those will be:</p>
+<ul>
+<li><code>calculate_sell_price/3</code></li>
+<li><code>calculate_buy_price/3</code></li>
+<li><code>calculate_quantity/3</code></li>
+<li><code>trigger_rebuy?/3</code></li>
+</ul>
 <p>They can now be changed to public functions as they are pure and fit the “interface” of the <code>Naive.Strategy</code> module(it feels ok[and it’s safe as they are pure] to “expose” them to be called from other modules).</p>
 <p>We need to remember about moving the <code>Decimal</code> alias into the <code>Naive.Strategy</code> module together with a copy of the <code>TradeEvent</code> struct alias and add the alias for the <code>Naive.Trader.State</code> struct:</p>
 <pre><code># /apps/naive/lib/naive/strategy.ex
@@ -862,7 +853,7 @@ trigger_rebuy?/3</p>
   alias Core.Struct.TradeEvent
   alias Naive.Trader.State</code></pre>
 <p>The next step will be to rename all the <code>handle_info/2</code> callback functions inside the <code>Naive.Trader</code> module to <code>execute_decision/2</code>, which we will get back to in a moment.</p>
-<p>First, we need to add a single <code>handle_info/2</code> callback after the <code>init/1</code> function that will pattern match only the fact that the received message contains the <code>TradeEvent</code> struct and the state is the correct <code>State</code> struct:</p>
+<p>First, we need to add a single <code>handle_info/2</code> callback under the <code>init/1</code> function that will pattern match only the fact that the received message contains the <code>TradeEvent</code> struct and the state is the correct <code>State</code> struct:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
 # add after the `init/1` function
   def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
@@ -901,7 +892,7 @@ trigger_rebuy?/3</p>
 </div>
 <div id="naive.trader---race-condition-clause" class="section level3" number="18.4.11">
 <h3><span class="header-section-number">18.4.11</span> <code>Naive.Trader</code> - Race condition clause</h3>
-<p>As for both the race condition events and the “non interesting” events, we are using the <code>:skip</code> “decision”, we can safely remove this clause as we will implement skipping as the last clause.</p>
+<p>As we are using the <code>:skip</code> “decision” for both the race condition events and the “non interesting” events, we can safely remove this clause as we will implement skipping as the last clause.</p>
 </div>
 <div id="naive.trader---place-a-sell-order" class="section level3" number="18.4.12">
 <h3><span class="header-section-number">18.4.12</span> <code>Naive.Trader</code> - Place a sell order</h3>
@@ -980,6 +971,7 @@ trigger_rebuy?/3</p>
     @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
     {:stop, :normal, state}
   end</code></pre>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="naive.trader---fetch-the-sell-order" class="section level3" number="18.4.15">
 <h3><span class="header-section-number">18.4.15</span> <code>Naive.Trader</code> - Fetch the sell order</h3>
@@ -1069,11 +1061,11 @@ trigger_rebuy?/3</p>
 </div>
 <div id="making-dirty-code-testable" class="section level2" number="18.6">
 <h2><span class="header-section-number">18.6</span> Making dirty code testable</h2>
-<p>Making dirty code testable is very closely linked with injecting dependencies. In the testing environment, we would like to use dummy implementations instead of executing the side-effect-causing code to simplify the tests. We will look into the different ways that we can pass side-effect-causing “code” into impure functions.</p>
+<p>Making dirty code testable is very closely linked to injecting dependencies. In the testing environment, we would like to use dummy implementations instead of executing the side-effect-causing code to simplify the tests. We will look into the different ways that we can pass side-effect-causing “code” into impure functions.</p>
 <div id="passing-functions-arguments" class="section level3" number="18.6.1">
 <h3><span class="header-section-number">18.6.1</span> Passing functions arguments</h3>
-<p>Functions are first-class citizens in Elixir, which means that we can pass them as arguments into functions. This way, we can pass side-effect causing functions into our <code>Naive.Strategy</code> module.</p>
-<p>Let’s look at how this would look in practice. We need to look into the <code>execute_decision/2</code> function as it’s the place side effects happen. Looking at the 1st clause(responsible for placing a buy order), we can see that it’s calling the <code>Logger.info/1</code>, <code>Binance.order_limit_buy/4</code>, <code>PubSub.broadcast/3</code>(via the <code>broadcast_order/1</code> function) and <code>Leader.notify/2</code> functions. To make our code easily testable, we would need to be able to pass dummy implementations for all of those.</p>
+<p>Functions are first-class citizens in Elixir, which means that we can pass them as arguments to functions. This way, we can pass side-effect causing functions into our <code>Naive.Strategy</code> module.</p>
+<p>Let’s look at how this would look in practice. We need to look into the <code>execute_decision/2</code> function, as it’s where the place side effects happen. Looking at the 1st clause(responsible for placing a buy order), we can see that it’s calling the <code>Logger.info/1</code>, <code>Binance.order_limit_buy/4</code>, <code>PubSub.broadcast/3</code>(via the <code>broadcast_order/1</code> function) and <code>Leader.notify/2</code> functions. To make our code easily testable, we would need to be able to pass dummy implementations for all of those.</p>
 <p>As we aren’t calling the <code>execute_decision/2</code> directly, we need to pass all of the above functions as arguments to the <code>execute/2</code> function, which will pass them onward to the <code>execute_decision/2</code>.</p>
 <p>We can see that even with default values pointing to the “real” implementation, that’s still <strong>a lot</strong> of noise to make testing easier. It will negatively impact the maintenance of the code - here’s an example of what this would look like(don’t bother typing it):</p>
 <pre><code># /apps/naive/lib/naive/strategy.ex
@@ -1088,12 +1080,15 @@ def execute(
 ) do
   ...</code></pre>
 <p>There are already four functions, and we only took care of side-effects causing functions from the first <code>execute_decision/2</code> clause. We can easily see how this very quickly becomes just unmanageable as there would be 10+ “injected” arguments going from the <code>execute/2</code> to <code>execute_decision/2</code>, and only some of them would be used in each clause.</p>
-<p>Additional downsides:
-when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function <strong>multiple times with different arities</strong>. An example could be passing <code>Logger.info/1</code> and <code>Logger.info/2</code>
-we need to give a name to every passed function, sometimes multiple arities (again, how should variables for <code>Logger.info/1</code> and <code>Logger.info/2</code> be called? <code>logger_info_2</code>?
-share amount of arguments negatively impacts code readability</p>
+<p>Additional downsides:</p>
+<ul>
+<li>when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function <strong>multiple times with different arities</strong>. An example could be passing <code>Logger.info/1</code> and <code>Logger.info/2</code></li>
+<li>we need to give a name to every passed function, sometimes multiple arities (again, how should variables for <code>Logger.info/1</code> and <code>Logger.info/2</code> be called? <code>logger_info_2</code>?)</li>
+<li>share amount of arguments negatively impacts code readability</li>
+</ul>
 <p>We can see that passing functions as arguments is just a bad idea in case of making our code testable. It will have the opposite effect, decreasing readability making our code difficult to maintain and follow.</p>
 <p>Important note: Passing functions as arguments is not always bad! A good example could be when different actions need to be performed based on runtime data.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="passing-grouped-functions-as-a-context" class="section level3" number="18.6.2">
 <h3><span class="header-section-number">18.6.2</span> Passing grouped functions as a context</h3>
@@ -1107,9 +1102,10 @@ share amount of arguments negatively impacts code readability</p>
         } = state,
         %{} = context # &lt;= context added
       ) do
-    logger_info = Map.get(context, :logger_info, &amp;Logger.info/1) # &lt;= fetch from context
-    order_limit_buy = Map.get(context, :order_limit_buy, &amp;Binance.order_limit_buy/4) # &lt;= fetch from context
-    leader_notify = Map.get(context, :leader_notify, &amp;Leader.notify/2) # &lt;= fetch from context</code></pre>
+    # vvv fetch from context vvv
+    logger_info = Map.get(context, :logger_info, &amp;Logger.info/1)
+    order_limit_buy = Map.get(context, :order_limit_buy, &amp;Binance.order_limit_buy/4)
+    leader_notify = Map.get(context, :leader_notify, &amp;Leader.notify/2)</code></pre>
 <p>Again this looks like a bad idea. It’s probably marginally better than just sending functions one by one, but not much.</p>
 </div>
 <div id="passing-grouped-modules-as-a-context" class="section level3" number="18.6.3">
@@ -1148,7 +1144,7 @@ defmodule Naive.Strategy do
 </div>
 </div>
 <div id="the-power-with-in" class="section level2" number="18.7">
-<h2><span class="header-section-number">18.7</span> The power with-in</h2>
+<h2><span class="header-section-number">18.7</span> The power <code>with</code>-in</h2>
 <p>In the last section, we looked into different ways to inject modules’ dependencies to avoid side-effects causing functions inside the tests. Besides side-effect causing functions, in functional programming, error handling is also done in a specific manner.</p>
 <p>Many languages introduced concepts like <code>Either</code>, which is a struct that can be either <code>Left</code>(error result) or <code>Right</code>(success result). Those quite nicely fit to the standard Elixir results like <code>{:error, reason}</code> and <code>{:ok, result}</code>. Further, those languages provide multiple functions to work with the <code>Either</code>, like <code>map</code>.</p>
 <pre><code>safeDivide(2, 0) # &lt;= returns Left(&quot;Dividing error&quot;)
@@ -1170,28 +1166,28 @@ def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
 <pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
 .then(Either.flatMap(
     # x = some data generated here
-       safeDivide(2, 1)
-       .then(Either.map(&amp;(&amp;1 * 2)))
-       .then(Either.map(&amp;(&amp;1 * x))) # &lt;= a clause to have access to x
+  safeDivide(2, 1)
+  .then(Either.map(&amp;(&amp;1 * 2)))
+  .then(Either.map(&amp;(&amp;1 * x))) # &lt;= a clause to have access to x
 ))</code></pre>
 <p>The above example is obviously simplified and silly but should give us a gist of what sort of complexity we will very soon get involved in. And, again, we just scratched the surface - there are so many more functions that the <code>Either</code> provides. Besides, writing code in this fashion in Elixir would cause a lot of friction in the team as it’s difficult to find any advantages of using it.</p>
 <div id="idiomatic-error-handling" class="section level3" number="18.7.1">
 <h3><span class="header-section-number">18.7.1</span> Idiomatic error handling</h3>
 <p>To achieve the same results, Elixir provides the <code>with</code> statement:</p>
 <pre><code>  with {:ok, divide_result} &lt;- safeDiv(2,1),
-          {:ok, divide_result_2} &lt;- safeDivide(2, 1)
+       {:ok, divide_result_2} &lt;- safeDivide(2, 1)
   do
     divide_result_2 * 2 * divide_result
   else
     err -&gt; err
   end</code></pre>
 <p>The above code provides <strong>the same</strong> functionality as the one before with <code>Either</code>. We can clearly understand it <strong>without</strong> any knowledge about how <code>Either</code> works, <code>mapping</code>, <code>flatMapping</code> etc. It’s just standard Elixir.</p>
-<p>Again, as in the case of modules’ attributes. Elixir provides a pragmatic way of dealing with errors - just return a tuple with an <code>:error</code> atom. It also provides utility functions like <code>with</code> to deal with errors in an idiomatic way. There’s no reason to introduce concepts like <code>Either</code> as language has built-in concepts/patterns taking care of error situations.</p>
+<p>Again, as in the case of modules’ attributes. Elixir provides a pragmatic way of dealing with errors - just return a tuple with an <code>:error</code> atom. It also provides utility functions like <code>with</code> to deal with errors in an idiomatic way. There’s <strong>no reason</strong> to introduce concepts like <code>Either</code> as language has built-in concepts/patterns taking care of error situations.</p>
 </div>
 </div>
 <div id="do-or-not-to-do" class="section level2" number="18.8">
 <h2><span class="header-section-number">18.8</span> Do or not to do</h2>
-<p>In the last section, we discussed wrapping the results in the <code>Either</code> structs to be able to map, flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing side effects at all?</p>
+<p>In the last section, we discussed wrapping the results in the <code>Either</code> structs to be able to map, flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing any code(side effects) at all?</p>
 <p>That’s the basic idea behind all the category theory related abstractions like the infamous IO Monad.</p>
 <p>I won’t go into a huge amount of details but we can think about it as every time we are calling a <em>special</em> <code>map</code> or <code>flatMap</code>, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:</p>
 <pre><code>  def map(acc, function) do
@@ -1205,6 +1201,7 @@ def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
 <p>In a nutshell, what we would end up with is a function containing a function containing a function… At this moment, I find it very difficult to find any practical reason why somebody would want to do something like this in a dynamically typed language.</p>
 <p>In statically typed languages, there’s an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effect full code.</p>
 <p>In the Elixir without strong typing and with a massive impact on how the code is written and how easy it is to understand, there’s just <strong>no</strong> reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="final-thoughts" class="section level2" number="18.9">
 <h2><span class="header-section-number">18.9</span> Final thoughts</h2>
