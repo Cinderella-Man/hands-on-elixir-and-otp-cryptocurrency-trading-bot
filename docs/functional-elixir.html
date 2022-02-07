@@ -31,7 +31,7 @@
   
   
 <link rel="prev" href="mox-rocks.html"/>
-
+<link rel="next" href="idiomatic-otp.html"/>
 <script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -392,6 +392,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 <li class="chapter" data-level="18.8" data-path="functional-elixir.html"><a href="functional-elixir.html#do-or-not-to-do"><i class="fa fa-check"></i><b>18.8</b> Do or not to do</a></li>
 <li class="chapter" data-level="18.9" data-path="functional-elixir.html"><a href="functional-elixir.html#final-thoughts"><i class="fa fa-check"></i><b>18.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="19" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html"><i class="fa fa-check"></i><b>19</b> Idiomatic OTP</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#objectives-18"><i class="fa fa-check"></i><b>19.1</b> Objectives</a></li>
+<li class="chapter" data-level="19.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#the-concept"><i class="fa fa-check"></i><b>19.2</b> The concept</a></li>
+<li class="chapter" data-level="19.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#initial-implementation"><i class="fa fa-check"></i><b>19.3</b> Initial implementation</a>
+<ul>
+<li class="chapter" data-level="19.3.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#maybe-functions"><i class="fa fa-check"></i><b>19.3.1</b> Maybe functions</a></li>
+<li class="chapter" data-level="19.3.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#testing"><i class="fa fa-check"></i><b>19.3.2</b> Testing</a></li>
+</ul></li>
+<li class="chapter" data-level="19.4" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#idiomatic-solution"><i class="fa fa-check"></i><b>19.4</b> Idiomatic solution</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -866,12 +877,12 @@ trigger_rebuy?/3</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
 # the first execute clause
   def execute_decision(
-        {:place_buy_order, price, quantity},
-        %State{
-          id: id,
-          symbol: symbol
-        } = state
-      ) do
+         {:place_buy_order, price, quantity},
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
     @logger.info(
       &quot;The trader(#{id}) is placing a BUY order &quot; &lt;&gt;
         &quot;for #{symbol} @ #{price}, quantity: #{quantity}&quot;
@@ -897,15 +908,15 @@ trigger_rebuy?/3</p>
 <p>In case of placing a sell order, we will pattern match on a tuple containing the <code>:place_sell_order</code> atom and slim down on pattern matching:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def execute_decision(
-        {:place_sell_order, sell_price},
-        %State{
-          id: id,
-          symbol: symbol,
-          buy_order: %Binance.OrderResponse{
-            orig_qty: quantity
-          }
-        } = state
-      ) do
+         {:place_sell_order, sell_price},
+         %State{
+           id: id,
+           symbol: symbol,
+           buy_order: %Binance.OrderResponse{
+             orig_qty: quantity
+           }
+         } = state
+       ) do
     @logger.info(
       &quot;The trader(#{id}) is placing a SELL order for &quot; &lt;&gt;
         &quot;#{symbol} @ #{sell_price}, quantity: #{quantity}.&quot;
@@ -926,17 +937,17 @@ trigger_rebuy?/3</p>
 <p>In case of fetching the buy order, we will pattern match on a <code>:fetch_buy_order</code> atom and slim down on pattern matching:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def execute_decision(
-        :fetch_buy_order,
-        %State{
-          id: id,
-          symbol: symbol,
-          buy_order:
-            %Binance.OrderResponse{
-              order_id: order_id,
-              transact_time: timestamp
-            } = buy_order
-        } = state
-      ) do
+         :fetch_buy_order,
+         %State{
+           id: id,
+           symbol: symbol,
+           buy_order:
+             %Binance.OrderResponse{
+               order_id: order_id,
+               transact_time: timestamp
+             } = buy_order
+         } = state
+       ) do
     {:ok, %Binance.Order{} = current_buy_order} =
       @binance_client.get_order(
         symbol,
@@ -960,12 +971,12 @@ trigger_rebuy?/3</p>
 <p>In case of terminating the trader, we will pattern match on a <code>:exit</code> atom and slim down on pattern matching:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def execute_decision(
-        :exit,
-        %State{
-          id: id,
-          symbol: symbol
-        } = state
-      ) do
+         :exit,
+         %State{
+           id: id,
+           symbol: symbol
+         }
+       ) do
     @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
     {:stop, :normal, state}
   end</code></pre>
@@ -975,17 +986,17 @@ trigger_rebuy?/3</p>
 <p>In case of fetching the sell order, we will pattern match on a <code>:fetch_sell_order</code> atom and slim down on pattern matching:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def execute_decision(
-        :fetch_sell_order,
-        %State{
-          id: id,
-          symbol: symbol,
-          sell_order:
-            %Binance.OrderResponse{
-              order_id: order_id,
-              transact_time: timestamp
-            } = sell_order
-        } = state
-      ) do
+         :fetch_sell_order,
+         %State{
+           id: id,
+           symbol: symbol,
+           sell_order:
+             %Binance.OrderResponse{
+               order_id: order_id,
+               transact_time: timestamp
+             } = sell_order
+         } = state
+       ) do
     {:ok, %Binance.Order{} = current_sell_order} =
       @binance_client.get_order(
         symbol,
@@ -1007,12 +1018,12 @@ trigger_rebuy?/3</p>
 <p>In case of triggering the rebuy procedure, we will pattern match on a <code>:rebuy</code> atom, slim down on pattern matching and simplify the function a fair bit(no branching required anymore - yay!):</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def execute_decision(
-        :rebuy,
-        %State{
-          id: id,
-          symbol: symbol
-        } = state
-      ) do
+         :rebuy,
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
     @logger.info(&quot;Rebuy triggered for #{symbol} by the trader(#{id})&quot;)
     new_state = %{state | rebuy_notified: true}
     @leader.notify(:rebuy_triggered, new_state)
@@ -1211,8 +1222,8 @@ def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
           </div>
         </div>
       </div>
-<a href="mox-rocks.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-
+<a href="mox-rocks.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="idiomatic-otp.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
