@@ -490,20 +490,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="the-reasoning-behind-the-functional-approach" class="section level2" number="18.2">
 <h2><span class="header-section-number">18.2</span> The reasoning behind the functional approach</h2>
-<p>Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a the good reason - a clear focus on OTP) the conversation about functional programming.</p>
+<p>Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a very good reason - a clear focus on OTP) the conversation about functional programming.</p>
 <p>But wait, what? We are already using concepts like higher-order functions - isn’t that enough?</p>
-<p>We indeed use some functional patterns, but we never dug deeper into what Elixir developers <strong>should</strong> know(and apply) and, most importantly, why.</p>
+<p>We indeed use some functional patterns, but we never dug deeper into what Elixir developers <strong>should</strong> know(and apply) and, most importantly, <strong>why</strong>.</p>
 <p>In a nutshell, the selling point of functional programming is that applying it will make your code easier to reason about and test. Tests dramatically improve software quality. The easier they are to write, there’s less excuse not to write them - as simple as that.</p>
 <p>We will start from the basics and look into different ways of implementing functional concepts, considering Elixir’s strengths and weaknesses.</p>
 </div>
 <div id="simplifying-by-splitting" class="section level2" number="18.3">
 <h2><span class="header-section-number">18.3</span> Simplifying by splitting</h2>
 <p>Note: This section could appear to be a bit “random”, but I added it to aid continuity of refactoring steps(refactoring those callbacks later would cause a fair amount of complexity).</p>
-<p>Let’s look at our strategy inside the <code>Naive.Trader</code> module. In this section, we will focus on its (<code>handle_info/2</code>) callback functions.</p>
-<p>We are looking for functions that do more than “one thing” to split them into multiple functions.</p>
-<p>The first callback places a buy order - it has a single responsibility and is easy to follow.</p>
-<p>The second callback takes care of race conditions - the same story, easy to understand.</p>
-<p>The third callback is the one we will focus on. It branches using the <code>if</code> statement, and we could describe it as “fetch and maybe place a sell order” function. The “and” in the description clearly indicates that it’s really two functions glued together. We will split it into “fetch buy order” and “place a sell order” functions(below code replaces the 3rd <code>handle_info/2</code> callback):</p>
+<p>Let’s look at our strategy inside the <code>Naive.Trader</code> module. In this section, we will focus on its (<code>handle_info/2</code>) callback function.</p>
+<p>We are looking for clauses that do more than “one thing” to split them into multiple clauses:</p>
+<ul>
+<li>The first callback places a buy order - it has a single responsibility and is easy to follow.</li>
+<li>The second callback takes care of race conditions - the same story, easy to understand.</li>
+<li>The third callback is the one we will focus on. It branches using the <code>if</code> statement, and we could describe it as “fetch and maybe place a sell order” function. The “and” in the description clearly indicates that it’s really two functions glued together. We will split it into “fetch buy order” and “place a sell order” functions(below code replaces the 3rd <code>handle_info/2</code> callback):</li>
+</ul>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def handle_info(
         %TradeEvent{},
@@ -551,6 +553,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
             } = buy_order
         } = state
       ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
+
     {:ok, %Binance.Order{} = current_buy_order} =
       @binance_client.get_order(
         symbol,
@@ -562,14 +566,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
     buy_order = %{buy_order | status: current_buy_order.status}
 
-    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
     new_state = %{state | buy_order: buy_order}
-
     @leader.notify(:trader_state_updated, new_state)
     {:noreply, new_state}
   end</code></pre>
 <p>The first function takes care of placing a sell order. The second one fetches the buy order.</p>
-<p>We can now move to the next callback, similar to the last one we could describe as “fetch the sell order and maybe terminate the trader”. We will split it into two callbacks: “fetch the sell order” and “terminate trader”.</p>
+<ul>
+<li>We can now move to the next clause, similar to the last one we could describe as “fetch the sell order and maybe terminate the trader”. We will split it into two callbacks: “fetch the sell order” and “terminate trader”.</li>
+</ul>
 <div style="page-break-after: always;"></div>
 <p>The code below replaces the 5th <code>handle_info/2</code> callback:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
@@ -601,6 +605,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
             } = sell_order
         } = state
       ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
+
     {:ok, %Binance.Order{} = current_sell_order} =
       @binance_client.get_order(
         symbol,
@@ -612,12 +618,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
     sell_order = %{sell_order | status: current_sell_order.status}
 
-    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
     new_state = %{state | sell_order: sell_order}
+    @leader.notify(:trader_state_updated, new_state)
     {:noreply, new_state}
   end</code></pre>
 <p>The first function takes care of terminating the trader. The second function is fetching the sell order.</p>
-<p>That finishes our first refactoring round, but I need to admit that our change impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we <strong>won’t</strong> immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.</p>
+<p>That finishes our first refactoring round, but I need to admit that our change has impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we <strong>won’t</strong> immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.</p>
 <p>Changes like this require approval from the business in a work situation, but it’s a good showcase of the situation where we can propose a solution that will simplify the code(the benefits will become evident in the following sections).</p>
 <p>We can confirm that we have broken our tests by running our integration testsuite:</p>
 <div class="sourceCode" id="cb385"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb385-1"><a href="functional-elixir.html#cb385-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>integration <span class="ex">mix</span> test.integration</span>
@@ -939,6 +945,8 @@ defmodule Naive.Strategy do
              } = buy_order
          } = state
        ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
+
     {:ok, %Binance.Order{} = current_buy_order} =
       @binance_client.get_order(
         symbol,
@@ -950,9 +958,7 @@ defmodule Naive.Strategy do
 
     buy_order = %{buy_order | status: current_buy_order.status}
 
-    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
     new_state = %{state | buy_order: buy_order}
-
     @leader.notify(:trader_state_updated, new_state)
     {:noreply, new_state}
   end</code></pre>
@@ -966,7 +972,7 @@ defmodule Naive.Strategy do
          %State{
            id: id,
            symbol: symbol
-         }
+         } = state
        ) do
     @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
     {:stop, :normal, state}
@@ -989,6 +995,8 @@ defmodule Naive.Strategy do
              } = sell_order
          } = state
        ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
+
     {:ok, %Binance.Order{} = current_sell_order} =
       @binance_client.get_order(
         symbol,
@@ -1000,7 +1008,6 @@ defmodule Naive.Strategy do
 
     sell_order = %{sell_order | status: current_sell_order.status}
 
-    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
     new_state = %{state | sell_order: sell_order}
     {:noreply, new_state}
   end</code></pre>
@@ -1035,8 +1042,8 @@ defmodule Naive.Strategy do
 </div>
 <div id="dealing-with-dirty-code" class="section level2" number="18.5">
 <h2><span class="header-section-number">18.5</span> Dealing with dirty code</h2>
-<p>In the last section, we converted all the <code>handle_info/2</code> callback functions into the <code>generate_decision/2</code> function. That’s excellent progress, but we still have the strategy logic inside the <code>Naive.Trader</code> module.</p>
-<p>Let’s move the <code>generate_decision/2</code> function(together with all functions that it depends on, like the <code>broadcast_order/1</code> and the <code>require Logger</code>) from the <code>Naive.Trader</code> module to the <code>Naive.Strategy</code> module.</p>
+<p>In the last section, we’ve split the <code>handle_info/2</code> clauses into the <code>generate_decision/2</code> and <code>execute_decision/2</code> functions. That’s excellent progress, but we still have the strategy logic inside the <code>Naive.Trader</code> module.</p>
+<p>Let’s move the <code>execute_decision/2</code> function(together with all the code that it depends on, like the <code>broadcast_order/1</code> and <code>convert_to_order/1</code> functions as well as a copy of the <code>require Logger</code>) from the <code>Naive.Trader</code> module to the <code>Naive.Strategy</code> module.</p>
 <p>As the <code>generate_decision/2</code> function is causing side effects, we don’t want it to be called directly from the outside of the module, so we will need to make it private.</p>
 <p>Changing the <code>execute_decision/2</code> function(now inside the <code>Naive.Strategy</code> module) to private will cause a problem with the <code>handle_info/2</code> callback function inside the <code>Naive.Trader</code> module as it relies on the <code>execute_decision/2</code> function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn’t share with the <code>Naive.Trader</code> module. That’s why we will move the <strong>body</strong> of the <code>handle_info/2</code> callback function into a new function called <code>execute/2</code> inside the <code>Naive.Strategy</code> module:</p>
 <pre><code># /apps/naive/lib/naive/strategy.ex
@@ -1044,11 +1051,12 @@ defmodule Naive.Strategy do
     generate_decision(trade_event, state)
     |&gt; execute_decision(state)
   end</code></pre>
-<p>Before we update the <code>Naive.Trader</code> module to use the <code>execute/2</code> function, we need to address another issue that moving the <code>execute_decision/2</code> caused. At this moment, all of the clauses return GenServer specific structs. What we really need to return to the trader is an atom indicating should it continue or terminate and the updated state:</p>
+<p>Before updating the <code>Naive.Trader</code> module to use the <code>execute/2</code> function, we need to address another issue that moving the <code>execute_decision/2</code> caused. At this moment, all of the clauses return GenServer specific tuples. What we really need to return to the trader is an atom indicating should it continue or terminate together with the updated state:</p>
 <pre><code># /apps/naive/lib/naive/strategy.ex
-# last lines inside the `execute_decision/2` functions
-{:ok, new_state} # &lt;= previously {:noreply, new_state} (6 times)
-:exit # &lt;= previously {:stop, :normal, state}</code></pre>
+# last lines inside the `execute_decision/2` clauses
+{:ok, new_state} # &lt;= previously {:noreply, new_state} (5 times)
+{:ok, state} # &lt;= previously {:noreply, state} (once)
+:exit # &lt;= previously {:stop, :normal, state} + remove `state` pattern match (once)</code></pre>
 <p>We can now update the <code>handle_info/2</code> callback function to call the new “interface” of the <code>Naive.Strategy</code> module that we just created and act accordingly to the result:</p>
 <pre><code># /apps/naive/lib/naive/trader.ex
   def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
@@ -1075,7 +1083,7 @@ def execute(
   %State{} = state,
   logger_info \\ &amp;Logger.info/1, # &lt;= function injected
   order_limit_buy \\ &amp;Binance.order_limit_buy/4, # &lt;= function injected
-  pubsub_broadcast \\ PubSub.broadcast/3, # &lt;= function injected
+  pubsub_broadcast \\ &amp;PubSub.broadcast/3, # &lt;= function injected
   notify_leader \\ &amp;Leader.notify/2 # &lt;= function injected
 ) do
   ...</code></pre>
@@ -1128,7 +1136,7 @@ def execute(
 </div>
 <div id="injecting-modules-to-modules-attributes-based-on-the-configuration" class="section level3" number="18.6.4">
 <h3><span class="header-section-number">18.6.4</span> Injecting modules to module’s attributes based on the configuration</h3>
-<p>And we finally got there - we have come full circle. This is the approach that we previously used inside the <code>Naive.Trader</code> module(you can go ahead and add them to the <code>Naive.Strategy</code> module):</p>
+<p>And we finally got there - we have come a full circle. This is the approach that we previously used inside the <code>Naive.Trader</code> module(you can go ahead and add them to the <code>Naive.Strategy</code> module):</p>
 <pre><code># /apps/naive/lib/naive/strategy.ex
 defmodule Naive.Strategy do
   ...
@@ -1139,7 +1147,7 @@ defmodule Naive.Strategy do
   @pubsub_client Application.get_env(:core, :pubsub_client)</code></pre>
 <p>We looked into different ways to inject dependencies to understand their downsides.</p>
 <p>Sometimes, injecting values(like modules) as module attributes can feel like a “global state”, “singleton”, or similar antipattern. We need to understand that each programming language provides different ways to solve common programming problems. Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules’ attributes.</p>
-<p>As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there’s just <strong>no better way</strong> to do it in Elixir, and now we know why(based on the issues with alternative approaches).</p>
+<p>As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there’s just <strong>no better way</strong> to do it in Elixir, and now we know why(based on the issues with the alternative approaches).</p>
 <p>Together with the module attributes, our code should be now fully functional.</p>
 </div>
 </div>
@@ -1148,28 +1156,28 @@ defmodule Naive.Strategy do
 <p>In the last section, we looked into different ways to inject modules’ dependencies to avoid side-effects causing functions inside the tests. Besides side-effect causing functions, in functional programming, error handling is also done in a specific manner.</p>
 <p>Many languages introduced concepts like <code>Either</code>, which is a struct that can be either <code>Left</code>(error result) or <code>Right</code>(success result). Those quite nicely fit to the standard Elixir results like <code>{:error, reason}</code> and <code>{:ok, result}</code>. Further, those languages provide multiple functions to work with the <code>Either</code>, like <code>map</code>.</p>
 <pre><code>safeDivide(2, 0) # &lt;= returns Left(&quot;Dividing error&quot;)
-.then(Either.map(&amp;(&amp;1 * 2))) &lt;= still Left(&quot;Dividing error&quot;)
+|&gt; then(Either.map(&amp;(&amp;1 * 2))) # &lt;= still Left(&quot;Dividing error&quot;)
 
 safeDivide(2, 1) # &lt;= returns Right(2)
-.then(Either.map(&amp;(&amp;1 * 2))) &lt;= returns Right(4)</code></pre>
+|&gt; then(Either.map(&amp;(&amp;1 * 2))) # &lt;= returns Right(4)</code></pre>
 <p>The above code will use hypothetical <code>Left('Dividing error')</code> or <code>Right(result)</code>. The <code>Either.map/2</code> is a special <code>map</code> function that runs the passed function if it’s <code>Right</code> or completely ignores it when it’s <code>Left</code> - it could be visualized as:</p>
 <pre><code>def map(%Either.Left{} = left, _fun), do: left
-def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
+def map(%Either.Right{result: v}, fun), do: %Either.Right{result: fun.(v)}</code></pre>
 <p>This is nice and great, but what if the function inside the <code>Either.map/2</code> returns another <code>Either</code>? Like:</p>
 <pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
-.then(Either.map(&amp;(safeDivide(&amp;1, 1)))) &lt;= still Right(Right(2))</code></pre>
+|&gt; then(Either.map(&amp;(safeDivide(&amp;1, 1)))) # &lt;= now Right(Right(2))!?</code></pre>
 <p>Now we need to understand those abstractions to be able to decide should we <code>map</code> or <code>flatMap</code>(that’s the function that will not wrap the function result into the <code>Right</code>):</p>
 <pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
-.then(Either.flatMap(&amp;(safeDivide(&amp;1, 1)))) &lt;= still Right(2)</code></pre>
+|&gt; then(Either.flatMap(&amp;(safeDivide(&amp;1, 1)))) &lt;= still Right(2)</code></pre>
 <p>And that is just the beginning of the complexities that those abstractions bring.</p>
 <p>Furthermore, let’s say that inside the first <code>Either.map/2</code> callback, we will have some variable(s) that we would like to use later on. We are now deep inside closures world like the following:</p>
 <pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
-.then(Either.flatMap(
+|&gt; then(Either.flatMap(fn res -&gt;
     # x = some data generated here
-  safeDivide(2, 1)
-  .then(Either.map(&amp;(&amp;1 * 2)))
-  .then(Either.map(&amp;(&amp;1 * x))) # &lt;= a clause to have access to x
-))</code></pre>
+    safeDivide(2, 1)
+    |&gt; then(Either.map(&amp;(&amp;1 * 2)))
+    |&gt; then(Either.map(&amp;(&amp;1 * x))) # &lt;= a clause to have access to x
+  end))</code></pre>
 <p>The above example is obviously simplified and silly but should give us a gist of what sort of complexity we will very soon get involved in. And, again, we just scratched the surface - there are so many more functions that the <code>Either</code> provides. Besides, writing code in this fashion in Elixir would cause a lot of friction in the team as it’s difficult to find any advantages of using it.</p>
 <div id="idiomatic-error-handling" class="section level3" number="18.7.1">
 <h3><span class="header-section-number">18.7.1</span> Idiomatic error handling</h3>
@@ -1189,7 +1197,7 @@ def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
 <h2><span class="header-section-number">18.8</span> Do or not to do</h2>
 <p>In the last section, we discussed wrapping the results in the <code>Either</code> structs to be able to map, flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing any code(side effects) at all?</p>
 <p>That’s the basic idea behind all the category theory related abstractions like the infamous IO Monad.</p>
-<p>I won’t go into a huge amount of details but we can think about it as every time we are calling a <em>special</em> <code>map</code> or <code>flatMap</code>, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:</p>
+<p>I won’t go into a vast amount of details. Still, we can think about it as every time we are calling a <em>special</em> <code>map</code> or <code>flatMap</code>, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:</p>
 <pre><code>  def map(acc, function) do
     fn -&gt;
       case acc.() do
@@ -1199,16 +1207,17 @@ def map(%Either.Right(v), fun), do: %Either.Right{result: fun.(v)}</code></pre>
     end
   end</code></pre>
 <p>In a nutshell, what we would end up with is a function containing a function containing a function… At this moment, I find it very difficult to find any practical reason why somebody would want to do something like this in a dynamically typed language.</p>
-<p>In statically typed languages, there’s an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effect full code.</p>
-<p>In the Elixir without strong typing and with a massive impact on how the code is written and how easy it is to understand, there’s just <strong>no</strong> reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.</p>
+<p>In statically typed languages, there’s an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effectfull code.</p>
+<p>In the Elixir, without strong typing and with a massive impact on how the code is written and how easy it is to understand, there’s just <strong>no practical</strong> reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="final-thoughts" class="section level2" number="18.9">
 <h2><span class="header-section-number">18.9</span> Final thoughts</h2>
-<p>Every programming language needs to provide tools to handle common concerns like errors or dependency injection.</p>
+<p>Every programming language needs to provide tools to handle common concerns like error handling or dependency injection.</p>
 <p>Elixir provides excellent tools to handle both of those concerns using the <code>with</code> statement and modules’ attributes.</p>
-<p>Without a type system, there’s no practical reason why anybody would introduce category theory-based abstraction like Monads. The resulting code will be complicated to deal with, and as in the case of many other programming languages like Ocaml or Clojure, the pragmatic way is to execute side effects.</p>
-<p><strong>It’s the developers’ responsibility to design code in a way that maximizes the amount of pure code and push side effects to the edge.</strong> The typical pattern would be to “prepare” (group all logic before side effects) or to “post process” the results of multiple side effects (group pure logic after side effects).</p>
+<p>Without a type system, there’s no practical reason why anybody would introduce category theory-based abstractions like Monads. The resulting code will be complicated to deal with, and as in the case of many other <strong>functional</strong> programming languages like Ocaml or Clojure, the pragmatic way is to execute side effects.</p>
+<p><strong>It’s the developers’ responsibility to design code in a way that maximizes the amount of pure code and push side effects to “the edge”.</strong> The typical pattern would be to “prepare” (group all logic before side effects) or to “post process” the results of multiple side effects (group pure logic after side effects).</p>
+<p>That’s all in regards to functional programming in Elixir. In the next chapter, we will look into what the idiomatic Elixir code looks like.</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18">Github</a></p>
 
