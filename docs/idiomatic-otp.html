@@ -401,6 +401,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="19.3.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#maybe-functions"><i class="fa fa-check"></i><b>19.3.1</b> Maybe functions</a></li>
 <li class="chapter" data-level="19.3.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#testing"><i class="fa fa-check"></i><b>19.3.2</b> Testing</a></li>
+<li class="chapter" data-level="19.3.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#supervision"><i class="fa fa-check"></i><b>19.3.3</b> Supervision</a></li>
 </ul></li>
 <li class="chapter" data-level="19.4" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#idiomatic-solution"><i class="fa fa-check"></i><b>19.4</b> Idiomatic solution</a></li>
 </ul></li>
@@ -502,7 +503,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 defmodule Indicator.Ohlc.Worker do
   use GenServer
 
-  def start_link(symbol, duration) do
+  def start_link({symbol, duration}) do
     GenServer.start_link(__MODULE__, {symbol, duration})
   end
 
@@ -534,7 +535,7 @@ end</code></pre>
 
     {:ok, {symbol, duration}}
   end</code></pre>
-<p>Following the pattern established by the <code>Naive.Trader</code>, we use the module’s attributes(with values based on config) instead of hardcoded module names.</p>
+<p>Following the pattern established by the <code>Naive.Trader</code>, we use the module’s attributes(with values based on the configuration) instead of hardcoded module names.</p>
 <p>As we subscribed to the PubSub, we need to provide a callback that will handle the incoming trade events:</p>
 <pre><code># /apps/indicator/lib/indicator/ohlc/worker.ex
   # add this at the top
@@ -565,9 +566,13 @@ end</code></pre>
     :close
   ]</code></pre>
 <p>Most of the above are self-descriptive, besides the <code>start_time</code>(a Unix timestamp) and the <code>duration</code>(the timeframe in minutes).</p>
-<p>We can now progress to the implementation of the <code>process/2</code> function. As we discussed in the last chapter, we will try to maximize the amount of pure code. First, we will focus on merging the trade event’s data with the current OHLC data. Two things can happen, either:
-trade event’s <code>trade_time</code> is <strong>within</strong> the current OHLC timeframe. Trade event’s price will get merged to the current OHLC
-trade event’s <code>trade_time</code> is <strong>outside</strong> the current OHLC timeframe. The current OHLC will be returned together with a new OHLC based on the trade event’s price</p>
+<p>We can now progress to the implementation of the <code>process/2</code> function, but instead of focusing on it, we will start from the “deepest”/“bottom” function that it will rely on and work our way up. As we discussed in the last chapter, we will try to maximize the amount of pure code.</p>
+<p>We can imagine that the bottom function will be involved in merging of the trade event’s data with the current OHLC data. Two things can happen, either:</p>
+<ul>
+<li>trade event’s <code>trade_time</code> is <strong>within</strong> the current OHLC timeframe. Trade event’s price will get merged to the current OHLC</li>
+<li>trade event’s <code>trade_time</code> is <strong>outside</strong> the current OHLC timeframe. The current(now old) OHLC will be returned together with a new OHLC based on the trade event’s price</li>
+</ul>
+<div style="page-break-after: always;"></div>
 <p>Here’s the implementation:</p>
 <pre><code># /apps/indicator/lib/indicator/ohlc.ex
   def merge_price(%__MODULE__{} = ohlc, price, trade_time) do
@@ -577,30 +582,15 @@ trade event’s <code>trade_time</code> is <strong>outside</strong> the current 
       {ohlc, generate_ohlc(ohlc.symbol, ohlc.duration, price, trade_time)}
     end
   end</code></pre>
-<p>together with the <code>within_current_timeframe/3</code> function:</p>
+<p>together with the <code>within_current_timeframe/3</code> and <code>generate_ohlc/3</code> function:</p>
 <pre><code># /apps/indicator/lib/indicator/ohlc.ex
   def within_current_timeframe(start_time, duration, trade_time) do
     end_time = start_time + duration * 60
     trade_time = div(trade_time, 1000)
 
     start_time &lt;= trade_time &amp;&amp; trade_time &lt; end_time
-  end</code></pre>
-<p>Besides merging the incoming price into OHLC struct, we need to also deal with the initial state of the worker(the <code>{symbol, duration}</code> tuple). Let’s add a <code>process/2</code> function with two clauses handling each of those cases:</p>
-<pre><code># /apps/indicator/lib/indicator/ohlc.ex
-  def process(%__MODULE__{} = ohlc, %TradeEvent{} = trade_event) do
-    {old_ohlc, new_ohlc} = merge_price(ohlc, trade_event.price, trade_event.trade_time)
-    maybe_broadcast(old_ohlc)
-    new_ohlc
   end
-
-  def process({symbol, duration}, %TradeEvent{} = trade_event) do
-    generate_ohlc(symbol, duration, trade_event.price, trade_event.trade_time)
-  end</code></pre>
-<p>The second clause takes care of the initial state of the OHLC worker(happens upon receiving the first trade event - once in the lifetime of the worker process).</p>
-<p>The first clause handles all the other trade events.</p>
-<p>This order of clauses could appear weird, but it makes a lot of sense as Elixir will try pattern match clauses from the top, and in our case, the first(top) clause will be used for almost all of the calls.</p>
-<p>Inside the second clause, we used an additional helper that will fill the OHLC struct based on trade event’s <code>price</code> and <code>trade_time</code>:</p>
-<pre><code># /apps/indicator/lib/indicator/ohlc.ex
+  
   def generate_ohlc(symbol, duration, price, trade_time) do
     start_time = div(div(div(trade_time, 1000), 60), duration) * duration * 60
 
@@ -613,11 +603,28 @@ trade event’s <code>trade_time</code> is <strong>outside</strong> the current 
       low: price,
       close: price
     }
+  end  </code></pre>
+<p>Moving up the call chain, besides merging the trade event’s data into OHLC data, we need to deal with the initial state of the worker(the <code>{symbol, duration}</code> tuple). Let’s add a <code>process/2</code> function with two clauses handling each of those cases:</p>
+<pre><code># /apps/indicator/lib/indicator/ohlc.ex
+  # add the below line at the top of the module
+  alias Core.Struct.TradeEvent
+
+  def process(%__MODULE__{} = ohlc, %TradeEvent{} = trade_event) do
+    {old_ohlc, new_ohlc} = merge_price(ohlc, trade_event.price, trade_event.trade_time)
+    maybe_broadcast(old_ohlc)
+    new_ohlc
+  end
+
+  def process({symbol, duration}, %TradeEvent{} = trade_event) do
+    generate_ohlc(symbol, duration, trade_event.price, trade_event.trade_time)
   end</code></pre>
+<p>The second clause takes care of the initial state of the OHLC worker(happens upon receiving the first trade event - once in the lifetime of the worker process).</p>
+<p>The first clause handles all the other trade events.</p>
+<p>This order of clauses could appear weird, but it makes a lot of sense as Elixir will try pattern match clauses from the top, and in our case, the first(top) clause will be used for almost all of the calls.</p>
 <div id="maybe-functions" class="section level3" number="19.3.1">
 <h3><span class="header-section-number">19.3.1</span> Maybe functions</h3>
 <p>Let’s get back to the first clause of the <code>process/2</code> function as it uses another Elixir/Erlang pattern that we didn’t discuss before - the <code>maybe_do_x</code> functions.</p>
-<p>In case of the incoming trade event’s <code>trade_time</code> is outside of the current OHLC’s timeframe, we would like to broadcast the current OHLC and return the new OHLC(based on the trade event’s data). Otherwise(trade event’s <code>trade_time</code> within the current OHLC), the trade event’s <code>price</code> is merged into the current OHLC, and it’s not broadcasted.</p>
+<p>In case of the incoming trade event’s <code>trade_time</code> <strong>outside</strong> of the current OHLC’s timeframe, we would like to <strong>broadcast</strong> the current OHLC and return a new OHLC(based on the trade event’s data). Otherwise(trade event’s <code>trade_time</code> <strong>within</strong> the current OHLC), the trade event’s <code>price</code> is merged into the current OHLC, and it’s <strong>not</strong> broadcasted.</p>
 <p>This sounds very similar to the if-else, but it’s most of the time achieved using the pattern matching:</p>
 <pre><code># /apps/indicator/lib/indicator/ohlc.ex
  # add below lines at the top of the module
@@ -652,12 +659,20 @@ iex(1)&gt; Streamer.start_streaming(&quot;XRPUSDT&quot;)
 iex(2)&gt; Indicator.Ohlc.Worker.start_link({&quot;XRPUSDT&quot;, 1})
 {:ok, #PID&lt;0.447.0&gt;}
 ...
-22:45:00.335 [debug] Broadcasting OHLC: %Indicator.Ohlc{close: &quot;0.63880000&quot;, duration: 1, high: &quot;0.63890000&quot;, low: &quot;0.63840000&quot;, open: &quot;0.63860000&quot;, start_time: 1644014640, symbol: &quot;XRPUSDT&quot;}</code></pre>
-<p>The above test confirms that we can manually start a single OHLC worker that will aggregate data over a single minute timeframe. We need to update the supervision tree to start a dynamic supervisor:</p>
+22:45:00.335 [debug] Broadcasting OHLC: %Indicator.Ohlc{close: &quot;0.63880000&quot;, duration: 1,
+high: &quot;0.63890000&quot;, low: &quot;0.63840000&quot;, open: &quot;0.63860000&quot;, start_time: 1644014640,
+symbol: &quot;XRPUSDT&quot;}</code></pre>
+<p>The above test confirms that we can manually start a single OHLC worker that will aggregate data over a single minute timeframe.</p>
+</div>
+<div id="supervision" class="section level3" number="19.3.3">
+<h3><span class="header-section-number">19.3.3</span> Supervision</h3>
+<p>To supervise multiple <code>Indicators.Worker</code>s we will use the <code>DynamicSupervisor</code>.
+We need to update the Indicators application’s supervision tree to start a dynamic supervisor:</p>
 <pre><code># /apps/indicator/lib/indicator/application.ex
     children = [
       {DynamicSupervisor, name: Indicator.DynamicSupervisor}
     ]</code></pre>
+<div style="page-break-after: always;"></div>
 <p>We can now add <code>aggregate_ohlcs/1</code> function that will start all workers:</p>
 <pre><code># /apps/indicator/lib/indicator.ex
   def aggregate_ohlcs(symbol) do
@@ -669,32 +684,38 @@ iex(2)&gt; Indicator.Ohlc.Worker.start_link({&quot;XRPUSDT&quot;, 1})
       )
     )
   end</code></pre>
-<p>We can now start the aggregation just by running the following:</p>
+<p>We can now start multiple OHLC workers just by running a single function:</p>
 <pre><code>$ iex -S mix
 iex(1)&gt; Streamer.start_streaming(&quot;XRPUSDT&quot;)
 ...
 iex(2)&gt; Indicator.aggregate_ohlcs(&quot;XRPUSDT&quot;)
 {:ok, #PID&lt;0.447.0&gt;}</code></pre>
-<p>The above will start six OHLC worker processes supervised under the <code>Indicator.DynamicSupervisor</code> process.</p>
+<p>The above calls will start six OHLC worker processes supervised under the <code>Indicator.DynamicSupervisor</code> process.</p>
 <p>We could continue with this exercise, add a Registry to be able to stop the indicators and a database to be able to autostart them. Those improvements would get the “indicators” application in line with the other applications, but that’s not the goal of this chapter.</p>
 </div>
 </div>
 <div id="idiomatic-solution" class="section level2" number="19.4">
 <h2><span class="header-section-number">19.4</span> Idiomatic solution</h2>
-<p>What we will focus on is the <strong>usage</strong> of processes(in our case GenServers) in our solution. We’ve split our logic between multiple processes, each aggregating a single timeframe. All of those processes work in the same way. They subscribe to the PubSub topic, merge the incoming data into OHLC structs, and potentially broadcast them. The only difference is the timeframe that they use for merging data.</p>
-<p>The solution feels very clean, but also we are using multiple processes to aggregate data for each symbol. In a situation like this, we should always ask ourselves:
-- do we need that many processes?
-- are we using them to achieve parallelism? Is it required?
-- could we reorganize our code to use fewer processes?</p>
+<p>What we will focus on is the <strong>usage</strong> of processes(in our case the GenServers) in our solution. We’ve split our logic between multiple processes, each aggregating a single timeframe. All of those processes work in the same way. They subscribe to the PubSub topic, merge the incoming data into OHLC structs, and potentially broadcast them. The only difference is the timeframe that they use for merging data.</p>
+<p>The solution feels very clean, but also we are using multiple processes to aggregate data for each symbol. In a situation like this, we should always ask ourselves:</p>
+<ul>
+<li>do we need that many processes?</li>
+<li>are we using them to achieve parallelism? Is it required?</li>
+<li>could we reorganize our code to use fewer processes?</li>
+</ul>
 <p>The main idea is to keep our code as simple as possible and only use processes when it’s absolutely required.</p>
+<div style="page-break-after: always;"></div>
 <p>Instead of a single worker being responsible for aggregation within a single timeframe, we could restructure our code to make it responsible for all timeframes of the symbol.</p>
-<p>This improvement would:
-- make our merging code a little bit complex(now it would merge multiple timeframes at once)
-- decrease the amount of PubSub subscribers by six (instead of six processes per symbol now we would have just one)
-- potentially decrease the amount of broadcasted messages (we could group OHLC structs into a single message)
-- in case we would want to have all of the timeframes generated for a symbol or none(in case of error), we would probably end up with an additional supervision(<code>one_for_all</code>) level that would be started for each of the symbols - this is not a concern anymore
-- we will be unable to aggregate nor broadcast in parallel(as we are now dealing with one process)</p>
-<p>We can see that things can get really complex really quick. Processes are a really powerful tool, and it’s the responsibility lays on us developers to use them wisely - they must not be used for code organization.</p>
+<p>This improvement would:</p>
+<ul>
+<li>make our merging code a little bit complex(it would merge multiple timeframes at once)</li>
+<li>decrease the amount of PubSub subscribers by six (instead of six processes per symbol, we would have just one)</li>
+<li>potentially decrease the amount of broadcasted messages (we could group OHLC structs into a single message)</li>
+<li>allow a single worker single worker to decide what to do with all current OHLCs in case of errors, <strong>without</strong> need for any additional symbol supervision level(like <code>one_for_all</code>)</li>
+<li>make it <strong>impossible</strong> to aggregate nor broadcast OHLCS of the same symbol in <strong>parallel</strong></li>
+</ul>
+<p>We can see that processes could get really complex really quick(supervision trees, too many messages etc).
+Processes are a really powerful tool, and the responsibility lays on us developers to use them wisely - they <strong>must not</strong> be used for code organization.</p>
 <p>Enough theory - let’s look into how we could update our <code>Indicator.Ohlc</code> module to be able to deal with multiple timeframes at once.</p>
 <p>Initially, we could be tempted to update the <code>process/2</code> function:</p>
 <pre><code># /apps/indicator/lib/indicator.ex
