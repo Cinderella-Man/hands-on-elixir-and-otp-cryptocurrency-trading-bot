@@ -1143,9 +1143,9 @@ defmodule Naive.Strategy do
   ...
 
   @binance_client Application.compile_env(:naive, :binance_client)
-  @leader Application.get_env(:naive, :leader)
-  @logger Application.get_env(:core, :logger)
-  @pubsub_client Application.get_env(:core, :pubsub_client)</code></pre>
+  @leader Application.compile_env(:naive, :leader)
+  @logger Application.compile_env(:core, :logger)
+  @pubsub_client Application.compile_env(:core, :pubsub_client)</code></pre>
 <p>We looked into different ways to inject dependencies to understand their downsides.</p>
 <p>Sometimes, injecting values(like modules) as module attributes can feel like a “global state”, “singleton”, or similar antipattern. We need to understand that each programming language provides different ways to solve common programming problems. Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules’ attributes.</p>
 <p>As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there’s just <strong>no better way</strong> to do it in Elixir, and now we know why(based on the issues with the alternative approaches).</p>

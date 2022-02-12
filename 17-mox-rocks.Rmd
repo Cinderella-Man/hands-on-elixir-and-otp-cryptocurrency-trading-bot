@@ -234,7 +234,7 @@ We can now move back to the `Naive.Trader` module to update all the hardcoded re
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/trader.ex
   ...
-  @leader Application.get_env(:naive, :leader)
+  @leader Application.compile_env(:naive, :leader)
   ...
   @leader.notify(:trader_state_updated, new_state)
   ...
@@ -301,7 +301,7 @@ Inside the `Naive.Trader` module we need to update all the references to the `Ph
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/trader.ex
   ...
-  @pubsub_client Application.get_env(:core, :pubsub_client)
+  @pubsub_client Application.compile_env(:core, :pubsub_client)
   ...
     @pubsub_client.subscribe(
       Core.PubSub,
@@ -378,7 +378,7 @@ Inside the `Naive.Trader` module we need to update all the references to the `Lo
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/trader.ex
   ...
-  @logger Application.get_env(:core, :logger)
+  @logger Application.compile_env(:core, :logger)
   ...
     @logger.info("Initializing new trader(#{id}) for #{symbol}")
   ...

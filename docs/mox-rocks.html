@@ -659,7 +659,7 @@ make <code>mox</code> available in all test environments(both <code>test</code> 
 <p>We can now move back to the <code>Naive.Trader</code> module to update all the hardcoded references to the <code>Naive.Leader</code> module with a dynamic attribute called <code>@leader</code> and add this attribute at the top of the module:</p>
 <div class="sourceCode" id="cb354"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb354-1"><a href="mox-rocks.html#cb354-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
 <span id="cb354-2"><a href="mox-rocks.html#cb354-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb354-3"><a href="mox-rocks.html#cb354-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:naive</span>, <span class="va">:leader</span>)</span>
+<span id="cb354-3"><a href="mox-rocks.html#cb354-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:naive</span>, <span class="va">:leader</span>)</span>
 <span id="cb354-4"><a href="mox-rocks.html#cb354-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb354-5"><a href="mox-rocks.html#cb354-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_state)</span>
 <span id="cb354-6"><a href="mox-rocks.html#cb354-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -700,7 +700,7 @@ make <code>mox</code> available in all test environments(both <code>test</code> 
 <p>Inside the <code>Naive.Trader</code> module we need to update all the references to the <code>Phoenix.PubSub</code> to an <code>@pubsub_client</code> attribute with value dependent on the configuration:</p>
 <div class="sourceCode" id="cb359"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb359-1"><a href="mox-rocks.html#cb359-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
 <span id="cb359-2"><a href="mox-rocks.html#cb359-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb359-3"><a href="mox-rocks.html#cb359-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@pubsub_client</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:core</span>, <span class="va">:pubsub_client</span>)</span>
+<span id="cb359-3"><a href="mox-rocks.html#cb359-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@pubsub_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:core</span>, <span class="va">:pubsub_client</span>)</span>
 <span id="cb359-4"><a href="mox-rocks.html#cb359-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb359-5"><a href="mox-rocks.html#cb359-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>subscribe(</span>
 <span id="cb359-6"><a href="mox-rocks.html#cb359-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
@@ -753,7 +753,7 @@ make <code>mox</code> available in all test environments(both <code>test</code> 
 <p>Inside the <code>Naive.Trader</code> module we need to update all the references to the <code>Logger</code> to an <code>@logger</code> attribute with value dependent on the configuration:</p>
 <div class="sourceCode" id="cb364"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb364-1"><a href="mox-rocks.html#cb364-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/trader.ex</span></span>
 <span id="cb364-2"><a href="mox-rocks.html#cb364-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb364-3"><a href="mox-rocks.html#cb364-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@logger</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:core</span>, <span class="va">:logger</span>)</span>
+<span id="cb364-3"><a href="mox-rocks.html#cb364-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@logger</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:core</span>, <span class="va">:logger</span>)</span>
 <span id="cb364-4"><a href="mox-rocks.html#cb364-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb364-5"><a href="mox-rocks.html#cb364-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader(</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">) for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
 <span id="cb364-6"><a href="mox-rocks.html#cb364-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>

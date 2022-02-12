@@ -517,8 +517,8 @@ end</code></pre>
   # add those at the top of the worker module
   require Logger
 
-  @logger Application.get_env(:core, :logger)
-  @pubsub_client Application.get_env(:core, :pubsub_client)
+  @logger Application.compile_env(:core, :logger)
+  @pubsub_client Application.compile_env(:core, :pubsub_client)
 
   ...
 
@@ -630,7 +630,7 @@ end</code></pre>
  # add below lines at the top of the module
  require Logger
 
- @pubsub_client Application.get_env(:core, :pubsub_client)
+ @pubsub_client Application.compile_env(:core, :pubsub_client)
 
   defp maybe_broadcast(nil), do: :ok
 
@@ -768,7 +768,7 @@ iex(2)&gt; Indicator.aggregate_ohlcs(&quot;XRPUSDT&quot;)
 <pre><code>  def process([_ | _] = ohlcs, %TradeEvent{} = trade_event) do
     {old_ohlcs, new_ohlcs} = merge_prices(ohlcs, trade_event.price, trade_event.trade_time)
 
-    old_ohlcs |&gt; Enum.map(&amp;maybe_broadcast/1)
+    old_ohlcs |&gt; Enum.each(&amp;maybe_broadcast/1)
     new_ohlcs
   end
 
