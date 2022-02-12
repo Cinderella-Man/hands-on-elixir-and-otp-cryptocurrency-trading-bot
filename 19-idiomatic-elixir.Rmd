@@ -260,7 +260,7 @@ We need to update the Indicators application's supervision tree to start a dynam
 ```
 # /apps/indicator/lib/indicator/application.ex
     children = [
-      {DynamicSupervisor, name: Indicator.DynamicSupervisor}
+      {DynamicSupervisor, strategy: :one_for_one, name: Indicator.DynamicSupervisor}
     ]
 ```
 
@@ -319,8 +319,9 @@ This improvement would:
 - allow a single worker single worker to decide what to do with all current OHLCs in case of errors, **without** need for any additional symbol supervision level(like `one_for_all`)
 - make it **impossible** to aggregate nor broadcast OHLCS of the same symbol in **parallel**
 
-We can see that processes could get really complex really quick(supervision trees, too many messages etc).
-Processes are a really powerful tool, and the responsibility lays on us developers to use them wisely - they **must not** be used for code organization.
+We can see that the solution based on processes could get really complex really quickly(multiple processes per symbol, growing supervision tree, multiple subscriptions, multiple messages etc).
+
+Just to be clear - processes **do** have their place, they are a really powerful tool, but as with every tool, the responsibility lies on us developers to use them wisely - they **must not** be used for code organization.
 
 Enough theory - let's look into how we could update our `Indicator.Ohlc` module to be able to deal with multiple timeframes at once.
 
@@ -352,16 +353,17 @@ Initially, we could be tempted to update the `process/2` function:
 
 We added some logic to both clauses. At this moment, it maybe doesn't look that bad, but it's a great place to mix even more logic with dirty code. This is a great example where we should stop and rethink how we could maximize the amount of pure code.
 
-We use the `merge_price/3` and `generate_ohlc/4` functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:
+Instead of expanding the `process/2` function, we could built on top of the `merge_price/3` and `generate_ohlc/4` functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:
 
 ```
 # /apps/indicator/lib/indicator.ex
   def merge_prices(ohlcs, price, trade_time) do
-    results = ohlcs
-    |> Enum.map(&merge_price(&1, price, trade_time))
+    results =
+      ohlcs
+      |> Enum.map(&merge_price(&1, price, trade_time))
 
     {
-      results |> Enum.map(&elem(&1, 0)) |> Enum.filter(&(&1)),
+      results |> Enum.map(&elem(&1, 0)) |> Enum.filter(& &1),
       results |> Enum.map(&elem(&1, 1))
     }
   end
@@ -427,20 +429,22 @@ The final update will be to simplify the `Indicator.aggregate_ohlcs/1` function 
   end
 ```
 
-We can now test our implementation by enabling the `debug` logging and running:
+We can now test our implementation by running the following once again:
 
 ```
 $ iex -S mix
 iex(1)> Streamer.start_streaming("XRPUSDT")
 ...
-iex(2)> Streamer.start_streaming("XRPUSDT")
+iex(2)> Indicator.Ohlc.Worker.start_link("XRPUSDT")
 ...
-23:23:00.416 [info]  Broadcasting OHLC: %Indicator.Ohlc{close: "0.68230000", duration: 1, high: "0.68330000", low: "0.68130000", open: "0.68160000", start_time: 1644189720, symbol: "XRPUSDT"}
+23:23:00.416 [info]  Broadcasting OHLC: %Indicator.Ohlc{close: "0.68230000", duration: 1,
+high: "0.68330000", low: "0.68130000", open: "0.68160000", start_time: 1644189720,
+symbol: "XRPUSDT"}
 ```
 
 The logged message(s) confirms that our OHLC aggregator logic works as expected using a single process.
 
-In the case of the OHLC aggregator, we've seen that there's some trade-off between running multiple processes(simpler code) vs single process(more complex merging) - it could be unclear what's the benefit of limiting the usage of processes(especially that they are "almost free").
+In the case of the OHLC aggregator, we've seen that there are some trade-off between running multiple processes(simpler code) vs single process(more complex merging) - it could be unclear what's the benefit of limiting the usage of processes(especially that they are "almost free").
 
 I totally understand. Please treat this chapter as an introduction to the idiomatic Elixir. In the next chapter, we will apply this concept when refactoring the Naive trading strategy to see its practical benefits.
 

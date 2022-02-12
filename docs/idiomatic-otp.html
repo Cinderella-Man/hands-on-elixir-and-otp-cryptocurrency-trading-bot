@@ -670,7 +670,7 @@ symbol: &quot;XRPUSDT&quot;}</code></pre>
 We need to update the Indicators application’s supervision tree to start a dynamic supervisor:</p>
 <pre><code># /apps/indicator/lib/indicator/application.ex
     children = [
-      {DynamicSupervisor, name: Indicator.DynamicSupervisor}
+      {DynamicSupervisor, strategy: :one_for_one, name: Indicator.DynamicSupervisor}
     ]</code></pre>
 <div style="page-break-after: always;"></div>
 <p>We can now add <code>aggregate_ohlcs/1</code> function that will start all workers:</p>
@@ -714,8 +714,8 @@ iex(2)&gt; Indicator.aggregate_ohlcs(&quot;XRPUSDT&quot;)
 <li>allow a single worker single worker to decide what to do with all current OHLCs in case of errors, <strong>without</strong> need for any additional symbol supervision level(like <code>one_for_all</code>)</li>
 <li>make it <strong>impossible</strong> to aggregate nor broadcast OHLCS of the same symbol in <strong>parallel</strong></li>
 </ul>
-<p>We can see that processes could get really complex really quick(supervision trees, too many messages etc).
-Processes are a really powerful tool, and the responsibility lays on us developers to use them wisely - they <strong>must not</strong> be used for code organization.</p>
+<p>We can see that the solution based on processes could get really complex really quickly(multiple processes per symbol, growing supervision tree, multiple subscriptions, multiple messages etc).</p>
+<p>Just to be clear - processes <strong>do</strong> have their place, they are a really powerful tool, but as with every tool, the responsibility lies on us developers to use them wisely - they <strong>must not</strong> be used for code organization.</p>
 <p>Enough theory - let’s look into how we could update our <code>Indicator.Ohlc</code> module to be able to deal with multiple timeframes at once.</p>
 <p>Initially, we could be tempted to update the <code>process/2</code> function:</p>
 <pre><code># /apps/indicator/lib/indicator.ex
@@ -740,14 +740,15 @@ Processes are a really powerful tool, and the responsibility lays on us develope
     )
   end</code></pre>
 <p>We added some logic to both clauses. At this moment, it maybe doesn’t look that bad, but it’s a great place to mix even more logic with dirty code. This is a great example where we should stop and rethink how we could maximize the amount of pure code.</p>
-<p>We use the <code>merge_price/3</code> and <code>generate_ohlc/4</code> functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:</p>
+<p>Instead of expanding the <code>process/2</code> function, we could built on top of the <code>merge_price/3</code> and <code>generate_ohlc/4</code> functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:</p>
 <pre><code># /apps/indicator/lib/indicator.ex
   def merge_prices(ohlcs, price, trade_time) do
-    results = ohlcs
-    |&gt; Enum.map(&amp;merge_price(&amp;1, price, trade_time))
+    results =
+      ohlcs
+      |&gt; Enum.map(&amp;merge_price(&amp;1, price, trade_time))
 
     {
-      results |&gt; Enum.map(&amp;elem(&amp;1, 0)) |&gt; Enum.filter(&amp;(&amp;1)),
+      results |&gt; Enum.map(&amp;elem(&amp;1, 0)) |&gt; Enum.filter(&amp; &amp;1),
       results |&gt; Enum.map(&amp;elem(&amp;1, 1))
     }
   end
@@ -798,15 +799,17 @@ Processes are a really powerful tool, and the responsibility lays on us develope
       {Indicator.Ohlc.Worker, symbol}
     )
   end</code></pre>
-<p>We can now test our implementation by enabling the <code>debug</code> logging and running:</p>
+<p>We can now test our implementation by running the following once again:</p>
 <pre><code>$ iex -S mix
 iex(1)&gt; Streamer.start_streaming(&quot;XRPUSDT&quot;)
 ...
-iex(2)&gt; Streamer.start_streaming(&quot;XRPUSDT&quot;)
+iex(2)&gt; Indicator.Ohlc.Worker.start_link(&quot;XRPUSDT&quot;)
 ...
-23:23:00.416 [info]  Broadcasting OHLC: %Indicator.Ohlc{close: &quot;0.68230000&quot;, duration: 1, high: &quot;0.68330000&quot;, low: &quot;0.68130000&quot;, open: &quot;0.68160000&quot;, start_time: 1644189720, symbol: &quot;XRPUSDT&quot;}</code></pre>
+23:23:00.416 [info]  Broadcasting OHLC: %Indicator.Ohlc{close: &quot;0.68230000&quot;, duration: 1,
+high: &quot;0.68330000&quot;, low: &quot;0.68130000&quot;, open: &quot;0.68160000&quot;, start_time: 1644189720,
+symbol: &quot;XRPUSDT&quot;}</code></pre>
 <p>The logged message(s) confirms that our OHLC aggregator logic works as expected using a single process.</p>
-<p>In the case of the OHLC aggregator, we’ve seen that there’s some trade-off between running multiple processes(simpler code) vs single process(more complex merging) - it could be unclear what’s the benefit of limiting the usage of processes(especially that they are “almost free”).</p>
+<p>In the case of the OHLC aggregator, we’ve seen that there are some trade-off between running multiple processes(simpler code) vs single process(more complex merging) - it could be unclear what’s the benefit of limiting the usage of processes(especially that they are “almost free”).</p>
 <p>I totally understand. Please treat this chapter as an introduction to the idiomatic Elixir. In the next chapter, we will apply this concept when refactoring the Naive trading strategy to see its practical benefits.</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
 <p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19">Github</a></p>
