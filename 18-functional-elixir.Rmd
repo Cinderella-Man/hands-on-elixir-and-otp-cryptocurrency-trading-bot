@@ -620,6 +620,7 @@ In case of fetching the sell order, we will pattern match on a `:fetch_sell_orde
     sell_order = %{sell_order | status: current_sell_order.status}
 
     new_state = %{state | sell_order: sell_order}
+    @leader.notify(:trader_state_updated, new_state)
     {:noreply, new_state}
   end
 ```
