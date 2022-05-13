@@ -47,7 +47,7 @@ Finally, update the alias to the `Naive.SymbolSupervisor` to the `Naive.Trader` 
 
 ### The `Naive` module
 
-The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now `Naive.DynamicTraderSupervisor`), we need to update all the references to it:
+The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now called the `Naive.DynamicTraderSupervisor`), we need to update all the references to it:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -62,7 +62,7 @@ The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now `N
 
 ### The `Naive.Supervisor` module
 
-The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now `Naive.DynamicTraderSupervisor`) and the registry that stores the traders' PIDs - we need to update both:
+The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now called the `Naive.DynamicTraderSupervisor`) and the registry that stores the traders' PIDs - we need to update both:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/supervisor.ex
@@ -82,19 +82,19 @@ The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now `Naive
 
 ### The `Naive.Trader` module
 
-The final module to be updated will be the `Naive.Trader`. It needs to support storing it's PID inside the Registry:
+The final module to be updated will be the `Naive.Trader`. It needs to register process' PID inside the Registry:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
-  @registry :naive_traders
+  @registry :naive_traders # <= added
   ...
   def start_link(%State{} = state) do
-    symbol = String.upcase(state.symbol)
+    symbol = String.upcase(state.symbol) # <= updated
 
     GenServer.start_link(
       __MODULE__,
       state,
-      name: via_tuple(symbol)
+      name: via_tuple(symbol)  # <= updated
     )
   end
   ...
@@ -107,7 +107,7 @@ That finishes the changes to the supervision tree - the `Naive.Leader` and the `
 
 ## Supporting multiple positions
 
-The current `State` struct inside the `Naive.Trader` was geared toward a single trade cycle. As we now need to handle multiple positions inside a single `Trader` process, we will need to update this struct. We will start by moving the current `State` struct into the `Naive.Strategy` and renaming it to `Position`:
+The current `State` struct inside the `Naive.Trader` was geared toward a single trade cycle. As we now need to handle multiple positions inside a single `Trader` process, we will need to update this struct. We will start by moving the current `State` struct from the `Naive.Trader` into the `Naive.Strategy` and renaming it to `Position`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -142,17 +142,17 @@ This will break all the references to `Naive.Trader.State` inside the `Naive.Str
 
   defp execute_decision(
     {.... # decision },
-    %Position{
+    %Position{ # <= updated
       ...
-    } = position
+    } = position # <= updated
   ) do
     ...
-    new_position = %{position | buy_order: order}
-    @leader.notify(:trader_state_updated, new_position)
+    new_position = %{position | buy_order: order} # <= updated
+    @leader.notify(:trader_state_updated, new_position) # <= updated
     {:ok, new_position} # <^= similar changes in all execute_decision
 ```
 
-Please ignore the fact that we are still calling the `@leader` and still dealing with a single position - we will fix that in the following steps. One step at a time ;)
+We will ignore the fact that we are still calling the `@leader` and still dealing with a single position(inside the strategy) - we will fix that in the following section. One step at a time ;)
 
 As we are already changing strategy to work with positions, we will update all the logger messages:
 
@@ -214,7 +214,7 @@ Our code is still far from working, but we are incrementally updating it to work
 
 At this moment, the `Naive.Trader` expects the `state` to be injected on start (using the `start_link/1` function). We were able to do that because the `Naive.Leader` was fetching the settings and building the fresh trader state.
 
-First, let's update the `State` of the `Naive.Trader` - it will now be responsible for holding the symbol's settings(previously held in the leader) and list of positions(list of the `Naive.Strategy.Position` structs):
+First, let's update the `State` of the `Naive.Trader` - it will now hold the symbol's settings(previously held in the leader) and list of positions(list of the `Naive.Strategy.Position` structs):
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -224,7 +224,7 @@ First, let's update the `State` of the `Naive.Trader` - it will now be responsib
   end
 ```
 
-Now we need to update the `start_link/1` and `init/1` functions as well as add the `handle_continue/2` callback to fetch settings and store them together with a new position in the state:
+Now we need to update the `start_link/1` and `init/1` functions as well as add the `handle_continue/2` callback to fetch settings and store them together with an initial position in the state:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -252,7 +252,7 @@ Now we need to update the `start_link/1` and `init/1` functions as well as add t
     {:ok, nil, {:continue, {:start_position, symbol}}} # <= updated
   end
 
-  def handle_continue({:start_trader, symbol}, _state) do
+  def handle_continue({:start_position, symbol}, _state) do
     settings = Strategy.fetch_symbol_settings(symbol)
     positions = [Strategy.generate_fresh_position(settings)]
 
@@ -262,7 +262,7 @@ Now we need to update the `start_link/1` and `init/1` functions as well as add t
 
 As the `Naive.Trader` starts, it returns the `{:continue, ...}` tuple from the `init/1` function. This will cause the `handle_continue/2` callback to be called asynchronously. Inside it, we fetch settings and add a single fresh position to the list of positions - both stored in Trader's state.
 
-Both functions inside the `handle_continue/2` callback were part of the `Naive.Leader` - we need to move them across to the `Naive.Strategy`:
+Both functions inside the `handle_continue/2` callback previously were part of the `Naive.Leader` - we need to move them across to the `Naive.Strategy`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -314,7 +314,7 @@ Both functions inside the `handle_continue/2` callback were part of the `Naive.L
   end
 ```
 
-Inside the above code, we modified the `fetch_symbol_settings/1` function to fetch settings from binance and DB first and then progress with the "pure" part. This way, we can easily test most of the logic without using mocks.
+Inside the above code, we modified the `fetch_symbol_settings/1` function to fetch settings from binance and DB first and then progress with the "pure" part. This update allows us to test most of the logic easily without using mocks.
 
 The `generate_fresh_position/2` was previously called `fresh_trader_state/1` inside the `Naive.Leader`. It had an `id` assigned inside the function based on the current system time. That made it a bit more difficult to test as we don't know what should we expect there as a value. By moving the `id` to the arguments and assigning the current time there, we are now able to test it by passing our dummy value.
 
@@ -341,14 +341,16 @@ We can now move on to the strategy, but first, let's update the `Naive.Trader` t
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
-    case Naive.Strategy.execute(trade_event, state.positions, state.settings) do
-      {:ok, updated_positions} ->
+    case Naive.Strategy.execute(trade_event, state.positions, state.settings) do # <= updated
+      {:ok, updated_positions} -> # <= updated
         {:noreply, %{state | positions: updated_positions}} # <= updated
-      :exit -> {:stop, :normal, state}
+
+      :exit ->
+        {:stop, :normal, state}
     end
 ```
 
-We need all the `positions` to iterate through them, deciding and executing appropriate actions. The `settings` will be used inside strategy later, but we will pass it on now to avoid going back and forward later.
+We need all the `positions` to iterate through them, deciding and executing appropriate actions. The `settings` will be used inside the strategy later, but we will pass it on now to avoid going back and forward later.
 
 Additionally, we updated the `case` match to expect a list of updated positions which we will assign to the `Trader`'s state.
 
@@ -366,7 +368,7 @@ Now we can modify the `Naive.Strategy` to handle multiple positions:
   end
 ```
 
-We need to write most of the functions used above, but we can already see the idea. We will map each of the decisions that we generated to async tasks that will execute them. Next, we will wait for all of them to finish and parse the results.
+We need to write most of the functions used above, but we can already see the idea. We will map each of the decisions that we generate to async tasks that execute them. Next, we wait for all of them to finish and parse the results.
 
 First, we are calling a new function `generate_decisions/4`, which is a recursive function on top of the existing `generate_decision/2`:
 
@@ -391,9 +393,9 @@ First, we are calling a new function `generate_decisions/4`, which is a recursiv
   end
 ```
 
-At this moment, the `generate_decisions/4` can look like overengineered `Enum.map/2` function, but we are actually preparing the ground for the consequent updates later in this chapter(to get other functionality running).
+At this moment, the `generate_decisions/4` can look like overengineered `Enum.map/2` function, but we are actually preparing the ground for the consequent updates later in this chapter(to get the rest of the functionality running).
 
-It's important to note that we are now passing four arguments into the `generate_decision` function - we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above. At this moment though, we can update the `generate_decision/2` clauses to include two additional arguments to **all** clauses:
+It's important to note that we are now passing four arguments into the `generate_decision` function - we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above. At this moment though, we will update the `generate_decision/2` clauses to include two additional arguments to **all** clauses:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -493,7 +495,7 @@ iex(2)> Naive.start_trading("ETHUSDT")
     (naive 0.1.0) lib/naive/strategy.ex:56: anonymous fn(:exit) in Naive.Strategy.parse_results/1
 ```
 
-We can see that our trader process can now go through the whole trade cycle, but it fails to start a new position after the first one returns `:exit`.
+We can see that our trader process can now go through the whole trade cycle, but it fails to start a new position after the first trade cycle finishes and returns `:exit`.
 
 To fix this issue, we need to return `:finished` instead of `:exit` from the `generate_decision/3` clause responsible for matching end of the trade cycle:
 
@@ -908,7 +910,7 @@ iex(3)> Naive.get_positions("ETHUSDT")
 ]  
 ```
 
-This functionality gives us a better overview than previously, and it could be used to power some frontend screens showing current trading.
+We can see that we now have a better overview of what's happening. Previously we needed to go to the database as the state was shared between multiple Trader processes. Now everything is in one place, which we could leverage to load the initial state of some frontend dashboards(subsequent positions' updates could be done by listening to the PubSub topic and pushing diffs to the browser via WebSocket).
 
 ## Tidying up
 
