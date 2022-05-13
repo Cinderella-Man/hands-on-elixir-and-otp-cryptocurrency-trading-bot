@@ -5,6 +5,9 @@
 - Simplifying the Naive supervision tree
 - Supporting multiple positions
 - Retrofitting the "shutdown" functionality
+- Updating the Strategy to handle rebuys
+- Fetching active positions
+- Tidying up
 
 ## Following the OHLC footsteps
 
@@ -731,4 +734,199 @@ iex(4)> Naive.shutdown_trading("ETHUSDT")
 23:05:40.123 [info]  Trading for ETHUSDT stopped
 ```
 
-That finishes the shutdown functionality, as previously, one after another, positions will finish their cycles, and the whole process will exit at the end.
+That finishes the shutdown functionality. As mentioned previously, one after another, positions will complete their cycles, and the whole process will exit at the end.
+
+## Updating the Strategy to handle rebuys
+
+ Previously, both the `Trader` and the `Leader` were used to support rebuy functionality. As now we removed the `Leader`, it's an excellent opportunity to move as much as possible of that logic into our strategy.
+
+We will start by updating the `generate_decision/4` clause responsible for matching the rebuy scenario. We will take into consideration the number of currently open positions(this check was previously done inside the `Naive.Leader`):
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  def generate_decision(
+        %TradeEvent{
+          price: current_price
+        },
+        %Position{
+          buy_order: %Binance.OrderResponse{
+            price: buy_price
+          },
+          rebuy_interval: rebuy_interval,
+          rebuy_notified: false
+        },
+        positions, # <= updated
+        settings
+      ) do
+    if trigger_rebuy?(buy_price, current_price, rebuy_interval) &&
+         settings.status != "shutdown" &&
+         length(positions) < settings.chunks do # <= added
+      :rebuy
+    else
+      :skip
+    end
+  end
+```
+
+Now we need to deal with the `:rebuy` decision(previously, we removed the logic notifying the `Naive.Leader` about the rebuy being triggered).
+
+In case of rebuy decision we need to add a new position to the positions list which can be done by modifying the `generate_decisions/4` function:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  def generate_decisions([position | rest] = positions, generated_results, trade_event, settings) do
+    ...
+    case generate_decision(trade_event, position, current_positions, settings) do
+      :exit -> ...
+      :rebuy ->
+        generate_decisions(
+          rest,
+          [{:skip, %{position | rebuy_notified: true}}, {:rebuy, position}] ++ generated_results,
+          trade_event,
+          settings
+        ) # ^^^^^ added
+      decision -> ...
+```
+
+The final step will be to update the `execute_decision/3` clause that matches the `:rebuy` decision to `generate_fresh_position/1`, log and return that newly created position:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+         :rebuy,
+         %Position{
+           id: id,
+           symbol: symbol
+         }, # <= position removed
+         settings # <= updated
+       ) do
+    new_position = generate_fresh_position(settings) # <= updated
+
+    @logger.info("Position (#{symbol}/#{id}): Rebuy triggered. Starting new position") # <= updated
+
+    {:ok, new_position} # <= updated
+  end
+```
+
+We updated the whole function body as now it deals with initialising a new position instead of just flipping the `rebuy_triggered` flag inside the original position.
+
+We can now run the strategy to confirm that rebuy starts new positions:
+
+```
+$ iex -S mix
+...
+iex(1)> Streamer.start_streaming("ETHUSDT")
+...
+iex(2)> Naive.start_trading("ETHUSDT")
+...
+18:00:29.872 [info]  Position (ETHUSDT/1651856406828): Rebuy triggered. Starting new position
+ 18:00:29.880 [info]  Position (ETHUSDT/1651856429871): Placing a BUY order @ 13.39510000, quantity: 14.93000000
+```
+
+The above shows that a single buy position can trigger rebuy, starting a new position that immediately places another buy order.
+
+At this moment the integration tests should already be passing, but first, we need to fix the `Naive.TraderTest` a bit to make the test code compile:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/trader_test.exs
+  defp dummy_trader_state() do
+    %Naive.Strategy.Position{ # <= updated
+```
+
+That's just bare minimum as this test is not run but on compilation time Elixir would not be able to find `:id` attribute inside the `State` struct. We can now run the integration tests:
+
+```
+$ MIX_ENV=integration mix test.integration
+...
+Finished in 7.2 seconds (0.00s async, 7.2s sync)
+2 tests, 0 failures, 1 excluded
+```
+
+Yay!
+
+## Fetching active positions
+
+Previously, we were able to figure out the number of currently open positions by looking at the supervision tree, but now there's just a single trader process with possibly multiple positions open.
+
+To aid observability of the state of our trading on the symbols we will add an interface that can be used to fetch state of the currently open positions of the trader.
+
+We will start with the interface itself. It will take a symbol to be able to find the trader responsible for it:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive.ex
+  alias Naive.Trader
+  ...
+  def get_positions(symbol) do
+    symbol
+    |> String.upcase()
+    |> Trader.get_positions()
+  end
+```
+
+Now the trader interface function will forward the symbol to the `GenServer.call/2` to the actual process `Naive.Trader` process responsible for trading on that symbol:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/trader.ex
+  def get_positions(symbol) do
+    call_trader(symbol, {:get_positions, symbol})
+  end
+```
+
+As we need to look up the PID of the trader process in the `Registry`, we can use the same `call_trader/2` helper function as in the case of `notify/2`.
+
+The message will get sent to the process, where we need to add a callback that will return all the current positions:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/trader.ex
+  def handle_call(
+        {:get_positions, _symbol},
+        _,
+        state
+      ) do
+    {:reply, state.positions, state}
+  end
+```
+
+We can now test fetching currently open positions by running:
+
+```
+$ iex -S mix
+...
+iex(1)> Streamer.start_streaming("ETHUSDT")
+...
+iex(2)> Naive.start_trading("ETHUSDT")
+...
+iex(3)> Naive.get_positions("ETHUSDT")
+[
+  %Naive.Strategy.Position{
+    ...
+  },
+  %Naive.Strategy.Position{
+    ...
+  },
+  ...
+]  
+```
+
+This functionality gives us a better overview than previously, and it could be used to power some frontend screens showing current trading.
+
+## Tidying up
+
+Let's tidy up the codebase start with removing the `/apps/naive/lib/naive/leader.ex` and `/apps/naive/lib/naive/symbol_supervisor.ex` as we don't need them anymore.
+
+This will cause problems with our mocks that we need to update in the test helper:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/test/test_helper.exs
+Mox.defmock(Test.Naive.LeaderMock, for: Naive.Leader) # <= remove
+```
+
+Our test will now run again and pass, but only the integration test. We will get back to the mocking and unit tests in the next chapter, where we will once again look into how we should structure our code to be testable and "mockable".
+
+## Final thoughts
+
+In this chapter, we gathered parts of our strategy that were spread across multiple processes and put them into the `Naive.Strategy` module. Furthermore, we made efforts to separate parts of the strategy that are pure from side-effect full code - we pushed them to the edge. It should be visible that this way, we can cover the vast amount of logic with simple and easy to understand tests that don't require mocking or setup. In the next chapter, we will look into how we could improve the testing of the parts "pushed to the edge".
+
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
+
+Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19)
