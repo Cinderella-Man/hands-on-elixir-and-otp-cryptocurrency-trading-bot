@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
-  <meta name="description" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <title>Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:title" content="Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:title" content="Chapter 18 Functional Elixir | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="twitter:site" content="@kamilskowron" />
   
   
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"/>
-<link rel="next" href="add-support-for-multiple-transactions-per-order.html"/>
+<link rel="prev" href="mox-rocks.html"/>
+<link rel="next" href="idiomatic-otp.html"/>
 <script src="libs/header-attrs-2.8/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -451,166 +451,755 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="introduce-a-trader-budget-and-calculating-the-quantity" class="section level1" number="7">
-<h1><span class="header-section-number">Chapter 7</span> Introduce a trader budget and calculating the quantity</h1>
-<div id="objectives-6" class="section level2" number="7.1">
-<h2><span class="header-section-number">7.1</span> Objectives</h2>
+<div id="functional-elixir" class="section level1" number="18">
+<h1><span class="header-section-number">Chapter 18</span> Functional Elixir</h1>
+<div id="objectives-17" class="section level2" number="18.1">
+<h2><span class="header-section-number">18.1</span> Objectives</h2>
 <ul>
-<li>fetch step_size</li>
-<li>append budget and step_size to the <code>Trader</code>’s state compiled by the <code>Leader</code></li>
-<li>append budget and step_size to the <code>Trader</code>’s state</li>
-<li>calculate quantity</li>
+<li>the reasoning behind the functional approach</li>
+<li>simplifying by splitting</li>
+<li>abstracting the “pure” logic</li>
+<li>dealing with dirty code</li>
+<li>making dirty code testable</li>
+<li>the power <code>with</code>-in</li>
+<li>do or not to do</li>
+<li>final thoughts</li>
 </ul>
 </div>
-<div id="fetch-step_size" class="section level2" number="7.2">
-<h2><span class="header-section-number">7.2</span> Fetch <code>step_size</code></h2>
-<p>In the 2nd chapter we hardcoded <code>quantity</code> to 100, it’s time to refactor that. We will need <code>step_size</code> information from the Binance which we are
-already retrieving together with <code>tick_size</code> in the <code>exchangeInfo</code> call(but not getting it out from the response). So we will rename the <code>fetch_tick_size/1</code> function to <code>fetch_symbol_filters/1</code> which will allow us to return multiple filters(<code>tick_size</code> and <code>step_size</code>) from that function.</p>
-<div class="sourceCode" id="cb100"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb100-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb100-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb100-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
-<span id="cb100-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-4" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span> fetch_symbol_filters(symbol) <span class="co"># &lt;= updated fetch_tick_size</span></span>
-<span id="cb100-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb100-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
-<span id="cb100-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-7" aria-hidden="true" tabindex="-1"></a>      %{</span>
-<span id="cb100-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,</span>
-<span id="cb100-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">1</span>,</span>
-<span id="cb100-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">20</span>,</span>
-<span id="cb100-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.01% for quick testing</span></span>
-<span id="cb100-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>,</span>
-<span id="cb100-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing</span></span>
-<span id="cb100-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span></span>
-<span id="cb100-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-15" aria-hidden="true" tabindex="-1"></a>      },</span>
-<span id="cb100-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-16" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-17" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb100-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb100-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters(symbol) <span class="kw">do</span>  <span class="co"># &lt;= updated fetch_tick_size</span></span>
-<span id="cb100-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-21" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
-<span id="cb100-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-22" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
-<span id="cb100-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-23" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
-<span id="cb100-24"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
-<span id="cb100-25"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-25" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
-<span id="cb100-26"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-26" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
-<span id="cb100-27"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-28"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-28" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
-<span id="cb100-29"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-29" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-30"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-30" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
-<span id="cb100-31"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-31" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
-<span id="cb100-32"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-33"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-33" aria-hidden="true" tabindex="-1"></a>    step_size <span class="op">=</span></span>
-<span id="cb100-34"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-34" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-35"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-35" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span>))</span>
-<span id="cb100-36"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;stepSize&quot;</span>)</span>
-<span id="cb100-37"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-38"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-38" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb100-39"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-39" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size,</span>
-<span id="cb100-40"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-40" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
-<span id="cb100-41"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-41" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb100-42"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a <code>budget</code>(#2) which will be shared across all traders of the symbol. Also, we don’t need to assign <code>tick_size</code> here as it’s part of the settings that are merged.</p>
+<div id="the-reasoning-behind-the-functional-approach" class="section level2" number="18.2">
+<h2><span class="header-section-number">18.2</span> The reasoning behind the functional approach</h2>
+<p>Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a very good reason - a clear focus on OTP) the conversation about functional programming.</p>
+<p>But wait, what? We are already using concepts like higher-order functions - isn’t that enough?</p>
+<p>We indeed use some functional patterns, but we never dug deeper into what Elixir developers <strong>should</strong> know(and apply) and, most importantly, <strong>why</strong>.</p>
+<p>In a nutshell, the selling point of functional programming is that applying it will make your code easier to reason about and test. Tests dramatically improve software quality. The easier they are to write, there’s less excuse not to write them - as simple as that.</p>
+<p>We will start from the basics and look into different ways of implementing functional concepts, considering Elixir’s strengths and weaknesses.</p>
+</div>
+<div id="simplifying-by-splitting" class="section level2" number="18.3">
+<h2><span class="header-section-number">18.3</span> Simplifying by splitting</h2>
+<p>Note: This section could appear to be a bit “random”, but I added it to aid continuity of refactoring steps(refactoring those callbacks later would cause a fair amount of complexity).</p>
+<p>Let’s look at our strategy inside the <code>Naive.Trader</code> module. In this section, we will focus on its (<code>handle_info/2</code>) callback function.</p>
+<p>We are looking for clauses that do more than “one thing” to split them into multiple clauses:</p>
+<ul>
+<li>The first callback places a buy order - it has a single responsibility and is easy to follow.</li>
+<li>The second callback takes care of race conditions - the same story, easy to understand.</li>
+<li>The third callback is the one we will focus on. It branches using the <code>if</code> statement, and we could describe it as “fetch and maybe place a sell order” function. The “and” in the description clearly indicates that it’s really two functions glued together. We will split it into “fetch buy order” and “place a sell order” functions(below code replaces the 3rd <code>handle_info/2</code> callback):</li>
+</ul>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def handle_info(
+        %TradeEvent{},
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order: %Binance.OrderResponse{
+            price: buy_price,
+            orig_qty: quantity,
+            status: &quot;FILLED&quot;
+          },
+          sell_order: nil,
+          profit_interval: profit_interval,
+          tick_size: tick_size
+        } = state
+      ) do
+    sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
+
+    @logger.info(
+      &quot;The trader(#{id}) is placing a SELL order for &quot; &lt;&gt;
+        &quot;#{symbol} @ #{sell_price}, quantity: #{quantity}.&quot;
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, &quot;GTC&quot;)
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | sell_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+
+  def handle_info(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = buy_order
+        } = state
+      ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
+
+    {:ok, %Binance.Order{} = current_buy_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_buy_order)
+
+    buy_order = %{buy_order | status: current_buy_order.status}
+
+    new_state = %{state | buy_order: buy_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+<p>The first function takes care of placing a sell order. The second one fetches the buy order.</p>
+<ul>
+<li>We can now move to the next clause, similar to the last one we could describe as “fetch the sell order and maybe terminate the trader”. We will split it into two callbacks: “fetch the sell order” and “terminate trader”.</li>
+</ul>
+<div style="page-break-after: always;"></div>
+<p>The code below replaces the 5th <code>handle_info/2</code> callback:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def handle_info(
+        %TradeEvent{},
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order: %Binance.OrderResponse{
+            status: &quot;FILLED&quot;
+          }
+        } = state
+      ) do
+    @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
+    {:stop, :normal, state}
+  end
+
+  def handle_info(
+        %TradeEvent{
+          seller_order_id: order_id
+        },
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = sell_order
+        } = state
+      ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
+
+    {:ok, %Binance.Order{} = current_sell_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_sell_order)
+
+    sell_order = %{sell_order | status: current_sell_order.status}
+
+    new_state = %{state | sell_order: sell_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+<p>The first function takes care of terminating the trader. The second function is fetching the sell order.</p>
+<p>That finishes our first refactoring round, but I need to admit that our change has impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we <strong>won’t</strong> immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.</p>
+<p>Changes like this require approval from the business in a work situation, but it’s a good showcase of the situation where we can propose a solution that will simplify the code(the benefits will become evident in the following sections).</p>
+<p>We can confirm that we have broken our tests by running our integration testsuite:</p>
+<div class="sourceCode" id="cb385"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb385-1"><a href="functional-elixir.html#cb385-1" aria-hidden="true" tabindex="-1"></a><span class="va">MIX_ENV=</span>integration <span class="ex">mix</span> test.integration</span>
+<span id="cb385-2"><a href="functional-elixir.html#cb385-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb385-3"><a href="functional-elixir.html#cb385-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">1</span><span class="er">)</span> <span class="bu">test</span> Naive trader full trade<span class="er">(</span><span class="ex">buy</span> + sell<span class="kw">)</span> <span class="bu">test</span> <span class="er">(</span><span class="ex">NaiveTest</span><span class="kw">)</span></span>
+<span id="cb385-4"><a href="functional-elixir.html#cb385-4" aria-hidden="true" tabindex="-1"></a>     <span class="ex">apps/naive/test/naive_test.exs:12</span></span>
+<span id="cb385-5"><a href="functional-elixir.html#cb385-5" aria-hidden="true" tabindex="-1"></a>     <span class="ex">**</span> <span class="er">(</span><span class="ex">MatchError</span><span class="kw">)</span> <span class="ex">no</span> match of right hand side value: [[<span class="st">&quot;0.43070000&quot;</span>, <span class="st">&quot;BUY&quot;</span>, <span class="st">&quot;FILLED&quot;</span>]...</span>
+<span id="cb385-6"><a href="functional-elixir.html#cb385-6" aria-hidden="true" tabindex="-1"></a>     <span class="ex">code:</span> [buy_1, sell_1, buy_2] = DataWarehouse.Repo.all<span class="er">(</span><span class="ex">query</span><span class="kw">)</span></span>
+<span id="cb385-7"><a href="functional-elixir.html#cb385-7" aria-hidden="true" tabindex="-1"></a>     <span class="ex">stacktrace:</span></span>
+<span id="cb385-8"><a href="functional-elixir.html#cb385-8" aria-hidden="true" tabindex="-1"></a>       <span class="ex">test/naive_test.exs:83:</span> <span class="er">(</span><span class="bu">test</span><span class="kw">)</span></span></code></pre></div>
+<p>(Subject to acceptance by the business) we will fix the integration test in the following way:</p>
+<pre><code># /apps/naive/test/naive_test.exs
+  test &quot;Naive trader full trade(buy + sell) test&quot; do
+    ...
+    # Step 4 - Broadcast 10 events # &lt;= updated comment
+    [
+       ...
+      generate_event(8, &quot;0.43205&quot;, &quot;345.14235000&quot;),
+      # this one should trigger buy order for a new trader process
+      generate_event(9, &quot;0.43205&quot;, &quot;345.14235000&quot;), # &lt;= added line
+      generate_event(10, &quot;0.43210&quot;, &quot;3201.86480000&quot;) # &lt;= updated id
+    ]</code></pre>
+<p>We added an event at the same price(as the sell order’s price) that will trigger placing a buy order by the new trader and make our test green again.</p>
 <div style="page-break-after: always;"></div>
 </div>
-<div id="append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="section level2" number="7.3">
-<h2><span class="header-section-number">7.3</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></h2>
-<p>The <code>budget</code> needs to be added to the <code>%State{}</code>(<code>step_size</code> will be automatically passed on by <code>struct/2</code>) of the trader inside <code>fresh_trader_state/1</code>(where we initialize the state of traders). Before we will assign it we need to divide it by the number of chunks as each trader gets only a chunk of the budget:</p>
-<div class="sourceCode" id="cb101"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb101-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb101-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
-<span id="cb101-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb101-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-4" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings)</span>
-<span id="cb101-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks)</span>
-<span id="cb101-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-6" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb101-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>In the code above we are using the <code>Decimal</code> module(aliased as <code>D</code>) to calculate the budget - we need to alias it at the top of <code>Naive.Leader</code>’s file:</p>
-<div class="sourceCode" id="cb102"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb102-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb102-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
-<span id="cb102-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
-<span id="cb102-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D <span class="co"># &lt;= add this line</span></span>
-<span id="cb102-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-6" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
-<span id="cb102-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
-</div>
-<div id="append-budget-and-step_size-to-the-traders-state" class="section level2" number="7.4">
-<h2><span class="header-section-number">7.4</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</h2>
-<p>We need to add both <code>budget</code> and <code>step_size</code> to the <code>Naive.Trader</code>’s state struct:</p>
-<div class="sourceCode" id="cb103"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb103-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb103-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb103-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
-<span id="cb103-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
-<span id="cb103-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
-<span id="cb103-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
-<span id="cb103-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
-<span id="cb103-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
-<span id="cb103-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
-<span id="cb103-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
-<span id="cb103-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-11" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb103-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
-<span id="cb103-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
-<span id="cb103-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
-<span id="cb103-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
-<span id="cb103-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
-<span id="cb103-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
-<span id="cb103-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
-<span id="cb103-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
-<span id="cb103-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
-<span id="cb103-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-21" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb103-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb103-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-23" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
-</div>
-<div id="calculate-quantity" class="section level2" number="7.5">
-<h2><span class="header-section-number">7.5</span> Calculate quantity</h2>
-<p>Jumping back to the <code>handle_info/2</code> where the <code>Naive.Trader</code> places a buy order, we need to pattern match on the <code>step_size</code> and <code>budget</code> then we will be able to swap hardcoded quantity with the result of calling the <code>calculate_quantity/3</code> function:</p>
-<div class="sourceCode" id="cb104"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb104-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb104-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb104-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb104-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="va">price:</span> price},</span>
-<span id="cb104-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-5" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
-<span id="cb104-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-6" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
-<span id="cb104-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">budget:</span> budget, <span class="co"># &lt;= add this line</span></span>
-<span id="cb104-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
-<span id="cb104-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-9" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_down_interval:</span> buy_down_interval,</span>
-<span id="cb104-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size,</span>
-<span id="cb104-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">step_size:</span> step_size <span class="co"># &lt;= add this line</span></span>
-<span id="cb104-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-12" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
-<span id="cb104-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-13" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb104-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb104-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-15" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> calculate_quantity(budget, price, step_size)</span>
-<span id="cb104-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>To calculate quantity we will just divide the <code>budget</code> by the <code>price</code> with a caveat that it’s possible (as with calculating the price) that it’s not a legal quantity value as it needs to be divisible by <code>step_size</code>:</p>
-<div class="sourceCode" id="cb105"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb105-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb105-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below at the bottom of the file</span></span>
-<span id="cb105-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb105-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_quantity(budget, price, step_size) <span class="kw">do</span></span>
-<span id="cb105-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># not necessarily legal quantity</span></span>
-<span id="cb105-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-6" aria-hidden="true" tabindex="-1"></a>    exact_target_quantity <span class="op">=</span> D<span class="op">.</span>div(budget, price)</span>
-<span id="cb105-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb105-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-8" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_string(</span>
-<span id="cb105-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-9" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
-<span id="cb105-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(exact_target_quantity, step_size),</span>
-<span id="cb105-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-11" aria-hidden="true" tabindex="-1"></a>        step_size</span>
-<span id="cb105-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-12" aria-hidden="true" tabindex="-1"></a>      ),</span>
-<span id="cb105-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:normal</span></span>
-<span id="cb105-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb105-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div id="iex-testing-2" class="section level3" number="7.5.1">
-<h3><span class="header-section-number">7.5.1</span> IEx testing</h3>
-<p>That finishes the <code>quantity</code>(and <code>budget</code>) implementation, we will jump into the IEx session to see how it works.</p>
-<p>First, start the streaming and trading on the same symbol and a moment later you should see a variable amount of quantity that more or less uses the full allowed budget:</p>
-<div class="sourceCode" id="cb106"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb106-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb106-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb106-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb106-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.313.0&gt;}</span></span>
-<span id="cb106-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb106-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-6" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:14.829</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb106-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:16.755</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb106-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-8" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:20.009</span> [info]  Placing BUY order for XRPUSDT @ 0.29506, quantity: 67.7</span>
-<span id="cb106-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:23.456</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29529,</span>
-<span id="cb106-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 67.7</span></code></pre></div>
-<p>As we can see our <code>Naive.Trader</code> process is now buying and selling based on passed budget.</p>
-<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07">Github</a></p>
+<div id="abstracting-the-pure-logic" class="section level2" number="18.4">
+<h2><span class="header-section-number">18.4</span> Abstracting the “pure” logic</h2>
+<p>In our adventure to make our code more functional, we should strive to separate(as much as possible) pure business logic from side effects and boilerplate.</p>
+<p>The <code>Naive.Trader</code> module is a GenServer that receives trade events via messages. Based on them and the current state, using pattern-matching, it decides what action should be performed(place a buy order, fetch a buy order, place a sell order, fetch sell order, terminate trader, trigger rebuy or ignore event).</p>
+<p>Each of the pattern-matches inside the callback functions’ headers is a <strong>strategy</strong> specific business logic that got mixed with the fact that it’s executed by a GenServer that receives messages.</p>
+<p>We will create a new file called <code>strategy.exs</code> inside the <code>apps/naive/lib/naive/</code> directory, where we will <strong>copy</strong> all of the <code>handle_info/2</code> callback functions from the <code>Naive.Trader</code> module:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+defmodule Naive.Strategy do
 
+  def handle_info(...) do
+    ... # &lt;= place a buy order logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= race condition fix logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= place a sell order logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= fetch the buy order logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= terminate trader logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= fetch the sell order logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= trigger rebuy order logic
+  end
+
+  def handle_info(...) do
+    ... # &lt;= ignore trade event logic
+  end</code></pre>
+<p>First, we will rename all of the <code>handle_info/2</code> functions inside the <code>Naive.Strategy</code> module to <code>generate_decision/2</code>. Next, we will go through them one by one, leaving the pure parts and limiting them to returning the decision.</p>
+<div id="place-a-buy-order-rules" class="section level3" number="18.4.1">
+<h3><span class="header-section-number">18.4.1</span> Place a buy order rules</h3>
+<p>The first function decides should the trader place a buy order. We can see that price and quantity calculations are pure functions based on the incoming data. We will remove everything below those two as it’s causing side effects.</p>
+<p>As now we are dealing with a function generating a decision, we will return a tuple with data that, together with state, will be used to place a buy order.</p>
+<p>After removing some of the pattern-matching that we used to retrieve data(no longer needed), our first function should look like this:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the first clause
+  def generate_decision(
+        %TradeEvent{price: price},
+        %State{
+          budget: budget,
+          buy_order: nil,
+          buy_down_interval: buy_down_interval,
+          tick_size: tick_size,
+          step_size: step_size
+        }
+      ) do
+    price = calculate_buy_price(price, buy_down_interval, tick_size)
+
+    quantity = calculate_quantity(budget, price, step_size)
+
+    {:place_buy_order, price, quantity}
+  end</code></pre>
+<div style="page-break-after: always;"></div>
 </div>
+<div id="race-condition-rules" class="section level3" number="18.4.2">
+<h3><span class="header-section-number">18.4.2</span> Race condition rules</h3>
+<p>The second function deals with the race condition when multiple transactions fill the buy order. The original callback ignores those trade events, so the <code>generate_decision/2</code> function should return the same “decision”:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the second clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id,
+            status: &quot;FILLED&quot;
+          },
+          sell_order: %Binance.OrderResponse{}
+        }
+      ) do
+    :skip
+  end</code></pre>
+</div>
+<div id="place-a-sell-order-rules" class="section level3" number="18.4.3">
+<h3><span class="header-section-number">18.4.3</span> Place a sell order rules</h3>
+<p>We will follow the same logic for the 3rd clause of the <code>generate_decision/2</code> function. We will leave only the sell price calculation as it’s pure and return a tuple together with the decision:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the third clause
+  def generate_decision(
+        %TradeEvent{},
+        %State{
+          buy_order: %Binance.OrderResponse{
+            status: &quot;FILLED&quot;,
+            price: buy_price
+          },
+          sell_order: nil,
+          profit_interval: profit_interval,
+          tick_size: tick_size
+        }
+      ) do
+    sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
+    {:place_sell_order, sell_price}
+  end</code></pre>
+</div>
+<div id="fetch-the-buy-order-rules" class="section level3" number="18.4.4">
+<h3><span class="header-section-number">18.4.4</span> Fetch the buy order rules</h3>
+<p>For the 4th clause, we will return only an atom as there’s no pure logic besides the pattern-match in the header itself:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the fourth clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id
+          }
+        }
+      ) do
+    :fetch_buy_order
+  end</code></pre>
+</div>
+<div id="terminate-trader-rules" class="section level3" number="18.4.5">
+<h3><span class="header-section-number">18.4.5</span> Terminate trader rules</h3>
+<p>For the 5th clause, we will indicate that trader needs to terminate:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the fifth clause
+  def generate_decision(
+        %TradeEvent{},
+        %State{
+          sell_order: %Binance.OrderResponse{
+            status: &quot;FILLED&quot;
+          }
+        }
+      ) do
+    :exit
+  end</code></pre>
+</div>
+<div id="fetch-the-sell-order-rules" class="section level3" number="18.4.6">
+<h3><span class="header-section-number">18.4.6</span> Fetch the sell order rules</h3>
+<p>For the 6th clause, we will indicate that trader needs to fetch the sell order:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the sixth clause
+  def generate_decision(
+        %TradeEvent{
+          seller_order_id: order_id
+        },
+        %State{
+          sell_order: %Binance.OrderResponse{
+            order_id: order_id
+          }
+        }
+      ) do
+    :fetch_sell_order
+  end</code></pre>
+</div>
+<div id="trigger-rebuy-rules" class="section level3" number="18.4.7">
+<h3><span class="header-section-number">18.4.7</span> Trigger rebuy rules</h3>
+<p>Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps. We couldn’t refactor this function by splitting it (as we’ve done in the first section) as we need to call the <code>trigger_rebuy?/3</code> function to check should rebuy be triggered. The functions that we refactored in the first section of this chapter were splittable as they relied on pattern-matching in the function headers where calling local functions is not allowed):</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the seventh clause
+  def generate_decision(
+        %TradeEvent{
+          price: current_price
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            price: buy_price
+          },
+          rebuy_interval: rebuy_interval,
+          rebuy_notified: false
+        }
+      ) do
+    if trigger_rebuy?(buy_price, current_price, rebuy_interval) do
+      :rebuy
+    else
+      :skip
+    end
+  end</code></pre>
+<div style="page-break-after: always;"></div>
+</div>
+<div id="the-final-clause-rules" class="section level3" number="18.4.8">
+<h3><span class="header-section-number">18.4.8</span> The final clause rules</h3>
+<p>The final (8th) clause will just ignore the trade event as it’s of no interest:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# the final(8th) clause
+  def generate_decision(%TradeEvent{}, %State{}) do
+    :skip
+  end</code></pre>
+<p>This finishes the changes to the <code>generate_decision/2</code> clauses. We extracted a fair amount of logic into an easily testable pure function. We now need to use it inside the <code>Naive.Trader</code> module.</p>
+</div>
+<div id="changes-to-the-naive.trader-module" class="section level3" number="18.4.9">
+<h3><span class="header-section-number">18.4.9</span> Changes to the <code>Naive.Trader</code> module</h3>
+<p>We will start by moving all of the calculation functions to the <code>Naive.Strategy</code> module as we are using them from the <code>generate_decision/2</code> function. Those will be:</p>
+<ul>
+<li><code>calculate_sell_price/3</code></li>
+<li><code>calculate_buy_price/3</code></li>
+<li><code>calculate_quantity/3</code></li>
+<li><code>trigger_rebuy?/3</code></li>
+</ul>
+<p>They can now be changed to public functions as they are pure and fit the “interface” of the <code>Naive.Strategy</code> module(it feels ok[and it’s safe as they are pure] to “expose” them to be called from other modules).</p>
+<p>We need to remember about moving the <code>Decimal</code> alias into the <code>Naive.Strategy</code> module together with a copy of the <code>TradeEvent</code> struct alias and add the alias for the <code>Naive.Trader.State</code> struct:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  alias Decimal, as: D
+  alias Core.Struct.TradeEvent
+  alias Naive.Trader.State</code></pre>
+<p>The next step will be to rename all the <code>handle_info/2</code> callback functions inside the <code>Naive.Trader</code> module to <code>execute_decision/2</code>, which we will get back to in a moment.</p>
+<p>First, we need to add a single <code>handle_info/2</code> callback under the <code>init/1</code> function that will pattern match only the fact that the received message contains the <code>TradeEvent</code> struct and the state is the correct <code>State</code> struct:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+# add after the `init/1` function
+  def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
+    Naive.Strategy.generate_decision(trade_event, state)
+    |&gt; execute_decision(state)
+  end</code></pre>
+<p>So, the <code>Naive.Strategy</code> module will decide what the trader server should do based on its pure business logic. That decision will be passed forward with the state to the <code>execute_decision/2</code> function (at this moment, it’s just the old <code>handle_info/2</code> function renamed, but we will update it next).</p>
+</div>
+<div id="naive.trader---place-buy-order" class="section level3" number="18.4.10">
+<h3><span class="header-section-number">18.4.10</span> <code>Naive.Trader</code> - place buy order</h3>
+<p>We will update the <code>execute_decision/2</code> function to take a decision + state and execute the correct action based on pattern-match of the decision. Starting with the 1st clause, we need to pattern match a tuple:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+# the first execute clause
+  def execute_decision(
+         {:place_buy_order, price, quantity},
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
+    @logger.info(
+      &quot;The trader(#{id}) is placing a BUY order &quot; &lt;&gt;
+        &quot;for #{symbol} @ #{price}, quantity: #{quantity}&quot;
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_buy(symbol, quantity, price, &quot;GTC&quot;)
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | buy_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+<p>The amount of pattern matching will be much smaller as part of the original callback has been moved inside the <code>Naive.Strategy</code>’s logic(to calculate the price and quantity).</p>
+</div>
+<div id="naive.trader---race-condition-clause" class="section level3" number="18.4.11">
+<h3><span class="header-section-number">18.4.11</span> <code>Naive.Trader</code> - Race condition clause</h3>
+<p>As we are using the <code>:skip</code> “decision” for both the race condition events and the “non interesting” events, we can safely remove this clause as we will implement skipping as the last clause.</p>
+</div>
+<div id="naive.trader---place-a-sell-order" class="section level3" number="18.4.12">
+<h3><span class="header-section-number">18.4.12</span> <code>Naive.Trader</code> - Place a sell order</h3>
+<p>In case of placing a sell order, we will pattern match on a tuple containing the <code>:place_sell_order</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         {:place_sell_order, sell_price},
+         %State{
+           id: id,
+           symbol: symbol,
+           buy_order: %Binance.OrderResponse{
+             orig_qty: quantity
+           }
+         } = state
+       ) do
+    @logger.info(
+      &quot;The trader(#{id}) is placing a SELL order for &quot; &lt;&gt;
+        &quot;#{symbol} @ #{sell_price}, quantity: #{quantity}.&quot;
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, &quot;GTC&quot;)
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | sell_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---fetch-the-buy-order" class="section level3" number="18.4.13">
+<h3><span class="header-section-number">18.4.13</span> <code>Naive.Trader</code> - Fetch the buy order</h3>
+<p>In case of fetching the buy order, we will pattern match on a <code>:fetch_buy_order</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :fetch_buy_order,
+         %State{
+           id: id,
+           symbol: symbol,
+           buy_order:
+             %Binance.OrderResponse{
+               order_id: order_id,
+               transact_time: timestamp
+             } = buy_order
+         } = state
+       ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} buy order got partially filled&quot;)
+
+    {:ok, %Binance.Order{} = current_buy_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_buy_order)
+
+    buy_order = %{buy_order | status: current_buy_order.status}
+
+    new_state = %{state | buy_order: buy_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---terminate-the-trader" class="section level3" number="18.4.14">
+<h3><span class="header-section-number">18.4.14</span> <code>Naive.Trader</code> - Terminate the trader</h3>
+<p>In case of terminating the trader, we will pattern match on a <code>:exit</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :exit,
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
+    @logger.info(&quot;Trader(#{id}) finished trade cycle for #{symbol}&quot;)
+    {:stop, :normal, state}
+  end</code></pre>
+<div style="page-break-after: always;"></div>
+</div>
+<div id="naive.trader---fetch-the-sell-order" class="section level3" number="18.4.15">
+<h3><span class="header-section-number">18.4.15</span> <code>Naive.Trader</code> - Fetch the sell order</h3>
+<p>In case of fetching the sell order, we will pattern match on a <code>:fetch_sell_order</code> atom and slim down on pattern matching:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :fetch_sell_order,
+         %State{
+           id: id,
+           symbol: symbol,
+           sell_order:
+             %Binance.OrderResponse{
+               order_id: order_id,
+               transact_time: timestamp
+             } = sell_order
+         } = state
+       ) do
+    @logger.info(&quot;Trader&#39;s(#{id} #{symbol} SELL order got partially filled&quot;)
+
+    {:ok, %Binance.Order{} = current_sell_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_sell_order)
+
+    sell_order = %{sell_order | status: current_sell_order.status}
+
+    new_state = %{state | sell_order: sell_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---triggering-rebuy" class="section level3" number="18.4.16">
+<h3><span class="header-section-number">18.4.16</span> <code>Naive.Trader</code> - Triggering rebuy</h3>
+<p>In case of triggering the rebuy procedure, we will pattern match on a <code>:rebuy</code> atom, slim down on pattern matching and simplify the function a fair bit(no branching required anymore - yay!):</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :rebuy,
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
+    @logger.info(&quot;Rebuy triggered for #{symbol} by the trader(#{id})&quot;)
+    new_state = %{state | rebuy_notified: true}
+    @leader.notify(:rebuy_triggered, new_state)
+    {:noreply, new_state}
+  end</code></pre>
+</div>
+<div id="naive.trader---the-final-ignore-clause" class="section level3" number="18.4.17">
+<h3><span class="header-section-number">18.4.17</span> <code>Naive.Trader</code> - The final ignore clause</h3>
+<p>The final ignore clause will <code>:skip</code> all events:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def execute_decision(:skip, state) do
+    {:noreply, state}
+  end</code></pre>
+<p>The ignore clause finishes our current refactoring round, which showcased that sometimes abstracting pattern matching into a separate function is a valid strategy to increase the amount of pure code.</p>
+<p>Note: The fact that we could abstract the logic from pattern matches is quite a unique situation to our application. I would not advise abstracting GenServer pattern matching into a separate module if dealing with different structs/actions(in our case, all our pattern matches were “making a trading decision”, it’s a single “action”, that’s why we abstracted them).</p>
+</div>
+</div>
+<div id="dealing-with-dirty-code" class="section level2" number="18.5">
+<h2><span class="header-section-number">18.5</span> Dealing with dirty code</h2>
+<p>In the last section, we’ve split the <code>handle_info/2</code> clauses into the <code>generate_decision/2</code> and <code>execute_decision/2</code> functions. That’s excellent progress, but we still have the strategy logic inside the <code>Naive.Trader</code> module.</p>
+<p>Let’s move the <code>execute_decision/2</code> function(together with all the code that it depends on, like the <code>broadcast_order/1</code> and <code>convert_to_order/1</code> functions as well as a copy of the <code>require Logger</code>) from the <code>Naive.Trader</code> module to the <code>Naive.Strategy</code> module.</p>
+<p>As the <code>generate_decision/2</code> function is causing side effects, we don’t want it to be called directly from the outside of the module, so we will need to make it private.</p>
+<p>Changing the <code>execute_decision/2</code> function(now inside the <code>Naive.Strategy</code> module) to private will cause a problem with the <code>handle_info/2</code> callback function inside the <code>Naive.Trader</code> module as it relies on the <code>execute_decision/2</code> function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn’t share with the <code>Naive.Trader</code> module. That’s why we will move the <strong>body</strong> of the <code>handle_info/2</code> callback function into a new function called <code>execute/2</code> inside the <code>Naive.Strategy</code> module:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  def execute(%TradeEvent{} = trade_event, %State{} = state) do
+    generate_decision(trade_event, state)
+    |&gt; execute_decision(state)
+  end</code></pre>
+<p>Before updating the <code>Naive.Trader</code> module to use the <code>execute/2</code> function, we need to address another issue that moving the <code>execute_decision/2</code> caused. At this moment, all of the clauses return GenServer specific tuples. What we really need to return to the trader is an atom indicating should it continue or terminate together with the updated state:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# last lines inside the `execute_decision/2` clauses
+{:ok, new_state} # &lt;= previously {:noreply, new_state} (5 times)
+{:ok, state} # &lt;= previously {:noreply, state} (once)
+:exit # &lt;= previously {:stop, :normal, state} + remove `state` pattern match (once)</code></pre>
+<p>We can now update the <code>handle_info/2</code> callback function to call the new “interface” of the <code>Naive.Strategy</code> module that we just created and act accordingly to the result:</p>
+<pre><code># /apps/naive/lib/naive/trader.ex
+  def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
+    case Naive.Strategy.execute(trade_event, state) do
+      {:ok, new_state} -&gt; {:noreply, new_state}
+      :exit -&gt; {:stop, :normal, state}
+    end
+  end</code></pre>
+<p>At this moment, we could just copy/move module attributes from the <code>Naive.Trader</code> module to the <code>Naive.Strategy</code> module and our code would start to work again. Still, before we will do that, we will use this opportunity to look into how to make our dirty code testable.</p>
+</div>
+<div id="making-dirty-code-testable" class="section level2" number="18.6">
+<h2><span class="header-section-number">18.6</span> Making dirty code testable</h2>
+<p>Making dirty code testable is very closely linked to injecting dependencies. In the testing environment, we would like to use dummy implementations instead of executing the side-effect-causing code to simplify the tests. We will look into the different ways that we can pass side-effect-causing “code” into impure functions.</p>
+<div id="passing-functions-arguments" class="section level3" number="18.6.1">
+<h3><span class="header-section-number">18.6.1</span> Passing functions arguments</h3>
+<p>Functions are first-class citizens in Elixir, which means that we can pass them as arguments to functions. This way, we can pass side-effect causing functions into our <code>Naive.Strategy</code> module.</p>
+<p>Let’s look at how this would look in practice. We need to look into the <code>execute_decision/2</code> function, as it’s where the place side effects happen. Looking at the 1st clause(responsible for placing a buy order), we can see that it’s calling the <code>Logger.info/1</code>, <code>Binance.order_limit_buy/4</code>, <code>PubSub.broadcast/3</code>(via the <code>broadcast_order/1</code> function) and <code>Leader.notify/2</code> functions. To make our code easily testable, we would need to be able to pass dummy implementations for all of those.</p>
+<p>As we aren’t calling the <code>execute_decision/2</code> directly, we need to pass all of the above functions as arguments to the <code>execute/2</code> function, which will pass them onward to the <code>execute_decision/2</code>.</p>
+<p>We can see that even with default values pointing to the “real” implementation, that’s still <strong>a lot</strong> of noise to make testing easier. It will negatively impact the maintenance of the code - here’s an example of what this would look like(don’t bother typing it):</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+# injecting dummy implementation, fallback to real implementation
+def execute(
+  %TradeEvent{} = trade_event,
+  %State{} = state,
+  logger_info \\ &amp;Logger.info/1, # &lt;= function injected
+  order_limit_buy \\ &amp;Binance.order_limit_buy/4, # &lt;= function injected
+  pubsub_broadcast \\ &amp;PubSub.broadcast/3, # &lt;= function injected
+  notify_leader \\ &amp;Leader.notify/2 # &lt;= function injected
+) do
+  ...</code></pre>
+<p>There are already four functions, and we only took care of side-effects causing functions from the first <code>execute_decision/2</code> clause. We can easily see how this very quickly becomes just unmanageable as there would be 10+ “injected” arguments going from the <code>execute/2</code> to <code>execute_decision/2</code>, and only some of them would be used in each clause.</p>
+<p>Additional downsides:</p>
+<ul>
+<li>when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function <strong>multiple times with different arities</strong>. An example could be passing <code>Logger.info/1</code> and <code>Logger.info/2</code></li>
+<li>we need to give a name to every passed function, sometimes multiple arities (again, how should variables for <code>Logger.info/1</code> and <code>Logger.info/2</code> be called? <code>logger_info_2</code>?)</li>
+<li>share amount of arguments negatively impacts code readability</li>
+</ul>
+<p>We can see that passing functions as arguments is just a bad idea in case of making our code testable. It will have the opposite effect, decreasing readability making our code difficult to maintain and follow.</p>
+<p>Important note: Passing functions as arguments is not always bad! A good example could be when different actions need to be performed based on runtime data.</p>
+<div style="page-break-after: always;"></div>
+</div>
+<div id="passing-grouped-functions-as-a-context" class="section level3" number="18.6.2">
+<h3><span class="header-section-number">18.6.2</span> Passing grouped functions as a context</h3>
+<p>The natural next step would be to put all of those functions into some structure like Map or Keyword list. Whichever we would choose, we will end up with the same problems of naming keys(this time inside the map/keyword list), multiple functions because of different arity but also default values inside each clause of the <code>execute_decision/2</code> function:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state,
+        %{} = context # &lt;= context added
+      ) do
+    # vvv fetch from context vvv
+    logger_info = Map.get(context, :logger_info, &amp;Logger.info/1)
+    order_limit_buy = Map.get(context, :order_limit_buy, &amp;Binance.order_limit_buy/4)
+    leader_notify = Map.get(context, :leader_notify, &amp;Leader.notify/2)</code></pre>
+<p>Again this looks like a bad idea. It’s probably marginally better than just sending functions one by one, but not much.</p>
+</div>
+<div id="passing-grouped-modules-as-a-context" class="section level3" number="18.6.3">
+<h3><span class="header-section-number">18.6.3</span> Passing grouped modules as a context</h3>
+<p>The significant advantage of passing modules as arguments instead of functions is that we no longer have a problem with naming keys or caring about different functions’ arities. There will also be substantially fewer modules used in comparison to functions.</p>
+<p>Sadly we still need to use the <code>Map</code> function to get the modules out of <code>"context"</code>:</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state,
+        %{} = context # &lt;= context added
+      ) do
+    logger = Map.get(context, :logger, &amp;Logger) # &lt;= fetch from context
+    binance = Map.get(context, :binance, Binance) # &lt;= fetch from context
+    leader = Map.get(context, :leader, &amp;Leader) # &lt;= fetch from context</code></pre>
+<p>This is much better, but we will still need to do a fair amount of additional work to get the modules out. Also, our code will be full of the “default” modules(as <strong>each</strong> of the clauses retrieving them from the context will need to specify defaults).</p>
+</div>
+<div id="injecting-modules-to-modules-attributes-based-on-the-configuration" class="section level3" number="18.6.4">
+<h3><span class="header-section-number">18.6.4</span> Injecting modules to module’s attributes based on the configuration</h3>
+<p>And we finally got there - we have come a full circle. This is the approach that we previously used inside the <code>Naive.Trader</code> module(you can go ahead and add them to the <code>Naive.Strategy</code> module):</p>
+<pre><code># /apps/naive/lib/naive/strategy.ex
+defmodule Naive.Strategy do
+  ...
+
+  @binance_client Application.compile_env(:naive, :binance_client)
+  @leader Application.compile_env(:naive, :leader)
+  @logger Application.compile_env(:core, :logger)
+  @pubsub_client Application.compile_env(:core, :pubsub_client)</code></pre>
+<p>We looked into different ways to inject dependencies to understand their downsides.</p>
+<p>Sometimes, injecting values(like modules) as module attributes can feel like a “global state”, “singleton”, or similar antipattern. We need to understand that each programming language provides different ways to solve common programming problems. Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules’ attributes.</p>
+<p>As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there’s just <strong>no better way</strong> to do it in Elixir, and now we know why(based on the issues with the alternative approaches).</p>
+<p>Together with the module attributes, our code should be now fully functional.</p>
+</div>
+</div>
+<div id="the-power-with-in" class="section level2" number="18.7">
+<h2><span class="header-section-number">18.7</span> The power <code>with</code>-in</h2>
+<p>In the last section, we looked into different ways to inject modules’ dependencies to avoid side-effects causing functions inside the tests. Besides side-effect causing functions, in functional programming, error handling is also done in a specific manner.</p>
+<p>Many languages introduced concepts like <code>Either</code>, which is a struct that can be either <code>Left</code>(error result) or <code>Right</code>(success result). Those quite nicely fit to the standard Elixir results like <code>{:error, reason}</code> and <code>{:ok, result}</code>. Further, those languages provide multiple functions to work with the <code>Either</code>, like <code>map</code>.</p>
+<pre><code>safeDivide(2, 0) # &lt;= returns Left(&quot;Dividing error&quot;)
+|&gt; then(Either.map(&amp;(&amp;1 * 2))) # &lt;= still Left(&quot;Dividing error&quot;)
+
+safeDivide(2, 1) # &lt;= returns Right(2)
+|&gt; then(Either.map(&amp;(&amp;1 * 2))) # &lt;= returns Right(4)</code></pre>
+<p>The above code will use hypothetical <code>Left('Dividing error')</code> or <code>Right(result)</code>. The <code>Either.map/2</code> is a special <code>map</code> function that runs the passed function if it’s <code>Right</code> or completely ignores it when it’s <code>Left</code> - it could be visualized as:</p>
+<pre><code>def map(%Either.Left{} = left, _fun), do: left
+def map(%Either.Right{result: v}, fun), do: %Either.Right{result: fun.(v)}</code></pre>
+<p>This is nice and great, but what if the function inside the <code>Either.map/2</code> returns another <code>Either</code>? Like:</p>
+<pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
+|&gt; then(Either.map(&amp;(safeDivide(&amp;1, 1)))) # &lt;= now Right(Right(2))!?</code></pre>
+<p>Now we need to understand those abstractions to be able to decide should we <code>map</code> or <code>flatMap</code>(that’s the function that will not wrap the function result into the <code>Right</code>):</p>
+<pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
+|&gt; then(Either.flatMap(&amp;(safeDivide(&amp;1, 1)))) &lt;= still Right(2)</code></pre>
+<p>And that is just the beginning of the complexities that those abstractions bring.</p>
+<p>Furthermore, let’s say that inside the first <code>Either.map/2</code> callback, we will have some variable(s) that we would like to use later on. We are now deep inside closures world like the following:</p>
+<pre><code>safeDivide(2, 1) # &lt;= returns Right(2)
+|&gt; then(Either.flatMap(fn res -&gt;
+    # x = some data generated here
+    safeDivide(2, 1)
+    |&gt; then(Either.map(&amp;(&amp;1 * 2)))
+    |&gt; then(Either.map(&amp;(&amp;1 * x))) # &lt;= a clause to have access to x
+  end))</code></pre>
+<p>The above example is obviously simplified and silly but should give us a gist of what sort of complexity we will very soon get involved in. And, again, we just scratched the surface - there are so many more functions that the <code>Either</code> provides. Besides, writing code in this fashion in Elixir would cause a lot of friction in the team as it’s difficult to find any advantages of using it.</p>
+<div id="idiomatic-error-handling" class="section level3" number="18.7.1">
+<h3><span class="header-section-number">18.7.1</span> Idiomatic error handling</h3>
+<p>To achieve the same results, Elixir provides the <code>with</code> statement:</p>
+<pre><code>  with {:ok, divide_result} &lt;- safeDiv(2,1),
+       {:ok, divide_result_2} &lt;- safeDivide(2, 1)
+  do
+    divide_result_2 * 2 * divide_result
+  else
+    err -&gt; err
+  end</code></pre>
+<p>The above code provides <strong>the same</strong> functionality as the one before with <code>Either</code>. We can clearly understand it <strong>without</strong> any knowledge about how <code>Either</code> works, <code>mapping</code>, <code>flatMapping</code> etc. It’s just standard Elixir.</p>
+<p>Again, as in the case of modules’ attributes. Elixir provides a pragmatic way of dealing with errors - just return a tuple with an <code>:error</code> atom. It also provides utility functions like <code>with</code> to deal with errors in an idiomatic way. There’s <strong>no reason</strong> to introduce concepts like <code>Either</code> as language has built-in concepts/patterns taking care of error situations.</p>
+</div>
+</div>
+<div id="do-or-not-to-do" class="section level2" number="18.8">
+<h2><span class="header-section-number">18.8</span> Do or not to do</h2>
+<p>In the last section, we discussed wrapping the results in the <code>Either</code> structs to be able to map, flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing any code(side effects) at all?</p>
+<p>That’s the basic idea behind all the category theory related abstractions like the infamous IO Monad.</p>
+<p>I won’t go into a vast amount of details. Still, we can think about it as every time we are calling a <em>special</em> <code>map</code> or <code>flatMap</code>, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:</p>
+<pre><code>  def map(acc, function) do
+    fn -&gt;
+      case acc.() do
+        {:ok, data} -&gt; {:ok, function.(data)}
+        {:error, error} -&gt; {:error, error}
+      end
+    end
+  end</code></pre>
+<p>In a nutshell, what we would end up with is a function containing a function containing a function… At this moment, I find it very difficult to find any practical reason why somebody would want to do something like this in a dynamically typed language.</p>
+<p>In statically typed languages, there’s an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effectfull code.</p>
+<p>In the Elixir, without strong typing and with a massive impact on how the code is written and how easy it is to understand, there’s just <strong>no practical</strong> reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.</p>
+<div style="page-break-after: always;"></div>
+</div>
+<div id="final-thoughts" class="section level2" number="18.9">
+<h2><span class="header-section-number">18.9</span> Final thoughts</h2>
+<p>Every programming language needs to provide tools to handle common concerns like error handling or dependency injection.</p>
+<p>Elixir provides excellent tools to handle both of those concerns using the <code>with</code> statement and modules’ attributes.</p>
+<p>Without a type system, there’s no practical reason why anybody would introduce category theory-based abstractions like Monads. The resulting code will be complicated to deal with, and as in the case of many other <strong>functional</strong> programming languages like Ocaml or Clojure, the pragmatic way is to execute side effects.</p>
+<p><strong>It’s the developers’ responsibility to design code in a way that maximizes the amount of pure code and push side effects to “the edge”.</strong> The typical pattern would be to “prepare” (group all logic before side effects) or to “post process” the results of multiple side effects (group pure logic after side effects).</p>
+<p>That’s all in regards to functional programming in Elixir. In the next chapter, we will look into what the idiomatic Elixir code looks like.</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18">Github</a></p>
+
 </div>
 </div>
             </section>
@@ -618,8 +1207,8 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
           </div>
         </div>
       </div>
-<a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="add-support-for-multiple-transactions-per-order.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="mox-rocks.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="idiomatic-otp.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
@@ -651,7 +1240,7 @@ gitbook.start({
 "size": 2
 },
 "edit": {
-"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/07-introduce-budget-and-quantity.Rmd",
+"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/18-functional-elixir.Rmd",
 "text": "Edit"
 },
 "history": {

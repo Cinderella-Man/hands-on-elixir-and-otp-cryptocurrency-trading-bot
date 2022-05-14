@@ -367,7 +367,7 @@ Inside the `BinanceMock` module, we can now update the `get_exchange_info/0` fun
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
   def get_exchange_info() do
-    case Application.get_env(:binance_mock, :use_cached_exchange_info) do
+    case Application.compile_env(:binance_mock, :use_cached_exchange_info) do
       true -> get_cached_exchange_info()
       _ -> Binance.get_exchange_info()
     end
@@ -491,7 +491,7 @@ Inside the `Streamer` application (apps/streamer/priv/seed_settings.exs) we can 
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/priv/seed_settings.exs
-binance_client = Application.get_env(:streamer, :binance_client) # <= new
+binance_client = Application.compile_env(:streamer, :binance_client) # <= new
 
 Logger.info("Fetching exchange info from Binance to create streaming settings")
 
@@ -663,4 +663,4 @@ It's possible to implement a feedback loop and run our tests inside "sandbox" (t
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 
-Source code for this chapter can be found at [Github](https://github.com/frathon/create-a-cryptocurrency-trading-bot-in-elixir-source-code/tree/chapter_16)
+Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_16)

@@ -1,0 +1,925 @@
+# Functional Elixir
+
+## Objectives
+- the reasoning behind the functional approach
+- simplifying by splitting
+- abstracting the "pure" logic
+- dealing with dirty code
+- making dirty code testable
+- the power `with`-in
+- do or not to do
+- final thoughts
+
+## The reasoning behind the functional approach
+
+Across the last 17 chapters, we focused on learning OTP by building a trading system. On the way, we omitted (for a very good reason - a clear focus on OTP) the conversation about functional programming.
+
+But wait, what? We are already using concepts like higher-order functions - isn't that enough?
+
+We indeed use some functional patterns, but we never dug deeper into what Elixir developers **should** know(and apply) and, most importantly, **why**.
+
+In a nutshell, the selling point of functional programming is that applying it will make your code easier to reason about and test. Tests dramatically improve software quality. The easier they are to write, there's less excuse not to write them - as simple as that.
+
+We will start from the basics and look into different ways of implementing functional concepts, considering Elixir's strengths and weaknesses.
+
+## Simplifying by splitting
+
+Note: This section could appear to be a bit "random", but I added it to aid continuity of refactoring steps(refactoring those callbacks later would cause a fair amount of complexity).
+
+Let's look at our strategy inside the `Naive.Trader` module. In this section, we will focus on its (`handle_info/2`) callback function.
+
+We are looking for clauses that do more than "one thing" to split them into multiple clauses:
+
+- The first callback places a buy order - it has a single responsibility and is easy to follow.
+- The second callback takes care of race conditions - the same story, easy to understand.
+- The third callback is the one we will focus on. It branches using the `if` statement, and we could describe it as "fetch and maybe place a sell order" function. The "and" in the description clearly indicates that it's really two functions glued together. We will split it into "fetch buy order" and "place a sell order" functions(below code replaces the 3rd `handle_info/2` callback):
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def handle_info(
+        %TradeEvent{},
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order: %Binance.OrderResponse{
+            price: buy_price,
+            orig_qty: quantity,
+            status: "FILLED"
+          },
+          sell_order: nil,
+          profit_interval: profit_interval,
+          tick_size: tick_size
+        } = state
+      ) do
+    sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
+
+    @logger.info(
+      "The trader(#{id}) is placing a SELL order for " <>
+        "#{symbol} @ #{sell_price}, quantity: #{quantity}."
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, "GTC")
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | sell_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+
+  def handle_info(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          id: id,
+          symbol: symbol,
+          buy_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = buy_order
+        } = state
+      ) do
+    @logger.info("Trader's(#{id} #{symbol} buy order got partially filled")
+
+    {:ok, %Binance.Order{} = current_buy_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_buy_order)
+
+    buy_order = %{buy_order | status: current_buy_order.status}
+
+    new_state = %{state | buy_order: buy_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+```
+
+The first function takes care of placing a sell order. The second one fetches the buy order.
+
+- We can now move to the next clause, similar to the last one we could describe as "fetch the sell order and maybe terminate the trader". We will split it into two callbacks: "fetch the sell order" and "terminate trader".
+
+\newpage
+
+The code below replaces the 5th `handle_info/2` callback:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def handle_info(
+        %TradeEvent{},
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order: %Binance.OrderResponse{
+            status: "FILLED"
+          }
+        } = state
+      ) do
+    @logger.info("Trader(#{id}) finished trade cycle for #{symbol}")
+    {:stop, :normal, state}
+  end
+
+  def handle_info(
+        %TradeEvent{
+          seller_order_id: order_id
+        },
+        %State{
+          id: id,
+          symbol: symbol,
+          sell_order:
+            %Binance.OrderResponse{
+              order_id: order_id,
+              transact_time: timestamp
+            } = sell_order
+        } = state
+      ) do
+    @logger.info("Trader's(#{id} #{symbol} SELL order got partially filled")
+
+    {:ok, %Binance.Order{} = current_sell_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_sell_order)
+
+    sell_order = %{sell_order | status: current_sell_order.status}
+
+    new_state = %{state | sell_order: sell_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+```
+
+The first function takes care of terminating the trader. The second function is fetching the sell order.
+
+That finishes our first refactoring round, but I need to admit that our change has impacted the behaviour of our strategy. Each time a buy or sell order gets filled, we will fetch that order from Binance, but we **won't** immediately place a sell order nor terminate as it was happening before. Instead, only when another event arrives will the trader place a sell order or terminate.
+
+Changes like this require approval from the business in a work situation, but it's a good showcase of the situation where we can propose a solution that will simplify the code(the benefits will become evident in the following sections).
+
+We can confirm that we have broken our tests by running our integration testsuite:
+
+```bash
+MIX_ENV=integration mix test.integration
+...
+  1) test Naive trader full trade(buy + sell) test (NaiveTest)
+     apps/naive/test/naive_test.exs:12
+     ** (MatchError) no match of right hand side value: [["0.43070000", "BUY", "FILLED"]...
+     code: [buy_1, sell_1, buy_2] = DataWarehouse.Repo.all(query)
+     stacktrace:
+       test/naive_test.exs:83: (test)
+```
+
+(Subject to acceptance by the business) we will fix the integration test in the following way:
+
+```
+# /apps/naive/test/naive_test.exs
+  test "Naive trader full trade(buy + sell) test" do
+    ...
+    # Step 4 - Broadcast 10 events # <= updated comment
+    [
+       ...
+      generate_event(8, "0.43205", "345.14235000"),
+      # this one should trigger buy order for a new trader process
+      generate_event(9, "0.43205", "345.14235000"), # <= added line
+      generate_event(10, "0.43210", "3201.86480000") # <= updated id
+    ]
+```
+
+We added an event at the same price(as the sell order's price) that will trigger placing a buy order by the new trader and make our test green again.
+
+\newpage
+
+## Abstracting the "pure" logic
+
+In our adventure to make our code more functional, we should strive to separate(as much as possible) pure business logic from side effects and boilerplate.
+
+The `Naive.Trader` module is a GenServer that receives trade events via messages. Based on them and the current state, using pattern-matching, it decides what action should be performed(place a buy order, fetch a buy order, place a sell order, fetch sell order, terminate trader, trigger rebuy or ignore event).
+
+Each of the pattern-matches inside the callback functions' headers is a **strategy** specific business logic that got mixed with the fact that it's executed by a GenServer that receives messages.
+
+We will create a new file called `strategy.exs` inside the `apps/naive/lib/naive/` directory, where we will **copy** all of the `handle_info/2` callback functions from the `Naive.Trader` module:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+defmodule Naive.Strategy do
+
+  def handle_info(...) do
+    ... # <= place a buy order logic
+  end
+
+  def handle_info(...) do
+    ... # <= race condition fix logic
+  end
+
+  def handle_info(...) do
+    ... # <= place a sell order logic
+  end
+
+  def handle_info(...) do
+    ... # <= fetch the buy order logic
+  end
+
+  def handle_info(...) do
+    ... # <= terminate trader logic
+  end
+
+  def handle_info(...) do
+    ... # <= fetch the sell order logic
+  end
+
+  def handle_info(...) do
+    ... # <= trigger rebuy order logic
+  end
+
+  def handle_info(...) do
+    ... # <= ignore trade event logic
+  end
+```
+
+First, we will rename all of the `handle_info/2` functions inside the `Naive.Strategy` module to `generate_decision/2`. Next, we will go through them one by one, leaving the pure parts and limiting them to returning the decision.
+
+### Place a buy order rules
+
+The first function decides should the trader place a buy order. We can see that price and quantity calculations are pure functions based on the incoming data. We will remove everything below those two as it's causing side effects.
+
+As now we are dealing with a function generating a decision, we will return a tuple with data that, together with state, will be used to place a buy order. 
+
+After removing some of the pattern-matching that we used to retrieve data(no longer needed), our first function should look like this:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the first clause
+  def generate_decision(
+        %TradeEvent{price: price},
+        %State{
+          budget: budget,
+          buy_order: nil,
+          buy_down_interval: buy_down_interval,
+          tick_size: tick_size,
+          step_size: step_size
+        }
+      ) do
+    price = calculate_buy_price(price, buy_down_interval, tick_size)
+
+    quantity = calculate_quantity(budget, price, step_size)
+
+    {:place_buy_order, price, quantity}
+  end
+```
+
+\newpage
+
+### Race condition rules
+
+The second function deals with the race condition when multiple transactions fill the buy order. The original callback ignores those trade events, so the `generate_decision/2` function should return the same "decision":
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the second clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id,
+            status: "FILLED"
+          },
+          sell_order: %Binance.OrderResponse{}
+        }
+      ) do
+    :skip
+  end
+```
+
+### Place a sell order rules
+
+We will follow the same logic for the 3rd clause of the `generate_decision/2` function. We will leave only the sell price calculation as it's pure and return a tuple together with the decision:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the third clause
+  def generate_decision(
+        %TradeEvent{},
+        %State{
+          buy_order: %Binance.OrderResponse{
+            status: "FILLED",
+            price: buy_price
+          },
+          sell_order: nil,
+          profit_interval: profit_interval,
+          tick_size: tick_size
+        }
+      ) do
+    sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
+    {:place_sell_order, sell_price}
+  end
+```
+
+### Fetch the buy order rules
+
+For the 4th clause, we will return only an atom as there's no pure logic besides the pattern-match in the header itself:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the fourth clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id
+          }
+        }
+      ) do
+    :fetch_buy_order
+  end
+```
+
+### Terminate trader rules
+
+For the 5th clause, we will indicate that trader needs to terminate:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the fifth clause
+  def generate_decision(
+        %TradeEvent{},
+        %State{
+          sell_order: %Binance.OrderResponse{
+            status: "FILLED"
+          }
+        }
+      ) do
+    :exit
+  end
+```
+
+### Fetch the sell order rules
+
+For the 6th clause, we will indicate that trader needs to fetch the sell order:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the sixth clause
+  def generate_decision(
+        %TradeEvent{
+          seller_order_id: order_id
+        },
+        %State{
+          sell_order: %Binance.OrderResponse{
+            order_id: order_id
+          }
+        }
+      ) do
+    :fetch_sell_order
+  end
+```
+
+### Trigger rebuy rules
+
+Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps. We couldn't refactor this function by splitting it (as we've done in the first section) as we need to call the `trigger_rebuy?/3` function to check should rebuy be triggered. The functions that we refactored in the first section of this chapter were splittable as they relied on pattern-matching in the function headers where calling local functions is not allowed):
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the seventh clause
+  def generate_decision(
+        %TradeEvent{
+          price: current_price
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            price: buy_price
+          },
+          rebuy_interval: rebuy_interval,
+          rebuy_notified: false
+        }
+      ) do
+    if trigger_rebuy?(buy_price, current_price, rebuy_interval) do
+      :rebuy
+    else
+      :skip
+    end
+  end
+```
+
+\newpage
+
+### The final clause rules
+
+The final (8th) clause will just ignore the trade event as it's of no interest:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# the final(8th) clause
+  def generate_decision(%TradeEvent{}, %State{}) do
+    :skip
+  end
+```
+
+This finishes the changes to the `generate_decision/2` clauses. We extracted a fair amount of logic into an easily testable pure function. We now need to use it inside the `Naive.Trader` module.
+
+### Changes to the `Naive.Trader` module
+
+We will start by moving all of the calculation functions to the `Naive.Strategy` module as we are using them from the `generate_decision/2` function. Those will be:
+
+- `calculate_sell_price/3`
+- `calculate_buy_price/3`
+- `calculate_quantity/3`
+- `trigger_rebuy?/3`
+
+They can now be changed to public functions as they are pure and fit the "interface" of the `Naive.Strategy` module(it feels ok[and it's safe as they are pure] to "expose" them to be called from other modules).
+
+We need to remember about moving the `Decimal` alias into the `Naive.Strategy` module together with a copy of the `TradeEvent` struct alias and add the alias for the `Naive.Trader.State` struct:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+  alias Decimal, as: D
+  alias Core.Struct.TradeEvent
+  alias Naive.Trader.State
+```
+
+The next step will be to rename all the `handle_info/2` callback functions inside the `Naive.Trader` module to `execute_decision/2`, which we will get back to in a moment.
+
+First, we need to add a single `handle_info/2` callback under the `init/1` function that will pattern match only the fact that the received message contains the `TradeEvent` struct and the state is the correct `State` struct:
+
+```
+# /apps/naive/lib/naive/trader.ex
+# add after the `init/1` function
+  def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
+    Naive.Strategy.generate_decision(trade_event, state)
+    |> execute_decision(state)
+  end
+```
+
+So, the `Naive.Strategy` module will decide what the trader server should do based on its pure business logic. That decision will be passed forward with the state to the `execute_decision/2` function (at this moment, it's just the old `handle_info/2` function renamed, but we will update it next).
+
+### `Naive.Trader` - place buy order
+
+We will update the `execute_decision/2` function to take a decision + state and execute the correct action based on pattern-match of the decision. Starting with the 1st clause, we need to pattern match a tuple:
+
+```
+# /apps/naive/lib/naive/trader.ex
+# the first execute clause
+  def execute_decision(
+         {:place_buy_order, price, quantity},
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
+    @logger.info(
+      "The trader(#{id}) is placing a BUY order " <>
+        "for #{symbol} @ #{price}, quantity: #{quantity}"
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_buy(symbol, quantity, price, "GTC")
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | buy_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+```
+
+The amount of pattern matching will be much smaller as part of the original callback has been moved inside the `Naive.Strategy`'s logic(to calculate the price and quantity).
+
+### `Naive.Trader` - Race condition clause
+
+As we are using the `:skip` "decision" for both the race condition events and the "non interesting" events, we can safely remove this clause as we will implement skipping as the last clause.
+
+### `Naive.Trader` - Place a sell order
+
+In case of placing a sell order, we will pattern match on a tuple containing the `:place_sell_order` atom and slim down on pattern matching:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         {:place_sell_order, sell_price},
+         %State{
+           id: id,
+           symbol: symbol,
+           buy_order: %Binance.OrderResponse{
+             orig_qty: quantity
+           }
+         } = state
+       ) do
+    @logger.info(
+      "The trader(#{id}) is placing a SELL order for " <>
+        "#{symbol} @ #{sell_price}, quantity: #{quantity}."
+    )
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, "GTC")
+
+    :ok = broadcast_order(order)
+
+    new_state = %{state | sell_order: order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+```
+
+### `Naive.Trader` - Fetch the buy order
+
+In case of fetching the buy order, we will pattern match on a `:fetch_buy_order` atom and slim down on pattern matching:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :fetch_buy_order,
+         %State{
+           id: id,
+           symbol: symbol,
+           buy_order:
+             %Binance.OrderResponse{
+               order_id: order_id,
+               transact_time: timestamp
+             } = buy_order
+         } = state
+       ) do
+    @logger.info("Trader's(#{id} #{symbol} buy order got partially filled")
+
+    {:ok, %Binance.Order{} = current_buy_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_buy_order)
+
+    buy_order = %{buy_order | status: current_buy_order.status}
+
+    new_state = %{state | buy_order: buy_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+```
+
+### `Naive.Trader` - Terminate the trader
+
+In case of terminating the trader, we will pattern match on a `:exit` atom and slim down on pattern matching:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :exit,
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
+    @logger.info("Trader(#{id}) finished trade cycle for #{symbol}")
+    {:stop, :normal, state}
+  end
+```
+
+\newpage
+
+### `Naive.Trader` - Fetch the sell order
+
+In case of fetching the sell order, we will pattern match on a `:fetch_sell_order` atom and slim down on pattern matching:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :fetch_sell_order,
+         %State{
+           id: id,
+           symbol: symbol,
+           sell_order:
+             %Binance.OrderResponse{
+               order_id: order_id,
+               transact_time: timestamp
+             } = sell_order
+         } = state
+       ) do
+    @logger.info("Trader's(#{id} #{symbol} SELL order got partially filled")
+
+    {:ok, %Binance.Order{} = current_sell_order} =
+      @binance_client.get_order(
+        symbol,
+        timestamp,
+        order_id
+      )
+
+    :ok = broadcast_order(current_sell_order)
+
+    sell_order = %{sell_order | status: current_sell_order.status}
+
+    new_state = %{state | sell_order: sell_order}
+    @leader.notify(:trader_state_updated, new_state)
+    {:noreply, new_state}
+  end
+```
+
+### `Naive.Trader` - Triggering rebuy
+
+In case of triggering the rebuy procedure, we will pattern match on a `:rebuy` atom, slim down on pattern matching and simplify the function a fair bit(no branching required anymore - yay!):
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def execute_decision(
+         :rebuy,
+         %State{
+           id: id,
+           symbol: symbol
+         } = state
+       ) do
+    @logger.info("Rebuy triggered for #{symbol} by the trader(#{id})")
+    new_state = %{state | rebuy_notified: true}
+    @leader.notify(:rebuy_triggered, new_state)
+    {:noreply, new_state}
+  end
+```
+
+### `Naive.Trader` - The final ignore clause
+
+The final ignore clause will `:skip` all events:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def execute_decision(:skip, state) do
+    {:noreply, state}
+  end
+```
+
+The ignore clause finishes our current refactoring round, which showcased that sometimes abstracting pattern matching into a separate function is a valid strategy to increase the amount of pure code.
+
+Note: The fact that we could abstract the logic from pattern matches is quite a unique situation to our application. I would not advise abstracting GenServer pattern matching into a separate module if dealing with different structs/actions(in our case, all our pattern matches were "making a trading decision", it's a single "action", that's why we abstracted them).
+
+## Dealing with dirty code
+
+In the last section, we've split the `handle_info/2` clauses into the `generate_decision/2` and `execute_decision/2` functions. That's excellent progress, but we still have the strategy logic inside the `Naive.Trader` module.
+
+Let's move the `execute_decision/2` function(together with all the code that it depends on, like the `broadcast_order/1` and `convert_to_order/1` functions as well as a copy of the `require Logger`) from the `Naive.Trader` module to the `Naive.Strategy` module.
+
+As the `generate_decision/2` function is causing side effects, we don't want it to be called directly from the outside of the module, so we will need to make it private.
+
+Changing the `execute_decision/2` function(now inside the `Naive.Strategy` module) to private will cause a problem with the `handle_info/2` callback function inside the `Naive.Trader` module as it relies on the `execute_decision/2` function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn't share with the `Naive.Trader` module. That's why we will move the **body** of the `handle_info/2` callback function into a new function called `execute/2` inside the `Naive.Strategy` module:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+  def execute(%TradeEvent{} = trade_event, %State{} = state) do
+    generate_decision(trade_event, state)
+    |> execute_decision(state)
+  end
+```
+
+Before updating the `Naive.Trader` module to use the `execute/2` function, we need to address another issue that moving the `execute_decision/2` caused. At this moment, all of the clauses return GenServer specific tuples. What we really need to return to the trader is an atom indicating should it continue or terminate together with the updated state:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# last lines inside the `execute_decision/2` clauses
+{:ok, new_state} # <= previously {:noreply, new_state} (5 times)
+{:ok, state} # <= previously {:noreply, state} (once)
+:exit # <= previously {:stop, :normal, state} + remove `state` pattern match (once)
+```
+
+We can now update the `handle_info/2` callback function to call the new "interface" of the `Naive.Strategy` module that we just created and act accordingly to the result:
+
+```
+# /apps/naive/lib/naive/trader.ex
+  def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
+    case Naive.Strategy.execute(trade_event, state) do
+      {:ok, new_state} -> {:noreply, new_state}
+      :exit -> {:stop, :normal, state}
+    end
+  end
+```
+
+At this moment, we could just copy/move module attributes from the `Naive.Trader` module to the `Naive.Strategy` module and our code would start to work again. Still, before we will do that, we will use this opportunity to look into how to make our dirty code testable.
+
+## Making dirty code testable
+
+Making dirty code testable is very closely linked to injecting dependencies. In the testing environment, we would like to use dummy implementations instead of executing the side-effect-causing code to simplify the tests. We will look into the different ways that we can pass side-effect-causing "code" into impure functions.
+
+### Passing functions  arguments
+
+Functions are first-class citizens in Elixir, which means that we can pass them as arguments to functions. This way, we can pass side-effect causing functions into our `Naive.Strategy` module.
+
+Let's look at how this would look in practice. We need to look into the `execute_decision/2` function, as it's where the place side effects happen. Looking at the 1st clause(responsible for placing a buy order), we can see that it's calling the `Logger.info/1`, `Binance.order_limit_buy/4`, `PubSub.broadcast/3`(via the `broadcast_order/1` function) and `Leader.notify/2` functions. To make our code easily testable, we would need to be able to pass dummy implementations for all of those.
+
+As we aren't calling the `execute_decision/2` directly, we need to pass all of the above functions as arguments to the `execute/2` function, which will pass them onward to the `execute_decision/2`.
+
+We can see that even with default values pointing to the "real" implementation, that's still **a lot** of noise to make testing easier. It will negatively impact the maintenance of the code - here's an example of what this would look like(don't bother typing it):
+
+```
+# /apps/naive/lib/naive/strategy.ex
+# injecting dummy implementation, fallback to real implementation
+def execute(
+  %TradeEvent{} = trade_event,
+  %State{} = state,
+  logger_info \\ &Logger.info/1, # <= function injected
+  order_limit_buy \\ &Binance.order_limit_buy/4, # <= function injected
+  pubsub_broadcast \\ &PubSub.broadcast/3, # <= function injected
+  notify_leader \\ &Leader.notify/2 # <= function injected
+) do
+  ...
+```
+
+There are already four functions, and we only took care of side-effects causing functions from the first `execute_decision/2` clause. We can easily see how this very quickly becomes just unmanageable as there would be 10+ "injected" arguments going from the `execute/2` to `execute_decision/2`, and only some of them would be used in each clause.
+
+Additional downsides:
+
+- when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function **multiple times with different arities**. An example could be passing `Logger.info/1` and `Logger.info/2`
+- we need to give a name to every passed function, sometimes multiple arities (again, how should variables for `Logger.info/1` and `Logger.info/2` be called? `logger_info_2`?)
+- share amount of arguments negatively impacts code readability
+
+We can see that passing functions as arguments is just a bad idea in case of making our code testable. It will have the opposite effect, decreasing readability making our code difficult to maintain and follow.
+
+Important note: Passing functions as arguments is not always bad! A good example could be when different actions need to be performed based on runtime data.
+
+\newpage
+
+### Passing grouped functions as a context
+
+The natural next step would be to put all of those functions into some structure like Map or Keyword list. Whichever we would choose, we will end up with the same problems of naming keys(this time inside the map/keyword list), multiple functions because of different arity but also default values inside each clause of the `execute_decision/2` function:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state,
+        %{} = context # <= context added
+      ) do
+    # vvv fetch from context vvv
+    logger_info = Map.get(context, :logger_info, &Logger.info/1)
+    order_limit_buy = Map.get(context, :order_limit_buy, &Binance.order_limit_buy/4)
+    leader_notify = Map.get(context, :leader_notify, &Leader.notify/2)
+```
+
+Again this looks like a bad idea. It's probably marginally better than just sending functions one by one, but not much.
+
+### Passing grouped modules as a context
+
+The significant advantage of passing modules as arguments instead of functions is that we no longer have a problem with naming keys or caring about different functions' arities. There will also be substantially fewer modules used in comparison to functions.
+
+Sadly we still need to use the `Map` function to get the modules out of `"context"`:
+
+```
+# /apps/naive/lib/naive/strategy.ex
+  defp execute_decision(
+        {:place_buy_order, price, quantity},
+        %State{
+          id: id,
+          symbol: symbol
+        } = state,
+        %{} = context # <= context added
+      ) do
+    logger = Map.get(context, :logger, &Logger) # <= fetch from context
+    binance = Map.get(context, :binance, Binance) # <= fetch from context
+    leader = Map.get(context, :leader, &Leader) # <= fetch from context
+```
+
+This is much better, but we will still need to do a fair amount of additional work to get the modules out. Also, our code will be full of the "default" modules(as **each** of the clauses retrieving them from the context will need to specify defaults).
+
+### Injecting modules to module's attributes based on the configuration
+
+And we finally got there - we have come a full circle. This is the approach that we previously used inside the `Naive.Trader` module(you can go ahead and add them to the `Naive.Strategy` module):
+
+```
+# /apps/naive/lib/naive/strategy.ex
+defmodule Naive.Strategy do
+  ...
+
+  @binance_client Application.compile_env(:naive, :binance_client)
+  @leader Application.compile_env(:naive, :leader)
+  @logger Application.compile_env(:core, :logger)
+  @pubsub_client Application.compile_env(:core, :pubsub_client)
+```
+
+We looked into different ways to inject dependencies to understand their downsides.
+
+Sometimes, injecting values(like modules) as module attributes can feel like a "global state", "singleton", or similar antipattern. We need to understand that each programming language provides different ways to solve common programming problems. Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules' attributes.
+
+As long as you are using module attributes to be able to inject compile-time dependencies to test your code, there's just **no better way** to do it in Elixir, and now we know why(based on the issues with the alternative approaches).
+
+Together with the module attributes, our code should be now fully functional.
+
+## The power `with`-in
+
+In the last section, we looked into different ways to inject modules' dependencies to avoid side-effects causing functions inside the tests. Besides side-effect causing functions, in functional programming, error handling is also done in a specific manner.
+
+Many languages introduced concepts like `Either`, which is a struct that can be either `Left`(error result) or `Right`(success result). Those quite nicely fit to the standard Elixir results like `{:error, reason}` and `{:ok, result}`. Further, those languages provide multiple functions to work with the `Either`, like `map`.
+
+```
+safeDivide(2, 0) # <= returns Left("Dividing error")
+|> then(Either.map(&(&1 * 2))) # <= still Left("Dividing error")
+
+safeDivide(2, 1) # <= returns Right(2)
+|> then(Either.map(&(&1 * 2))) # <= returns Right(4)
+```
+
+The above code will use hypothetical `Left('Dividing error')` or `Right(result)`. The `Either.map/2` is a special `map` function that runs the passed function if it's `Right` or completely ignores it when it's `Left` - it could be visualized as:
+
+```
+def map(%Either.Left{} = left, _fun), do: left
+def map(%Either.Right{result: v}, fun), do: %Either.Right{result: fun.(v)}
+```
+
+This is nice and great, but what if the function inside the `Either.map/2` returns another `Either`? Like:
+
+```
+safeDivide(2, 1) # <= returns Right(2)
+|> then(Either.map(&(safeDivide(&1, 1)))) # <= now Right(Right(2))!?
+```
+
+Now we need to understand those abstractions to be able to decide should we `map` or `flatMap`(that's the function that will not wrap the function result into the `Right`):
+
+```
+safeDivide(2, 1) # <= returns Right(2)
+|> then(Either.flatMap(&(safeDivide(&1, 1)))) <= still Right(2)
+```
+
+And that is just the beginning of the complexities that those abstractions bring.
+
+Furthermore, let's say that inside the first `Either.map/2` callback, we will have some variable(s) that we would like to use later on. We are now deep inside closures world like the following:
+
+```
+safeDivide(2, 1) # <= returns Right(2)
+|> then(Either.flatMap(fn res ->
+    # x = some data generated here
+    safeDivide(2, 1)
+    |> then(Either.map(&(&1 * 2)))
+    |> then(Either.map(&(&1 * x))) # <= a clause to have access to x
+  end))
+```
+
+The above example is obviously simplified and silly but should give us a gist of what sort of complexity we will very soon get involved in. And, again, we just scratched the surface - there are so many more functions that the `Either` provides. Besides, writing code in this fashion in Elixir would cause a lot of friction in the team as it's difficult to find any advantages of using it.
+
+### Idiomatic error handling
+
+To achieve the same results, Elixir provides the `with` statement:
+
+```
+  with {:ok, divide_result} <- safeDiv(2,1),
+       {:ok, divide_result_2} <- safeDivide(2, 1)
+  do
+    divide_result_2 * 2 * divide_result
+  else
+    err -> err
+  end
+```
+
+The above code provides **the same** functionality as the one before with `Either`. We can clearly understand it **without** any knowledge about how `Either` works, `mapping`, `flatMapping` etc. It's just standard Elixir.
+
+Again, as in the case of modules' attributes. Elixir provides a pragmatic way of dealing with errors - just return a tuple with an `:error` atom. It also provides utility functions like `with` to deal with errors in an idiomatic way. There's **no reason** to introduce concepts like `Either` as language has built-in concepts/patterns taking care of error situations.
+
+## Do or not to do
+
+In the last section, we discussed wrapping the results in the `Either` structs to be able to map, flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing any code(side effects) at all?
+
+That's the basic idea behind all the category theory related abstractions like the infamous IO Monad.
+
+I won't go into a vast amount of details. Still, we can think about it as every time we are calling a *special* `map` or `flatMap`, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:
+
+```
+  def map(acc, function) do
+    fn ->
+      case acc.() do
+        {:ok, data} -> {:ok, function.(data)}
+        {:error, error} -> {:error, error}
+      end
+    end
+  end
+```
+
+In a nutshell, what we would end up with is a function containing a function containing a function... At this moment, I find it very difficult to find any practical reason why somebody would want to do something like this in a dynamically typed language.
+
+In statically typed languages, there's an argument that instead of a function of function etc., we could have a typed object which would indicate what actions can be performed on that future result. This is very often praised as a compile-time guarantee of side effectfull code.
+
+In the Elixir, without strong typing and with a massive impact on how the code is written and how easy it is to understand, there's just **no practical** reason to use those concepts beyond toy programs. The resulting function would be an untestable blob without introspection support from the BEAM VM.
+
+\newpage
+
+## Final thoughts
+
+Every programming language needs to provide tools to handle common concerns like error handling or dependency injection.
+
+Elixir provides excellent tools to handle both of those concerns using the `with` statement and modules' attributes.
+
+Without a type system, there's no practical reason why anybody would introduce category theory-based abstractions like Monads. The resulting code will be complicated to deal with, and as in the case of many other **functional** programming languages like Ocaml or Clojure, the pragmatic way is to execute side effects.
+
+**It's the developers' responsibility to design code in a way that maximizes the amount of pure code and push side effects to "the edge".** The typical pattern would be to "prepare" (group all logic before side effects) or to "post process" the results of multiple side effects (group pure logic after side effects).
+
+That's all in regards to functional programming in Elixir. In the next chapter, we will look into what the idiomatic Elixir code looks like.
+
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
+
+Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18)

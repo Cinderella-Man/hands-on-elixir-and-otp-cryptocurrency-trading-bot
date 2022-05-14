@@ -88,6 +88,7 @@ defmodule BinanceMock do
   use GenServer
 
   alias Decimal, as: D
+  alias Streamer.Binance.TradeEvent
 
   require Logger
 
@@ -385,7 +386,7 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   def handle_info(
-        %Streamer.Binance.TradeEvent{} = trade_event,
+        %TradeEvent{} = trade_event,
         %{order_books: order_books} = state
       ) do
     order_book =
@@ -442,7 +443,7 @@ Starting with the `convert_order_to_event` function, it will simply return a new
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   defp convert_order_to_event(%Binance.Order{} = order, time) do
-    %Streamer.Binance.TradeEvent{
+    %TradeEvent{
       event_type: order.type,
       event_time: time - 1,
       symbol: order.symbol,
@@ -580,4 +581,4 @@ As config already points to it so we can continue as previously by starting the 
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 
-Source code for this chapter can be found at [Github](https://github.com/frathon/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)
+Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)
