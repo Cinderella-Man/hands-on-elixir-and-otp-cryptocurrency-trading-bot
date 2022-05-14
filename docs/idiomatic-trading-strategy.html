@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+  <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:site" content="@kamilskowron" />
+  
+  
+
+<meta name="author" content="Kamil Skowron" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="idiomatic-otp.html"/>
+
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-52FKGBX2B8');
+</script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Hands-on Elixir & OTP: Cryptocurrency trading bot</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#want-to-learn-elixir-otp-by-creating-a-real-world-project"><i class="fa fa-check"></i>Want to learn Elixir &amp; OTP by creating a real-world project?</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#pdf-epub"><i class="fa fa-check"></i>PDF &amp; EPUB</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface-1"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+<li class="chapter" data-level="16.3" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#implement-basic-test"><i class="fa fa-check"></i><b>16.3</b> Implement basic test</a></li>
+<li class="chapter" data-level="16.4" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-environment-based-config-files"><i class="fa fa-check"></i><b>16.4</b> Introduce environment based config files</a></li>
+<li class="chapter" data-level="16.5" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#add-convenience-aliases"><i class="fa fa-check"></i><b>16.5</b> Add convenience aliases</a></li>
+<li class="chapter" data-level="16.6" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#cache-initial-seed-data-inside-a-file"><i class="fa fa-check"></i><b>16.6</b> Cache initial seed data inside a file</a></li>
+<li class="chapter" data-level="16.7" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#update-seeding-scripts-to-use-the-binancemock"><i class="fa fa-check"></i><b>16.7</b> Update seeding scripts to use the BinanceMock</a></li>
+<li class="chapter" data-level="16.8" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-the-core-application"><i class="fa fa-check"></i><b>16.8</b> Introduce the Core application</a></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="mox-rocks.html"><a href="mox-rocks.html"><i class="fa fa-check"></i><b>17</b> Mox rocks</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="mox-rocks.html"><a href="mox-rocks.html#objectives-16"><i class="fa fa-check"></i><b>17.1</b> Objectives</a></li>
+<li class="chapter" data-level="17.2" data-path="mox-rocks.html"><a href="mox-rocks.html#introduction-to-mock-based-tests"><i class="fa fa-check"></i><b>17.2</b> Introduction to mock based tests</a></li>
+<li class="chapter" data-level="17.3" data-path="mox-rocks.html"><a href="mox-rocks.html#add-the-mox-package"><i class="fa fa-check"></i><b>17.3</b> Add the <code>mox</code> package</a></li>
+<li class="chapter" data-level="17.4" data-path="mox-rocks.html"><a href="mox-rocks.html#investigate-the-naive.trader-module"><i class="fa fa-check"></i><b>17.4</b> Investigate the <code>Naive.Trader</code> module</a>
+<ul>
+<li class="chapter" data-level="17.4.1" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-binance-module"><i class="fa fa-check"></i><b>17.4.1</b> Mock the <code>Binance</code> module</a></li>
+<li class="chapter" data-level="17.4.2" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-naiveleader-module"><i class="fa fa-check"></i><b>17.4.2</b> Mock the <code>NaiveLeader</code> module</a></li>
+<li class="chapter" data-level="17.4.3" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-phoenix.pubsub-module"><i class="fa fa-check"></i><b>17.4.3</b> Mock the <code>Phoenix.PubSub</code> module</a></li>
+<li class="chapter" data-level="17.4.4" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-logger-module"><i class="fa fa-check"></i><b>17.4.4</b> Mock the <code>Logger</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="17.5" data-path="mox-rocks.html"><a href="mox-rocks.html#implement-a-test-of-the-naive.trader-module"><i class="fa fa-check"></i><b>17.5</b> Implement a test of the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="17.6" data-path="mox-rocks.html"><a href="mox-rocks.html#define-an-alias-to-run-unit-tests"><i class="fa fa-check"></i><b>17.6</b> Define an alias to run unit tests</a></li>
+</ul></li>
+<li class="chapter" data-level="18" data-path="functional-elixir.html"><a href="functional-elixir.html"><i class="fa fa-check"></i><b>18</b> Functional Elixir</a>
+<ul>
+<li class="chapter" data-level="18.1" data-path="functional-elixir.html"><a href="functional-elixir.html#objectives-17"><i class="fa fa-check"></i><b>18.1</b> Objectives</a></li>
+<li class="chapter" data-level="18.2" data-path="functional-elixir.html"><a href="functional-elixir.html#the-reasoning-behind-the-functional-approach"><i class="fa fa-check"></i><b>18.2</b> The reasoning behind the functional approach</a></li>
+<li class="chapter" data-level="18.3" data-path="functional-elixir.html"><a href="functional-elixir.html#simplifying-by-splitting"><i class="fa fa-check"></i><b>18.3</b> Simplifying by splitting</a></li>
+<li class="chapter" data-level="18.4" data-path="functional-elixir.html"><a href="functional-elixir.html#abstracting-the-pure-logic"><i class="fa fa-check"></i><b>18.4</b> Abstracting the “pure” logic</a>
+<ul>
+<li class="chapter" data-level="18.4.1" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-buy-order-rules"><i class="fa fa-check"></i><b>18.4.1</b> Place a buy order rules</a></li>
+<li class="chapter" data-level="18.4.2" data-path="functional-elixir.html"><a href="functional-elixir.html#race-condition-rules"><i class="fa fa-check"></i><b>18.4.2</b> Race condition rules</a></li>
+<li class="chapter" data-level="18.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>18.4.3</b> Place a sell order rules</a></li>
+<li class="chapter" data-level="18.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>18.4.4</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="18.4.5" data-path="functional-elixir.html"><a href="functional-elixir.html#terminate-trader-rules"><i class="fa fa-check"></i><b>18.4.5</b> Terminate trader rules</a></li>
+<li class="chapter" data-level="18.4.6" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-sell-order-rules"><i class="fa fa-check"></i><b>18.4.6</b> Fetch the sell order rules</a></li>
+<li class="chapter" data-level="18.4.7" data-path="functional-elixir.html"><a href="functional-elixir.html#trigger-rebuy-rules"><i class="fa fa-check"></i><b>18.4.7</b> Trigger rebuy rules</a></li>
+<li class="chapter" data-level="18.4.8" data-path="functional-elixir.html"><a href="functional-elixir.html#the-final-clause-rules"><i class="fa fa-check"></i><b>18.4.8</b> The final clause rules</a></li>
+<li class="chapter" data-level="18.4.9" data-path="functional-elixir.html"><a href="functional-elixir.html#changes-to-the-naive.trader-module"><i class="fa fa-check"></i><b>18.4.9</b> Changes to the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="18.4.10" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---place-buy-order"><i class="fa fa-check"></i><b>18.4.10</b> <code>Naive.Trader</code> - place buy order</a></li>
+<li class="chapter" data-level="18.4.11" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---race-condition-clause"><i class="fa fa-check"></i><b>18.4.11</b> <code>Naive.Trader</code> - Race condition clause</a></li>
+<li class="chapter" data-level="18.4.12" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---place-a-sell-order"><i class="fa fa-check"></i><b>18.4.12</b> <code>Naive.Trader</code> - Place a sell order</a></li>
+<li class="chapter" data-level="18.4.13" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---fetch-the-buy-order"><i class="fa fa-check"></i><b>18.4.13</b> <code>Naive.Trader</code> - Fetch the buy order</a></li>
+<li class="chapter" data-level="18.4.14" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---terminate-the-trader"><i class="fa fa-check"></i><b>18.4.14</b> <code>Naive.Trader</code> - Terminate the trader</a></li>
+<li class="chapter" data-level="18.4.15" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---fetch-the-sell-order"><i class="fa fa-check"></i><b>18.4.15</b> <code>Naive.Trader</code> - Fetch the sell order</a></li>
+<li class="chapter" data-level="18.4.16" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---triggering-rebuy"><i class="fa fa-check"></i><b>18.4.16</b> <code>Naive.Trader</code> - Triggering rebuy</a></li>
+<li class="chapter" data-level="18.4.17" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---the-final-ignore-clause"><i class="fa fa-check"></i><b>18.4.17</b> <code>Naive.Trader</code> - The final ignore clause</a></li>
+</ul></li>
+<li class="chapter" data-level="18.5" data-path="functional-elixir.html"><a href="functional-elixir.html#dealing-with-dirty-code"><i class="fa fa-check"></i><b>18.5</b> Dealing with dirty code</a></li>
+<li class="chapter" data-level="18.6" data-path="functional-elixir.html"><a href="functional-elixir.html#making-dirty-code-testable"><i class="fa fa-check"></i><b>18.6</b> Making dirty code testable</a>
+<ul>
+<li class="chapter" data-level="18.6.1" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-functions-arguments"><i class="fa fa-check"></i><b>18.6.1</b> Passing functions arguments</a></li>
+<li class="chapter" data-level="18.6.2" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-functions-as-a-context"><i class="fa fa-check"></i><b>18.6.2</b> Passing grouped functions as a context</a></li>
+<li class="chapter" data-level="18.6.3" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-modules-as-a-context"><i class="fa fa-check"></i><b>18.6.3</b> Passing grouped modules as a context</a></li>
+<li class="chapter" data-level="18.6.4" data-path="functional-elixir.html"><a href="functional-elixir.html#injecting-modules-to-modules-attributes-based-on-the-configuration"><i class="fa fa-check"></i><b>18.6.4</b> Injecting modules to module’s attributes based on the configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="18.7" data-path="functional-elixir.html"><a href="functional-elixir.html#the-power-with-in"><i class="fa fa-check"></i><b>18.7</b> The power <code>with</code>-in</a>
+<ul>
+<li class="chapter" data-level="18.7.1" data-path="functional-elixir.html"><a href="functional-elixir.html#idiomatic-error-handling"><i class="fa fa-check"></i><b>18.7.1</b> Idiomatic error handling</a></li>
+</ul></li>
+<li class="chapter" data-level="18.8" data-path="functional-elixir.html"><a href="functional-elixir.html#do-or-not-to-do"><i class="fa fa-check"></i><b>18.8</b> Do or not to do</a></li>
+<li class="chapter" data-level="18.9" data-path="functional-elixir.html"><a href="functional-elixir.html#final-thoughts"><i class="fa fa-check"></i><b>18.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="19" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html"><i class="fa fa-check"></i><b>19</b> Idiomatic OTP</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#objectives-18"><i class="fa fa-check"></i><b>19.1</b> Objectives</a></li>
+<li class="chapter" data-level="19.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#the-concept"><i class="fa fa-check"></i><b>19.2</b> The concept</a></li>
+<li class="chapter" data-level="19.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#initial-implementation"><i class="fa fa-check"></i><b>19.3</b> Initial implementation</a>
+<ul>
+<li class="chapter" data-level="19.3.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#maybe-functions"><i class="fa fa-check"></i><b>19.3.1</b> Maybe functions</a></li>
+<li class="chapter" data-level="19.3.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#testing"><i class="fa fa-check"></i><b>19.3.2</b> Testing</a></li>
+<li class="chapter" data-level="19.3.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#supervision"><i class="fa fa-check"></i><b>19.3.3</b> Supervision</a></li>
+</ul></li>
+<li class="chapter" data-level="19.4" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#idiomatic-solution"><i class="fa fa-check"></i><b>19.4</b> Idiomatic solution</a></li>
+</ul></li>
+<li class="chapter" data-level="20" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html"><i class="fa fa-check"></i><b>20</b> Idiomatic trading strategy</a>
+<ul>
+<li class="chapter" data-level="20.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#objectives-19"><i class="fa fa-check"></i><b>20.1</b> Objectives</a></li>
+<li class="chapter" data-level="20.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#following-the-ohlc-footsteps"><i class="fa fa-check"></i><b>20.2</b> Following the OHLC footsteps</a></li>
+<li class="chapter" data-level="20.3" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#simplifying-the-naive-supervision-tree"><i class="fa fa-check"></i><b>20.3</b> Simplifying the Naive supervision tree</a>
+<ul>
+<li class="chapter" data-level="20.3.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.dynamictradersupervisor-module"><i class="fa fa-check"></i><b>20.3.1</b> The <code>Naive.DynamicTraderSupervisor</code> module</a></li>
+<li class="chapter" data-level="20.3.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive-module"><i class="fa fa-check"></i><b>20.3.2</b> The <code>Naive</code> module</a></li>
+<li class="chapter" data-level="20.3.3" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.supervisor-module"><i class="fa fa-check"></i><b>20.3.3</b> The <code>Naive.Supervisor</code> module</a></li>
+<li class="chapter" data-level="20.3.4" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.trader-module"><i class="fa fa-check"></i><b>20.3.4</b> The <code>Naive.Trader</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="20.4" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#supporting-multiple-positions"><i class="fa fa-check"></i><b>20.4</b> Supporting multiple positions</a>
+<ul>
+<li class="chapter" data-level="20.4.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#initialization"><i class="fa fa-check"></i><b>20.4.1</b> Initialization</a></li>
+<li class="chapter" data-level="20.4.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#parallelising-the-strategy"><i class="fa fa-check"></i><b>20.4.2</b> Parallelising the strategy</a></li>
+</ul></li>
+<li class="chapter" data-level="20.5" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#retrofitting-the-shutdown-functionality"><i class="fa fa-check"></i><b>20.5</b> Retrofitting the “shutdown” functionality</a>
+<ul>
+<li class="chapter" data-level="20.5.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#handling-updated-settings"><i class="fa fa-check"></i><b>20.5.1</b> Handling updated settings</a></li>
+<li class="chapter" data-level="20.5.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#updating-the-naive.strategy-to-honour-the-shutdown-state"><i class="fa fa-check"></i><b>20.5.2</b> Updating the <code>Naive.Strategy</code> to honour the “shutdown” state</a></li>
+</ul></li>
+<li class="chapter" data-level="20.6" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#updating-the-strategy-to-handle-rebuys"><i class="fa fa-check"></i><b>20.6</b> Updating the Strategy to handle rebuys</a></li>
+<li class="chapter" data-level="20.7" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#fetching-active-positions"><i class="fa fa-check"></i><b>20.7</b> Fetching active positions</a></li>
+<li class="chapter" data-level="20.8" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#tidying-up"><i class="fa fa-check"></i><b>20.8</b> Tidying up</a></li>
+<li class="chapter" data-level="20.9" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#final-thoughts-1"><i class="fa fa-check"></i><b>20.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="idiomatic-trading-strategy" class="section level1" number="20">
+<h1><span class="header-section-number">Chapter 20</span> Idiomatic trading strategy</h1>
+<div id="objectives-19" class="section level2" number="20.1">
+<h2><span class="header-section-number">20.1</span> Objectives</h2>
+<ul>
+<li>Following the OHLC footsteps</li>
+<li>Simplifying the Naive supervision tree</li>
+<li>Supporting multiple positions</li>
+<li>Retrofitting the “shutdown” functionality</li>
+<li>Updating the Strategy to handle rebuys</li>
+<li>Fetching active positions</li>
+<li>Tidying up</li>
+</ul>
+</div>
+<div id="following-the-ohlc-footsteps" class="section level2" number="20.2">
+<h2><span class="header-section-number">20.2</span> Following the OHLC footsteps</h2>
+<p>In the last chapter, we looked into the idiomatic Elixir. We refactored our initial implementation of OHLC aggregation to maximise the amount of pure code by limiting the number of processes running per symbol. It was a nice standalone functionality to showcase the concept.</p>
+<p>In this chapter, we will look into how could we refactor our naive strategy’s code to achieve the same result. At this moment, the naive strategy uses multiple processes per symbol, including <code>Trader</code> processes, dedicated <code>Leader</code> and <code>SymbolSupervisor</code>. We will update the <code>Trader</code> process to be responsible for multiple trades(we will call them “positions” from now on) on a single symbol. This way, we will have a single <code>Trader</code> process per symbol as well, as we will get rid of both the <code>Leader</code>(we will move rebuy/shutdown logic to our strategy - where it belongs) and the <code>SymbolSupervisor</code>:</p>
+<p><img src="images/chapter_20_01_current_hierarchy.jpg" width="100%" style="display: block; margin: auto;" /></p>
+<p>There are multiple benefits of simplifying the supervision hierarchy, and we will look at them closely as we refactor the code - let’s get to it.</p>
+</div>
+<div id="simplifying-the-naive-supervision-tree" class="section level2" number="20.3">
+<h2><span class="header-section-number">20.3</span> Simplifying the Naive supervision tree</h2>
+<p>Starting from the top of the tree, the first module we need to update will be the <code>Naive.DynamicSymbolSupervisor</code> module.</p>
+<div id="the-naive.dynamictradersupervisor-module" class="section level3" number="20.3.1">
+<h3><span class="header-section-number">20.3.1</span> The <code>Naive.DynamicTraderSupervisor</code> module</h3>
+<p>The filename needs to be updated to <code>dynamic_trader_supervisor.ex</code> and the module name to <code>Naive.DynamicTraderSupervisor</code>.</p>
+<p>Next, there’s the <code>@registry</code> attribute that we will rename to <code>:naive_traders</code>.</p>
+<p>Finally, update the alias to the <code>Naive.SymbolSupervisor</code> to the <code>Naive.Trader</code> and use it inside the <code>start_child/1</code> function:</p>
+<div class="sourceCode" id="cb440"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb440-1"><a href="idiomatic-trading-strategy.html#cb440-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/dynamic_trader_supervisor.ex</span></span>
+<span id="cb440-2"><a href="idiomatic-trading-strategy.html#cb440-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span> </span>
+<span id="cb440-3"><a href="idiomatic-trading-strategy.html#cb440-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb440-4"><a href="idiomatic-trading-strategy.html#cb440-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> start_child(args) <span class="kw">do</span></span>
+<span id="cb440-5"><a href="idiomatic-trading-strategy.html#cb440-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child(</span>
+<span id="cb440-6"><a href="idiomatic-trading-strategy.html#cb440-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb440-7"><a href="idiomatic-trading-strategy.html#cb440-7" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Trader</span>, args}</span>
+<span id="cb440-8"><a href="idiomatic-trading-strategy.html#cb440-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb440-9"><a href="idiomatic-trading-strategy.html#cb440-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="the-naive-module" class="section level3" number="20.3.2">
+<h3><span class="header-section-number">20.3.2</span> The <code>Naive</code> module</h3>
+<p>The <code>Naive</code> module heavily depends on the <code>Naive.DynamicSymbolSupervisor</code>(now called the <code>Naive.DynamicTraderSupervisor</code>), we need to update all the references to it:</p>
+<div class="sourceCode" id="cb441"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb441-1"><a href="idiomatic-trading-strategy.html#cb441-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive.ex</span></span>
+<span id="cb441-2"><a href="idiomatic-trading-strategy.html#cb441-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicTraderSupervisor</span></span>
+<span id="cb441-3"><a href="idiomatic-trading-strategy.html#cb441-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb441-4"><a href="idiomatic-trading-strategy.html#cb441-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">DynamicTraderSupervisor</span><span class="op">.</span>start_worker()</span>
+<span id="cb441-5"><a href="idiomatic-trading-strategy.html#cb441-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb441-6"><a href="idiomatic-trading-strategy.html#cb441-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">DynamicTraderSupervisor</span><span class="op">.</span>stop_worker()</span>
+<span id="cb441-7"><a href="idiomatic-trading-strategy.html#cb441-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb441-8"><a href="idiomatic-trading-strategy.html#cb441-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">DynamicTraderSupervisor</span><span class="op">.</span>shutdown_worker()</span></code></pre></div>
+</div>
+<div id="the-naive.supervisor-module" class="section level3" number="20.3.3">
+<h3><span class="header-section-number">20.3.3</span> The <code>Naive.Supervisor</code> module</h3>
+<p>The <code>Naive.Supervisor</code> supervises the <code>Naive.DynamicSymbolSupervisor</code>(now called the <code>Naive.DynamicTraderSupervisor</code>) and the registry that stores the traders’ PIDs - we need to update both:</p>
+<div class="sourceCode" id="cb442"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb442-1"><a href="idiomatic-trading-strategy.html#cb442-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/supervisor.ex</span></span>
+<span id="cb442-2"><a href="idiomatic-trading-strategy.html#cb442-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">DynamicTraderSupervisor</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb442-3"><a href="idiomatic-trading-strategy.html#cb442-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb442-4"><a href="idiomatic-trading-strategy.html#cb442-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@registry</span> <span class="va">:naive_traders</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb442-5"><a href="idiomatic-trading-strategy.html#cb442-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb442-6"><a href="idiomatic-trading-strategy.html#cb442-6" aria-hidden="true" tabindex="-1"></a>    children <span class="op">=</span> [</span>
+<span id="cb442-7"><a href="idiomatic-trading-strategy.html#cb442-7" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Registry</span>, [<span class="va">keys:</span> <span class="va">:unique</span>, <span class="va">name:</span> <span class="ot">@registry</span>]},</span>
+<span id="cb442-8"><a href="idiomatic-trading-strategy.html#cb442-8" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">DynamicTradersSupervisor</span>, []}, <span class="co"># &lt;= updated</span></span>
+<span id="cb442-9"><a href="idiomatic-trading-strategy.html#cb442-9" aria-hidden="true" tabindex="-1"></a>      {<span class="cn">Task</span>,</span>
+<span id="cb442-10"><a href="idiomatic-trading-strategy.html#cb442-10" aria-hidden="true" tabindex="-1"></a>       <span class="kw">fn</span> <span class="op">-&gt;</span></span>
+<span id="cb442-11"><a href="idiomatic-trading-strategy.html#cb442-11" aria-hidden="true" tabindex="-1"></a>         <span class="cn">DynamicTradersSupervisor</span><span class="op">.</span>autostart_workers() <span class="co"># &lt;= updated</span></span>
+<span id="cb442-12"><a href="idiomatic-trading-strategy.html#cb442-12" aria-hidden="true" tabindex="-1"></a>       <span class="kw">end</span>}</span>
+<span id="cb442-13"><a href="idiomatic-trading-strategy.html#cb442-13" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div>
+</div>
+<div id="the-naive.trader-module" class="section level3" number="20.3.4">
+<h3><span class="header-section-number">20.3.4</span> The <code>Naive.Trader</code> module</h3>
+<p>The final module to be updated will be the <code>Naive.Trader</code>. It needs to register process’ PID inside the Registry:</p>
+<div class="sourceCode" id="cb443"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb443-1"><a href="idiomatic-trading-strategy.html#cb443-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb443-2"><a href="idiomatic-trading-strategy.html#cb443-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@registry</span> <span class="va">:naive_traders</span> <span class="co"># &lt;= added</span></span>
+<span id="cb443-3"><a href="idiomatic-trading-strategy.html#cb443-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb443-4"><a href="idiomatic-trading-strategy.html#cb443-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(%<span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb443-5"><a href="idiomatic-trading-strategy.html#cb443-5" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(state<span class="op">.</span>symbol) <span class="co"># &lt;= updated</span></span>
+<span id="cb443-6"><a href="idiomatic-trading-strategy.html#cb443-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb443-7"><a href="idiomatic-trading-strategy.html#cb443-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(</span>
+<span id="cb443-8"><a href="idiomatic-trading-strategy.html#cb443-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb443-9"><a href="idiomatic-trading-strategy.html#cb443-9" aria-hidden="true" tabindex="-1"></a>      state,</span>
+<span id="cb443-10"><a href="idiomatic-trading-strategy.html#cb443-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> via_tuple(symbol)  <span class="co"># &lt;= updated</span></span>
+<span id="cb443-11"><a href="idiomatic-trading-strategy.html#cb443-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb443-12"><a href="idiomatic-trading-strategy.html#cb443-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb443-13"><a href="idiomatic-trading-strategy.html#cb443-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb443-14"><a href="idiomatic-trading-strategy.html#cb443-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> via_tuple(symbol) <span class="kw">do</span></span>
+<span id="cb443-15"><a href="idiomatic-trading-strategy.html#cb443-15" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:via</span>, <span class="cn">Registry</span>, {<span class="ot">@registry</span>, symbol}}</span>
+<span id="cb443-16"><a href="idiomatic-trading-strategy.html#cb443-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>That finishes the changes to the supervision tree - the <code>Naive.Leader</code> and the <code>Naive.SymbolSupervisor</code> aren’t used anymore. At this moment, our codebase won’t work as we need to retrofit the functionality that the <code>Naive.Leader</code> was offering into our <code>Naive.Trader</code> and <code>Naive.Strategy</code> modules, which we will focus on in the next section.</p>
+</div>
+</div>
+<div id="supporting-multiple-positions" class="section level2" number="20.4">
+<h2><span class="header-section-number">20.4</span> Supporting multiple positions</h2>
+<p>The current <code>State</code> struct inside the <code>Naive.Trader</code> was geared toward a single trade cycle. As we now need to handle multiple positions inside a single <code>Trader</code> process, we will need to update this struct. We will start by moving the current <code>State</code> struct from the <code>Naive.Trader</code> into the <code>Naive.Strategy</code> and renaming it to <code>Position</code>:</p>
+<div class="sourceCode" id="cb444"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb444-1"><a href="idiomatic-trading-strategy.html#cb444-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb444-2"><a href="idiomatic-trading-strategy.html#cb444-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Strategy</span> <span class="kw">do</span></span>
+<span id="cb444-3"><a href="idiomatic-trading-strategy.html#cb444-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb444-4"><a href="idiomatic-trading-strategy.html#cb444-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">Position</span> <span class="kw">do</span></span>
+<span id="cb444-5"><a href="idiomatic-trading-strategy.html#cb444-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
+<span id="cb444-6"><a href="idiomatic-trading-strategy.html#cb444-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># keys copied from `Naive.Trader.State` struct</span></span>
+<span id="cb444-7"><a href="idiomatic-trading-strategy.html#cb444-7" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb444-8"><a href="idiomatic-trading-strategy.html#cb444-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
+<span id="cb444-9"><a href="idiomatic-trading-strategy.html#cb444-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># keys copied from `Naive.Trader.State` struct</span></span>
+<span id="cb444-10"><a href="idiomatic-trading-strategy.html#cb444-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb444-11"><a href="idiomatic-trading-strategy.html#cb444-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>This will break all the references to <code>Naive.Trader.State</code> inside the <code>Naive.Strategy</code>, which we need to update to <code>Position</code>(and remove the alias of <code>Naive.Trader.State</code>):</p>
+<div class="sourceCode" id="cb445"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb445-1"><a href="idiomatic-trading-strategy.html#cb445-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb445-2"><a href="idiomatic-trading-strategy.html#cb445-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb445-3"><a href="idiomatic-trading-strategy.html#cb445-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> execute(%<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event, %<span class="cn">Position</span>{} <span class="op">=</span> position <span class="kw">do</span></span>
+<span id="cb445-4"><a href="idiomatic-trading-strategy.html#cb445-4" aria-hidden="true" tabindex="-1"></a>    generate_decision(trade_event, position)</span>
+<span id="cb445-5"><a href="idiomatic-trading-strategy.html#cb445-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> execute_decision(position)</span>
+<span id="cb445-6"><a href="idiomatic-trading-strategy.html#cb445-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb445-7"><a href="idiomatic-trading-strategy.html#cb445-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb445-8"><a href="idiomatic-trading-strategy.html#cb445-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decision(</span>
+<span id="cb445-9"><a href="idiomatic-trading-strategy.html#cb445-9" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb445-10"><a href="idiomatic-trading-strategy.html#cb445-10" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb445-11"><a href="idiomatic-trading-strategy.html#cb445-11" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb445-12"><a href="idiomatic-trading-strategy.html#cb445-12" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{ <span class="co"># &lt;= in all 8 clauses</span></span>
+<span id="cb445-13"><a href="idiomatic-trading-strategy.html#cb445-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb445-14"><a href="idiomatic-trading-strategy.html#cb445-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb445-15"><a href="idiomatic-trading-strategy.html#cb445-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb445-16"><a href="idiomatic-trading-strategy.html#cb445-16" aria-hidden="true" tabindex="-1"></a>    {<span class="op">....</span> <span class="co"># decision },</span></span>
+<span id="cb445-17"><a href="idiomatic-trading-strategy.html#cb445-17" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Position</span>{ <span class="co"># &lt;= updated</span></span>
+<span id="cb445-18"><a href="idiomatic-trading-strategy.html#cb445-18" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb445-19"><a href="idiomatic-trading-strategy.html#cb445-19" aria-hidden="true" tabindex="-1"></a>    } <span class="op">=</span> position <span class="co"># &lt;= updated</span></span>
+<span id="cb445-20"><a href="idiomatic-trading-strategy.html#cb445-20" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb445-21"><a href="idiomatic-trading-strategy.html#cb445-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb445-22"><a href="idiomatic-trading-strategy.html#cb445-22" aria-hidden="true" tabindex="-1"></a>    new_position <span class="op">=</span> %{position <span class="op">|</span> <span class="va">buy_order:</span> order} <span class="co"># &lt;= updated</span></span>
+<span id="cb445-23"><a href="idiomatic-trading-strategy.html#cb445-23" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_position) <span class="co"># &lt;= updated</span></span>
+<span id="cb445-24"><a href="idiomatic-trading-strategy.html#cb445-24" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, new_position} <span class="co"># &lt;^= similar changes in all execute_decision</span></span></code></pre></div>
+<p>We will ignore the fact that we are still calling the <code>@leader</code> and still dealing with a single position(inside the strategy) - we will fix that in the following section. One step at a time ;)</p>
+<p>As we are already changing strategy to work with positions, we will update all the logger messages:</p>
+<div class="sourceCode" id="cb446"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb446-1"><a href="idiomatic-trading-strategy.html#cb446-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb446-2"><a href="idiomatic-trading-strategy.html#cb446-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb446-3"><a href="idiomatic-trading-strategy.html#cb446-3" aria-hidden="true" tabindex="-1"></a>         {<span class="va">:place_buy_order</span>, price, quantity},</span>
+<span id="cb446-4"><a href="idiomatic-trading-strategy.html#cb446-4" aria-hidden="true" tabindex="-1"></a>         <span class="op">...</span></span>
+<span id="cb446-5"><a href="idiomatic-trading-strategy.html#cb446-5" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb446-6"><a href="idiomatic-trading-strategy.html#cb446-6" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb446-7"><a href="idiomatic-trading-strategy.html#cb446-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(</span>
+<span id="cb446-8"><a href="idiomatic-trading-strategy.html#cb446-8" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb446-9"><a href="idiomatic-trading-strategy.html#cb446-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Placing a BUY order @ </span><span class="ot">#{</span>price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb446-10"><a href="idiomatic-trading-strategy.html#cb446-10" aria-hidden="true" tabindex="-1"></a>    ) <span class="co"># ^ updated message</span></span>
+<span id="cb446-11"><a href="idiomatic-trading-strategy.html#cb446-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb446-12"><a href="idiomatic-trading-strategy.html#cb446-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb446-13"><a href="idiomatic-trading-strategy.html#cb446-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defp</span> execute_decision(</span>
+<span id="cb446-14"><a href="idiomatic-trading-strategy.html#cb446-14" aria-hidden="true" tabindex="-1"></a>         {<span class="va">:place_sell_order</span>, sell_price},</span>
+<span id="cb446-15"><a href="idiomatic-trading-strategy.html#cb446-15" aria-hidden="true" tabindex="-1"></a>         <span class="op">...</span></span>
+<span id="cb446-16"><a href="idiomatic-trading-strategy.html#cb446-16" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb446-17"><a href="idiomatic-trading-strategy.html#cb446-17" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(</span>
+<span id="cb446-18"><a href="idiomatic-trading-strategy.html#cb446-18" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): The BUY order is now filled. &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb446-19"><a href="idiomatic-trading-strategy.html#cb446-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Placing a SELL order @ </span><span class="ot">#{</span>sell_price<span class="ot">}</span><span class="st">, quantity: </span><span class="ot">#{</span>quantity<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb446-20"><a href="idiomatic-trading-strategy.html#cb446-20" aria-hidden="true" tabindex="-1"></a>    ) <span class="co"># ^ updated message</span></span>
+<span id="cb446-21"><a href="idiomatic-trading-strategy.html#cb446-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb446-22"><a href="idiomatic-trading-strategy.html#cb446-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb446-23"><a href="idiomatic-trading-strategy.html#cb446-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb446-24"><a href="idiomatic-trading-strategy.html#cb446-24" aria-hidden="true" tabindex="-1"></a>         <span class="va">:fetch_buy_order</span>,</span>
+<span id="cb446-25"><a href="idiomatic-trading-strategy.html#cb446-25" aria-hidden="true" tabindex="-1"></a>         <span class="op">...</span></span>
+<span id="cb446-26"><a href="idiomatic-trading-strategy.html#cb446-26" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb446-27"><a href="idiomatic-trading-strategy.html#cb446-27" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): The BUY order is now partially filled&quot;</span>) <span class="co"># &lt;= updated message</span></span>
+<span id="cb446-28"><a href="idiomatic-trading-strategy.html#cb446-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb446-29"><a href="idiomatic-trading-strategy.html#cb446-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb446-30"><a href="idiomatic-trading-strategy.html#cb446-30" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb446-31"><a href="idiomatic-trading-strategy.html#cb446-31" aria-hidden="true" tabindex="-1"></a>         <span class="va">:exit</span>,</span>
+<span id="cb446-32"><a href="idiomatic-trading-strategy.html#cb446-32" aria-hidden="true" tabindex="-1"></a>         <span class="op">...</span></span>
+<span id="cb446-33"><a href="idiomatic-trading-strategy.html#cb446-33" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb446-34"><a href="idiomatic-trading-strategy.html#cb446-34" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): Trade cycle finished&quot;</span>) <span class="co"># &lt;= updated message</span></span>
+<span id="cb446-35"><a href="idiomatic-trading-strategy.html#cb446-35" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb446-36"><a href="idiomatic-trading-strategy.html#cb446-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb446-37"><a href="idiomatic-trading-strategy.html#cb446-37" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb446-38"><a href="idiomatic-trading-strategy.html#cb446-38" aria-hidden="true" tabindex="-1"></a>         <span class="va">:fetch_sell_order</span>,</span>
+<span id="cb446-39"><a href="idiomatic-trading-strategy.html#cb446-39" aria-hidden="true" tabindex="-1"></a>         <span class="op">...</span></span>
+<span id="cb446-40"><a href="idiomatic-trading-strategy.html#cb446-40" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb446-41"><a href="idiomatic-trading-strategy.html#cb446-41" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): The SELL order is now partially filled&quot;</span>)  <span class="co"># &lt;= updated message</span></span>
+<span id="cb446-42"><a href="idiomatic-trading-strategy.html#cb446-42" aria-hidden="true" tabindex="-1"></a>     <span class="op">...</span></span>
+<span id="cb446-43"><a href="idiomatic-trading-strategy.html#cb446-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb446-44"><a href="idiomatic-trading-strategy.html#cb446-44" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb446-45"><a href="idiomatic-trading-strategy.html#cb446-45" aria-hidden="true" tabindex="-1"></a>         <span class="va">:rebuy</span>,</span>
+<span id="cb446-46"><a href="idiomatic-trading-strategy.html#cb446-46" aria-hidden="true" tabindex="-1"></a>         <span class="op">...</span></span>
+<span id="cb446-47"><a href="idiomatic-trading-strategy.html#cb446-47" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb446-48"><a href="idiomatic-trading-strategy.html#cb446-48" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): Rebuy triggered&quot;</span>)  <span class="co"># &lt;= updated message</span></span>
+<span id="cb446-49"><a href="idiomatic-trading-strategy.html#cb446-49" aria-hidden="true" tabindex="-1"></a>     <span class="op">...</span></span></code></pre></div>
+<p>Our code is still far from working, but we are incrementally updating it to work with multiple positions.</p>
+<div id="initialization" class="section level3" number="20.4.1">
+<h3><span class="header-section-number">20.4.1</span> Initialization</h3>
+<p>At this moment, the <code>Naive.Trader</code> expects the <code>state</code> to be injected on start (using the <code>start_link/1</code> function). We were able to do that because the <code>Naive.Leader</code> was fetching the settings and building the fresh trader state.</p>
+<p>First, let’s update the <code>State</code> of the <code>Naive.Trader</code> - it will now hold the symbol’s settings(previously held in the leader) and list of positions(list of the <code>Naive.Strategy.Position</code> structs):</p>
+<div class="sourceCode" id="cb447"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb447-1"><a href="idiomatic-trading-strategy.html#cb447-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb447-2"><a href="idiomatic-trading-strategy.html#cb447-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb447-3"><a href="idiomatic-trading-strategy.html#cb447-3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [<span class="va">:settings</span>, <span class="va">:positions</span>]</span>
+<span id="cb447-4"><a href="idiomatic-trading-strategy.html#cb447-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [<span class="va">:settings</span>, <span class="va">positions:</span> []]</span>
+<span id="cb447-5"><a href="idiomatic-trading-strategy.html#cb447-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now we need to update the <code>start_link/1</code> and <code>init/1</code> functions as well as add the <code>handle_continue/2</code> callback to fetch settings and store them together with an initial position in the state:</p>
+<div class="sourceCode" id="cb448"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb448-1"><a href="idiomatic-trading-strategy.html#cb448-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb448-2"><a href="idiomatic-trading-strategy.html#cb448-2" aria-hidden="true" tabindex="-1"></a>   <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Strategy</span></span>
+<span id="cb448-3"><a href="idiomatic-trading-strategy.html#cb448-3" aria-hidden="true" tabindex="-1"></a>   <span class="op">...</span></span>
+<span id="cb448-4"><a href="idiomatic-trading-strategy.html#cb448-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-5"><a href="idiomatic-trading-strategy.html#cb448-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_link(symbol) <span class="kw">do</span> <span class="co"># &lt;= now expecting symbol</span></span>
+<span id="cb448-6"><a href="idiomatic-trading-strategy.html#cb448-6" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol) <span class="co"># &lt;= updated</span></span>
+<span id="cb448-7"><a href="idiomatic-trading-strategy.html#cb448-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-8"><a href="idiomatic-trading-strategy.html#cb448-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link(</span>
+<span id="cb448-9"><a href="idiomatic-trading-strategy.html#cb448-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">__MODULE__</span>,</span>
+<span id="cb448-10"><a href="idiomatic-trading-strategy.html#cb448-10" aria-hidden="true" tabindex="-1"></a>      symbol,   <span class="co"># &lt;= updated</span></span>
+<span id="cb448-11"><a href="idiomatic-trading-strategy.html#cb448-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">name:</span> via_tuple(symbol)</span>
+<span id="cb448-12"><a href="idiomatic-trading-strategy.html#cb448-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb448-13"><a href="idiomatic-trading-strategy.html#cb448-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb448-14"><a href="idiomatic-trading-strategy.html#cb448-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-15"><a href="idiomatic-trading-strategy.html#cb448-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(symbol) <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb448-16"><a href="idiomatic-trading-strategy.html#cb448-16" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>) <span class="co"># &lt;= updated</span></span>
+<span id="cb448-17"><a href="idiomatic-trading-strategy.html#cb448-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-18"><a href="idiomatic-trading-strategy.html#cb448-18" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>subscribe(</span>
+<span id="cb448-19"><a href="idiomatic-trading-strategy.html#cb448-19" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb448-20"><a href="idiomatic-trading-strategy.html#cb448-20" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb448-21"><a href="idiomatic-trading-strategy.html#cb448-21" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb448-22"><a href="idiomatic-trading-strategy.html#cb448-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-23"><a href="idiomatic-trading-strategy.html#cb448-23" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, <span class="cn">nil</span>, {<span class="va">:continue</span>, {<span class="va">:start_position</span>, symbol}}} <span class="co"># &lt;= updated</span></span>
+<span id="cb448-24"><a href="idiomatic-trading-strategy.html#cb448-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb448-25"><a href="idiomatic-trading-strategy.html#cb448-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-26"><a href="idiomatic-trading-strategy.html#cb448-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_continue({<span class="va">:start_position</span>, symbol}, _state) <span class="kw">do</span></span>
+<span id="cb448-27"><a href="idiomatic-trading-strategy.html#cb448-27" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> <span class="cn">Strategy</span><span class="op">.</span>fetch_symbol_settings(symbol)</span>
+<span id="cb448-28"><a href="idiomatic-trading-strategy.html#cb448-28" aria-hidden="true" tabindex="-1"></a>    positions <span class="op">=</span> [<span class="cn">Strategy</span><span class="op">.</span>generate_fresh_position(settings)]</span>
+<span id="cb448-29"><a href="idiomatic-trading-strategy.html#cb448-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb448-30"><a href="idiomatic-trading-strategy.html#cb448-30" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %<span class="cn">State</span>{<span class="va">settings:</span> settings, <span class="va">positions:</span> positions}}</span>
+<span id="cb448-31"><a href="idiomatic-trading-strategy.html#cb448-31" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span> <span class="co"># ^^^ new function/callback</span></span></code></pre></div>
+<p>As the <code>Naive.Trader</code> starts, it returns the <code>{:continue, ...}</code> tuple from the <code>init/1</code> function. This will cause the <code>handle_continue/2</code> callback to be called asynchronously. Inside it, we fetch settings and add a single fresh position to the list of positions - both stored in Trader’s state.</p>
+<p>Both functions inside the <code>handle_continue/2</code> callback previously were part of the <code>Naive.Leader</code> - we need to move them across to the <code>Naive.Strategy</code>:</p>
+<div class="sourceCode" id="cb449"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb449-1"><a href="idiomatic-trading-strategy.html#cb449-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb449-2"><a href="idiomatic-trading-strategy.html#cb449-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span></span>
+<span id="cb449-3"><a href="idiomatic-trading-strategy.html#cb449-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb449-4"><a href="idiomatic-trading-strategy.html#cb449-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@repo</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:naive</span>, <span class="va">:repo</span>)</span>
+<span id="cb449-5"><a href="idiomatic-trading-strategy.html#cb449-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb449-6"><a href="idiomatic-trading-strategy.html#cb449-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
+<span id="cb449-7"><a href="idiomatic-trading-strategy.html#cb449-7" aria-hidden="true" tabindex="-1"></a>    exchange_info <span class="op">=</span> <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb449-8"><a href="idiomatic-trading-strategy.html#cb449-8" aria-hidden="true" tabindex="-1"></a>    db_settings <span class="op">=</span> <span class="ot">@repo</span><span class="op">.</span>get_by!(<span class="cn">Settings</span>, <span class="va">symbol:</span> symbol)</span>
+<span id="cb449-9"><a href="idiomatic-trading-strategy.html#cb449-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb449-10"><a href="idiomatic-trading-strategy.html#cb449-10" aria-hidden="true" tabindex="-1"></a>    merge_filters_into_settings(exchange_info, db_settings, symbol)</span>
+<span id="cb449-11"><a href="idiomatic-trading-strategy.html#cb449-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb449-12"><a href="idiomatic-trading-strategy.html#cb449-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb449-13"><a href="idiomatic-trading-strategy.html#cb449-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> merge_filters_into_settings(exchange_info, db_settings, symbol) <span class="kw">do</span></span>
+<span id="cb449-14"><a href="idiomatic-trading-strategy.html#cb449-14" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
+<span id="cb449-15"><a href="idiomatic-trading-strategy.html#cb449-15" aria-hidden="true" tabindex="-1"></a>      exchange_info</span>
+<span id="cb449-16"><a href="idiomatic-trading-strategy.html#cb449-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
+<span id="cb449-17"><a href="idiomatic-trading-strategy.html#cb449-17" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
+<span id="cb449-18"><a href="idiomatic-trading-strategy.html#cb449-18" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
+<span id="cb449-19"><a href="idiomatic-trading-strategy.html#cb449-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
+<span id="cb449-20"><a href="idiomatic-trading-strategy.html#cb449-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb449-21"><a href="idiomatic-trading-strategy.html#cb449-21" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
+<span id="cb449-22"><a href="idiomatic-trading-strategy.html#cb449-22" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb449-23"><a href="idiomatic-trading-strategy.html#cb449-23" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
+<span id="cb449-24"><a href="idiomatic-trading-strategy.html#cb449-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
+<span id="cb449-25"><a href="idiomatic-trading-strategy.html#cb449-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb449-26"><a href="idiomatic-trading-strategy.html#cb449-26" aria-hidden="true" tabindex="-1"></a>    step_size <span class="op">=</span></span>
+<span id="cb449-27"><a href="idiomatic-trading-strategy.html#cb449-27" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb449-28"><a href="idiomatic-trading-strategy.html#cb449-28" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span>))</span>
+<span id="cb449-29"><a href="idiomatic-trading-strategy.html#cb449-29" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;stepSize&quot;</span>)</span>
+<span id="cb449-30"><a href="idiomatic-trading-strategy.html#cb449-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb449-31"><a href="idiomatic-trading-strategy.html#cb449-31" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
+<span id="cb449-32"><a href="idiomatic-trading-strategy.html#cb449-32" aria-hidden="true" tabindex="-1"></a>      %{</span>
+<span id="cb449-33"><a href="idiomatic-trading-strategy.html#cb449-33" aria-hidden="true" tabindex="-1"></a>        <span class="va">tick_size:</span> tick_size,</span>
+<span id="cb449-34"><a href="idiomatic-trading-strategy.html#cb449-34" aria-hidden="true" tabindex="-1"></a>        <span class="va">step_size:</span> step_size</span>
+<span id="cb449-35"><a href="idiomatic-trading-strategy.html#cb449-35" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="cb449-36"><a href="idiomatic-trading-strategy.html#cb449-36" aria-hidden="true" tabindex="-1"></a>      db_settings <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>from_struct()</span>
+<span id="cb449-37"><a href="idiomatic-trading-strategy.html#cb449-37" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb449-38"><a href="idiomatic-trading-strategy.html#cb449-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb449-39"><a href="idiomatic-trading-strategy.html#cb449-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb449-40"><a href="idiomatic-trading-strategy.html#cb449-40" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_fresh_position(settings, id \\ <span class="va">:os</span><span class="op">.</span>system_time(<span class="va">:millisecond</span>)) <span class="kw">do</span></span>
+<span id="cb449-41"><a href="idiomatic-trading-strategy.html#cb449-41" aria-hidden="true" tabindex="-1"></a>    %{</span>
+<span id="cb449-42"><a href="idiomatic-trading-strategy.html#cb449-42" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Position</span>, settings)</span>
+<span id="cb449-43"><a href="idiomatic-trading-strategy.html#cb449-43" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="va">id:</span> id,</span>
+<span id="cb449-44"><a href="idiomatic-trading-strategy.html#cb449-44" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks),</span>
+<span id="cb449-45"><a href="idiomatic-trading-strategy.html#cb449-45" aria-hidden="true" tabindex="-1"></a>        <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb449-46"><a href="idiomatic-trading-strategy.html#cb449-46" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb449-47"><a href="idiomatic-trading-strategy.html#cb449-47" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Inside the above code, we modified the <code>fetch_symbol_settings/1</code> function to fetch settings from binance and DB first and then progress with the “pure” part. This update allows us to test most of the logic easily without using mocks.</p>
+<p>The <code>generate_fresh_position/2</code> was previously called <code>fresh_trader_state/1</code> inside the <code>Naive.Leader</code>. It had an <code>id</code> assigned inside the function based on the current system time. That made it a bit more difficult to test as we don’t know what should we expect there as a value. By moving the <code>id</code> to the arguments and assigning the current time there, we are now able to test it by passing our dummy value.</p>
+<p>We are now using <code>@repo</code> inside the <code>Naive.Strategy</code> so we need to add it to configuration files(including test configuration):</p>
+<div class="sourceCode" id="cb450"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb450-1"><a href="idiomatic-trading-strategy.html#cb450-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb450-2"><a href="idiomatic-trading-strategy.html#cb450-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb450-3"><a href="idiomatic-trading-strategy.html#cb450-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb450-4"><a href="idiomatic-trading-strategy.html#cb450-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">repo:</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Repo</span>,</span></code></pre></div>
+<div class="sourceCode" id="cb451"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb451-1"><a href="idiomatic-trading-strategy.html#cb451-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb451-2"><a href="idiomatic-trading-strategy.html#cb451-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb451-3"><a href="idiomatic-trading-strategy.html#cb451-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb451-4"><a href="idiomatic-trading-strategy.html#cb451-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">repo:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">RepoMock</span>,</span></code></pre></div>
+</div>
+<div id="parallelising-the-strategy" class="section level3" number="20.4.2">
+<h3><span class="header-section-number">20.4.2</span> Parallelising the strategy</h3>
+<p>We can now move on to the strategy, but first, let’s update the <code>Naive.Trader</code> to pass positions and settings separately:</p>
+<div class="sourceCode" id="cb452"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb452-1"><a href="idiomatic-trading-strategy.html#cb452-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb452-2"><a href="idiomatic-trading-strategy.html#cb452-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(%<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event, %<span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb452-3"><a href="idiomatic-trading-strategy.html#cb452-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Strategy</span><span class="op">.</span>execute(trade_event, state<span class="op">.</span>positions, state<span class="op">.</span>settings) <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb452-4"><a href="idiomatic-trading-strategy.html#cb452-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, updated_positions} <span class="op">-&gt;</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb452-5"><a href="idiomatic-trading-strategy.html#cb452-5" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">positions:</span> updated_positions}} <span class="co"># &lt;= updated</span></span>
+<span id="cb452-6"><a href="idiomatic-trading-strategy.html#cb452-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb452-7"><a href="idiomatic-trading-strategy.html#cb452-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:exit</span> <span class="op">-&gt;</span></span>
+<span id="cb452-8"><a href="idiomatic-trading-strategy.html#cb452-8" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:stop</span>, <span class="va">:normal</span>, state}</span>
+<span id="cb452-9"><a href="idiomatic-trading-strategy.html#cb452-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
+<p>We need all the <code>positions</code> to iterate through them, deciding and executing appropriate actions. The <code>settings</code> will be used inside the strategy later, but we will pass it on now to avoid going back and forward later.</p>
+<p>Additionally, we updated the <code>case</code> match to expect a list of updated positions which we will assign to the <code>Trader</code>’s state.</p>
+<p>Now we can modify the <code>Naive.Strategy</code> to handle multiple positions:</p>
+<div class="sourceCode" id="cb453"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb453-1"><a href="idiomatic-trading-strategy.html#cb453-1" aria-hidden="true" tabindex="-1"></a>   <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb453-2"><a href="idiomatic-trading-strategy.html#cb453-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> execute(%<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event, positions, settings) <span class="kw">do</span></span>
+<span id="cb453-3"><a href="idiomatic-trading-strategy.html#cb453-3" aria-hidden="true" tabindex="-1"></a>    generate_decisions(positions, [], trade_event, settings)</span>
+<span id="cb453-4"><a href="idiomatic-trading-strategy.html#cb453-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="kw">fn</span> {decision, position} <span class="op">-&gt;</span></span>
+<span id="cb453-5"><a href="idiomatic-trading-strategy.html#cb453-5" aria-hidden="true" tabindex="-1"></a>      <span class="cn">Task</span><span class="op">.</span>async(<span class="kw">fn</span> <span class="op">-&gt;</span> execute_decision(decision, position, settings) <span class="kw">end</span>)</span>
+<span id="cb453-6"><a href="idiomatic-trading-strategy.html#cb453-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>)</span>
+<span id="cb453-7"><a href="idiomatic-trading-strategy.html#cb453-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Task</span><span class="op">.</span>await_many()</span>
+<span id="cb453-8"><a href="idiomatic-trading-strategy.html#cb453-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> then(<span class="op">&amp;</span>parse_results<span class="op">/</span><span class="dv">1</span>)</span>
+<span id="cb453-9"><a href="idiomatic-trading-strategy.html#cb453-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We need to write most of the functions used above, but we can already see the idea. We will map each of the decisions that we generate to async tasks that execute them. Next, we wait for all of them to finish and parse the results.</p>
+<p>First, we are calling a new function <code>generate_decisions/4</code>, which is a recursive function on top of the existing <code>generate_decision/2</code>:</p>
+<div class="sourceCode" id="cb454"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb454-1"><a href="idiomatic-trading-strategy.html#cb454-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb454-2"><a href="idiomatic-trading-strategy.html#cb454-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decisions([], generated_results, _trade_event, _settings) <span class="kw">do</span></span>
+<span id="cb454-3"><a href="idiomatic-trading-strategy.html#cb454-3" aria-hidden="true" tabindex="-1"></a>    generated_results</span>
+<span id="cb454-4"><a href="idiomatic-trading-strategy.html#cb454-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb454-5"><a href="idiomatic-trading-strategy.html#cb454-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb454-6"><a href="idiomatic-trading-strategy.html#cb454-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decisions([position <span class="op">|</span> rest] <span class="op">=</span> positions, generated_results, trade_event, settings) <span class="kw">do</span></span>
+<span id="cb454-7"><a href="idiomatic-trading-strategy.html#cb454-7" aria-hidden="true" tabindex="-1"></a>    current_positions <span class="op">=</span> positions <span class="op">++</span> (generated_results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>elem(<span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">0</span>)))</span>
+<span id="cb454-8"><a href="idiomatic-trading-strategy.html#cb454-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb454-9"><a href="idiomatic-trading-strategy.html#cb454-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> generate_decision(trade_event, position, current_positions, settings) <span class="kw">do</span></span>
+<span id="cb454-10"><a href="idiomatic-trading-strategy.html#cb454-10" aria-hidden="true" tabindex="-1"></a>      decision <span class="op">-&gt;</span></span>
+<span id="cb454-11"><a href="idiomatic-trading-strategy.html#cb454-11" aria-hidden="true" tabindex="-1"></a>        generate_decisions(</span>
+<span id="cb454-12"><a href="idiomatic-trading-strategy.html#cb454-12" aria-hidden="true" tabindex="-1"></a>          rest,</span>
+<span id="cb454-13"><a href="idiomatic-trading-strategy.html#cb454-13" aria-hidden="true" tabindex="-1"></a>          [{decision, position} <span class="op">|</span> generated_results],</span>
+<span id="cb454-14"><a href="idiomatic-trading-strategy.html#cb454-14" aria-hidden="true" tabindex="-1"></a>          trade_event,</span>
+<span id="cb454-15"><a href="idiomatic-trading-strategy.html#cb454-15" aria-hidden="true" tabindex="-1"></a>          settings</span>
+<span id="cb454-16"><a href="idiomatic-trading-strategy.html#cb454-16" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb454-17"><a href="idiomatic-trading-strategy.html#cb454-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb454-18"><a href="idiomatic-trading-strategy.html#cb454-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>At this moment, the <code>generate_decisions/4</code> can look like overengineered <code>Enum.map/2</code> function, but we are actually preparing the ground for the consequent updates later in this chapter(to get the rest of the functionality running).</p>
+<p>It’s important to note that we are now passing four arguments into the <code>generate_decision</code> function - we added <code>current_positions</code> and <code>settings</code> - those will be required in the further updates as it was mentioned above. At this moment though, we will update the <code>generate_decision/2</code> clauses to include two additional arguments to <strong>all</strong> clauses:</p>
+<div class="sourceCode" id="cb455"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb455-1"><a href="idiomatic-trading-strategy.html#cb455-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb455-2"><a href="idiomatic-trading-strategy.html#cb455-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decision(</span>
+<span id="cb455-3"><a href="idiomatic-trading-strategy.html#cb455-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="op">...</span>},</span>
+<span id="cb455-4"><a href="idiomatic-trading-strategy.html#cb455-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb455-5"><a href="idiomatic-trading-strategy.html#cb455-5" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb455-6"><a href="idiomatic-trading-strategy.html#cb455-6" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb455-7"><a href="idiomatic-trading-strategy.html#cb455-7" aria-hidden="true" tabindex="-1"></a>        _positions, <span class="co"># &lt;= add this 8 times</span></span>
+<span id="cb455-8"><a href="idiomatic-trading-strategy.html#cb455-8" aria-hidden="true" tabindex="-1"></a>       _settings    <span class="co"># &lt;= add this 8 times</span></span>
+<span id="cb455-9"><a href="idiomatic-trading-strategy.html#cb455-9" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span></code></pre></div>
+<p>Now back to the main <code>execute/3</code> function where we are calling <code>execute_decision/3</code>, which we need to update as well(<strong>all</strong> clauses):</p>
+<div class="sourceCode" id="cb456"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb456-1"><a href="idiomatic-trading-strategy.html#cb456-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb456-2"><a href="idiomatic-trading-strategy.html#cb456-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb456-3"><a href="idiomatic-trading-strategy.html#cb456-3" aria-hidden="true" tabindex="-1"></a>         {<span class="op">...</span>},</span>
+<span id="cb456-4"><a href="idiomatic-trading-strategy.html#cb456-4" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Position</span>{</span>
+<span id="cb456-5"><a href="idiomatic-trading-strategy.html#cb456-5" aria-hidden="true" tabindex="-1"></a>           <span class="op">...</span></span>
+<span id="cb456-6"><a href="idiomatic-trading-strategy.html#cb456-6" aria-hidden="true" tabindex="-1"></a>         } <span class="op">=</span> position,</span>
+<span id="cb456-7"><a href="idiomatic-trading-strategy.html#cb456-7" aria-hidden="true" tabindex="-1"></a>         _settings  <span class="co"># &lt;= added 7 times</span></span>
+<span id="cb456-8"><a href="idiomatic-trading-strategy.html#cb456-8" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span></code></pre></div>
+<p>The final function that gets called from the <code>execute/3</code> function is <code>parse_results/1</code>, which will aggregate all the results into a single tuple:</p>
+<div class="sourceCode" id="cb457"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb457-1"><a href="idiomatic-trading-strategy.html#cb457-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb457-2"><a href="idiomatic-trading-strategy.html#cb457-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> parse_results([_ <span class="op">|</span> _] <span class="op">=</span> results) <span class="kw">do</span></span>
+<span id="cb457-3"><a href="idiomatic-trading-strategy.html#cb457-3" aria-hidden="true" tabindex="-1"></a>    results</span>
+<span id="cb457-4"><a href="idiomatic-trading-strategy.html#cb457-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="kw">fn</span> {<span class="va">:ok</span>, new_position} <span class="op">-&gt;</span> new_position <span class="kw">end</span>)</span>
+<span id="cb457-5"><a href="idiomatic-trading-strategy.html#cb457-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> then(<span class="op">&amp;</span>{<span class="va">:ok</span>, <span class="op">&amp;</span><span class="dv">1</span>})</span>
+<span id="cb457-6"><a href="idiomatic-trading-strategy.html#cb457-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>At this moment, we should be able to run our code:</p>
+<div class="sourceCode" id="cb458"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb458-1"><a href="idiomatic-trading-strategy.html#cb458-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb458-2"><a href="idiomatic-trading-strategy.html#cb458-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb458-3"><a href="idiomatic-trading-strategy.html#cb458-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb458-4"><a href="idiomatic-trading-strategy.html#cb458-4" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb458-5"><a href="idiomatic-trading-strategy.html#cb458-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb458-6"><a href="idiomatic-trading-strategy.html#cb458-6" aria-hidden="true" tabindex="-1"></a><span class="ex">21:29:17.998</span> [info]  Starting streaming XRPUSDT trade events</span>
+<span id="cb458-7"><a href="idiomatic-trading-strategy.html#cb458-7" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb458-8"><a href="idiomatic-trading-strategy.html#cb458-8" aria-hidden="true" tabindex="-1"></a><span class="ex">21:29:21.037</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1651696014179</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 0.64010000, quantity: 31.00000000</span>
+<span id="cb458-9"><a href="idiomatic-trading-strategy.html#cb458-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:29:21.037</span> [error] Task <span class="co">#PID&lt;0.10293.0&gt; started from #PID&lt;0.480.0&gt; terminating</span></span>
+<span id="cb458-10"><a href="idiomatic-trading-strategy.html#cb458-10" aria-hidden="true" tabindex="-1"></a><span class="ex">**</span> <span class="er">(</span><span class="ex">stop</span><span class="kw">)</span> <span class="ex">exited</span> in: GenServer.call<span class="er">(</span><span class="ex">:</span><span class="st">&quot;Elixir.Naive.Leader-XRPUSDT&quot;</span><span class="ex">...</span></span></code></pre></div>
+<p>So we have a trader that start and places a buy order but then it tries to update the leader with it’s new state - we can update the <code>execute_decision/3</code> function to drop the updates(in <strong>all</strong> of the clauses):</p>
+<div class="sourceCode" id="cb459"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb459-1"><a href="idiomatic-trading-strategy.html#cb459-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb459-2"><a href="idiomatic-trading-strategy.html#cb459-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb459-3"><a href="idiomatic-trading-strategy.html#cb459-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb459-4"><a href="idiomatic-trading-strategy.html#cb459-4" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb459-5"><a href="idiomatic-trading-strategy.html#cb459-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb459-6"><a href="idiomatic-trading-strategy.html#cb459-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># convert the below:</span></span>
+<span id="cb459-7"><a href="idiomatic-trading-strategy.html#cb459-7" aria-hidden="true" tabindex="-1"></a>    new_position <span class="op">=</span> %{position <span class="op">|</span> <span class="va">buy_order:</span> order}</span>
+<span id="cb459-8"><a href="idiomatic-trading-strategy.html#cb459-8" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:trader_state_updated</span>, new_position)</span>
+<span id="cb459-9"><a href="idiomatic-trading-strategy.html#cb459-9" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, new_position}</span>
+<span id="cb459-10"><a href="idiomatic-trading-strategy.html#cb459-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># to:</span></span>
+<span id="cb459-11"><a href="idiomatic-trading-strategy.html#cb459-11" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, %{position <span class="op">|</span> <span class="va">buy_order:</span> order}}</span>
+<span id="cb459-12"><a href="idiomatic-trading-strategy.html#cb459-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Apply similar changes to all the clauses of the <code>execute_decision/3</code> to get rid of the references to the <code>@leader</code> - remember to remove the module’s attribute as well, as we won’t need it anymore.</p>
+<p>Important note - one of those references to the <code>@leader</code> will be the notification that rebuy was triggered:</p>
+<div class="sourceCode" id="cb460"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb460-1"><a href="idiomatic-trading-strategy.html#cb460-1" aria-hidden="true" tabindex="-1"></a>    <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb460-2"><a href="idiomatic-trading-strategy.html#cb460-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@leader</span><span class="op">.</span>notify(<span class="va">:rebuy_triggered</span>, new_position)</span></code></pre></div>
+<p>At this moment, remove that reference as well. We will get back to the rebuy functionality in the next section.</p>
+<p>We can now rerun our code:</p>
+<pre><code>$ iex -S mix
+...
+iex(1)&gt; Streamer.start_streaming(&quot;ETHUSDT&quot;)
+...
+iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
+...
+21:59:19.836 [info]  Position (ETHUSDT/1651697959836): Placing a BUY order @ 2945.31000000, quantity: 0.06790000
+ 21:59:46.997 [info]  Position (ETHUSDT/1651697959836): The BUY order is now partially filled
+ 21:59:46.997 [info]  Position (ETHUSDT/1651697959836): The BUY order is now filled. Placing a SELL order @ 2947.66000000, quantity: 0.06790000
+ 22:00:21.631 [info]  Position (ETHUSDT/1651697959836): The SELL order is now partially filled
+ 22:00:21.734 [info]  Position (ETHUSDT/1651697959836): Trade cycle finished
+22:00:21.737 [error] GenServer {:naive_traders, &quot;ETHUSDT&quot;} terminating
+** (FunctionClauseError) no function clause matching in anonymous fn/1 in Naive.Strategy.parse_results/1
+    (naive 0.1.0) lib/naive/strategy.ex:56: anonymous fn(:exit) in Naive.Strategy.parse_results/1</code></pre>
+<p>We can see that our trader process can now go through the whole trade cycle, but it fails to start a new position after the first trade cycle finishes and returns <code>:exit</code>.</p>
+<p>To fix this issue, we need to return <code>:finished</code> instead of <code>:exit</code> from the <code>generate_decision/3</code> clause responsible for matching end of the trade cycle:</p>
+<div class="sourceCode" id="cb462"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb462-1"><a href="idiomatic-trading-strategy.html#cb462-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb462-2"><a href="idiomatic-trading-strategy.html#cb462-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decision(</span>
+<span id="cb462-3"><a href="idiomatic-trading-strategy.html#cb462-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{},</span>
+<span id="cb462-4"><a href="idiomatic-trading-strategy.html#cb462-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb462-5"><a href="idiomatic-trading-strategy.html#cb462-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb462-6"><a href="idiomatic-trading-strategy.html#cb462-6" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb462-7"><a href="idiomatic-trading-strategy.html#cb462-7" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb462-8"><a href="idiomatic-trading-strategy.html#cb462-8" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb462-9"><a href="idiomatic-trading-strategy.html#cb462-9" aria-hidden="true" tabindex="-1"></a>        _positions,</span>
+<span id="cb462-10"><a href="idiomatic-trading-strategy.html#cb462-10" aria-hidden="true" tabindex="-1"></a>        _settings</span>
+<span id="cb462-11"><a href="idiomatic-trading-strategy.html#cb462-11" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb462-12"><a href="idiomatic-trading-strategy.html#cb462-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">:finished</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb462-13"><a href="idiomatic-trading-strategy.html#cb462-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>This decision will end up inside the <code>execute_decision/3</code> where previously we were returning <code>:exit</code> atom, which was causing an error - let’s move this clause to be the last clause and update its body to generate a fresh state instead of returning a dummy atom:</p>
+<div class="sourceCode" id="cb463"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb463-1"><a href="idiomatic-trading-strategy.html#cb463-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb463-2"><a href="idiomatic-trading-strategy.html#cb463-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb463-3"><a href="idiomatic-trading-strategy.html#cb463-3" aria-hidden="true" tabindex="-1"></a>         <span class="va">:finished</span>, <span class="co"># &lt;= previously :exit; updated</span></span>
+<span id="cb463-4"><a href="idiomatic-trading-strategy.html#cb463-4" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Position</span>{</span>
+<span id="cb463-5"><a href="idiomatic-trading-strategy.html#cb463-5" aria-hidden="true" tabindex="-1"></a>           <span class="va">id:</span> id,</span>
+<span id="cb463-6"><a href="idiomatic-trading-strategy.html#cb463-6" aria-hidden="true" tabindex="-1"></a>           <span class="va">symbol:</span> symbol</span>
+<span id="cb463-7"><a href="idiomatic-trading-strategy.html#cb463-7" aria-hidden="true" tabindex="-1"></a>         },</span>
+<span id="cb463-8"><a href="idiomatic-trading-strategy.html#cb463-8" aria-hidden="true" tabindex="-1"></a>         settings <span class="co"># &lt;= now used</span></span>
+<span id="cb463-9"><a href="idiomatic-trading-strategy.html#cb463-9" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb463-10"><a href="idiomatic-trading-strategy.html#cb463-10" aria-hidden="true" tabindex="-1"></a>    new_position <span class="op">=</span> generate_fresh_position(settings) <span class="co"># &lt;= added</span></span>
+<span id="cb463-11"><a href="idiomatic-trading-strategy.html#cb463-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb463-12"><a href="idiomatic-trading-strategy.html#cb463-12" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): Trade cycle finished&quot;</span>)</span>
+<span id="cb463-13"><a href="idiomatic-trading-strategy.html#cb463-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb463-14"><a href="idiomatic-trading-strategy.html#cb463-14" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, new_position} <span class="co"># &lt;= updated</span></span>
+<span id="cb463-15"><a href="idiomatic-trading-strategy.html#cb463-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>At this moment, our trader process should be able to run across multiple trade cycles one after another:</p>
+<pre><code>$ iex -S mix
+...
+iex(1)&gt; Streamer.start_streaming(&quot;ETHUSDT&quot;)
+...
+iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
+...
+22:46:46.568 [info]  Position (ETHUSDT/1651697959836): Trade cycle finished
+22:46:46.577 [info]  Position (ETHUSDT/1651697959836): Placing a BUY order @ 2945.31000000, quantity: 0.06790000</code></pre>
+<p>This finishes direct changes related to making the trader/strategy work with multiple positions, but it lacks all the features that the <code>Naive.Leader</code> offered. We will now iterate on this code to bring that missing functionality.</p>
+</div>
+</div>
+<div id="retrofitting-the-shutdown-functionality" class="section level2" number="20.5">
+<h2><span class="header-section-number">20.5</span> Retrofitting the “shutdown” functionality</h2>
+<p>Previously, the shutdown logic was scattered around in multiple places inside the <code>Naive.Leader</code>, for example, when the rebuy was triggered - making sure that new Trader processes won’t get started in the “shutdown” state.</p>
+<p>Now, we have an opportunity to make the shutdown functionality part of our strategy.</p>
+<p>We will start by modifying the <code>DynamicTraderSupervisor</code> where we will update the <code>shutdown_worker/1</code> function to call the <code>Naive.Trader</code> instead of the <code>Naive.Leader</code>:</p>
+<div class="sourceCode" id="cb465"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb465-1"><a href="idiomatic-trading-strategy.html#cb465-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/dynamic_trader_supervisor.ex</span></span>
+<span id="cb465-2"><a href="idiomatic-trading-strategy.html#cb465-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> shutdown_worker(symbol) <span class="kw">when</span> is_binary(symbol) <span class="kw">do</span></span>
+<span id="cb465-3"><a href="idiomatic-trading-strategy.html#cb465-3" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Shutdown of trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> initialized&quot;</span>)</span>
+<span id="cb465-4"><a href="idiomatic-trading-strategy.html#cb465-4" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, settings} <span class="op">=</span> update_status(symbol, <span class="st">&quot;shutdown&quot;</span>)</span>
+<span id="cb465-5"><a href="idiomatic-trading-strategy.html#cb465-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Trader</span><span class="op">.</span>notify(<span class="va">:settings_updated</span>, settings) <span class="co"># &lt;= updated</span></span>
+<span id="cb465-6"><a href="idiomatic-trading-strategy.html#cb465-6" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, settings}</span>
+<span id="cb465-7"><a href="idiomatic-trading-strategy.html#cb465-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now, the Trader will handle updating the settings, which we will add next, but before we do that, we should move the <code>update_status/2</code> function into the <code>Naive.Strategy</code> as it will be used from both the <code>DynamicTraderSupervisor</code> and the <code>Naive.Strategy</code>:</p>
+<div class="sourceCode" id="cb466"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb466-1"><a href="idiomatic-trading-strategy.html#cb466-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb466-2"><a href="idiomatic-trading-strategy.html#cb466-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> update_status(symbol, status) <span class="co"># &lt;= updated to public</span></span>
+<span id="cb466-3"><a href="idiomatic-trading-strategy.html#cb466-3" aria-hidden="true" tabindex="-1"></a>      <span class="kw">when</span> is_binary(symbol) <span class="kw">and</span> is_binary(status) <span class="kw">do</span></span>
+<span id="cb466-4"><a href="idiomatic-trading-strategy.html#cb466-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@repo</span><span class="op">.</span>get_by(<span class="cn">Settings</span>, <span class="va">symbol:</span> symbol) <span class="op">&lt;=</span> updated to <span class="im">use</span> <span class="ot">@repo</span></span>
+<span id="cb466-5"><a href="idiomatic-trading-strategy.html#cb466-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Changeset</span><span class="op">.</span>change(%{<span class="va">status:</span> status})</span>
+<span id="cb466-6"><a href="idiomatic-trading-strategy.html#cb466-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="ot">@repo</span><span class="op">.</span>update() <span class="co"># &lt;= updated to use @repo</span></span>
+<span id="cb466-7"><a href="idiomatic-trading-strategy.html#cb466-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now we need to update the <code>DynamicTraderSupervisor</code> module to call the <code>update_status/2</code> from the <code>Naive.Strategy</code> module:</p>
+<div class="sourceCode" id="cb467"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb467-1"><a href="idiomatic-trading-strategy.html#cb467-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/dynamic_trader_supervisor.ex</span></span>
+<span id="cb467-2"><a href="idiomatic-trading-strategy.html#cb467-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Strategy</span></span>
+<span id="cb467-3"><a href="idiomatic-trading-strategy.html#cb467-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb467-4"><a href="idiomatic-trading-strategy.html#cb467-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb467-5"><a href="idiomatic-trading-strategy.html#cb467-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> start_worker(symbol) <span class="kw">do</span></span>
+<span id="cb467-6"><a href="idiomatic-trading-strategy.html#cb467-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb467-7"><a href="idiomatic-trading-strategy.html#cb467-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Strategy</span><span class="op">.</span>update_status(symbol, <span class="st">&quot;on&quot;</span>) <span class="co"># &lt;= updated</span></span>
+<span id="cb467-8"><a href="idiomatic-trading-strategy.html#cb467-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">..</span></span>
+<span id="cb467-9"><a href="idiomatic-trading-strategy.html#cb467-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb467-10"><a href="idiomatic-trading-strategy.html#cb467-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> stop_worker(symbol) <span class="kw">do</span></span>
+<span id="cb467-11"><a href="idiomatic-trading-strategy.html#cb467-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb467-12"><a href="idiomatic-trading-strategy.html#cb467-12" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Strategy</span><span class="op">.</span>update_status(symbol, <span class="st">&quot;off&quot;</span>) <span class="co"># &lt;= updated</span></span>
+<span id="cb467-13"><a href="idiomatic-trading-strategy.html#cb467-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb467-14"><a href="idiomatic-trading-strategy.html#cb467-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb467-15"><a href="idiomatic-trading-strategy.html#cb467-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> shutdown_worker(symbol) <span class="kw">when</span> is_binary(symbol) <span class="kw">do</span></span>
+<span id="cb467-16"><a href="idiomatic-trading-strategy.html#cb467-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb467-17"><a href="idiomatic-trading-strategy.html#cb467-17" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, settings} <span class="op">=</span> <span class="cn">Strategy</span><span class="op">.</span>update_status(symbol, <span class="st">&quot;shutdown&quot;</span>) <span class="co"># &lt;= updated</span></span></code></pre></div>
+<div id="handling-updated-settings" class="section level3" number="20.5.1">
+<h3><span class="header-section-number">20.5.1</span> Handling updated settings</h3>
+<p>We can now move on to the <code>Naive.Trader</code> module, where we need to add a new <code>notify/2</code> interface function:</p>
+<div class="sourceCode" id="cb468"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb468-1"><a href="idiomatic-trading-strategy.html#cb468-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb468-2"><a href="idiomatic-trading-strategy.html#cb468-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> notify(<span class="va">:settings_updated</span>, settings) <span class="kw">do</span></span>
+<span id="cb468-3"><a href="idiomatic-trading-strategy.html#cb468-3" aria-hidden="true" tabindex="-1"></a>    call_trader(settings<span class="op">.</span>symbol, {<span class="va">:update_settings</span>, settings})</span>
+<span id="cb468-4"><a href="idiomatic-trading-strategy.html#cb468-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb468-5"><a href="idiomatic-trading-strategy.html#cb468-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb468-6"><a href="idiomatic-trading-strategy.html#cb468-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> call_trader(symbol, data) <span class="kw">do</span></span>
+<span id="cb468-7"><a href="idiomatic-trading-strategy.html#cb468-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Registry</span><span class="op">.</span>lookup(<span class="ot">@registry</span>, symbol) <span class="kw">do</span></span>
+<span id="cb468-8"><a href="idiomatic-trading-strategy.html#cb468-8" aria-hidden="true" tabindex="-1"></a>      [{pid, _}] <span class="op">-&gt;</span></span>
+<span id="cb468-9"><a href="idiomatic-trading-strategy.html#cb468-9" aria-hidden="true" tabindex="-1"></a>        <span class="cn">GenServer</span><span class="op">.</span>call(</span>
+<span id="cb468-10"><a href="idiomatic-trading-strategy.html#cb468-10" aria-hidden="true" tabindex="-1"></a>          pid,</span>
+<span id="cb468-11"><a href="idiomatic-trading-strategy.html#cb468-11" aria-hidden="true" tabindex="-1"></a>          data</span>
+<span id="cb468-12"><a href="idiomatic-trading-strategy.html#cb468-12" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb468-13"><a href="idiomatic-trading-strategy.html#cb468-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb468-14"><a href="idiomatic-trading-strategy.html#cb468-14" aria-hidden="true" tabindex="-1"></a>      _ <span class="op">-&gt;</span></span>
+<span id="cb468-15"><a href="idiomatic-trading-strategy.html#cb468-15" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn(<span class="st">&quot;Unable to locate trader process assigned to </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
+<span id="cb468-16"><a href="idiomatic-trading-strategy.html#cb468-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:error</span>, <span class="va">:unable_to_locate_trader</span>}</span>
+<span id="cb468-17"><a href="idiomatic-trading-strategy.html#cb468-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb468-18"><a href="idiomatic-trading-strategy.html#cb468-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The <code>notify/2</code> function acts as a part of the public interface of the <code>Naive.Trader</code> module. It uses the <code>call_trader/2</code> helper function to abstract away looking up the <code>Trader</code> process from the <code>Registry</code> and making a <code>GenServer.call</code>. Besides the “looking up” part being an implementation detail that should be abstracted, we will also need to look up traders’ PIDs to provide other functionalities in the upcoming sections.</p>
+<p>As we are making a call to the trader process, we need to add a callback:</p>
+<div class="sourceCode" id="cb469"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb469-1"><a href="idiomatic-trading-strategy.html#cb469-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb469-2"><a href="idiomatic-trading-strategy.html#cb469-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb469-3"><a href="idiomatic-trading-strategy.html#cb469-3" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:update_settings</span>, new_settings},</span>
+<span id="cb469-4"><a href="idiomatic-trading-strategy.html#cb469-4" aria-hidden="true" tabindex="-1"></a>        _,</span>
+<span id="cb469-5"><a href="idiomatic-trading-strategy.html#cb469-5" aria-hidden="true" tabindex="-1"></a>        state</span>
+<span id="cb469-6"><a href="idiomatic-trading-strategy.html#cb469-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb469-7"><a href="idiomatic-trading-strategy.html#cb469-7" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, <span class="va">:ok</span>, %{state <span class="op">|</span> <span class="va">settings:</span> new_settings}}</span>
+<span id="cb469-8"><a href="idiomatic-trading-strategy.html#cb469-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="updating-the-naive.strategy-to-honour-the-shutdown-state" class="section level3" number="20.5.2">
+<h3><span class="header-section-number">20.5.2</span> Updating the <code>Naive.Strategy</code> to honour the “shutdown” state</h3>
+<p>We updated all of the modules to update the <code>settings</code> inside the <code>%State{}</code> of the <code>Trader</code> process. That’s the first step, but now we need to modify our strategy to act appropriately.</p>
+<p>The first step will be to update the <code>generate_decision/4</code> clause that handles the rebuy being triggered to take under consideration the <code>settings.status</code>:</p>
+<div class="sourceCode" id="cb470"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb470-1"><a href="idiomatic-trading-strategy.html#cb470-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb470-2"><a href="idiomatic-trading-strategy.html#cb470-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decision(</span>
+<span id="cb470-3"><a href="idiomatic-trading-strategy.html#cb470-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb470-4"><a href="idiomatic-trading-strategy.html#cb470-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">price:</span> current_price</span>
+<span id="cb470-5"><a href="idiomatic-trading-strategy.html#cb470-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb470-6"><a href="idiomatic-trading-strategy.html#cb470-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb470-7"><a href="idiomatic-trading-strategy.html#cb470-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb470-8"><a href="idiomatic-trading-strategy.html#cb470-8" aria-hidden="true" tabindex="-1"></a>            <span class="va">price:</span> buy_price</span>
+<span id="cb470-9"><a href="idiomatic-trading-strategy.html#cb470-9" aria-hidden="true" tabindex="-1"></a>          },</span>
+<span id="cb470-10"><a href="idiomatic-trading-strategy.html#cb470-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">rebuy_interval:</span> rebuy_interval,</span>
+<span id="cb470-11"><a href="idiomatic-trading-strategy.html#cb470-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb470-12"><a href="idiomatic-trading-strategy.html#cb470-12" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb470-13"><a href="idiomatic-trading-strategy.html#cb470-13" aria-hidden="true" tabindex="-1"></a>        _positions,</span>
+<span id="cb470-14"><a href="idiomatic-trading-strategy.html#cb470-14" aria-hidden="true" tabindex="-1"></a>        settings <span class="co"># &lt;= updated</span></span>
+<span id="cb470-15"><a href="idiomatic-trading-strategy.html#cb470-15" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb470-16"><a href="idiomatic-trading-strategy.html#cb470-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> trigger_rebuy?(buy_price, current_price, rebuy_interval) <span class="op">&amp;&amp;</span></span>
+<span id="cb470-17"><a href="idiomatic-trading-strategy.html#cb470-17" aria-hidden="true" tabindex="-1"></a>         settings<span class="op">.</span>status<span class="op"> !=</span> <span class="st">&quot;shutdown&quot;</span> <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb470-18"><a href="idiomatic-trading-strategy.html#cb470-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy</span></span>
+<span id="cb470-19"><a href="idiomatic-trading-strategy.html#cb470-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb470-20"><a href="idiomatic-trading-strategy.html#cb470-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:skip</span></span>
+<span id="cb470-21"><a href="idiomatic-trading-strategy.html#cb470-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb470-22"><a href="idiomatic-trading-strategy.html#cb470-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Another clause that we need to update is the one responsible for matching end of the trading cycle:</p>
+<div class="sourceCode" id="cb471"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb471-1"><a href="idiomatic-trading-strategy.html#cb471-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb471-2"><a href="idiomatic-trading-strategy.html#cb471-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decision(</span>
+<span id="cb471-3"><a href="idiomatic-trading-strategy.html#cb471-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{},</span>
+<span id="cb471-4"><a href="idiomatic-trading-strategy.html#cb471-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb471-5"><a href="idiomatic-trading-strategy.html#cb471-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb471-6"><a href="idiomatic-trading-strategy.html#cb471-6" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb471-7"><a href="idiomatic-trading-strategy.html#cb471-7" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb471-8"><a href="idiomatic-trading-strategy.html#cb471-8" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb471-9"><a href="idiomatic-trading-strategy.html#cb471-9" aria-hidden="true" tabindex="-1"></a>        _positions,</span>
+<span id="cb471-10"><a href="idiomatic-trading-strategy.html#cb471-10" aria-hidden="true" tabindex="-1"></a>        settings <span class="co"># &lt;= updated</span></span>
+<span id="cb471-11"><a href="idiomatic-trading-strategy.html#cb471-11" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb471-12"><a href="idiomatic-trading-strategy.html#cb471-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> settings<span class="op">.</span>status<span class="op"> !=</span> <span class="st">&quot;shutdown&quot;</span> <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb471-13"><a href="idiomatic-trading-strategy.html#cb471-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:finished</span></span>
+<span id="cb471-14"><a href="idiomatic-trading-strategy.html#cb471-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb471-15"><a href="idiomatic-trading-strategy.html#cb471-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">:exit</span> <span class="co"># &lt;= new decision</span></span>
+<span id="cb471-16"><a href="idiomatic-trading-strategy.html#cb471-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb471-17"><a href="idiomatic-trading-strategy.html#cb471-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>As we added a new <code>:exit</code> decision that we need to handle inside the <code>generate_decisions/4</code> - it needs to remove this decision from the list of generated decisions:</p>
+<div class="sourceCode" id="cb472"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb472-1"><a href="idiomatic-trading-strategy.html#cb472-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb472-2"><a href="idiomatic-trading-strategy.html#cb472-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decisions([position <span class="op">|</span> rest] <span class="op">=</span> positions, generated_results, trade_event, settings) <span class="kw">do</span></span>
+<span id="cb472-3"><a href="idiomatic-trading-strategy.html#cb472-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb472-4"><a href="idiomatic-trading-strategy.html#cb472-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> generate_decision(trade_event, position, current_positions, settings) <span class="kw">do</span></span>
+<span id="cb472-5"><a href="idiomatic-trading-strategy.html#cb472-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:exit</span> <span class="op">-&gt;</span></span>
+<span id="cb472-6"><a href="idiomatic-trading-strategy.html#cb472-6" aria-hidden="true" tabindex="-1"></a>        generate_decisions(rest, generated_results, trade_event, settings)</span>
+<span id="cb472-7"><a href="idiomatic-trading-strategy.html#cb472-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb472-8"><a href="idiomatic-trading-strategy.html#cb472-8" aria-hidden="true" tabindex="-1"></a>      decision <span class="op">-&gt;</span> <span class="op">...</span></span>
+<span id="cb472-9"><a href="idiomatic-trading-strategy.html#cb472-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
+<p>Inside the recursive function, we are skipping all the positions that ended up with the <code>:exit</code> decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the <code>parse_results/1</code> function to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the <code>:exit</code> atom.:</p>
+<div class="sourceCode" id="cb473"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb473-1"><a href="idiomatic-trading-strategy.html#cb473-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb473-2"><a href="idiomatic-trading-strategy.html#cb473-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> parse_results([]) <span class="kw">do</span> <span class="co"># &lt;= added clause</span></span>
+<span id="cb473-3"><a href="idiomatic-trading-strategy.html#cb473-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">:exit</span></span>
+<span id="cb473-4"><a href="idiomatic-trading-strategy.html#cb473-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb473-5"><a href="idiomatic-trading-strategy.html#cb473-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb473-6"><a href="idiomatic-trading-strategy.html#cb473-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> parse_results([_ <span class="op">|</span> _] <span class="op">=</span> results) <span class="kw">do</span></span>
+<span id="cb473-7"><a href="idiomatic-trading-strategy.html#cb473-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb473-8"><a href="idiomatic-trading-strategy.html#cb473-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>In the end, the <code>:exit</code> atom will cause the <code>Naive.Trader</code> module to stop the process.</p>
+<p>The final step will be to update the <code>Naive.Trader</code> to log a message and update the status to <code>"off"</code> before exiting the process:</p>
+<div class="sourceCode" id="cb474"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb474-1"><a href="idiomatic-trading-strategy.html#cb474-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb474-2"><a href="idiomatic-trading-strategy.html#cb474-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(%<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event, %<span class="cn">State</span>{} <span class="op">=</span> state) <span class="kw">do</span></span>
+<span id="cb474-3"><a href="idiomatic-trading-strategy.html#cb474-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb474-4"><a href="idiomatic-trading-strategy.html#cb474-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Strategy</span><span class="op">.</span>execute(trade_event, state<span class="op">.</span>positions, state<span class="op">.</span>settings) <span class="kw">do</span></span>
+<span id="cb474-5"><a href="idiomatic-trading-strategy.html#cb474-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb474-6"><a href="idiomatic-trading-strategy.html#cb474-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:exit</span> <span class="op">-&gt;</span></span>
+<span id="cb474-7"><a href="idiomatic-trading-strategy.html#cb474-7" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, _settings} <span class="op">=</span> <span class="cn">Strategy</span><span class="op">.</span>update_status(trade_event<span class="op">.</span>symbol, <span class="st">&quot;off&quot;</span>)</span>
+<span id="cb474-8"><a href="idiomatic-trading-strategy.html#cb474-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Trading for </span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st"> stopped&quot;</span>)</span>
+<span id="cb474-9"><a href="idiomatic-trading-strategy.html#cb474-9" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:stop</span>, <span class="va">:normal</span>, state}</span></code></pre></div>
+<p>We can test this by running the following:</p>
+<pre><code>$ iex -S mix
+...
+iex(1)&gt; Streamer.start_streaming(&quot;ETHUSDT&quot;)
+...
+iex(4)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
+...
+iex(4)&gt; Naive.shutdown_trading(&quot;ETHUSDT&quot;)
+22:35:58.929 [info]  Shutdown of trading on ETHUSDT initialized
+23:05:40.068 [info]  Position (ETHUSDT/1651788334058): The SELL order is now partially filled
+23:05:40.123 [info]  Trading for ETHUSDT stopped</code></pre>
+<p>That finishes the shutdown functionality. As mentioned previously, one after another, positions will complete their trading cycles, and the whole process will exit at the end.</p>
+</div>
+</div>
+<div id="updating-the-strategy-to-handle-rebuys" class="section level2" number="20.6">
+<h2><span class="header-section-number">20.6</span> Updating the Strategy to handle rebuys</h2>
+<p>Previously, both the <code>Trader</code> and the <code>Leader</code> were involved in the rebuy functionality. As now we removed the <code>Leader</code>, it’s an excellent opportunity to move as much as possible of that logic into our strategy.</p>
+<p>We will start by updating the <code>generate_decision/4</code> clause responsible for matching the rebuy scenario. We will take into consideration the number of currently open positions(this check was previously done inside the <code>Naive.Leader</code>):</p>
+<div class="sourceCode" id="cb476"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb476-1"><a href="idiomatic-trading-strategy.html#cb476-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb476-2"><a href="idiomatic-trading-strategy.html#cb476-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decision(</span>
+<span id="cb476-3"><a href="idiomatic-trading-strategy.html#cb476-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{</span>
+<span id="cb476-4"><a href="idiomatic-trading-strategy.html#cb476-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">price:</span> current_price</span>
+<span id="cb476-5"><a href="idiomatic-trading-strategy.html#cb476-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb476-6"><a href="idiomatic-trading-strategy.html#cb476-6" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb476-7"><a href="idiomatic-trading-strategy.html#cb476-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb476-8"><a href="idiomatic-trading-strategy.html#cb476-8" aria-hidden="true" tabindex="-1"></a>            <span class="va">price:</span> buy_price</span>
+<span id="cb476-9"><a href="idiomatic-trading-strategy.html#cb476-9" aria-hidden="true" tabindex="-1"></a>          },</span>
+<span id="cb476-10"><a href="idiomatic-trading-strategy.html#cb476-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">rebuy_interval:</span> rebuy_interval,</span>
+<span id="cb476-11"><a href="idiomatic-trading-strategy.html#cb476-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb476-12"><a href="idiomatic-trading-strategy.html#cb476-12" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb476-13"><a href="idiomatic-trading-strategy.html#cb476-13" aria-hidden="true" tabindex="-1"></a>        positions, <span class="co"># &lt;= updated</span></span>
+<span id="cb476-14"><a href="idiomatic-trading-strategy.html#cb476-14" aria-hidden="true" tabindex="-1"></a>        settings</span>
+<span id="cb476-15"><a href="idiomatic-trading-strategy.html#cb476-15" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb476-16"><a href="idiomatic-trading-strategy.html#cb476-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> trigger_rebuy?(buy_price, current_price, rebuy_interval) <span class="op">&amp;&amp;</span></span>
+<span id="cb476-17"><a href="idiomatic-trading-strategy.html#cb476-17" aria-hidden="true" tabindex="-1"></a>         settings<span class="op">.</span>status<span class="op"> !=</span> <span class="st">&quot;shutdown&quot;</span> <span class="op">&amp;&amp;</span></span>
+<span id="cb476-18"><a href="idiomatic-trading-strategy.html#cb476-18" aria-hidden="true" tabindex="-1"></a>         length(positions) <span class="op">&lt;</span> settings<span class="op">.</span>chunks <span class="kw">do</span> <span class="co"># &lt;= added</span></span>
+<span id="cb476-19"><a href="idiomatic-trading-strategy.html#cb476-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy</span></span>
+<span id="cb476-20"><a href="idiomatic-trading-strategy.html#cb476-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb476-21"><a href="idiomatic-trading-strategy.html#cb476-21" aria-hidden="true" tabindex="-1"></a>      <span class="va">:skip</span></span>
+<span id="cb476-22"><a href="idiomatic-trading-strategy.html#cb476-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb476-23"><a href="idiomatic-trading-strategy.html#cb476-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now we need to deal with the <code>:rebuy</code> decision(previously, we removed the logic notifying the <code>Naive.Leader</code> about the rebuy being triggered).</p>
+<p>In case of rebuy decision we need to add a new position to the positions list which can be done by modifying the <code>generate_decisions/4</code> function:</p>
+<div class="sourceCode" id="cb477"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb477-1"><a href="idiomatic-trading-strategy.html#cb477-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb477-2"><a href="idiomatic-trading-strategy.html#cb477-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_decisions([position <span class="op">|</span> rest] <span class="op">=</span> positions, generated_results, trade_event, settings) <span class="kw">do</span></span>
+<span id="cb477-3"><a href="idiomatic-trading-strategy.html#cb477-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb477-4"><a href="idiomatic-trading-strategy.html#cb477-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> generate_decision(trade_event, position, current_positions, settings) <span class="kw">do</span></span>
+<span id="cb477-5"><a href="idiomatic-trading-strategy.html#cb477-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:exit</span> <span class="op">-&gt;</span> <span class="op">...</span></span>
+<span id="cb477-6"><a href="idiomatic-trading-strategy.html#cb477-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:rebuy</span> <span class="op">-&gt;</span></span>
+<span id="cb477-7"><a href="idiomatic-trading-strategy.html#cb477-7" aria-hidden="true" tabindex="-1"></a>        generate_decisions(</span>
+<span id="cb477-8"><a href="idiomatic-trading-strategy.html#cb477-8" aria-hidden="true" tabindex="-1"></a>          rest,</span>
+<span id="cb477-9"><a href="idiomatic-trading-strategy.html#cb477-9" aria-hidden="true" tabindex="-1"></a>          [{<span class="va">:skip</span>, %{position <span class="op">|</span> <span class="va">rebuy_notified:</span> <span class="cn">true</span>}}, {<span class="va">:rebuy</span>, position}] <span class="op">++</span> generated_results,</span>
+<span id="cb477-10"><a href="idiomatic-trading-strategy.html#cb477-10" aria-hidden="true" tabindex="-1"></a>          trade_event,</span>
+<span id="cb477-11"><a href="idiomatic-trading-strategy.html#cb477-11" aria-hidden="true" tabindex="-1"></a>          settings</span>
+<span id="cb477-12"><a href="idiomatic-trading-strategy.html#cb477-12" aria-hidden="true" tabindex="-1"></a>        ) <span class="co"># ^^^^^ added</span></span>
+<span id="cb477-13"><a href="idiomatic-trading-strategy.html#cb477-13" aria-hidden="true" tabindex="-1"></a>      decision <span class="op">-&gt;</span> <span class="op">...</span></span></code></pre></div>
+<p>In the case of the <code>:rebuy</code> decision, we are updating the <code>rebuy_notified</code> of the position that triggered it, as well as adding another position to the list with the <code>:rebuy</code> decision(it’s the same position that triggered rebuy but we will ignore it further down the line).</p>
+<p>The final step will be to update the <code>execute_decision/3</code> clause that matches the <code>:rebuy</code> decision to <code>generate_fresh_position/1</code>, log and return that newly created position:</p>
+<div class="sourceCode" id="cb478"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb478-1"><a href="idiomatic-trading-strategy.html#cb478-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb478-2"><a href="idiomatic-trading-strategy.html#cb478-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision(</span>
+<span id="cb478-3"><a href="idiomatic-trading-strategy.html#cb478-3" aria-hidden="true" tabindex="-1"></a>         <span class="va">:rebuy</span>,</span>
+<span id="cb478-4"><a href="idiomatic-trading-strategy.html#cb478-4" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Position</span>{</span>
+<span id="cb478-5"><a href="idiomatic-trading-strategy.html#cb478-5" aria-hidden="true" tabindex="-1"></a>           <span class="va">id:</span> id,</span>
+<span id="cb478-6"><a href="idiomatic-trading-strategy.html#cb478-6" aria-hidden="true" tabindex="-1"></a>           <span class="va">symbol:</span> symbol</span>
+<span id="cb478-7"><a href="idiomatic-trading-strategy.html#cb478-7" aria-hidden="true" tabindex="-1"></a>         }, <span class="co"># &lt;= position removed</span></span>
+<span id="cb478-8"><a href="idiomatic-trading-strategy.html#cb478-8" aria-hidden="true" tabindex="-1"></a>         settings <span class="co"># &lt;= updated</span></span>
+<span id="cb478-9"><a href="idiomatic-trading-strategy.html#cb478-9" aria-hidden="true" tabindex="-1"></a>       ) <span class="kw">do</span></span>
+<span id="cb478-10"><a href="idiomatic-trading-strategy.html#cb478-10" aria-hidden="true" tabindex="-1"></a>    new_position <span class="op">=</span> generate_fresh_position(settings) <span class="co"># &lt;= updated</span></span>
+<span id="cb478-11"><a href="idiomatic-trading-strategy.html#cb478-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb478-12"><a href="idiomatic-trading-strategy.html#cb478-12" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>info(<span class="st">&quot;Position (</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">/</span><span class="ot">#{</span>id<span class="ot">}</span><span class="st">): Rebuy triggered. Starting new position&quot;</span>) <span class="co"># &lt;= updated</span></span>
+<span id="cb478-13"><a href="idiomatic-trading-strategy.html#cb478-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb478-14"><a href="idiomatic-trading-strategy.html#cb478-14" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, new_position} <span class="co"># &lt;= updated</span></span>
+<span id="cb478-15"><a href="idiomatic-trading-strategy.html#cb478-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We updated the whole function body as now it deals with initialising a new position instead of just flipping the <code>rebuy_triggered</code> flag inside the original position.</p>
+<p>We can now run the strategy to confirm that rebuy starts new positions:</p>
+<pre><code>$ iex -S mix
+...
+iex(1)&gt; Streamer.start_streaming(&quot;ETHUSDT&quot;)
+...
+iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
+...
+18:00:29.872 [info]  Position (ETHUSDT/1651856406828): Rebuy triggered. Starting new position
+ 18:00:29.880 [info]  Position (ETHUSDT/1651856429871): Placing a BUY order @ 13.39510000, quantity: 14.93000000</code></pre>
+<p>The above shows that a single buy position can trigger rebuy, starting a new position immediately placing another buy order.</p>
+<p>At this moment the integration tests should already be passing, but first, we need to fix the <code>Naive.TraderTest</code> a bit to make the test code compile:</p>
+<div class="sourceCode" id="cb480"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb480-1"><a href="idiomatic-trading-strategy.html#cb480-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive/trader_test.exs</span></span>
+<span id="cb480-2"><a href="idiomatic-trading-strategy.html#cb480-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> dummy_trader_state() <span class="kw">do</span></span>
+<span id="cb480-3"><a href="idiomatic-trading-strategy.html#cb480-3" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Naive</span><span class="op">.</span><span class="cn">Strategy</span><span class="op">.</span><span class="cn">Position</span>{ <span class="co"># &lt;= updated</span></span></code></pre></div>
+<p>That’s just the bare minimum as this test won’t run, but Elixir would not be able to find the <code>:id</code> attribute inside the <code>State</code> struct at the compilation time. We can now run the integration tests:</p>
+<pre><code>$ MIX_ENV=integration mix test.integration
+...
+Finished in 7.2 seconds (0.00s async, 7.2s sync)
+2 tests, 0 failures, 1 excluded</code></pre>
+<p>Yay! We reached the point where our strategy took over all the functionality that the <code>Naive.Leader</code> provided.</p>
+</div>
+<div id="fetching-active-positions" class="section level2" number="20.7">
+<h2><span class="header-section-number">20.7</span> Fetching active positions</h2>
+<p>Previously, we were able to figure out the number of currently open positions by looking at the supervision tree, but now there’s just a single trader process with possibly multiple open positions.</p>
+<p>To aid observability of the state of our trading on the symbols, we will add an interface that can be used to fetch the currently open positions of the trader process.</p>
+<p>We will start with the interface itself. It will take a symbol to be able to find the trader responsible for it:</p>
+<div class="sourceCode" id="cb482"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb482-1"><a href="idiomatic-trading-strategy.html#cb482-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive.ex</span></span>
+<span id="cb482-2"><a href="idiomatic-trading-strategy.html#cb482-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
+<span id="cb482-3"><a href="idiomatic-trading-strategy.html#cb482-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb482-4"><a href="idiomatic-trading-strategy.html#cb482-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_positions(symbol) <span class="kw">do</span></span>
+<span id="cb482-5"><a href="idiomatic-trading-strategy.html#cb482-5" aria-hidden="true" tabindex="-1"></a>    symbol</span>
+<span id="cb482-6"><a href="idiomatic-trading-strategy.html#cb482-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">String</span><span class="op">.</span>upcase()</span>
+<span id="cb482-7"><a href="idiomatic-trading-strategy.html#cb482-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Trader</span><span class="op">.</span>get_positions()</span>
+<span id="cb482-8"><a href="idiomatic-trading-strategy.html#cb482-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Now the trader’s interface function will forward the symbol to the <code>GenServer.call/2</code> to the actual process <code>Naive.Trader</code> process responsible for trading on that symbol:</p>
+<div class="sourceCode" id="cb483"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb483-1"><a href="idiomatic-trading-strategy.html#cb483-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb483-2"><a href="idiomatic-trading-strategy.html#cb483-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_positions(symbol) <span class="kw">do</span></span>
+<span id="cb483-3"><a href="idiomatic-trading-strategy.html#cb483-3" aria-hidden="true" tabindex="-1"></a>    call_trader(symbol, {<span class="va">:get_positions</span>, symbol})</span>
+<span id="cb483-4"><a href="idiomatic-trading-strategy.html#cb483-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>As we need to look up the PID of the trader process in the <code>Registry</code>, we can use the same <code>call_trader/2</code> helper as in the case of the <code>notify/2</code> function.</p>
+<p>The message will get sent to the <code>Trader</code> process, where we need to add a callback that will return all the current positions:</p>
+<div class="sourceCode" id="cb484"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb484-1"><a href="idiomatic-trading-strategy.html#cb484-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb484-2"><a href="idiomatic-trading-strategy.html#cb484-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb484-3"><a href="idiomatic-trading-strategy.html#cb484-3" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:get_positions</span>, _symbol},</span>
+<span id="cb484-4"><a href="idiomatic-trading-strategy.html#cb484-4" aria-hidden="true" tabindex="-1"></a>        _,</span>
+<span id="cb484-5"><a href="idiomatic-trading-strategy.html#cb484-5" aria-hidden="true" tabindex="-1"></a>        state</span>
+<span id="cb484-6"><a href="idiomatic-trading-strategy.html#cb484-6" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
+<span id="cb484-7"><a href="idiomatic-trading-strategy.html#cb484-7" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:reply</span>, state<span class="op">.</span>positions, state}</span>
+<span id="cb484-8"><a href="idiomatic-trading-strategy.html#cb484-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We can now test fetching currently open positions by running:</p>
+<pre><code>$ iex -S mix
+...
+iex(1)&gt; Streamer.start_streaming(&quot;ETHUSDT&quot;)
+...
+iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
+...
+iex(3)&gt; Naive.get_positions(&quot;ETHUSDT&quot;)
+[
+  %Naive.Strategy.Position{
+    ...
+  },
+  %Naive.Strategy.Position{
+    ...
+  },
+  ...
+]  </code></pre>
+<p>We can see that we now have a better overview of what’s happening. Previously we needed to go to the database as the state was shared between multiple Trader processes. Now everything is in one place, which we could leverage to load the initial state for some frontend dashboards(subsequent positions’ updates could be done by listening to the PubSub topic and pushing diffs to the browser via WebSocket).</p>
+</div>
+<div id="tidying-up" class="section level2" number="20.8">
+<h2><span class="header-section-number">20.8</span> Tidying up</h2>
+<p>Let’s tidy up the codebase start with removing the <code>/apps/naive/lib/naive/leader.ex</code> and <code>/apps/naive/lib/naive/symbol_supervisor.ex</code> as we don’t need them anymore.</p>
+<p>This will cause problems with our mocks that we need to update in the test helper:</p>
+<div class="sourceCode" id="cb486"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb486-1"><a href="idiomatic-trading-strategy.html#cb486-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
+<span id="cb486-2"><a href="idiomatic-trading-strategy.html#cb486-2" aria-hidden="true" tabindex="-1"></a><span class="cn">Mox</span><span class="op">.</span>defmock(<span class="cn">Test</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">LeaderMock</span>, <span class="kw">for</span>: <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span>) <span class="co"># &lt;= remove</span></span></code></pre></div>
+<p>Our integration test will now run again and pass. Sadly that won’t be the case for our unit tests. We will revisit the mocking and unit tests in the next chapter, where we will once again look into how we should structure our code to be more testable and “mockable”.</p>
+</div>
+<div id="final-thoughts-1" class="section level2" number="20.9">
+<h2><span class="header-section-number">20.9</span> Final thoughts</h2>
+<p>In this chapter, we gathered parts of our strategy that were spread across multiple processes and put them into the <code>Naive.Strategy</code> module. Furthermore, we made efforts to separate parts of the strategy that are pure from side-effectfull code, which we pushed to the edge. It should be visible that this way, we can cover the vast amount of logic with simple and easy to understand tests that don’t require mocking or setup. In the next chapter, we will look into how we could improve the testing of the parts “pushed to the edge”(side effects).</p>
+<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
+<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20">Github</a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="idiomatic-otp.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/20-idiomatic-trading-strategy.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>
