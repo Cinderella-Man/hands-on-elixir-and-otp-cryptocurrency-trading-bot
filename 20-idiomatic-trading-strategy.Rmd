@@ -704,6 +704,8 @@ As we added a new `:exit` decision that we need to handle inside the `generate_d
     case generate_decision(trade_event, position, current_positions, settings) do
       :exit ->
         generate_decisions(rest, generated_results, trade_event, settings)
+
+      decision -> ...
       ...
 ```
 
@@ -739,6 +741,8 @@ The final step will be to update the `Naive.Trader` to log a message and update 
 We can test this by running the following:
 
 ```
+$ iex -S mix
+...
 iex(1)> Streamer.start_streaming("ETHUSDT")
 ...
 iex(4)> Naive.start_trading("ETHUSDT")
@@ -753,7 +757,7 @@ That finishes the shutdown functionality. As mentioned previously, one after ano
 
 ## Updating the Strategy to handle rebuys
 
- Previously, both the `Trader` and the `Leader` were used to support rebuy functionality. As now we removed the `Leader`, it's an excellent opportunity to move as much as possible of that logic into our strategy.
+ Previously, both the `Trader` and the `Leader` were involved in the rebuy functionality. As now we removed the `Leader`, it's an excellent opportunity to move as much as possible of that logic into our strategy.
 
 We will start by updating the `generate_decision/4` clause responsible for matching the rebuy scenario. We will take into consideration the number of currently open positions(this check was previously done inside the `Naive.Leader`):
 
@@ -803,6 +807,8 @@ In case of rebuy decision we need to add a new position to the positions list wh
       decision -> ...
 ```
 
+In the case of the `:rebuy` decision, we are updating the `rebuy_notified` of the position that triggered it, as well as adding another position to the list with the `:rebuy` decision(it's the same position that triggered rebuy but we will ignore it further down the line).
+
 The final step will be to update the `execute_decision/3` clause that matches the `:rebuy` decision to `generate_fresh_position/1`, log and return that newly created position:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -838,7 +844,7 @@ iex(2)> Naive.start_trading("ETHUSDT")
  18:00:29.880 [info]  Position (ETHUSDT/1651856429871): Placing a BUY order @ 13.39510000, quantity: 14.93000000
 ```
 
-The above shows that a single buy position can trigger rebuy, starting a new position that immediately places another buy order.
+The above shows that a single buy position can trigger rebuy, starting a new position immediately placing another buy order.
 
 At this moment the integration tests should already be passing, but first, we need to fix the `Naive.TraderTest` a bit to make the test code compile:
 
@@ -848,7 +854,7 @@ At this moment the integration tests should already be passing, but first, we ne
     %Naive.Strategy.Position{ # <= updated
 ```
 
-That's just bare minimum as this test is not run but on compilation time Elixir would not be able to find `:id` attribute inside the `State` struct. We can now run the integration tests:
+That's just the bare minimum as this test won't run, but Elixir would not be able to find the `:id` attribute inside the `State` struct at the compilation time. We can now run the integration tests:
 
 ```
 $ MIX_ENV=integration mix test.integration
@@ -857,13 +863,13 @@ Finished in 7.2 seconds (0.00s async, 7.2s sync)
 2 tests, 0 failures, 1 excluded
 ```
 
-Yay!
+Yay! We reached the point where our strategy took over all the functionality that the `Naive.Leader` provided.
 
 ## Fetching active positions
 
-Previously, we were able to figure out the number of currently open positions by looking at the supervision tree, but now there's just a single trader process with possibly multiple positions open.
+Previously, we were able to figure out the number of currently open positions by looking at the supervision tree, but now there's just a single trader process with possibly multiple open positions.
 
-To aid observability of the state of our trading on the symbols we will add an interface that can be used to fetch state of the currently open positions of the trader.
+To aid observability of the state of our trading on the symbols, we will add an interface that can be used to fetch the currently open positions of the trader process.
 
 We will start with the interface itself. It will take a symbol to be able to find the trader responsible for it:
 
@@ -878,7 +884,7 @@ We will start with the interface itself. It will take a symbol to be able to fin
   end
 ```
 
-Now the trader interface function will forward the symbol to the `GenServer.call/2` to the actual process `Naive.Trader` process responsible for trading on that symbol:
+Now the trader's interface function will forward the symbol to the `GenServer.call/2` to the actual process `Naive.Trader` process responsible for trading on that symbol:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -887,9 +893,9 @@ Now the trader interface function will forward the symbol to the `GenServer.call
   end
 ```
 
-As we need to look up the PID of the trader process in the `Registry`, we can use the same `call_trader/2` helper function as in the case of `notify/2`.
+As we need to look up the PID of the trader process in the `Registry`, we can use the same `call_trader/2` helper as in the case of the `notify/2` function.
 
-The message will get sent to the process, where we need to add a callback that will return all the current positions:
+The message will get sent to the `Trader` process, where we need to add a callback that will return all the current positions:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -923,7 +929,7 @@ iex(3)> Naive.get_positions("ETHUSDT")
 ]  
 ```
 
-We can see that we now have a better overview of what's happening. Previously we needed to go to the database as the state was shared between multiple Trader processes. Now everything is in one place, which we could leverage to load the initial state of some frontend dashboards(subsequent positions' updates could be done by listening to the PubSub topic and pushing diffs to the browser via WebSocket).
+We can see that we now have a better overview of what's happening. Previously we needed to go to the database as the state was shared between multiple Trader processes. Now everything is in one place, which we could leverage to load the initial state for some frontend dashboards(subsequent positions' updates could be done by listening to the PubSub topic and pushing diffs to the browser via WebSocket).
 
 ## Tidying up
 
@@ -936,12 +942,12 @@ This will cause problems with our mocks that we need to update in the test helpe
 Mox.defmock(Test.Naive.LeaderMock, for: Naive.Leader) # <= remove
 ```
 
-Our test will now run again and pass, but only the integration test. We will get back to the mocking and unit tests in the next chapter, where we will once again look into how we should structure our code to be testable and "mockable".
+Our integration test will now run again and pass. Sadly that won't be the case for our unit tests. We will revisit the mocking and unit tests in the next chapter, where we will once again look into how we should structure our code to be more testable and "mockable".
 
 ## Final thoughts
 
-In this chapter, we gathered parts of our strategy that were spread across multiple processes and put them into the `Naive.Strategy` module. Furthermore, we made efforts to separate parts of the strategy that are pure from side-effect full code - we pushed them to the edge. It should be visible that this way, we can cover the vast amount of logic with simple and easy to understand tests that don't require mocking or setup. In the next chapter, we will look into how we could improve the testing of the parts "pushed to the edge".
+In this chapter, we gathered parts of our strategy that were spread across multiple processes and put them into the `Naive.Strategy` module. Furthermore, we made efforts to separate parts of the strategy that are pure from side-effectfull code, which we pushed to the edge. It should be visible that this way, we can cover the vast amount of logic with simple and easy to understand tests that don't require mocking or setup. In the next chapter, we will look into how we could improve the testing of the parts "pushed to the edge"(side effects).
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 
-Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19)
+Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20)
