@@ -552,9 +552,9 @@ This finishes direct changes related to making the trader/strategy work with mul
 
 ## Retrofitting the "shutdown" functionality
 
-Previously, the shutdown logic was scattered around in multiple places inside the `Naive.Leader`, for example, when the rebuy was triggered - making sure that new processes aren't started.
+Previously, the shutdown logic was scattered around in multiple places inside the `Naive.Leader`, for example, when the rebuy was triggered - making sure that new Trader processes won't get started in the "shutdown" state.
 
-Now, we have an opportunity to make that shutdown functionality part of our strategy.
+Now, we have an opportunity to make the shutdown functionality part of our strategy.
 
 We will start by modifying the `DynamicTraderSupervisor` where we will update the `shutdown_worker/1` function to call the `Naive.Trader` instead of the `Naive.Leader`:
 
@@ -568,15 +568,15 @@ We will start by modifying the `DynamicTraderSupervisor` where we will update th
   end
 ```
 
-Now, the Trader will handle updating the settings, which we will add next, but before we do that. We should move the `update_status/2` function into the `Naive.Strategy` as it will be used from both the `DynamicTraderSupervisor` and the `Naive.Strategy`:
+Now, the Trader will handle updating the settings, which we will add next, but before we do that, we should move the `update_status/2` function into the `Naive.Strategy` as it will be used from both the `DynamicTraderSupervisor` and the `Naive.Strategy`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
-  def update_status(symbol, status)
-       when is_binary(symbol) and is_binary(status) do
-    @repo.get_by(Settings, symbol: symbol)
+  def update_status(symbol, status) # <= updated to public
+      when is_binary(symbol) and is_binary(status) do
+    @repo.get_by(Settings, symbol: symbol) <= updated to use @repo
     |> Ecto.Changeset.change(%{status: status})
-    |> @repo.update()
+    |> @repo.update() # <= updated to use @repo
   end
 ```
 
@@ -604,7 +604,7 @@ Now we need to update the `DynamicTraderSupervisor` module to call the `update_s
 
 ### Handling updated settings
 
-We can now move on to the `Naive.Trader`, where we need to add  a new `notify/2` interface function:
+We can now move on to the `Naive.Trader` module, where we need to add  a new `notify/2` interface function:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -627,7 +627,7 @@ We can now move on to the `Naive.Trader`, where we need to add  a new `notify/2`
   end
 ```
 
-The `notify/2` function acts as a part of the public interface of the `Naive.Trader` module. It uses the `call_trader/2` function to abstract away looking up the `Trader` process and making `GenServer.call`. We will need to look up traders' PIDs to be able to provide other functionalities.
+The `notify/2` function acts as a part of the public interface of the `Naive.Trader` module. It uses the `call_trader/2` helper function to abstract away looking up the `Trader` process from the `Registry` and making a `GenServer.call`. Besides the "looking up" part being an implementation detail that should be abstracted, we will also need to look up traders' PIDs to provide other functionalities in the upcoming sections.
 
 As we are making a call to the trader process, we need to add a callback:
 
@@ -644,7 +644,7 @@ As we are making a call to the trader process, we need to add a callback:
 
 ### Updating the `Naive.Strategy` to honour the "shutdown" state
 
-We updated all of the modules to update the `settings` inside the `%State{}` of the `Trader`. That's the first step, but now we need to modify our strategy to actually shutdown.
+We updated all of the modules to update the `settings` inside the `%State{}` of the `Trader` process. That's the first step, but now we need to modify our strategy to act appropriately.
 
 The first step will be to update the `generate_decision/4` clause that handles the rebuy being triggered to take under consideration the `settings.status`:
 
@@ -662,7 +662,7 @@ The first step will be to update the `generate_decision/4` clause that handles t
           rebuy_notified: false
         },
         _positions,
-        settings
+        settings # <= updated
       ) do
     if trigger_rebuy?(buy_price, current_price, rebuy_interval) &&
          settings.status != "shutdown" do # <= updated
@@ -695,7 +695,7 @@ Another clause that we need to update is the one responsible for matching end of
   end
 ```
 
-We added a new `:exit` decision that we need to handle inside the `generate_decisions/4` as it needs to remove this decision from the list of generated decisions:
+As we added a new `:exit` decision that we need to handle inside the `generate_decisions/4` - it needs to remove this decision from the list of generated decisions:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -707,7 +707,20 @@ We added a new `:exit` decision that we need to handle inside the `generate_deci
       ...
 ```
 
-Inside the recursive function, we are skipping all the positions that ended up with the `:exit` decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the `parse_results/1` function to return `:exit` atom. In the end, this will cause the `Naive.Trader` module to stop the process.
+Inside the recursive function, we are skipping all the positions that ended up with the `:exit` decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the `parse_results/1` function to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the `:exit` atom.:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  def parse_results([]) do # <= added clause
+    :exit
+  end
+
+  def parse_results([_ | _] = results) do
+    ...
+  end
+```
+
+In the end, the `:exit` atom will cause the `Naive.Trader` module to stop the process.
 
 The final step will be to update the `Naive.Trader` to log a message and update the status to `"off"` before exiting the process:
 
@@ -736,7 +749,7 @@ iex(4)> Naive.shutdown_trading("ETHUSDT")
 23:05:40.123 [info]  Trading for ETHUSDT stopped
 ```
 
-That finishes the shutdown functionality. As mentioned previously, one after another, positions will complete their cycles, and the whole process will exit at the end.
+That finishes the shutdown functionality. As mentioned previously, one after another, positions will complete their trading cycles, and the whole process will exit at the end.
 
 ## Updating the Strategy to handle rebuys
 
