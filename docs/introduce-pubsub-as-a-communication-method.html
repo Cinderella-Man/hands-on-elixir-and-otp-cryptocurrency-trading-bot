@@ -463,21 +463,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="design" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Design</h2>
 <p>First, let’s look at the current situation:</p>
-<p><img src="images/chapter_03_01_current_situation.png" width="40%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_03_01_current_situation.png" width="30%" style="display: block; margin: auto;" /></p>
 <p>We started with the Binance streamer calling the <code>send_event/1</code> function on the <code>Naive</code> module. The <code>Naive</code> module then calls the trader process using the GenServer’s <code>cast/2</code> function(via its registered name).</p>
 <div style="page-break-after: always;"></div>
 <p>The next step in the process of extending our trading strategy will be to scale it to run multiple <code>Naive.Trader</code> processes in parallel. To be able to do that we will need to remove the option to register the <code>trader</code> process with a name(as only one process can be registered under a single name).</p>
-<p><img src="images/chapter_03_02_current_situation_failed.png" width="40%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_03_02_current_situation_failed.png" width="30%" style="display: block; margin: auto;" /></p>
 <p>The second issue with that design was the fact that the <code>Streamer</code> needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.</p>
 <p>To fix those issues we will invert the design and introduce a PubSub mechanism:</p>
-<p><img src="images/chapter_03_03_phoenix_pubsub.png" width="40%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_03_03_phoenix_pubsub.png" width="25%" style="display: block; margin: auto;" /></p>
 <p>The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
 There’s no coupling between the <code>Streamer</code> and <code>Naive</code> app anymore.</p>
 <div style="page-break-after: always;"></div>
 <p>We can now introduce multiple traders that will subscribe to the topic and they will receive messages from the PubSub:</p>
-<p><img src="images/chapter_03_04_naive_trader_group.png" width="100%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_03_04_naive_trader_group.png" width="100%" height="30%" style="display: block; margin: auto;" /></p>
 <p>Going even further down the line we can picture that system could consist of other processes interested in the streamed data. An example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:</p>
-<p><img src="images/chapter_03_05_other_services.png" width="100%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_03_05_other_services.png" width="100%" height="40%" style="display: block; margin: auto;" /></p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="implementation" class="section level2" number="3.3">
