@@ -11,7 +11,7 @@
 
 In the second chapter, we implemented a basic trader which goes through the trading cycle. Inside the iEx session, we were starting the `Naive.Trader` process using the `start_link/1` function:
 
-```{r, fig.align="center", out.width="40%", echo=FALSE}
+```{r, fig.align="center", out.width="25%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_01_current_state.png")
 ```
 
@@ -23,7 +23,7 @@ We can do much better than that with a little bit of help from Elixir and OTP.
 
 Let's introduce a supervisor above our trader process. It will start a new trader process whenever the previous one finished/crashed:
 
-```{r, fig.align="center", out.width="40%", echo=FALSE}
+```{r, fig.align="center", out.width="25%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_02_supervise_the_trader.png")
 ```
 
@@ -47,7 +47,7 @@ This setup will also allow us to start and supervise multiple traders for a sing
 
 For each symbol that we will be trading on we need the above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an `Naive.SymbolSupervisor` that will start both `Naive.Leader` and `Naive.Dynamic`:
 
-```{r, fig.align="center", out.width="70%", echo=FALSE}
+```{r, fig.align="center", out.width="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_04_symbol_sup.png")
 ```
 
@@ -64,7 +64,7 @@ Here's what happens starting from the top of the graph:
 
 * the `Naive.Application` is our top-level application's supervisor for the `naive` app, it was auto-generated as a part of the `naive` app
 * it has a single child `Naive.DynamicSymbolSupervisor`, which has strategy one_for_one and all of its children are `Naive.SymbolSupervisor`s
-* `Naive.SymbolSupervisor` process will start 2 further children: the `Naive.Leader` and `DynamicTraderSupervisor`, both created on init
+* `Naive.SymbolSupervisor` process will start two further children: the `Naive.Leader` and `DynamicTraderSupervisor`, both created on init
 * the `Naive.Leader` will ask `DynamicTraderSupervisor` to start the `Naive.Trader` child process(es)
 
 This can be a little bit confusing at the moment but it will get a lot easier
@@ -147,6 +147,8 @@ end
 It's advised to keep supervisor processes slim.
 
 We registered the `Naive.SymbolSupervisor` processes with names, which will help us understand the supervision tree inside the observer GUI(it will also allow us to stop those supervisors in the future).
+
+\newpage
 
 As mentioned previously whenever either the `Naive.Leader` or `Naive.DynamicSymbolSupervisor-#{symbol}` would crash we would like to kill the other child process as we won't be able to recover the state - it's just easier to init both again.
 

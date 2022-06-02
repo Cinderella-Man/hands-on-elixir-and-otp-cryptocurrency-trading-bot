@@ -465,12 +465,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="introduction---architectural-design" class="section level2" number="5.2">
 <h2><span class="header-section-number">5.2</span> Introduction - architectural design</h2>
 <p>In the second chapter, we implemented a basic trader which goes through the trading cycle. Inside the iEx session, we were starting the <code>Naive.Trader</code> process using the <code>start_link/1</code> function:</p>
-<p><img src="images/chapter_05_01_current_state.png" width="40%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_05_01_current_state.png" width="25%" style="display: block; margin: auto;" /></p>
 <p>The <code>GenServer.start_link/3</code> creates a link between IEx’s process and new <code>Naive.Trader</code> process. Whenever a trader process terminates(either finishes the trading cycle or there was an error), a new one won’t get started as there’s no supervision at all.</p>
 <p>We can do much better than that with a little bit of help from Elixir and OTP.</p>
 <div style="page-break-after: always;"></div>
 <p>Let’s introduce a supervisor above our trader process. It will start a new trader process whenever the previous one finished/crashed:</p>
-<p><img src="images/chapter_05_02_supervise_the_trader.png" width="40%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_05_02_supervise_the_trader.png" width="25%" style="display: block; margin: auto;" /></p>
 <p>This looks much better but there are few problems with it. So, when the trader will start to place orders it will be in <em>some</em> state(it will hold buy/sell orders) that the supervisor won’t be aware of. In case of trader crashing, the supervisor will start a new trader <em>without</em> any knowledge of possibly placed orders or any other information from the state(it will be started with a “fresh” state).</p>
 <p>To fix that we need to keep a copy of the trader’s state outside of the trader process - that’s why we will introduce a new server called <code>Naive.Leader</code> that will keep track of traders’ data:</p>
 <p><img src="images/chapter_05_03_leader_added.png" width="70%" style="display: block; margin: auto;" /></p>
@@ -480,7 +480,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>This setup will also allow us to start and supervise multiple traders for a single symbol which our naive strategy will require in the future(next chapter).</p>
 <div style="page-break-after: always;"></div>
 <p>For each symbol that we will be trading on we need the above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an <code>Naive.SymbolSupervisor</code> that will start both <code>Naive.Leader</code> and <code>Naive.Dynamic</code>:</p>
-<p><img src="images/chapter_05_04_symbol_sup.png" width="70%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_05_04_symbol_sup.png" width="40%" style="display: block; margin: auto;" /></p>
 <p>We will need multiple symbol supervisors, one for each symbol that we would like to trade on. As with traders, they will be dynamically started on demand, this should give us a hint that we need another dynamic supervisor that will supervise symbol supervisors and will be the direct child of our <code>Naive.Supervisor</code>(<code>Naive.Application</code> module):</p>
 <p><img src="images/chapter_05_05_full.png" width="70%" style="display: block; margin: auto;" /></p>
 <p>You could ask yourself why we don’t need some additional server to track which symbols are traded at the moment (in the same way as <code>Naive.Leader</code> tracks <code>Naive.Trader</code>s). The answer is that we don’t need to track them as we register all <code>Naive.SymbolSupervisor</code>s with a name containing a symbol that they trade on. This way we will always be able to refer to them by registered name instead of PIDs/refs.</p>
@@ -488,7 +488,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li>the <code>Naive.Application</code> is our top-level application’s supervisor for the <code>naive</code> app, it was auto-generated as a part of the <code>naive</code> app</li>
 <li>it has a single child <code>Naive.DynamicSymbolSupervisor</code>, which has strategy one_for_one and all of its children are <code>Naive.SymbolSupervisor</code>s</li>
-<li><code>Naive.SymbolSupervisor</code> process will start 2 further children: the <code>Naive.Leader</code> and <code>DynamicTraderSupervisor</code>, both created on init</li>
+<li><code>Naive.SymbolSupervisor</code> process will start two further children: the <code>Naive.Leader</code> and <code>DynamicTraderSupervisor</code>, both created on init</li>
 <li>the <code>Naive.Leader</code> will ask <code>DynamicTraderSupervisor</code> to start the <code>Naive.Trader</code> child process(es)</li>
 </ul>
 <p>This can be a little bit confusing at the moment but it will get a lot easier
@@ -560,6 +560,7 @@ as we will write the code. Let’s get to it!</p>
 <span id="cb76-30"><a href="enable-parallel-trading-on-multiple-symbols.html#cb76-30" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p>It’s advised to keep supervisor processes slim.</p>
 <p>We registered the <code>Naive.SymbolSupervisor</code> processes with names, which will help us understand the supervision tree inside the observer GUI(it will also allow us to stop those supervisors in the future).</p>
+<div style="page-break-after: always;"></div>
 <p>As mentioned previously whenever either the <code>Naive.Leader</code> or <code>Naive.DynamicSymbolSupervisor-#{symbol}</code> would crash we would like to kill the other child process as we won’t be able to recover the state - it’s just easier to init both again.</p>
 </div>
 <div id="implement-naive.leader" class="section level2" number="5.4">
