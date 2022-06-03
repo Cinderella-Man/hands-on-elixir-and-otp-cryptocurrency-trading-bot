@@ -787,7 +787,7 @@ At init both will start, the <code>Streamer.DynamicStreamerSupervisor</code> fir
 <p>We can clearly see that whenever the <code>Streamer.DynamicStreamerSupervisor</code> will die it needs to be started again <em>together</em> with the “autostart” <code>Task</code> and this won’t fit our current <code>Streamer.Application</code>’s strategy.</p>
 <p>In cases like those, a new level of supervision needs to be introduced that will have a different supervision strategy for those “coupled” processes. We will rename the process name of the <code>Streamer.Application</code> (which is currently registered as <code>Streamer.Supervisor</code>) to <code>Streamer.Application</code>. Then we will introduce the new <code>Streamer.Supervisor</code> module and register it under the same name. We will attach both <code>Streamer.DynamicStreamerSupervisor</code> and Task to the <code>Streamer.Supervisor</code> and assign it with the <code>rest_for_one</code> strategy which will restart the Task whenever<br />
 <code>Streamer.DynamicStreamerSupervisor</code> would die:</p>
-<p><img src="images/chapter_11_04_new_sup_tree.png" width="100%" style="display: block; margin: auto;" /></p>
+<p><img src="images/chapter_11_04_new_sup_tree.png" width="100%" height="50%" style="display: block; margin: auto;" /></p>
 <p>Let’s start by creating the <code>autostart_streaming/0</code> functionality inside the<br />
 <code>Streamer.DynamicStreamerSupervisor</code>:</p>
 <div class="sourceCode" id="cb177"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb177-1"><a href="supervise-and-autostart-streaming.html#cb177-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex</span></span>
