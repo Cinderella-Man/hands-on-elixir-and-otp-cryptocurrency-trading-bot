@@ -27,14 +27,14 @@ knitr::include_graphics("images/chapter_19_02_multi_workers.jpg")
 
 Let's start by creating a new application inside our umbrella called "indicators"(run below inside terminal):
 
-```bash
+```{r, engine = 'bash', eval = FALSE}
 $ cd apps 
 $ mix new indicator --sup
 ```
 
 We can now create a new directory called "ohlc" inside the "/apps/indicator/lib/indicator" directory, where we will create the GenServer "worker.ex" file:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
 defmodule Indicator.Ohlc.Worker do
   use GenServer
@@ -51,7 +51,7 @@ end
 
 As each worker will need to subscribe to the PubSub's `"TRADE_EVENTS:#{symbol}"` topic, we can update the `init/1` function to do that:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
 
   # add those at the top of the worker module
@@ -81,7 +81,7 @@ Following the pattern established by the `Naive.Trader`, we use the module's att
 
 As we subscribed to the PubSub, we need to provide a callback that will handle the incoming trade events:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
   # add this at the top
   alias Core.Struct.TradeEvent
@@ -93,7 +93,7 @@ As we subscribed to the PubSub, we need to provide a callback that will handle t
 
 To avoid mixing our business logic with the GenServer boilerplate(as discussed in the last chapter), we will place it in a new module. First, we need to create a new file `/apps/indicator/lib/indicator/ohlc.ex` and the `Indicator.Ohlc` module inside it:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
 defmodule Indicator.Ohlc do
 
@@ -102,7 +102,7 @@ end
 
 The `Indicator.Ohlc` module will define a struct that the `Indicator.Ohlc.Worker` will use as a state:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
   @enforce_keys [
     :symbol,
@@ -133,7 +133,7 @@ We can imagine that the bottom function will be involved in merging of the trade
 
 Here's the implementation:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
   def merge_price(%__MODULE__{} = ohlc, price, trade_time) do
     if within_current_timeframe(ohlc.start_time, ohlc.duration, trade_time) do
@@ -146,7 +146,7 @@ Here's the implementation:
 
 together with the `within_current_timeframe/3` and `generate_ohlc/3` function:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
   def within_current_timeframe(start_time, duration, trade_time) do
     end_time = start_time + duration * 60
@@ -172,7 +172,7 @@ together with the `within_current_timeframe/3` and `generate_ohlc/3` function:
 
 Moving up the call chain, besides merging the trade event's data into OHLC data, we need to deal with the initial state of the worker(the `{symbol, duration}` tuple). Let's add a `process/2` function with two clauses handling each of those cases:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
   # add the below line at the top of the module
   alias Core.Struct.TradeEvent
@@ -202,7 +202,7 @@ In case of the incoming trade event's `trade_time` **outside** of the current OH
 
 This sounds very similar to the if-else, but it's most of the time achieved using the pattern matching:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
  # add below lines at the top of the module
  require Logger
@@ -230,7 +230,7 @@ Sometimes people advise that "code should be like well written prose" and `maybe
 
 At this moment, our code should compile, and we should already be able to test it. First, let's change the logging level to `debug` inside `config/config.exs` to see what OHLC structs got broadcasted:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
 config :logger,
   level: :debug # <= updated
@@ -238,7 +238,7 @@ config :logger,
 
 We can now progress with testing:
 
-```
+```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 iex(1)> Streamer.start_streaming("XRPUSDT")
 ...
@@ -257,7 +257,7 @@ The above test confirms that we can manually start a single OHLC worker that wil
 To supervise multiple `Indicators.Worker`s we will use the `DynamicSupervisor`.
 We need to update the Indicators application's supervision tree to start a dynamic supervisor:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/application.ex
     children = [
       {DynamicSupervisor, strategy: :one_for_one, name: Indicator.DynamicSupervisor}
@@ -268,7 +268,7 @@ We need to update the Indicators application's supervision tree to start a dynam
 
 We can now add `aggregate_ohlcs/1` function that will start all workers:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
   def aggregate_ohlcs(symbol) do
     [1, 5, 15, 60, 4 * 60, 24 * 60]
@@ -283,7 +283,7 @@ We can now add `aggregate_ohlcs/1` function that will start all workers:
 
 We can now start multiple OHLC workers just by running a single function:
 
-```
+```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 iex(1)> Streamer.start_streaming("XRPUSDT")
 ...
@@ -327,7 +327,7 @@ Enough theory - let's look into how we could update our `Indicator.Ohlc` module 
 
 Initially, we could be tempted to update the `process/2` function:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
   def process([_ | _] = ohlcs, %TradeEvent{} = trade_event) do
     results =
@@ -355,7 +355,7 @@ We added some logic to both clauses. At this moment, it maybe doesn't look that 
 
 Instead of expanding the `process/2` function, we could built on top of the `merge_price/3` and `generate_ohlc/4` functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
   def merge_prices(ohlcs, price, trade_time) do
     results =
@@ -383,7 +383,7 @@ Instead of expanding the `process/2` function, we could built on top of the `mer
 
 Now the `process/2` function got back to its almost original shape:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
   def process([_ | _] = ohlcs, %TradeEvent{} = trade_event) do
     {old_ohlcs, new_ohlcs} = merge_prices(ohlcs, trade_event.price, trade_event.trade_time)
 
@@ -400,7 +400,7 @@ By introducing the `merge_prices/3` and `generate_ohlcs/3` functions, we were ab
 
 As we modified the interface of the `process/2` function (by removing the `duration`), we need to update the `Indicator.Ohlc.Worker` module to be blissfully not aware that we have different durations:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
   def start_link(symbol) do # <= duration removed
     GenServer.start_link(__MODULE__, symbol)  # <= duration removed
@@ -419,7 +419,7 @@ As we modified the interface of the `process/2` function (by removing the `durat
 
 The final update will be to simplify the `Indicator.aggregate_ohlcs/1` function just to start a single OHLC worker:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
   def aggregate_ohlcs(symbol) do
     DynamicSupervisor.start_child(
@@ -431,7 +431,7 @@ The final update will be to simplify the `Indicator.aggregate_ohlcs/1` function 
 
 We can now test our implementation by running the following once again:
 
-```
+```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 iex(1)> Streamer.start_streaming("XRPUSDT")
 ...
