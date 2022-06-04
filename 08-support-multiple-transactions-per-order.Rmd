@@ -29,7 +29,7 @@ The easiest and the safest way to check has this event filled our order fully is
 
 The problem with this approach is that sometimes we will run into a race condition:
 
-```{r, fig.align="center", out.width="100%", echo=FALSE}
+```{r, fig.align="center", out.width="100%", out.height="55%", echo=FALSE}
 knitr::include_graphics("images/chapter_08_03_race_condition_timeline.png")
 ```
 
@@ -68,6 +68,8 @@ First, we need to modify the callback which monitors incoming trade events for o
       ) do
 ```
 
+\newpage
+
 Now we can fetch our buy order to check is it already filled. We will get the `Binance.Order` struct instead of the `Binance.OrderResponse` that we normally deal with. At this moment we will simply update our `Binance.OrderResponse` struct from the state:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -88,8 +90,6 @@ Now we can fetch our buy order to check is it already filled. We will get the `B
 ```
 
 The rest of the logic inside this callback will depend on the `status` of the buy order. If our buy order is "filled" we would like to follow the existing logic but also update the `buy_order` field inside the state of the trader process. On the other hand, if our order is not yet filled the only thing to do is to update the `buy_order` field inside the state of the Trader process.
-
-
 
 Here's an updated body below the above changes(few variables got renamed for clarity as we are now fetching the order):
 
@@ -123,8 +123,6 @@ Here's an updated body below the above changes(few variables got renamed for cla
 
 As we are branching our logic and both paths are updating the state, we will return it together with an `:ok` atom to be able to pattern match it and assign it as a new state.
 
-\newpage
-
 ## Implement buy order "filled" callback
 
 The above callback covers the case where we will get multiple transactions filling our buy order. We aren't yet covering for the race condition described at the beginning of this chapter. When another trade event matching  `buyer_order_id` would arrive, the above callback would be used and another sell order would be placed. To avoid that we need to add a new callback *ABOVE* the one that we just edited that will match `buyer_order_id` together with "filled" `status` and it will simply ignore that trade event as we know that sell event needed to be placed by previous trade event:
@@ -151,6 +149,8 @@ The above callback covers the case where we will get multiple transactions filli
 ## Improve sell order callback
 
 Let's move on to the callback where the trader receives a trade event matching the sell order's id (about line 135 inside the `Naive.Trader` module).
+
+\newpage
 
 We need to modify the header of our callback in the following ways:
 
@@ -188,8 +188,6 @@ Moving to the body of the function, we need to:
   or
   
   - update the state with new `sell_order` and continue
-
-
 
 Here's the full body of our callback:
 

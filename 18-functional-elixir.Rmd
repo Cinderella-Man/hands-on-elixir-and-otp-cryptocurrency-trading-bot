@@ -34,7 +34,7 @@ We are looking for clauses that do more than "one thing" to split them into mult
 - The second callback takes care of race conditions - the same story, easy to understand.
 - The third callback is the one we will focus on. It branches using the `if` statement, and we could describe it as "fetch and maybe place a sell order" function. The "and" in the description clearly indicates that it's really two functions glued together. We will split it into "fetch buy order" and "place a sell order" functions(below code replaces the 3rd `handle_info/2` callback):
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def handle_info(
         %TradeEvent{},
@@ -109,7 +109,7 @@ The first function takes care of placing a sell order. The second one fetches th
 
 The code below replaces the 5th `handle_info/2` callback:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def handle_info(
         %TradeEvent{},
@@ -166,8 +166,8 @@ Changes like this require approval from the business in a work situation, but it
 
 We can confirm that we have broken our tests by running our integration testsuite:
 
-```bash
-MIX_ENV=integration mix test.integration
+```{r, engine = 'bash', eval = FALSE}
+$ MIX_ENV=integration mix test.integration
 ...
   1) test Naive trader full trade(buy + sell) test (NaiveTest)
      apps/naive/test/naive_test.exs:12
@@ -179,7 +179,7 @@ MIX_ENV=integration mix test.integration
 
 (Subject to acceptance by the business) we will fix the integration test in the following way:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive_test.exs
   test "Naive trader full trade(buy + sell) test" do
     ...
@@ -207,7 +207,7 @@ Each of the pattern-matches inside the callback functions' headers is a **strate
 
 We will create a new file called `strategy.exs` inside the `apps/naive/lib/naive/` directory, where we will **copy** all of the `handle_info/2` callback functions from the `Naive.Trader` module:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 defmodule Naive.Strategy do
 
@@ -254,7 +254,7 @@ As now we are dealing with a function generating a decision, we will return a tu
 
 After removing some of the pattern-matching that we used to retrieve data(no longer needed), our first function should look like this:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the first clause
   def generate_decision(
@@ -281,7 +281,7 @@ After removing some of the pattern-matching that we used to retrieve data(no lon
 
 The second function deals with the race condition when multiple transactions fill the buy order. The original callback ignores those trade events, so the `generate_decision/2` function should return the same "decision":
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the second clause
   def generate_decision(
@@ -304,7 +304,7 @@ The second function deals with the race condition when multiple transactions fil
 
 We will follow the same logic for the 3rd clause of the `generate_decision/2` function. We will leave only the sell price calculation as it's pure and return a tuple together with the decision:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the third clause
   def generate_decision(
@@ -328,7 +328,7 @@ We will follow the same logic for the 3rd clause of the `generate_decision/2` fu
 
 For the 4th clause, we will return only an atom as there's no pure logic besides the pattern-match in the header itself:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the fourth clause
   def generate_decision(
@@ -349,7 +349,7 @@ For the 4th clause, we will return only an atom as there's no pure logic besides
 
 For the 5th clause, we will indicate that trader needs to terminate:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the fifth clause
   def generate_decision(
@@ -368,7 +368,7 @@ For the 5th clause, we will indicate that trader needs to terminate:
 
 For the 6th clause, we will indicate that trader needs to fetch the sell order:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the sixth clause
   def generate_decision(
@@ -389,7 +389,7 @@ For the 6th clause, we will indicate that trader needs to fetch the sell order:
 
 Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps. We couldn't refactor this function by splitting it (as we've done in the first section) as we need to call the `trigger_rebuy?/3` function to check should rebuy be triggered. The functions that we refactored in the first section of this chapter were splittable as they relied on pattern-matching in the function headers where calling local functions is not allowed):
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the seventh clause
   def generate_decision(
@@ -418,7 +418,7 @@ Inside the 7th clause, we are dealing with triggering the rebuy. Here, we can de
 
 The final (8th) clause will just ignore the trade event as it's of no interest:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # the final(8th) clause
   def generate_decision(%TradeEvent{}, %State{}) do
@@ -441,7 +441,7 @@ They can now be changed to public functions as they are pure and fit the "interf
 
 We need to remember about moving the `Decimal` alias into the `Naive.Strategy` module together with a copy of the `TradeEvent` struct alias and add the alias for the `Naive.Trader.State` struct:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
   alias Decimal, as: D
   alias Core.Struct.TradeEvent
@@ -452,7 +452,7 @@ The next step will be to rename all the `handle_info/2` callback functions insid
 
 First, we need to add a single `handle_info/2` callback under the `init/1` function that will pattern match only the fact that the received message contains the `TradeEvent` struct and the state is the correct `State` struct:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
 # add after the `init/1` function
   def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
@@ -467,7 +467,7 @@ So, the `Naive.Strategy` module will decide what the trader server should do bas
 
 We will update the `execute_decision/2` function to take a decision + state and execute the correct action based on pattern-match of the decision. Starting with the 1st clause, we need to pattern match a tuple:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
 # the first execute clause
   def execute_decision(
@@ -503,7 +503,7 @@ As we are using the `:skip` "decision" for both the race condition events and th
 
 In case of placing a sell order, we will pattern match on a tuple containing the `:place_sell_order` atom and slim down on pattern matching:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def execute_decision(
          {:place_sell_order, sell_price},
@@ -535,7 +535,7 @@ In case of placing a sell order, we will pattern match on a tuple containing the
 
 In case of fetching the buy order, we will pattern match on a `:fetch_buy_order` atom and slim down on pattern matching:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def execute_decision(
          :fetch_buy_order,
@@ -572,7 +572,7 @@ In case of fetching the buy order, we will pattern match on a `:fetch_buy_order`
 
 In case of terminating the trader, we will pattern match on a `:exit` atom and slim down on pattern matching:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def execute_decision(
          :exit,
@@ -592,7 +592,7 @@ In case of terminating the trader, we will pattern match on a `:exit` atom and s
 
 In case of fetching the sell order, we will pattern match on a `:fetch_sell_order` atom and slim down on pattern matching:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def execute_decision(
          :fetch_sell_order,
@@ -629,7 +629,7 @@ In case of fetching the sell order, we will pattern match on a `:fetch_sell_orde
 
 In case of triggering the rebuy procedure, we will pattern match on a `:rebuy` atom, slim down on pattern matching and simplify the function a fair bit(no branching required anymore - yay!):
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def execute_decision(
          :rebuy,
@@ -649,7 +649,7 @@ In case of triggering the rebuy procedure, we will pattern match on a `:rebuy` a
 
 The final ignore clause will `:skip` all events:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def execute_decision(:skip, state) do
     {:noreply, state}
@@ -670,7 +670,7 @@ As the `generate_decision/2` function is causing side effects, we don't want it 
 
 Changing the `execute_decision/2` function(now inside the `Naive.Strategy` module) to private will cause a problem with the `handle_info/2` callback function inside the `Naive.Trader` module as it relies on the `execute_decision/2` function to be public. The fact that our strategy makes a decision and then executes code based on it is an implementation detail that we shouldn't share with the `Naive.Trader` module. That's why we will move the **body** of the `handle_info/2` callback function into a new function called `execute/2` inside the `Naive.Strategy` module:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
   def execute(%TradeEvent{} = trade_event, %State{} = state) do
     generate_decision(trade_event, state)
@@ -680,7 +680,7 @@ Changing the `execute_decision/2` function(now inside the `Naive.Strategy` modul
 
 Before updating the `Naive.Trader` module to use the `execute/2` function, we need to address another issue that moving the `execute_decision/2` caused. At this moment, all of the clauses return GenServer specific tuples. What we really need to return to the trader is an atom indicating should it continue or terminate together with the updated state:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # last lines inside the `execute_decision/2` clauses
 {:ok, new_state} # <= previously {:noreply, new_state} (5 times)
@@ -690,7 +690,7 @@ Before updating the `Naive.Trader` module to use the `execute/2` function, we ne
 
 We can now update the `handle_info/2` callback function to call the new "interface" of the `Naive.Strategy` module that we just created and act accordingly to the result:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
   def handle_info(%TradeEvent{} = trade_event, %State{} = state) do
     case Naive.Strategy.execute(trade_event, state) do
@@ -716,7 +716,7 @@ As we aren't calling the `execute_decision/2` directly, we need to pass all of t
 
 We can see that even with default values pointing to the "real" implementation, that's still **a lot** of noise to make testing easier. It will negatively impact the maintenance of the code - here's an example of what this would look like(don't bother typing it):
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 # injecting dummy implementation, fallback to real implementation
 def execute(
@@ -748,7 +748,7 @@ Important note: Passing functions as arguments is not always bad! A good example
 
 The natural next step would be to put all of those functions into some structure like Map or Keyword list. Whichever we would choose, we will end up with the same problems of naming keys(this time inside the map/keyword list), multiple functions because of different arity but also default values inside each clause of the `execute_decision/2` function:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
   defp execute_decision(
         {:place_buy_order, price, quantity},
@@ -772,7 +772,7 @@ The significant advantage of passing modules as arguments instead of functions i
 
 Sadly we still need to use the `Map` function to get the modules out of `"context"`:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
   defp execute_decision(
         {:place_buy_order, price, quantity},
@@ -793,7 +793,7 @@ This is much better, but we will still need to do a fair amount of additional wo
 
 And we finally got there - we have come a full circle. This is the approach that we previously used inside the `Naive.Trader` module(you can go ahead and add them to the `Naive.Strategy` module):
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 defmodule Naive.Strategy do
   ...
@@ -818,7 +818,7 @@ In the last section, we looked into different ways to inject modules' dependenci
 
 Many languages introduced concepts like `Either`, which is a struct that can be either `Left`(error result) or `Right`(success result). Those quite nicely fit to the standard Elixir results like `{:error, reason}` and `{:ok, result}`. Further, those languages provide multiple functions to work with the `Either`, like `map`.
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 safeDivide(2, 0) # <= returns Left("Dividing error")
 |> then(Either.map(&(&1 * 2))) # <= still Left("Dividing error")
 
@@ -828,21 +828,21 @@ safeDivide(2, 1) # <= returns Right(2)
 
 The above code will use hypothetical `Left('Dividing error')` or `Right(result)`. The `Either.map/2` is a special `map` function that runs the passed function if it's `Right` or completely ignores it when it's `Left` - it could be visualized as:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 def map(%Either.Left{} = left, _fun), do: left
 def map(%Either.Right{result: v}, fun), do: %Either.Right{result: fun.(v)}
 ```
 
 This is nice and great, but what if the function inside the `Either.map/2` returns another `Either`? Like:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 safeDivide(2, 1) # <= returns Right(2)
 |> then(Either.map(&(safeDivide(&1, 1)))) # <= now Right(Right(2))!?
 ```
 
 Now we need to understand those abstractions to be able to decide should we `map` or `flatMap`(that's the function that will not wrap the function result into the `Right`):
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 safeDivide(2, 1) # <= returns Right(2)
 |> then(Either.flatMap(&(safeDivide(&1, 1)))) <= still Right(2)
 ```
@@ -851,7 +851,7 @@ And that is just the beginning of the complexities that those abstractions bring
 
 Furthermore, let's say that inside the first `Either.map/2` callback, we will have some variable(s) that we would like to use later on. We are now deep inside closures world like the following:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
 safeDivide(2, 1) # <= returns Right(2)
 |> then(Either.flatMap(fn res ->
     # x = some data generated here
@@ -867,7 +867,7 @@ The above example is obviously simplified and silly but should give us a gist of
 
 To achieve the same results, Elixir provides the `with` statement:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
   with {:ok, divide_result} <- safeDiv(2,1),
        {:ok, divide_result_2} <- safeDivide(2, 1)
   do
@@ -889,7 +889,7 @@ That's the basic idea behind all the category theory related abstractions like t
 
 I won't go into a vast amount of details. Still, we can think about it as every time we are calling a *special* `map` or `flatMap`, instead of executing anything, it would just wrap whatever was passed to it inside another function and return it like:
 
-```
+```{r, engine = 'elixir', eval = FALSE}
   def map(acc, function) do
     fn ->
       case acc.() do

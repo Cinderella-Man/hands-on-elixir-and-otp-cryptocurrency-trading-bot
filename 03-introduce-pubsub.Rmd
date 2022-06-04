@@ -9,7 +9,7 @@
 
 First, let's look at the current situation:
 
-```{r, fig.align="center", out.width="40%", echo=FALSE}
+```{r, fig.align="center", out.width="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_01_current_situation.png")
 ```
 
@@ -19,7 +19,7 @@ We started with the Binance streamer calling the `send_event/1` function on the 
 
 The next step in the process of extending our trading strategy will be to scale it to run multiple `Naive.Trader` processes in parallel. To be able to do that we will need to remove the option to register the `trader` process with a name(as only one process can be registered under a single name).
 
-```{r, fig.align="center", out.width="40%", echo=FALSE}
+```{r, fig.align="center", out.width="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_02_current_situation_failed.png")
 ```
 
@@ -27,7 +27,7 @@ The second issue with that design was the fact that the `Streamer` needs to be a
 
 To fix those issues we will invert the design and introduce a PubSub mechanism:
 
-```{r, fig.align="center", out.width="40%", echo=FALSE}
+```{r, fig.align="center", out.width="25%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_03_phoenix_pubsub.png")
 ```
 
@@ -38,13 +38,13 @@ There's no coupling between the `Streamer` and `Naive` app anymore.
 
 We can now introduce multiple traders that will subscribe to the topic and they will receive messages from the PubSub:
 
-```{r, fig.align="center", out.width="100%", echo=FALSE}
+```{r, fig.align="center", out.width="100%", out.height="35%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_04_naive_trader_group.png")
 ```
 
 Going even further down the line we can picture that system could consist of other processes interested in the streamed data. An example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:
 
-```{r, fig.align="center", out.width="100%", echo=FALSE}
+```{r, fig.align="center", out.width="100%", out.height="45%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_05_other_services.png")
 ```
 
