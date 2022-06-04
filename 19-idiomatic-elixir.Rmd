@@ -49,6 +49,8 @@ defmodule Indicator.Ohlc.Worker do
 end
 ```
 
+\newpage
+
 As each worker will need to subscribe to the PubSub's `"TRADE_EVENTS:#{symbol}"` topic, we can update the `init/1` function to do that:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -90,6 +92,8 @@ As we subscribed to the PubSub, we need to provide a callback that will handle t
     {:noreply, Indicator.Ohlc.process(ohlc, trade_event)}
   end
 ```
+
+\newpage
 
 To avoid mixing our business logic with the GenServer boilerplate(as discussed in the last chapter), we will place it in a new module. First, we need to create a new file `/apps/indicator/lib/indicator/ohlc.ex` and the `Indicator.Ohlc` module inside it:
 

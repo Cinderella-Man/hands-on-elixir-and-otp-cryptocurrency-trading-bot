@@ -47,7 +47,9 @@ Finally, update the alias to the `Naive.SymbolSupervisor` to the `Naive.Trader` 
 
 ### The `Naive` module
 
-The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now called the `Naive.DynamicTraderSupervisor`), we need to update all the references to it:
+The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now called the
+
+`Naive.DynamicTraderSupervisor`), we need to update all the references to it:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -62,7 +64,9 @@ The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now ca
 
 ### The `Naive.Supervisor` module
 
-The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now called the `Naive.DynamicTraderSupervisor`) and the registry that stores the traders' PIDs - we need to update both:
+The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now called the
+
+`Naive.DynamicTraderSupervisor`) and the registry that stores the traders' PIDs - we need to update both:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/supervisor.ex
@@ -183,29 +187,29 @@ As we are already changing strategy to work with positions, we will update all t
          :fetch_buy_order,
          ...
        ) do
-    @logger.info("Position (#{symbol}/#{id}): The BUY order is now partially filled") # <= updated message
-    ...
+    @logger.info("Position (#{symbol}/#{id}): The BUY order is now partially filled")
+    ... # ^^^ updated message
 
   defp execute_decision(
          :exit,
          ...
        ) do
-    @logger.info("Position (#{symbol}/#{id}): Trade cycle finished") # <= updated message
-    ...
+    @logger.info("Position (#{symbol}/#{id}): Trade cycle finished")
+    ... # ^^^ updated message
 
   defp execute_decision(
          :fetch_sell_order,
          ...
        ) do
-    @logger.info("Position (#{symbol}/#{id}): The SELL order is now partially filled")  # <= updated message
-     ...
+    @logger.info("Position (#{symbol}/#{id}): The SELL order is now partially filled")
+     ... # ^^^ updated message
 
   defp execute_decision(
          :rebuy,
          ...
        ) do
-    @logger.info("Position (#{symbol}/#{id}): Rebuy triggered")  # <= updated message
-     ...
+    @logger.info("Position (#{symbol}/#{id}): Rebuy triggered")
+     ... # ^^^ updated message
 ```
 
 Our code is still far from working, but we are incrementally updating it to work with multiple positions.
@@ -354,6 +358,8 @@ We need all the `positions` to iterate through them, deciding and executing appr
 
 Additionally, we updated the `case` match to expect a list of updated positions which we will assign to the `Trader`'s state.
 
+\newpage
+
 Now we can modify the `Naive.Strategy` to handle multiple positions:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -394,6 +400,8 @@ First, we are calling a new function `generate_decisions/4`, which is a recursiv
 ```
 
 At this moment, the `generate_decisions/4` can look like overengineered `Enum.map/2` function, but we are actually preparing the ground for the consequent updates later in this chapter(to get the rest of the functionality running).
+
+\newpage
 
 It's important to note that we are now passing four arguments into the `generate_decision` function - we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above. At this moment though, we will update the `generate_decision/2` clauses to include two additional arguments to **all** clauses:
 
@@ -443,7 +451,8 @@ iex(1)> Naive.start_trading("XRPUSDT")
 iex(2)> Streamer.start_streaming("XRPUSDT")
 21:29:17.998 [info]  Starting streaming XRPUSDT trade events
 ...
-21:29:21.037 [info]  Position (XRPUSDT/1651696014179): Placing a BUY order @ 0.64010000, quantity: 31.00000000
+21:29:21.037 [info]  Position (XRPUSDT/1651696014179): Placing a BUY order @ 0.64010000,
+quantity: 31.00000000
 21:29:21.037 [error] Task #PID<0.10293.0> started from #PID<0.480.0> terminating
 ** (stop) exited in: GenServer.call(:"Elixir.Naive.Leader-XRPUSDT"...
 ```
@@ -485,14 +494,20 @@ iex(1)> Streamer.start_streaming("ETHUSDT")
 ...
 iex(2)> Naive.start_trading("ETHUSDT")
 ...
-21:59:19.836 [info]  Position (ETHUSDT/1651697959836): Placing a BUY order @ 2945.31000000, quantity: 0.06790000
- 21:59:46.997 [info]  Position (ETHUSDT/1651697959836): The BUY order is now partially filled
- 21:59:46.997 [info]  Position (ETHUSDT/1651697959836): The BUY order is now filled. Placing a SELL order @ 2947.66000000, quantity: 0.06790000
- 22:00:21.631 [info]  Position (ETHUSDT/1651697959836): The SELL order is now partially filled
+21:59:19.836 [info]  Position (ETHUSDT/1651697959836): Placing a BUY order @ 2945.31000000,
+quantity: 0.06790000
+ 21:59:46.997 [info]  Position (ETHUSDT/1651697959836): The BUY order is now partially
+ filled
+ 21:59:46.997 [info]  Position (ETHUSDT/1651697959836): The BUY order is now filled.
+ Placing a SELL order @ 2947.66000000, quantity: 0.06790000
+ 22:00:21.631 [info]  Position (ETHUSDT/1651697959836): The SELL order is now partially
+ filled
  22:00:21.734 [info]  Position (ETHUSDT/1651697959836): Trade cycle finished
 22:00:21.737 [error] GenServer {:naive_traders, "ETHUSDT"} terminating
-** (FunctionClauseError) no function clause matching in anonymous fn/1 in Naive.Strategy.parse_results/1
-    (naive 0.1.0) lib/naive/strategy.ex:56: anonymous fn(:exit) in Naive.Strategy.parse_results/1
+** (FunctionClauseError) no function clause matching in anonymous fn/1 in
+Naive.Strategy.parse_results/1
+    (naive 0.1.0) lib/naive/strategy.ex:56: anonymous fn(:exit) in
+    Naive.Strategy.parse_results/1
 ```
 
 We can see that our trader process can now go through the whole trade cycle, but it fails to start a new position after the first trade cycle finishes and returns `:exit`.
@@ -545,7 +560,8 @@ iex(1)> Streamer.start_streaming("ETHUSDT")
 iex(2)> Naive.start_trading("ETHUSDT")
 ...
 22:46:46.568 [info]  Position (ETHUSDT/1651697959836): Trade cycle finished
-22:46:46.577 [info]  Position (ETHUSDT/1651697959836): Placing a BUY order @ 2945.31000000, quantity: 0.06790000
+22:46:46.577 [info]  Position (ETHUSDT/1651697959836): Placing a BUY order @ 2945.31000000,
+  quantity: 0.06790000
 ```
 
 This finishes direct changes related to making the trader/strategy work with multiple positions, but it lacks all the features that the `Naive.Leader` offered. We will now iterate on this code to bring that missing functionality.
@@ -567,6 +583,8 @@ We will start by modifying the `DynamicTraderSupervisor` where we will update th
     {:ok, settings}
   end
 ```
+
+\newpage
 
 Now, the Trader will handle updating the settings, which we will add next, but before we do that, we should move the `update_status/2` function into the `Naive.Strategy` as it will be used from both the `DynamicTraderSupervisor` and the `Naive.Strategy`:
 
@@ -809,7 +827,9 @@ In case of rebuy decision we need to add a new position to the positions list wh
 
 In the case of the `:rebuy` decision, we are updating the `rebuy_notified` of the position that triggered it, as well as adding another position to the list with the `:rebuy` decision(it's the same position that triggered rebuy but we will ignore it further down the line).
 
-The final step will be to update the `execute_decision/3` clause that matches the `:rebuy` decision to `generate_fresh_position/1`, log and return that newly created position:
+The final step will be to update the `execute_decision/3` clause that matches the `:rebuy` decision to
+
+`generate_fresh_position/1`, log and return that newly created position:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -841,7 +861,8 @@ iex(1)> Streamer.start_streaming("ETHUSDT")
 iex(2)> Naive.start_trading("ETHUSDT")
 ...
 18:00:29.872 [info]  Position (ETHUSDT/1651856406828): Rebuy triggered. Starting new position
- 18:00:29.880 [info]  Position (ETHUSDT/1651856429871): Placing a BUY order @ 13.39510000, quantity: 14.93000000
+18:00:29.880 [info]  Position (ETHUSDT/1651856429871): Placing a BUY order @ 13.39510000,
+  quantity: 14.93000000
 ```
 
 The above shows that a single buy position can trigger rebuy, starting a new position immediately placing another buy order.
@@ -933,7 +954,9 @@ We can see that we now have a better overview of what's happening. Previously we
 
 ## Tidying up
 
-Let's tidy up the codebase start with removing the `/apps/naive/lib/naive/leader.ex` and `/apps/naive/lib/naive/symbol_supervisor.ex` as we don't need them anymore.
+Let's tidy up the codebase start with removing the `/apps/naive/lib/naive/leader.ex`
+
+and `/apps/naive/lib/naive/symbol_supervisor.ex` as we don't need them anymore.
 
 This will cause problems with our mocks that we need to update in the test helper:
 
