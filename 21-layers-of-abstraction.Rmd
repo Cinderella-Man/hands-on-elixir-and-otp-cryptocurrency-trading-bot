@@ -1,0 +1,355 @@
+# Layers of abstraction
+
+## Objectives
+- admitting the simplification
+- abstracting the exchange
+
+## Admitting the simplification
+
+It comes the time when I need to admit to something that I've learned on the way as I was writing this book and was misused throughout.
+
+When we were using the `Mox` package, we were disappointed that most packages don't provide behaviours we could use in our tests(to mock the actual implementations).
+
+To fix that, we were writing behaviours for 3rd party packages that we are using like `Binance` or even `Ecto.Repo`. This approach felt weird, and it should, as I believe that was **not the intended** usage of the `Mox` package.
+
+Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example of that could be abstracting dealing with an exchange to an behaviour and providing a single implementation(wrapping the `Binance` module):
+
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_21_01_additional_layer.jpg")
+```
+
+In the example above, we will introduce a new behaviour module called `Core.Exchange` that would define the way we interact with any exchange. As this will be a generic behaviour, it needs to accept and return generic structs(we will need to create those as well).
+
+We will also create a new `Core.Exchange.Binance` module, which will implement the `Core.Exchange` behaviour and wrap the `Binance` module.
+
+Let's see how this will look in action.
+
+## Abstracting the exchange
+
+### Defining the `Core.Exchange` behaviour
+
+We will start by creating a new behaviour module(inside a new file `/apps/core/lib/core/exchange.ex`) inside the `Core` application:
+
+```{r, engine = 'elixir', eval = FALSE}	 
+ # /apps/core/lib/core/exchange.ex
+defmodule Core.Exchange do
+
+end
+```
+
+Now, based on the way we are currently interacting with the `Binance` module inside the `Naive.Strategy`, we can define the following callback functions:
+
+`order_limit_buy/3` - almost the same as the `Binance`'s `order_limit_buy/4`, just skipped the optional argument
+
+```{r, engine = 'elixir', eval = FALSE}	 
+  # /apps/core/lib/core/exchange.ex
+  # add below inside the Core.Exchange module
+  @callback order_limit_buy(symbol :: String.t(), quantity :: number(), price :: number()) ::
+              {:ok, Core.Exchange.Order.t()}
+              | {:error, any()}
+```
+
+`order_limit_sell/3` - almost the same as the `Binance`'s `order_limit_sell/4`, just skipped the optional argument
+
+```{r, engine = 'elixir', eval = FALSE}	 
+  # /apps/core/lib/core/exchange.ex
+  # add below inside the Core.Exchange module
+  @callback order_limit_sell(symbol :: String.t(), quantity :: number(), price :: number()) ::
+              {:ok, Core.Exchange.Order.t()}
+              | {:error, any()}
+```
+
+`get_order/3` - the same as the `Binance`'s `get_order/3`
+
+```{r, engine = 'elixir', eval = FALSE}	 
+  # /apps/core/lib/core/exchange.ex
+  # add below inside the Core.Exchange module
+  @callback get_order(
+              symbol :: String.t(),
+              timestamp :: non_neg_integer(),
+              order_id :: non_neg_integer()
+            ) ::
+              {:ok, Core.Exchange.Order.t()}
+              | {:error, any()}
+```
+
+All of the above callbacks rely on the `Core.Exchange.Order` struct which we will add now inside the `Core.Exchange` module:
+
+```{r, engine = 'elixir', eval = FALSE}	 
+  # /apps/core/lib/core/exchange.ex
+  # add below inside the Core.Exchange module
+  defmodule Order do
+    @type t :: %__MODULE__{
+            id: non_neg_integer(),
+            symbol: String.t(),
+            price: number(),
+            quantity: number(),
+            side: :buy | :sell,
+            status: :new | :filled,
+            timestamp: non_neg_integer()
+          }
+
+    defstruct [:id, :symbol, :price, :quantity, :side, :status, :timestamp]
+  end
+```
+
+The above struct is a simplification of the `Binance.Order` struct limited to just the fields we are using in our strategy.
+
+Additionally, we use the `Binance` module to fetch symbol filters inside the `Naive.Strategy` (we actually fetch the whole exchange info and then dig inside the find our filters) - we will create a dedicated struct for those filters:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/core/lib/core/exchange.ex
+  # add below inside the Core.Exchange module
+  defmodule SymbolInfo do
+    @type t :: %__MODULE__{
+            symbol: String.t(),
+            tick_size: number(),
+            step_size: number()
+          }
+
+    defstruct [:symbol, :tick_size, :step_size]
+  end
+
+  @callback fetch_symbol_filters(symbol :: String.t()) ::
+              {:ok, Core.Exchange.SymbolInfo.t()}
+              | {:error, any()}
+```
+
+The final usage of the `Binance` module comes from the seed scripts, which fetch the exchange info just to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/core/lib/core/exchange.ex
+  # add below inside the Core.Exchange module
+  @callback fetch_symbols() ::
+              {:ok, [String.t()]}
+              | {:error, any()}
+```
+
+This finishes the definition of the `Core.Exchange` behaviour. It should consist of five callback functions(`fetch_symbols/0`, `fetch_symbol_filters/1`, `get_order/3`, `order_limit_buy/3` and `order_limit_sell/3`) together with two structs(`Order` and `SymbolInfo`).
+
+### Implementation of the `Core.Exchange.Binance` module
+
+As we defined the behaviour, we can now wrap the production implementation(the `Binance` module) inside a module that will implement that behaviour.
+
+We will start by creating a new directory called "exchange" inside the `apps/core/lib/core` directory, together with a new file called `binance.ex`. Inside it we will define a module that will implement the `Core.Exchange` behaviour:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/core/lib/core/exchange/binance.ex
+defmodule Core.Exchange.Binance do
+  @behaviour Core.Exchange
+end
+```
+
+Now we are obliged to implement all functions defined in the behaviour, starting with the `fetch_symbols/0`:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/core/lib/core/exchange/binance.ex
+  alias Core.Exchange
+
+  @impl Core.Exchange
+  def fetch_symbols() do
+    case Binance.get_exchange_info() do
+      {:ok, %{symbols: symbols}} ->
+        symbols
+        |> Enum.map(& &1["symbol"])
+        |> then(&{:ok, &1})
+
+      error ->
+        error
+    end
+  end
+```
+
+As we can see - the `case` statement wraps the call to the `Binance` module, and either we evaluate further business logic or forward the error so the "user" of our library can decide what to do with the error condition. This pattern will appear in all our functions as the `Core.Exchange.Binance` module is our own "library" module.
+
+Let's continue with implementing the remaining functions defined in the behaviour:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/core/lib/core/exchange/binance.ex
+  @impl Core.Exchange
+  def fetch_symbol_filters(symbol) do
+    case Binance.get_exchange_info() do
+      {:ok, exchange_info} -> {:ok, fetch_symbol_filters(symbol, exchange_info)}
+      error -> error
+    end
+  end
+
+  defp fetch_symbol_filters(symbol, exchange_info) do
+    symbol_filters =
+      exchange_info
+      |> Map.get(:symbols)
+      |> Enum.find(&(&1["symbol"] == symbol))
+      |> Map.get("filters")
+
+    tick_size =
+      symbol_filters
+      |> Enum.find(&(&1["filterType"] == "PRICE_FILTER"))
+      |> Map.get("tickSize")
+
+    step_size =
+      symbol_filters
+      |> Enum.find(&(&1["filterType"] == "LOT_SIZE"))
+      |> Map.get("stepSize")
+
+    %Exchange.SymbolInfo{
+      symbol: symbol,
+      tick_size: tick_size,
+      step_size: step_size
+    }
+  end
+```
+
+The `fetch_symbol_filters/1` function follows the previously discussed pattern. The `fetch_symbol_filters/2`, on the other hand, is a modified copy of the `merge_filters_into_settings/2` function from the `Naive.Strategy` module.
+
+Another function to be implemented to fulfil the behaviour is `get_order/3`:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/core/lib/core/exchange/binance.ex
+  @impl Core.Exchange
+  def get_order(symbol, timestamp, order_id) do
+    case Binance.get_order(symbol, timestamp, order_id) do
+      {:ok, %Binance.Order{} = order} ->
+        {:ok,
+         %Exchange.Order{
+           id: order.order_id,
+           symbol: order.symbol,
+           price: order.price,
+           quantity: order.orig_qty,
+           side: side_to_atom(order.side),
+           status: status_to_atom(order.status),
+           timestamp: order.time
+         }}
+
+      error ->
+        error
+    end
+  end
+  
+  defp side_to_atom("BUY"), do: :buy
+  defp side_to_atom("SELL"), do: :sell
+
+  defp status_to_atom("NEW"), do: :new
+  defp status_to_atom("FILLED"), do: :filled
+```
+
+As in the case of the previously implemented functions, the `get_order/3` implementation follows the same pattern. To satisfy the `Core.Exchange` behaviour, it needs to return the `Exchange.Order` struct - hence the conversion. It also needs to convert the string `side` and `status` fields to atoms before assigning to struct(helper functions added at the bottom of the module).
+
+The final two functions to be implemented will be the `order_limit_buy/3` and `order_limit_sell/3`:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/core/lib/core/exchange/binance.ex
+  @impl Core.Exchange
+  def order_limit_buy(symbol, quantity, price) do
+    case Binance.order_limit_buy(symbol, quantity, price, "GTC") do
+      {:ok, %Binance.OrderResponse{} = order} ->
+        {:ok,
+         %Exchange.Order{
+           id: order.order_id,
+           price: order.price,
+           quantity: order.orig_qty,
+           side: :buy,
+           status: :new,
+           timestamp: order.transact_time
+         }}
+
+      error ->
+        error
+    end
+  end
+
+  @impl Core.Exchange
+  def order_limit_sell(symbol, quantity, price) do
+    case Binance.order_limit_sell(symbol, quantity, price, "GTC") do
+      {:ok, %Binance.OrderResponse{} = order} ->
+        {:ok,
+         %Exchange.Order{
+           id: order.order_id,
+           price: order.price,
+           quantity: order.orig_qty,
+           side: :sell,
+           status: :new,
+           timestamp: order.transact_time
+         }}
+
+      error ->
+        error
+    end
+  end
+```
+
+After implementing the previous functions, the last two should look very similar. 
+
+That finishes our first implementation of the `Core.Exchange` behaviour. It will be used in the production by our `Naive.Strategy`, but before we will update it, let's update the `BinanceMock` module to implement the same behaviour for testing/backtesting.
+
+### Updating the `BinanceMock` module to implement the `Core.Exchange` behaviour
+
+As mentioned, the `BinanceMock` module must implement the `Core.Exchange` behaviour. It will (compile time) guarantee that both `Core.Exchange.Binance` and `BinanceMock` share a common interface that can be used by the `Naive.Strategy`.
+
+Fist we will start by declaring that it actually implements the `Core.Exchange` behaviour:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/binance_mock/lib/binance_mock.ex
+defmodule BinanceMock do
+  @behaviour Core.Exchange # <= added
+```
+
+Next, we can remove all the aliases to the `Binance` structs as we won't use them anymore. The same goes for all the `@type` and `@callback` attributes.
+
+Moving on the the `get_exchange_info/0`, which will become `fetch_symbols/0` and `fetch_symbol_filters/1`:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/binance_mock/lib/binance_mock.ex
+  def fetch_symbols() do
+    case fetch_exchange_info() do
+      {:ok, %{symbols: symbols}} ->
+        symbols
+        |> Enum.map(& &1["symbol"])
+        |> then(&{:ok, &1})
+
+      error ->
+        error
+    end
+  end
+
+  def fetch_symbol_filters(symbol) do
+    case fetch_exchange_info() do
+      {:ok, exchange_info} ->
+        {:ok, fetch_symbol_filters(symbol, exchange_info)}
+
+      error ->
+        error
+    end
+  end
+
+  defp fetch_exchange_info() do
+    case Application.get_env(:binance_mock, :use_cached_exchange_info) do
+      true ->
+        get_cached_exchange_info()
+
+      _ ->
+        Binance.get_exchange_info()
+    end
+  end
+
+  defp get_cached_exchange_info do
+    File.cwd!()
+    |> Path.split()
+    |> Enum.drop(-1)
+    |> Kernel.++([
+      "binance_mock",
+      "test",
+      "assets",
+      "exchange_info.json"
+    ])
+    |> Path.join()
+    |> File.read()
+  end
+
+  defp fetch_symbol_filters(symbol, exchange_info) do
+    # <= this is a copy of `Core.Binance.fetch_symbol_filters/2` function
+  end
+```
+
+There are a few additional helpers above, and it got a bit long - let's unpack it. First, both `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0` which branches out to either using `Binance` or `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
+
+# <= todo: get_order, order_limit_buy, order_limit_sell
