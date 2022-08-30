@@ -350,6 +350,105 @@ Moving on the the `get_exchange_info/0`, which will become `fetch_symbols/0` and
   end
 ```
 
-There are a few additional helpers above, and it got a bit long - let's unpack it. First, both `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0` which branches out to either using `Binance` or `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
+There are a few additional helpers above, and it got a bit long - let's unpack it. First, both  the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0`, which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
 
-# <= todo: get_order, order_limit_buy, order_limit_sell
+Next on our list, there's the `get_oder/3` function - as it's working in the same way as per our behaviour, we will leave it as it is.
+
+The final two functions to update will be the `order_limit_buy/4` and `order_limit_sell/4`, which will now become three argument functions:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/binance_mock/lib/binance_mock.ex
+  def order_limit_buy(symbol, quantity, price) do
+    order_limit(symbol, quantity, price, "BUY")
+  end
+
+  def order_limit_sell(symbol, quantity, price) do
+    order_limit(symbol, quantity, price, "SELL")
+  end
+```
+
+In the above functions, we simplify skipped the fourth arguments to fulfil the behaviour.
+
+The changes to different structs will have a ripple effect in other parts of the BinanceMock module:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/binance_mock/lib/binance_mock.ex
+  def generate_fake_order(...) do
+    ...
+    %Exchange.Order{
+      id: order_id,
+      symbol: symbol,
+      price: price,
+      quantity: quantity,
+      side: side_to_atom(side),
+      status: status_to_atom("NEW"),
+      timestamp: current_timestamp
+    } # <= struct updated
+  end
+
+  def handle_cast(
+        {:add_order, %Exchange.Order{symbol: symbol} = order}, # <= struct updated
+        ...
+  ) do
+  ...
+  end
+
+  def handle_call(
+        {:get_order, symbol, time, order_id},
+        ...
+  ) do
+    ...
+      |> Enum.find(
+        &(&1.symbol == symbol and
+            &1.timestamp == time and # <= field updated
+            &1.id == order_id)               # <= field updated
+      )
+  end
+
+  def handle_info(
+      %TradeEvent{} = trade_event,
+      ...
+  ) do
+  ...
+    filled_buy_orders =
+      ...
+      |> Enum.map(&Map.replace!(&1, :status, :filled)) # <= changed to atom
+  ...
+    filled_sell_orders =
+      ...
+      |> Enum.map(&Map.replace!(&1, :status, :filled)) # <= changed to atom
+  ...
+  end
+
+  defp order_limit(symbol, quantity, price, side) do
+    %Exchange.Order{} = # <= struct updated
+    ...
+   {:ok, fake_order} # <= no need to convert between structs any more
+  end
+
+  defp add_order(
+         %Exchange.Order{symbol: symbol} = order, # <= struct updated
+          ...
+   ) do
+   ...
+  end
+
+  # and finally ;)
+
+  defp convert_order_to_event(%Exchange.Order{} = order, time) do
+    # ^= updated struct
+    %TradeEvent{
+      event_time: time - 1,
+      symbol: order.symbol,
+      trade_id: Integer.floor_div(time, 1000),
+      price: order.price,
+      quantity: order.quantity,  # <= updated mapping
+      buyer_order_id: order.id, # <= updated mapping
+      seller_order_id: order.id, # <= updated mapping
+      trade_time: time - 1,
+      buyer_market_maker: false
+    }
+  end
+```
+
+The above changes finish the modifications to the BiananceMock. The module now correctly implements the behaviour.
