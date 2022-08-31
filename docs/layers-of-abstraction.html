@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+  <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:site" content="@kamilskowron" />
+  
+  
+
+<meta name="author" content="Kamil Skowron" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="idiomatic-trading-strategy.html"/>
+
+<script src="libs/header-attrs-2.8/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-52FKGBX2B8');
+</script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Hands-on Elixir & OTP: Cryptocurrency trading bot</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#want-to-learn-elixir-otp-by-creating-a-real-world-project"><i class="fa fa-check"></i>Want to learn Elixir &amp; OTP by creating a real-world project?</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#limit-of-liabilitydisclaimer-of-warranty"><i class="fa fa-check"></i>Limit of Liability/Disclaimer of Warranty</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#pdf-epub"><i class="fa fa-check"></i>PDF &amp; EPUB</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface-1"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#who-this-book-is-for"><i class="fa fa-check"></i>Who this book is for</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-this-book-covers"><i class="fa fa-check"></i>What this book covers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#contributing-errata-and-source-code"><i class="fa fa-check"></i>Contributing, Errata and Source code</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><i class="fa fa-check"></i><b>1</b> Stream live cryptocurrency prices from the Binance WSS</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-new-umbrella-app"><i class="fa fa-check"></i><b>1.2</b> Create a new umbrella app</a></li>
+<li class="chapter" data-level="1.3" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#create-a-supervised-application-inside-an-umbrella"><i class="fa fa-check"></i><b>1.3</b> Create a supervised application inside an umbrella</a></li>
+<li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
+<li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrival"><i class="fa fa-check"></i><b>4.6</b> Implement order retrival</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#upgrade-trader-and-config"><i class="fa fa-check"></i><b>4.8</b> Upgrade trader and config</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.2.1</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.2.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.2.2</b> Add interface method</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.3</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.4</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.4.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.4.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.4.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.4.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.4.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.4.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state"><i class="fa fa-check"></i><b>7.4</b> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2"><i class="fa fa-check"></i><b>7.5.1</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html"><i class="fa fa-check"></i><b>8</b> Add support for multiple transactions per order</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#the-issue-with-the-current-implementation"><i class="fa fa-check"></i><b>8.2</b> The issue with the current implementation</a></li>
+<li class="chapter" data-level="8.3" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.3</b> Improve buy order filled callback</a></li>
+<li class="chapter" data-level="8.4" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#implement-buy-order-filled-callback"><i class="fa fa-check"></i><b>8.4</b> Implement buy order “filled” callback</a></li>
+<li class="chapter" data-level="8.5" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#improve-sell-order-callback"><i class="fa fa-check"></i><b>8.5</b> Improve sell order callback</a></li>
+<li class="chapter" data-level="8.6" data-path="add-support-for-multiple-transactions-per-order.html"><a href="add-support-for-multiple-transactions-per-order.html#test-the-implementation-1"><i class="fa fa-check"></i><b>8.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>9</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>9.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="9.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>9.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="9.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>9.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="9.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#test-the-implementation-2"><i class="fa fa-check"></i><b>9.6</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>10</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>10.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="10.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>10.4</b> Set up <code>ecto</code> inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>10.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="10.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>10.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>11</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>11.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="11.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>11.4</b> Set up <code>ecto</code> inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="11.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>11.5</b> Create and migrate the db</a></li>
+<li class="chapter" data-level="11.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>11.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="11.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>11.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="11.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>11.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="11.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>11.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="11.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#test-the-implementation-3"><i class="fa fa-check"></i><b>11.10</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>12</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>12.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="12.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>12.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="12.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>12.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="12.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>12.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="12.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>12.6</b> Implement the shutdown trading functionality</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>13</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>13.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="13.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>13.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
+<li class="chapter" data-level="13.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>13.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="13.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>13.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="13.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>13.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="13.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>13.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>13.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="13.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>13.7</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>14</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>14.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="14.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>14.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="14.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>14.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="14.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>14.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="14.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>14.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="14.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>14.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="14.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>14.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="14.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>14.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="14.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>14.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="14.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>14.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="14.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>14.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="14.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>14.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="14.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>14.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>15</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>15.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="15.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-storing-task"><i class="fa fa-check"></i><b>15.3</b> Implement the storing task</a></li>
+<li class="chapter" data-level="15.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>15.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>16</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>16.2</b> Decide on the tested functionality</a></li>
+<li class="chapter" data-level="16.3" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#implement-basic-test"><i class="fa fa-check"></i><b>16.3</b> Implement basic test</a></li>
+<li class="chapter" data-level="16.4" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-environment-based-config-files"><i class="fa fa-check"></i><b>16.4</b> Introduce environment based config files</a></li>
+<li class="chapter" data-level="16.5" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#add-convenience-aliases"><i class="fa fa-check"></i><b>16.5</b> Add convenience aliases</a></li>
+<li class="chapter" data-level="16.6" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#cache-initial-seed-data-inside-a-file"><i class="fa fa-check"></i><b>16.6</b> Cache initial seed data inside a file</a></li>
+<li class="chapter" data-level="16.7" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#update-seeding-scripts-to-use-the-binancemock"><i class="fa fa-check"></i><b>16.7</b> Update seeding scripts to use the BinanceMock</a></li>
+<li class="chapter" data-level="16.8" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-the-core-application"><i class="fa fa-check"></i><b>16.8</b> Introduce the Core application</a></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="mox-rocks.html"><a href="mox-rocks.html"><i class="fa fa-check"></i><b>17</b> Mox rocks</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="mox-rocks.html"><a href="mox-rocks.html#objectives-16"><i class="fa fa-check"></i><b>17.1</b> Objectives</a></li>
+<li class="chapter" data-level="17.2" data-path="mox-rocks.html"><a href="mox-rocks.html#introduction-to-mock-based-tests"><i class="fa fa-check"></i><b>17.2</b> Introduction to mock based tests</a></li>
+<li class="chapter" data-level="17.3" data-path="mox-rocks.html"><a href="mox-rocks.html#add-the-mox-package"><i class="fa fa-check"></i><b>17.3</b> Add the <code>mox</code> package</a></li>
+<li class="chapter" data-level="17.4" data-path="mox-rocks.html"><a href="mox-rocks.html#investigate-the-naive.trader-module"><i class="fa fa-check"></i><b>17.4</b> Investigate the <code>Naive.Trader</code> module</a>
+<ul>
+<li class="chapter" data-level="17.4.1" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-binance-module"><i class="fa fa-check"></i><b>17.4.1</b> Mock the <code>Binance</code> module</a></li>
+<li class="chapter" data-level="17.4.2" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-naiveleader-module"><i class="fa fa-check"></i><b>17.4.2</b> Mock the <code>NaiveLeader</code> module</a></li>
+<li class="chapter" data-level="17.4.3" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-phoenix.pubsub-module"><i class="fa fa-check"></i><b>17.4.3</b> Mock the <code>Phoenix.PubSub</code> module</a></li>
+<li class="chapter" data-level="17.4.4" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-logger-module"><i class="fa fa-check"></i><b>17.4.4</b> Mock the <code>Logger</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="17.5" data-path="mox-rocks.html"><a href="mox-rocks.html#implement-a-test-of-the-naive.trader-module"><i class="fa fa-check"></i><b>17.5</b> Implement a test of the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="17.6" data-path="mox-rocks.html"><a href="mox-rocks.html#define-an-alias-to-run-unit-tests"><i class="fa fa-check"></i><b>17.6</b> Define an alias to run unit tests</a></li>
+</ul></li>
+<li class="chapter" data-level="18" data-path="functional-elixir.html"><a href="functional-elixir.html"><i class="fa fa-check"></i><b>18</b> Functional Elixir</a>
+<ul>
+<li class="chapter" data-level="18.1" data-path="functional-elixir.html"><a href="functional-elixir.html#objectives-17"><i class="fa fa-check"></i><b>18.1</b> Objectives</a></li>
+<li class="chapter" data-level="18.2" data-path="functional-elixir.html"><a href="functional-elixir.html#the-reasoning-behind-the-functional-approach"><i class="fa fa-check"></i><b>18.2</b> The reasoning behind the functional approach</a></li>
+<li class="chapter" data-level="18.3" data-path="functional-elixir.html"><a href="functional-elixir.html#simplifying-by-splitting"><i class="fa fa-check"></i><b>18.3</b> Simplifying by splitting</a></li>
+<li class="chapter" data-level="18.4" data-path="functional-elixir.html"><a href="functional-elixir.html#abstracting-the-pure-logic"><i class="fa fa-check"></i><b>18.4</b> Abstracting the “pure” logic</a>
+<ul>
+<li class="chapter" data-level="18.4.1" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-buy-order-rules"><i class="fa fa-check"></i><b>18.4.1</b> Place a buy order rules</a></li>
+<li class="chapter" data-level="18.4.2" data-path="functional-elixir.html"><a href="functional-elixir.html#race-condition-rules"><i class="fa fa-check"></i><b>18.4.2</b> Race condition rules</a></li>
+<li class="chapter" data-level="18.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>18.4.3</b> Place a sell order rules</a></li>
+<li class="chapter" data-level="18.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>18.4.4</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="18.4.5" data-path="functional-elixir.html"><a href="functional-elixir.html#terminate-trader-rules"><i class="fa fa-check"></i><b>18.4.5</b> Terminate trader rules</a></li>
+<li class="chapter" data-level="18.4.6" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-sell-order-rules"><i class="fa fa-check"></i><b>18.4.6</b> Fetch the sell order rules</a></li>
+<li class="chapter" data-level="18.4.7" data-path="functional-elixir.html"><a href="functional-elixir.html#trigger-rebuy-rules"><i class="fa fa-check"></i><b>18.4.7</b> Trigger rebuy rules</a></li>
+<li class="chapter" data-level="18.4.8" data-path="functional-elixir.html"><a href="functional-elixir.html#the-final-clause-rules"><i class="fa fa-check"></i><b>18.4.8</b> The final clause rules</a></li>
+<li class="chapter" data-level="18.4.9" data-path="functional-elixir.html"><a href="functional-elixir.html#changes-to-the-naive.trader-module"><i class="fa fa-check"></i><b>18.4.9</b> Changes to the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="18.4.10" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---place-buy-order"><i class="fa fa-check"></i><b>18.4.10</b> <code>Naive.Trader</code> - place buy order</a></li>
+<li class="chapter" data-level="18.4.11" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---race-condition-clause"><i class="fa fa-check"></i><b>18.4.11</b> <code>Naive.Trader</code> - Race condition clause</a></li>
+<li class="chapter" data-level="18.4.12" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---place-a-sell-order"><i class="fa fa-check"></i><b>18.4.12</b> <code>Naive.Trader</code> - Place a sell order</a></li>
+<li class="chapter" data-level="18.4.13" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---fetch-the-buy-order"><i class="fa fa-check"></i><b>18.4.13</b> <code>Naive.Trader</code> - Fetch the buy order</a></li>
+<li class="chapter" data-level="18.4.14" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---terminate-the-trader"><i class="fa fa-check"></i><b>18.4.14</b> <code>Naive.Trader</code> - Terminate the trader</a></li>
+<li class="chapter" data-level="18.4.15" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---fetch-the-sell-order"><i class="fa fa-check"></i><b>18.4.15</b> <code>Naive.Trader</code> - Fetch the sell order</a></li>
+<li class="chapter" data-level="18.4.16" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---triggering-rebuy"><i class="fa fa-check"></i><b>18.4.16</b> <code>Naive.Trader</code> - Triggering rebuy</a></li>
+<li class="chapter" data-level="18.4.17" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---the-final-ignore-clause"><i class="fa fa-check"></i><b>18.4.17</b> <code>Naive.Trader</code> - The final ignore clause</a></li>
+</ul></li>
+<li class="chapter" data-level="18.5" data-path="functional-elixir.html"><a href="functional-elixir.html#dealing-with-dirty-code"><i class="fa fa-check"></i><b>18.5</b> Dealing with dirty code</a></li>
+<li class="chapter" data-level="18.6" data-path="functional-elixir.html"><a href="functional-elixir.html#making-dirty-code-testable"><i class="fa fa-check"></i><b>18.6</b> Making dirty code testable</a>
+<ul>
+<li class="chapter" data-level="18.6.1" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-functions-arguments"><i class="fa fa-check"></i><b>18.6.1</b> Passing functions arguments</a></li>
+<li class="chapter" data-level="18.6.2" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-functions-as-a-context"><i class="fa fa-check"></i><b>18.6.2</b> Passing grouped functions as a context</a></li>
+<li class="chapter" data-level="18.6.3" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-modules-as-a-context"><i class="fa fa-check"></i><b>18.6.3</b> Passing grouped modules as a context</a></li>
+<li class="chapter" data-level="18.6.4" data-path="functional-elixir.html"><a href="functional-elixir.html#injecting-modules-to-modules-attributes-based-on-the-configuration"><i class="fa fa-check"></i><b>18.6.4</b> Injecting modules to module’s attributes based on the configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="18.7" data-path="functional-elixir.html"><a href="functional-elixir.html#the-power-with-in"><i class="fa fa-check"></i><b>18.7</b> The power <code>with</code>-in</a>
+<ul>
+<li class="chapter" data-level="18.7.1" data-path="functional-elixir.html"><a href="functional-elixir.html#idiomatic-error-handling"><i class="fa fa-check"></i><b>18.7.1</b> Idiomatic error handling</a></li>
+</ul></li>
+<li class="chapter" data-level="18.8" data-path="functional-elixir.html"><a href="functional-elixir.html#do-or-not-to-do"><i class="fa fa-check"></i><b>18.8</b> Do or not to do</a></li>
+<li class="chapter" data-level="18.9" data-path="functional-elixir.html"><a href="functional-elixir.html#final-thoughts"><i class="fa fa-check"></i><b>18.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="19" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html"><i class="fa fa-check"></i><b>19</b> Idiomatic OTP</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#objectives-18"><i class="fa fa-check"></i><b>19.1</b> Objectives</a></li>
+<li class="chapter" data-level="19.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#the-concept"><i class="fa fa-check"></i><b>19.2</b> The concept</a></li>
+<li class="chapter" data-level="19.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#initial-implementation"><i class="fa fa-check"></i><b>19.3</b> Initial implementation</a>
+<ul>
+<li class="chapter" data-level="19.3.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#maybe-functions"><i class="fa fa-check"></i><b>19.3.1</b> Maybe functions</a></li>
+<li class="chapter" data-level="19.3.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#testing"><i class="fa fa-check"></i><b>19.3.2</b> Testing</a></li>
+<li class="chapter" data-level="19.3.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#supervision"><i class="fa fa-check"></i><b>19.3.3</b> Supervision</a></li>
+</ul></li>
+<li class="chapter" data-level="19.4" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#idiomatic-solution"><i class="fa fa-check"></i><b>19.4</b> Idiomatic solution</a></li>
+</ul></li>
+<li class="chapter" data-level="20" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html"><i class="fa fa-check"></i><b>20</b> Idiomatic trading strategy</a>
+<ul>
+<li class="chapter" data-level="20.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#objectives-19"><i class="fa fa-check"></i><b>20.1</b> Objectives</a></li>
+<li class="chapter" data-level="20.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#following-the-ohlc-footsteps"><i class="fa fa-check"></i><b>20.2</b> Following the OHLC footsteps</a></li>
+<li class="chapter" data-level="20.3" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#simplifying-the-naive-supervision-tree"><i class="fa fa-check"></i><b>20.3</b> Simplifying the Naive supervision tree</a>
+<ul>
+<li class="chapter" data-level="20.3.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.dynamictradersupervisor-module"><i class="fa fa-check"></i><b>20.3.1</b> The <code>Naive.DynamicTraderSupervisor</code> module</a></li>
+<li class="chapter" data-level="20.3.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive-module"><i class="fa fa-check"></i><b>20.3.2</b> The <code>Naive</code> module</a></li>
+<li class="chapter" data-level="20.3.3" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.supervisor-module"><i class="fa fa-check"></i><b>20.3.3</b> The <code>Naive.Supervisor</code> module</a></li>
+<li class="chapter" data-level="20.3.4" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.trader-module"><i class="fa fa-check"></i><b>20.3.4</b> The <code>Naive.Trader</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="20.4" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#supporting-multiple-positions"><i class="fa fa-check"></i><b>20.4</b> Supporting multiple positions</a>
+<ul>
+<li class="chapter" data-level="20.4.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#initialization"><i class="fa fa-check"></i><b>20.4.1</b> Initialization</a></li>
+<li class="chapter" data-level="20.4.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#parallelising-the-strategy"><i class="fa fa-check"></i><b>20.4.2</b> Parallelising the strategy</a></li>
+</ul></li>
+<li class="chapter" data-level="20.5" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#retrofitting-the-shutdown-functionality"><i class="fa fa-check"></i><b>20.5</b> Retrofitting the “shutdown” functionality</a>
+<ul>
+<li class="chapter" data-level="20.5.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#handling-updated-settings"><i class="fa fa-check"></i><b>20.5.1</b> Handling updated settings</a></li>
+<li class="chapter" data-level="20.5.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#updating-the-naive.strategy-to-honour-the-shutdown-state"><i class="fa fa-check"></i><b>20.5.2</b> Updating the <code>Naive.Strategy</code> to honour the “shutdown” state</a></li>
+</ul></li>
+<li class="chapter" data-level="20.6" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#updating-the-strategy-to-handle-rebuys"><i class="fa fa-check"></i><b>20.6</b> Updating the Strategy to handle rebuys</a></li>
+<li class="chapter" data-level="20.7" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#fetching-active-positions"><i class="fa fa-check"></i><b>20.7</b> Fetching active positions</a></li>
+<li class="chapter" data-level="20.8" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#tidying-up"><i class="fa fa-check"></i><b>20.8</b> Tidying up</a></li>
+<li class="chapter" data-level="20.9" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#final-thoughts-1"><i class="fa fa-check"></i><b>20.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="21" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html"><i class="fa fa-check"></i><b>21</b> Layers of abstraction</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#objectives-20"><i class="fa fa-check"></i><b>21.1</b> Objectives</a></li>
+<li class="chapter" data-level="21.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#admitting-the-simplification"><i class="fa fa-check"></i><b>21.2</b> Admitting the simplification</a></li>
+<li class="chapter" data-level="21.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#abstracting-the-exchange"><i class="fa fa-check"></i><b>21.3</b> Abstracting the exchange</a>
+<ul>
+<li class="chapter" data-level="21.3.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#defining-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.1</b> Defining the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="21.3.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module"><i class="fa fa-check"></i><b>21.3.2</b> Implementation of the <code>Core.Exchange.Binance</code> module</a></li>
+<li class="chapter" data-level="21.3.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.3</b> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="21.3.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy"><i class="fa fa-check"></i><b>21.3.4</b> Updating the <code>Naive.Strategy</code></a></li>
+</ul></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="layers-of-abstraction" class="section level1" number="21">
+<h1><span class="header-section-number">Chapter 21</span> Layers of abstraction</h1>
+<div id="objectives-20" class="section level2" number="21.1">
+<h2><span class="header-section-number">21.1</span> Objectives</h2>
+<ul>
+<li>admitting the simplification</li>
+<li>abstracting the exchange</li>
+</ul>
+</div>
+<div id="admitting-the-simplification" class="section level2" number="21.2">
+<h2><span class="header-section-number">21.2</span> Admitting the simplification</h2>
+<p>It comes the time when I need to admit to something that I’ve learned on the way as I was writing this book and was misused throughout.</p>
+<p>When we were using the <code>Mox</code> package, we were disappointed that most packages don’t provide behaviours we could use in our tests(to mock the actual implementations).</p>
+<p>To fix that, we were writing behaviours for 3rd party packages that we are using like <code>Binance</code> or even <code>Ecto.Repo</code>. This approach felt weird, and it should, as I believe that was <strong>not the intended</strong> usage of the <code>Mox</code> package.</p>
+<div style="page-break-after: always;"></div>
+<p>Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example could be abstracting dealing with an exchange to an behaviour and providing a single implementation(wrapping the <code>Binance</code> module):</p>
+<p><img src="images/chapter_21_01_additional_layer.jpg" width="100%" style="display: block; margin: auto;" /></p>
+<p>In the example above, we will introduce a new behaviour module called <code>Core.Exchange</code> that would define the way we interact with any exchange. As this will be a generic behaviour, it needs to accept and return generic structs(we will need to create those as well).</p>
+<p>We will also create a new <code>Core.Exchange.Binance</code> module, which will implement the <code>Core.Exchange</code> behaviour and wrap the <code>Binance</code> module.</p>
+<p>Let’s see how this will look in action.</p>
+</div>
+<div id="abstracting-the-exchange" class="section level2" number="21.3">
+<h2><span class="header-section-number">21.3</span> Abstracting the exchange</h2>
+<div id="defining-the-core.exchange-behaviour" class="section level3" number="21.3.1">
+<h3><span class="header-section-number">21.3.1</span> Defining the <code>Core.Exchange</code> behaviour</h3>
+<p>We will start by creating a new behaviour module(inside a new file <code>/apps/core/lib/core/exchange.ex</code>) inside the <code>Core</code> application:</p>
+<div class="sourceCode" id="cb487"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb487-1"><a href="layers-of-abstraction.html#cb487-1" aria-hidden="true" tabindex="-1"></a> <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb487-2"><a href="layers-of-abstraction.html#cb487-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span> <span class="kw">do</span></span>
+<span id="cb487-3"><a href="layers-of-abstraction.html#cb487-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb487-4"><a href="layers-of-abstraction.html#cb487-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
+<p>Now, based on the way we are currently interacting with the <code>Binance</code> module inside the <code>Naive.Strategy</code>, we can define the following callback functions:</p>
+<p><code>order_limit_buy/3</code> - almost the same as the <code>Binance</code>’s <code>order_limit_buy/4</code>, just skipped the optional argument</p>
+<div class="sourceCode" id="cb488"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb488-1"><a href="layers-of-abstraction.html#cb488-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb488-2"><a href="layers-of-abstraction.html#cb488-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_buy(symbol :: <span class="cn">String</span><span class="op">.</span>t(), quantity :: number(), price :: number()) ::</span>
+<span id="cb488-3"><a href="layers-of-abstraction.html#cb488-3" aria-hidden="true" tabindex="-1"></a>              {<span class="va">:ok</span>, <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="op">.</span>t()}</span>
+<span id="cb488-4"><a href="layers-of-abstraction.html#cb488-4" aria-hidden="true" tabindex="-1"></a>              <span class="op">|</span> {<span class="va">:error</span>, any()}</span></code></pre></div>
+<p><code>order_limit_sell/3</code> - almost the same as the <code>Binance</code>’s <code>order_limit_sell/4</code>, just skipped the optional argument</p>
+<div class="sourceCode" id="cb489"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb489-1"><a href="layers-of-abstraction.html#cb489-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb489-2"><a href="layers-of-abstraction.html#cb489-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_sell(symbol :: <span class="cn">String</span><span class="op">.</span>t(), quantity :: number(), price :: number()) ::</span>
+<span id="cb489-3"><a href="layers-of-abstraction.html#cb489-3" aria-hidden="true" tabindex="-1"></a>              {<span class="va">:ok</span>, <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="op">.</span>t()}</span>
+<span id="cb489-4"><a href="layers-of-abstraction.html#cb489-4" aria-hidden="true" tabindex="-1"></a>              <span class="op">|</span> {<span class="va">:error</span>, any()}</span></code></pre></div>
+<p><code>get_order/3</code> - the same as the <code>Binance</code>’s <code>get_order/3</code></p>
+<div class="sourceCode" id="cb490"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb490-1"><a href="layers-of-abstraction.html#cb490-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb490-2"><a href="layers-of-abstraction.html#cb490-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> get_order(</span>
+<span id="cb490-3"><a href="layers-of-abstraction.html#cb490-3" aria-hidden="true" tabindex="-1"></a>              symbol :: <span class="cn">String</span><span class="op">.</span>t(),</span>
+<span id="cb490-4"><a href="layers-of-abstraction.html#cb490-4" aria-hidden="true" tabindex="-1"></a>              timestamp :: non_neg_integer(),</span>
+<span id="cb490-5"><a href="layers-of-abstraction.html#cb490-5" aria-hidden="true" tabindex="-1"></a>              order_id :: non_neg_integer()</span>
+<span id="cb490-6"><a href="layers-of-abstraction.html#cb490-6" aria-hidden="true" tabindex="-1"></a>            ) ::</span>
+<span id="cb490-7"><a href="layers-of-abstraction.html#cb490-7" aria-hidden="true" tabindex="-1"></a>              {<span class="va">:ok</span>, <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="op">.</span>t()}</span>
+<span id="cb490-8"><a href="layers-of-abstraction.html#cb490-8" aria-hidden="true" tabindex="-1"></a>              <span class="op">|</span> {<span class="va">:error</span>, any()}</span></code></pre></div>
+<p>All of the above callbacks rely on the <code>Core.Exchange.Order</code> struct which we will add now inside the <code>Core.Exchange</code> module:</p>
+<div class="sourceCode" id="cb491"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb491-1"><a href="layers-of-abstraction.html#cb491-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb491-2"><a href="layers-of-abstraction.html#cb491-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">Order</span> <span class="kw">do</span></span>
+<span id="cb491-3"><a href="layers-of-abstraction.html#cb491-3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> t :: %<span class="cn">__MODULE__</span>{</span>
+<span id="cb491-4"><a href="layers-of-abstraction.html#cb491-4" aria-hidden="true" tabindex="-1"></a>            <span class="va">id:</span> non_neg_integer(),</span>
+<span id="cb491-5"><a href="layers-of-abstraction.html#cb491-5" aria-hidden="true" tabindex="-1"></a>            <span class="va">symbol:</span> <span class="cn">String</span><span class="op">.</span>t(),</span>
+<span id="cb491-6"><a href="layers-of-abstraction.html#cb491-6" aria-hidden="true" tabindex="-1"></a>            <span class="va">price:</span> number(),</span>
+<span id="cb491-7"><a href="layers-of-abstraction.html#cb491-7" aria-hidden="true" tabindex="-1"></a>            <span class="va">quantity:</span> number(),</span>
+<span id="cb491-8"><a href="layers-of-abstraction.html#cb491-8" aria-hidden="true" tabindex="-1"></a>            <span class="va">side:</span> <span class="va">:buy</span> <span class="op">|</span> <span class="va">:sell</span>,</span>
+<span id="cb491-9"><a href="layers-of-abstraction.html#cb491-9" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="va">:new</span> <span class="op">|</span> <span class="va">:filled</span>,</span>
+<span id="cb491-10"><a href="layers-of-abstraction.html#cb491-10" aria-hidden="true" tabindex="-1"></a>            <span class="va">timestamp:</span> non_neg_integer()</span>
+<span id="cb491-11"><a href="layers-of-abstraction.html#cb491-11" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb491-12"><a href="layers-of-abstraction.html#cb491-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb491-13"><a href="layers-of-abstraction.html#cb491-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [<span class="va">:id</span>, <span class="va">:symbol</span>, <span class="va">:price</span>, <span class="va">:quantity</span>, <span class="va">:side</span>, <span class="va">:status</span>, <span class="va">:timestamp</span>]</span>
+<span id="cb491-14"><a href="layers-of-abstraction.html#cb491-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The above struct is a simplification of the <code>Binance.Order</code> struct limited to just the fields we are using in our strategy.</p>
+<p>Additionally, we use the <code>Binance</code> module to fetch symbol filters inside the <code>Naive.Strategy</code> (we actually fetch the whole exchange info and then dig inside to find our filters) - we will create a dedicated struct for those filters:</p>
+<div class="sourceCode" id="cb492"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb492-1"><a href="layers-of-abstraction.html#cb492-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb492-2"><a href="layers-of-abstraction.html#cb492-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below inside the Core.Exchange module</span></span>
+<span id="cb492-3"><a href="layers-of-abstraction.html#cb492-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">SymbolInfo</span> <span class="kw">do</span></span>
+<span id="cb492-4"><a href="layers-of-abstraction.html#cb492-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@type</span> t :: %<span class="cn">__MODULE__</span>{</span>
+<span id="cb492-5"><a href="layers-of-abstraction.html#cb492-5" aria-hidden="true" tabindex="-1"></a>            <span class="va">symbol:</span> <span class="cn">String</span><span class="op">.</span>t(),</span>
+<span id="cb492-6"><a href="layers-of-abstraction.html#cb492-6" aria-hidden="true" tabindex="-1"></a>            <span class="va">tick_size:</span> number(),</span>
+<span id="cb492-7"><a href="layers-of-abstraction.html#cb492-7" aria-hidden="true" tabindex="-1"></a>            <span class="va">step_size:</span> number()</span>
+<span id="cb492-8"><a href="layers-of-abstraction.html#cb492-8" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb492-9"><a href="layers-of-abstraction.html#cb492-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb492-10"><a href="layers-of-abstraction.html#cb492-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [<span class="va">:symbol</span>, <span class="va">:tick_size</span>, <span class="va">:step_size</span>]</span>
+<span id="cb492-11"><a href="layers-of-abstraction.html#cb492-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb492-12"><a href="layers-of-abstraction.html#cb492-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb492-13"><a href="layers-of-abstraction.html#cb492-13" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> fetch_symbol_filters(symbol :: <span class="cn">String</span><span class="op">.</span>t()) ::</span>
+<span id="cb492-14"><a href="layers-of-abstraction.html#cb492-14" aria-hidden="true" tabindex="-1"></a>              {<span class="va">:ok</span>, <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">SymbolInfo</span><span class="op">.</span>t()}</span>
+<span id="cb492-15"><a href="layers-of-abstraction.html#cb492-15" aria-hidden="true" tabindex="-1"></a>              <span class="op">|</span> {<span class="va">:error</span>, any()}</span></code></pre></div>
+<p>The final usage of the <code>Binance</code> module comes from the seed scripts, which fetch the exchange info just to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:</p>
+<div class="sourceCode" id="cb493"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb493-1"><a href="layers-of-abstraction.html#cb493-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<span id="cb493-2"><a href="layers-of-abstraction.html#cb493-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below inside the Core.Exchange module</span></span>
+<span id="cb493-3"><a href="layers-of-abstraction.html#cb493-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@callback</span> fetch_symbols() ::</span>
+<span id="cb493-4"><a href="layers-of-abstraction.html#cb493-4" aria-hidden="true" tabindex="-1"></a>              {<span class="va">:ok</span>, [<span class="cn">String</span><span class="op">.</span>t()]}</span>
+<span id="cb493-5"><a href="layers-of-abstraction.html#cb493-5" aria-hidden="true" tabindex="-1"></a>              <span class="op">|</span> {<span class="va">:error</span>, any()}</span></code></pre></div>
+<p>This finishes the definition of the <code>Core.Exchange</code> behaviour. It should consist of five callback functions(<code>fetch_symbols/0</code>, <code>fetch_symbol_filters/1</code>, <code>get_order/3</code>, <code>order_limit_buy/3</code> and <code>order_limit_sell/3</code>) together with two structs(<code>Order</code> and <code>SymbolInfo</code>).</p>
+</div>
+<div id="implementation-of-the-core.exchange.binance-module" class="section level3" number="21.3.2">
+<h3><span class="header-section-number">21.3.2</span> Implementation of the <code>Core.Exchange.Binance</code> module</h3>
+<p>As we defined the behaviour, we can now wrap the production implementation(the <code>Binance</code> module) inside a module that will implement that behaviour.</p>
+<p>We will start by creating a new directory called “exchange” inside the <code>apps/core/lib/core</code> directory, together with a new file called <code>binance.ex</code>. Inside it we will define a module that will implement the <code>Core.Exchange</code> behaviour:</p>
+<div class="sourceCode" id="cb494"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb494-1"><a href="layers-of-abstraction.html#cb494-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
+<span id="cb494-2"><a href="layers-of-abstraction.html#cb494-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="kw">do</span></span>
+<span id="cb494-3"><a href="layers-of-abstraction.html#cb494-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@behaviour</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb494-4"><a href="layers-of-abstraction.html#cb494-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>Now we are obliged to implement all functions defined in the behaviour, starting with the <code>fetch_symbols/0</code>:</p>
+<div class="sourceCode" id="cb495"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb495-1"><a href="layers-of-abstraction.html#cb495-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
+<span id="cb495-2"><a href="layers-of-abstraction.html#cb495-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb495-3"><a href="layers-of-abstraction.html#cb495-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb495-4"><a href="layers-of-abstraction.html#cb495-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb495-5"><a href="layers-of-abstraction.html#cb495-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbols() <span class="kw">do</span></span>
+<span id="cb495-6"><a href="layers-of-abstraction.html#cb495-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Binance</span><span class="op">.</span>get_exchange_info() <span class="kw">do</span></span>
+<span id="cb495-7"><a href="layers-of-abstraction.html#cb495-7" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, %{<span class="va">symbols:</span> symbols}} <span class="op">-&gt;</span></span>
+<span id="cb495-8"><a href="layers-of-abstraction.html#cb495-8" aria-hidden="true" tabindex="-1"></a>        symbols</span>
+<span id="cb495-9"><a href="layers-of-abstraction.html#cb495-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span> <span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>])</span>
+<span id="cb495-10"><a href="layers-of-abstraction.html#cb495-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> then(<span class="op">&amp;</span>{<span class="va">:ok</span>, <span class="op">&amp;</span><span class="dv">1</span>})</span>
+<span id="cb495-11"><a href="layers-of-abstraction.html#cb495-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb495-12"><a href="layers-of-abstraction.html#cb495-12" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span></span>
+<span id="cb495-13"><a href="layers-of-abstraction.html#cb495-13" aria-hidden="true" tabindex="-1"></a>        error</span>
+<span id="cb495-14"><a href="layers-of-abstraction.html#cb495-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb495-15"><a href="layers-of-abstraction.html#cb495-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>As we can see - the <code>case</code> statement wraps the call to the <code>Binance</code> module, and either we evaluate further business logic or forward the error so the “user” of our library can decide what to do with the error condition. This pattern will appear in all our functions as the <code>Core.Exchange.Binance</code> module is our own “library” module.</p>
+<p>Let’s continue with implementing the remaining functions defined in the behaviour:</p>
+<div class="sourceCode" id="cb496"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb496-1"><a href="layers-of-abstraction.html#cb496-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
+<span id="cb496-2"><a href="layers-of-abstraction.html#cb496-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb496-3"><a href="layers-of-abstraction.html#cb496-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbol_filters(symbol) <span class="kw">do</span></span>
+<span id="cb496-4"><a href="layers-of-abstraction.html#cb496-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Binance</span><span class="op">.</span>get_exchange_info() <span class="kw">do</span></span>
+<span id="cb496-5"><a href="layers-of-abstraction.html#cb496-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, exchange_info} <span class="op">-&gt;</span> {<span class="va">:ok</span>, fetch_symbol_filters(symbol, exchange_info)}</span>
+<span id="cb496-6"><a href="layers-of-abstraction.html#cb496-6" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span> error</span>
+<span id="cb496-7"><a href="layers-of-abstraction.html#cb496-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb496-8"><a href="layers-of-abstraction.html#cb496-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb496-9"><a href="layers-of-abstraction.html#cb496-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb496-10"><a href="layers-of-abstraction.html#cb496-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters(symbol, exchange_info) <span class="kw">do</span></span>
+<span id="cb496-11"><a href="layers-of-abstraction.html#cb496-11" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
+<span id="cb496-12"><a href="layers-of-abstraction.html#cb496-12" aria-hidden="true" tabindex="-1"></a>      exchange_info</span>
+<span id="cb496-13"><a href="layers-of-abstraction.html#cb496-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
+<span id="cb496-14"><a href="layers-of-abstraction.html#cb496-14" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
+<span id="cb496-15"><a href="layers-of-abstraction.html#cb496-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
+<span id="cb496-16"><a href="layers-of-abstraction.html#cb496-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb496-17"><a href="layers-of-abstraction.html#cb496-17" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
+<span id="cb496-18"><a href="layers-of-abstraction.html#cb496-18" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb496-19"><a href="layers-of-abstraction.html#cb496-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
+<span id="cb496-20"><a href="layers-of-abstraction.html#cb496-20" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
+<span id="cb496-21"><a href="layers-of-abstraction.html#cb496-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb496-22"><a href="layers-of-abstraction.html#cb496-22" aria-hidden="true" tabindex="-1"></a>    step_size <span class="op">=</span></span>
+<span id="cb496-23"><a href="layers-of-abstraction.html#cb496-23" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb496-24"><a href="layers-of-abstraction.html#cb496-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span>))</span>
+<span id="cb496-25"><a href="layers-of-abstraction.html#cb496-25" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;stepSize&quot;</span>)</span>
+<span id="cb496-26"><a href="layers-of-abstraction.html#cb496-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb496-27"><a href="layers-of-abstraction.html#cb496-27" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">SymbolInfo</span>{</span>
+<span id="cb496-28"><a href="layers-of-abstraction.html#cb496-28" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
+<span id="cb496-29"><a href="layers-of-abstraction.html#cb496-29" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size,</span>
+<span id="cb496-30"><a href="layers-of-abstraction.html#cb496-30" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
+<span id="cb496-31"><a href="layers-of-abstraction.html#cb496-31" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb496-32"><a href="layers-of-abstraction.html#cb496-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The <code>fetch_symbol_filters/1</code> function follows the previously discussed pattern. The <code>fetch_symbol_filters/2</code>, on the other hand, is a modified copy of the <code>merge_filters_into_settings/2</code> function from the <code>Naive.Strategy</code> module.</p>
+<p>Another function to be implemented to fulfil the behaviour is <code>get_order/3</code>:</p>
+<div class="sourceCode" id="cb497"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb497-1"><a href="layers-of-abstraction.html#cb497-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
+<span id="cb497-2"><a href="layers-of-abstraction.html#cb497-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb497-3"><a href="layers-of-abstraction.html#cb497-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get_order(symbol, timestamp, order_id) <span class="kw">do</span></span>
+<span id="cb497-4"><a href="layers-of-abstraction.html#cb497-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Binance</span><span class="op">.</span>get_order(symbol, timestamp, order_id) <span class="kw">do</span></span>
+<span id="cb497-5"><a href="layers-of-abstraction.html#cb497-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order} <span class="op">-&gt;</span></span>
+<span id="cb497-6"><a href="layers-of-abstraction.html#cb497-6" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>,</span>
+<span id="cb497-7"><a href="layers-of-abstraction.html#cb497-7" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{</span>
+<span id="cb497-8"><a href="layers-of-abstraction.html#cb497-8" aria-hidden="true" tabindex="-1"></a>           <span class="va">id:</span> order<span class="op">.</span>order_id,</span>
+<span id="cb497-9"><a href="layers-of-abstraction.html#cb497-9" aria-hidden="true" tabindex="-1"></a>           <span class="va">symbol:</span> order<span class="op">.</span>symbol,</span>
+<span id="cb497-10"><a href="layers-of-abstraction.html#cb497-10" aria-hidden="true" tabindex="-1"></a>           <span class="va">price:</span> order<span class="op">.</span>price,</span>
+<span id="cb497-11"><a href="layers-of-abstraction.html#cb497-11" aria-hidden="true" tabindex="-1"></a>           <span class="va">quantity:</span> order<span class="op">.</span>orig_qty,</span>
+<span id="cb497-12"><a href="layers-of-abstraction.html#cb497-12" aria-hidden="true" tabindex="-1"></a>           <span class="va">side:</span> side_to_atom(order<span class="op">.</span>side),</span>
+<span id="cb497-13"><a href="layers-of-abstraction.html#cb497-13" aria-hidden="true" tabindex="-1"></a>           <span class="va">status:</span> status_to_atom(order<span class="op">.</span>status),</span>
+<span id="cb497-14"><a href="layers-of-abstraction.html#cb497-14" aria-hidden="true" tabindex="-1"></a>           <span class="va">timestamp:</span> order<span class="op">.</span>time</span>
+<span id="cb497-15"><a href="layers-of-abstraction.html#cb497-15" aria-hidden="true" tabindex="-1"></a>         }}</span>
+<span id="cb497-16"><a href="layers-of-abstraction.html#cb497-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb497-17"><a href="layers-of-abstraction.html#cb497-17" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span></span>
+<span id="cb497-18"><a href="layers-of-abstraction.html#cb497-18" aria-hidden="true" tabindex="-1"></a>        error</span>
+<span id="cb497-19"><a href="layers-of-abstraction.html#cb497-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb497-20"><a href="layers-of-abstraction.html#cb497-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb497-21"><a href="layers-of-abstraction.html#cb497-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb497-22"><a href="layers-of-abstraction.html#cb497-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> side_to_atom(<span class="st">&quot;BUY&quot;</span>), <span class="kw">do</span>: <span class="va">:buy</span></span>
+<span id="cb497-23"><a href="layers-of-abstraction.html#cb497-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> side_to_atom(<span class="st">&quot;SELL&quot;</span>), <span class="kw">do</span>: <span class="va">:sell</span></span>
+<span id="cb497-24"><a href="layers-of-abstraction.html#cb497-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb497-25"><a href="layers-of-abstraction.html#cb497-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> status_to_atom(<span class="st">&quot;NEW&quot;</span>), <span class="kw">do</span>: <span class="va">:new</span></span>
+<span id="cb497-26"><a href="layers-of-abstraction.html#cb497-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> status_to_atom(<span class="st">&quot;FILLED&quot;</span>), <span class="kw">do</span>: <span class="va">:filled</span></span></code></pre></div>
+<p>As in the case of the previously implemented functions, the <code>get_order/3</code> implementation follows the same pattern. To satisfy the <code>Core.Exchange</code> behaviour, it needs to return the <code>Exchange.Order</code> struct - hence the conversion. It also needs to convert the string <code>side</code> and <code>status</code> fields to atoms before assigning to struct(helper functions added at the bottom of the module).</p>
+<p>The final two functions to be implemented will be the <code>order_limit_buy/3</code> and <code>order_limit_sell/3</code>:</p>
+<div class="sourceCode" id="cb498"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb498-1"><a href="layers-of-abstraction.html#cb498-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
+<span id="cb498-2"><a href="layers-of-abstraction.html#cb498-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb498-3"><a href="layers-of-abstraction.html#cb498-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_buy(symbol, quantity, price) <span class="kw">do</span></span>
+<span id="cb498-4"><a href="layers-of-abstraction.html#cb498-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Binance</span><span class="op">.</span>order_limit_buy(symbol, quantity, price, <span class="st">&quot;GTC&quot;</span>) <span class="kw">do</span></span>
+<span id="cb498-5"><a href="layers-of-abstraction.html#cb498-5" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{} <span class="op">=</span> order} <span class="op">-&gt;</span></span>
+<span id="cb498-6"><a href="layers-of-abstraction.html#cb498-6" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>,</span>
+<span id="cb498-7"><a href="layers-of-abstraction.html#cb498-7" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{</span>
+<span id="cb498-8"><a href="layers-of-abstraction.html#cb498-8" aria-hidden="true" tabindex="-1"></a>           <span class="va">id:</span> order<span class="op">.</span>order_id,</span>
+<span id="cb498-9"><a href="layers-of-abstraction.html#cb498-9" aria-hidden="true" tabindex="-1"></a>           <span class="va">price:</span> order<span class="op">.</span>price,</span>
+<span id="cb498-10"><a href="layers-of-abstraction.html#cb498-10" aria-hidden="true" tabindex="-1"></a>           <span class="va">quantity:</span> order<span class="op">.</span>orig_qty,</span>
+<span id="cb498-11"><a href="layers-of-abstraction.html#cb498-11" aria-hidden="true" tabindex="-1"></a>           <span class="va">side:</span> <span class="va">:buy</span>,</span>
+<span id="cb498-12"><a href="layers-of-abstraction.html#cb498-12" aria-hidden="true" tabindex="-1"></a>           <span class="va">status:</span> <span class="va">:new</span>,</span>
+<span id="cb498-13"><a href="layers-of-abstraction.html#cb498-13" aria-hidden="true" tabindex="-1"></a>           <span class="va">timestamp:</span> order<span class="op">.</span>transact_time</span>
+<span id="cb498-14"><a href="layers-of-abstraction.html#cb498-14" aria-hidden="true" tabindex="-1"></a>         }}</span>
+<span id="cb498-15"><a href="layers-of-abstraction.html#cb498-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb498-16"><a href="layers-of-abstraction.html#cb498-16" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span></span>
+<span id="cb498-17"><a href="layers-of-abstraction.html#cb498-17" aria-hidden="true" tabindex="-1"></a>        error</span>
+<span id="cb498-18"><a href="layers-of-abstraction.html#cb498-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb498-19"><a href="layers-of-abstraction.html#cb498-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb498-20"><a href="layers-of-abstraction.html#cb498-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb498-21"><a href="layers-of-abstraction.html#cb498-21" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
+<span id="cb498-22"><a href="layers-of-abstraction.html#cb498-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_sell(symbol, quantity, price) <span class="kw">do</span></span>
+<span id="cb498-23"><a href="layers-of-abstraction.html#cb498-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Binance</span><span class="op">.</span>order_limit_sell(symbol, quantity, price, <span class="st">&quot;GTC&quot;</span>) <span class="kw">do</span></span>
+<span id="cb498-24"><a href="layers-of-abstraction.html#cb498-24" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{} <span class="op">=</span> order} <span class="op">-&gt;</span></span>
+<span id="cb498-25"><a href="layers-of-abstraction.html#cb498-25" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>,</span>
+<span id="cb498-26"><a href="layers-of-abstraction.html#cb498-26" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{</span>
+<span id="cb498-27"><a href="layers-of-abstraction.html#cb498-27" aria-hidden="true" tabindex="-1"></a>           <span class="va">id:</span> order<span class="op">.</span>order_id,</span>
+<span id="cb498-28"><a href="layers-of-abstraction.html#cb498-28" aria-hidden="true" tabindex="-1"></a>           <span class="va">price:</span> order<span class="op">.</span>price,</span>
+<span id="cb498-29"><a href="layers-of-abstraction.html#cb498-29" aria-hidden="true" tabindex="-1"></a>           <span class="va">quantity:</span> order<span class="op">.</span>orig_qty,</span>
+<span id="cb498-30"><a href="layers-of-abstraction.html#cb498-30" aria-hidden="true" tabindex="-1"></a>           <span class="va">side:</span> <span class="va">:sell</span>,</span>
+<span id="cb498-31"><a href="layers-of-abstraction.html#cb498-31" aria-hidden="true" tabindex="-1"></a>           <span class="va">status:</span> <span class="va">:new</span>,</span>
+<span id="cb498-32"><a href="layers-of-abstraction.html#cb498-32" aria-hidden="true" tabindex="-1"></a>           <span class="va">timestamp:</span> order<span class="op">.</span>transact_time</span>
+<span id="cb498-33"><a href="layers-of-abstraction.html#cb498-33" aria-hidden="true" tabindex="-1"></a>         }}</span>
+<span id="cb498-34"><a href="layers-of-abstraction.html#cb498-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb498-35"><a href="layers-of-abstraction.html#cb498-35" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span></span>
+<span id="cb498-36"><a href="layers-of-abstraction.html#cb498-36" aria-hidden="true" tabindex="-1"></a>        error</span>
+<span id="cb498-37"><a href="layers-of-abstraction.html#cb498-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb498-38"><a href="layers-of-abstraction.html#cb498-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>After implementing the previous functions, the last two should look very similar.</p>
+<p>That finishes our first implementation of the <code>Core.Exchange</code> behaviour. It will be used in the production by our <code>Naive.Strategy</code>, but before we will update it, let’s update the <code>BinanceMock</code> module to implement the same behaviour for testing/backtesting.</p>
+</div>
+<div id="updating-the-binancemock-module-to-implement-the-core.exchange-behaviour" class="section level3" number="21.3.3">
+<h3><span class="header-section-number">21.3.3</span> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</h3>
+<p>As mentioned, the <code>BinanceMock</code> module must implement the <code>Core.Exchange</code> behaviour. It will (at compile time) guarantee that both <code>Core.Exchange.Binance</code> and <code>BinanceMock</code> share a common interface that can be used by the <code>Naive.Strategy</code>.</p>
+<p>Fist we will start by declaring that the <code>BinanceMock</code> actually implements the <code>Core.Exchange</code> behaviour:</p>
+<div class="sourceCode" id="cb499"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb499-1"><a href="layers-of-abstraction.html#cb499-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb499-2"><a href="layers-of-abstraction.html#cb499-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">BinanceMock</span> <span class="kw">do</span></span>
+<span id="cb499-3"><a href="layers-of-abstraction.html#cb499-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@behaviour</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span> <span class="co"># &lt;= added</span></span></code></pre></div>
+<p>Next, we can remove all the aliases to the <code>Binance</code> structs as we won’t use them anymore. The same goes for all the <code>@type</code> and <code>@callback</code> attributes.</p>
+<p>Moving on the the <code>get_exchange_info/0</code>, which will become <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code>:</p>
+<div class="sourceCode" id="cb500"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb500-1"><a href="layers-of-abstraction.html#cb500-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb500-2"><a href="layers-of-abstraction.html#cb500-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbols() <span class="kw">do</span></span>
+<span id="cb500-3"><a href="layers-of-abstraction.html#cb500-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> fetch_exchange_info() <span class="kw">do</span></span>
+<span id="cb500-4"><a href="layers-of-abstraction.html#cb500-4" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, %{<span class="va">symbols:</span> symbols}} <span class="op">-&gt;</span></span>
+<span id="cb500-5"><a href="layers-of-abstraction.html#cb500-5" aria-hidden="true" tabindex="-1"></a>        symbols</span>
+<span id="cb500-6"><a href="layers-of-abstraction.html#cb500-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span> <span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>])</span>
+<span id="cb500-7"><a href="layers-of-abstraction.html#cb500-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> then(<span class="op">&amp;</span>{<span class="va">:ok</span>, <span class="op">&amp;</span><span class="dv">1</span>})</span>
+<span id="cb500-8"><a href="layers-of-abstraction.html#cb500-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-9"><a href="layers-of-abstraction.html#cb500-9" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span></span>
+<span id="cb500-10"><a href="layers-of-abstraction.html#cb500-10" aria-hidden="true" tabindex="-1"></a>        error</span>
+<span id="cb500-11"><a href="layers-of-abstraction.html#cb500-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb500-12"><a href="layers-of-abstraction.html#cb500-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb500-13"><a href="layers-of-abstraction.html#cb500-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-14"><a href="layers-of-abstraction.html#cb500-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbol_filters(symbol) <span class="kw">do</span></span>
+<span id="cb500-15"><a href="layers-of-abstraction.html#cb500-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> fetch_exchange_info() <span class="kw">do</span></span>
+<span id="cb500-16"><a href="layers-of-abstraction.html#cb500-16" aria-hidden="true" tabindex="-1"></a>      {<span class="va">:ok</span>, exchange_info} <span class="op">-&gt;</span></span>
+<span id="cb500-17"><a href="layers-of-abstraction.html#cb500-17" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:ok</span>, fetch_symbol_filters(symbol, exchange_info)}</span>
+<span id="cb500-18"><a href="layers-of-abstraction.html#cb500-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-19"><a href="layers-of-abstraction.html#cb500-19" aria-hidden="true" tabindex="-1"></a>      error <span class="op">-&gt;</span></span>
+<span id="cb500-20"><a href="layers-of-abstraction.html#cb500-20" aria-hidden="true" tabindex="-1"></a>        error</span>
+<span id="cb500-21"><a href="layers-of-abstraction.html#cb500-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb500-22"><a href="layers-of-abstraction.html#cb500-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb500-23"><a href="layers-of-abstraction.html#cb500-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-24"><a href="layers-of-abstraction.html#cb500-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_exchange_info() <span class="kw">do</span></span>
+<span id="cb500-25"><a href="layers-of-abstraction.html#cb500-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:binance_mock</span>, <span class="va">:use_cached_exchange_info</span>) <span class="kw">do</span></span>
+<span id="cb500-26"><a href="layers-of-abstraction.html#cb500-26" aria-hidden="true" tabindex="-1"></a>      <span class="cn">true</span> <span class="op">-&gt;</span></span>
+<span id="cb500-27"><a href="layers-of-abstraction.html#cb500-27" aria-hidden="true" tabindex="-1"></a>        get_cached_exchange_info()</span>
+<span id="cb500-28"><a href="layers-of-abstraction.html#cb500-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-29"><a href="layers-of-abstraction.html#cb500-29" aria-hidden="true" tabindex="-1"></a>      _ <span class="op">-&gt;</span></span>
+<span id="cb500-30"><a href="layers-of-abstraction.html#cb500-30" aria-hidden="true" tabindex="-1"></a>        <span class="cn">Binance</span><span class="op">.</span>get_exchange_info()</span>
+<span id="cb500-31"><a href="layers-of-abstraction.html#cb500-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb500-32"><a href="layers-of-abstraction.html#cb500-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb500-33"><a href="layers-of-abstraction.html#cb500-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-34"><a href="layers-of-abstraction.html#cb500-34" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> get_cached_exchange_info <span class="kw">do</span></span>
+<span id="cb500-35"><a href="layers-of-abstraction.html#cb500-35" aria-hidden="true" tabindex="-1"></a>    <span class="cn">File</span><span class="op">.</span>cwd!()</span>
+<span id="cb500-36"><a href="layers-of-abstraction.html#cb500-36" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Path</span><span class="op">.</span>split()</span>
+<span id="cb500-37"><a href="layers-of-abstraction.html#cb500-37" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>drop(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb500-38"><a href="layers-of-abstraction.html#cb500-38" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Kernel</span><span class="op">.++</span>([</span>
+<span id="cb500-39"><a href="layers-of-abstraction.html#cb500-39" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;binance_mock&quot;</span>,</span>
+<span id="cb500-40"><a href="layers-of-abstraction.html#cb500-40" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;test&quot;</span>,</span>
+<span id="cb500-41"><a href="layers-of-abstraction.html#cb500-41" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;assets&quot;</span>,</span>
+<span id="cb500-42"><a href="layers-of-abstraction.html#cb500-42" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;exchange_info.json&quot;</span></span>
+<span id="cb500-43"><a href="layers-of-abstraction.html#cb500-43" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb500-44"><a href="layers-of-abstraction.html#cb500-44" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Path</span><span class="op">.</span>join()</span>
+<span id="cb500-45"><a href="layers-of-abstraction.html#cb500-45" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">File</span><span class="op">.</span>read()</span>
+<span id="cb500-46"><a href="layers-of-abstraction.html#cb500-46" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb500-47"><a href="layers-of-abstraction.html#cb500-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb500-48"><a href="layers-of-abstraction.html#cb500-48" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters(symbol, exchange_info) <span class="kw">do</span></span>
+<span id="cb500-49"><a href="layers-of-abstraction.html#cb500-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># &lt;= this is a copy of `Core.Binance.fetch_symbol_filters/2` function</span></span>
+<span id="cb500-50"><a href="layers-of-abstraction.html#cb500-50" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>There are a few additional helpers above, and it got a bit long - let’s unpack it.</p>
+<p>First, both the <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code> look very similar to the ones we implemented for the <code>Core.Exchange.Binance</code> module. The main difference here is that we are supporting cached exchange info by introducing the <code>fetch_exchange_info/0</code> function, which branches out to either using the <code>Binance</code> module or the <code>get_cached_exchange_info/0</code> function. The latter was updated to return the raw data instead of the <code>Binance.ExchangeInfo</code> struct.</p>
+<p>Next on our list, there’s the <code>get_oder/3</code> function - as it’s working in the same way as per our behaviour, we will leave it as it is.</p>
+<div style="page-break-after: always;"></div>
+<p>The final two functions to update will be the <code>order_limit_buy/4</code> and <code>order_limit_sell/4</code>, which will now become three argument functions:</p>
+<div class="sourceCode" id="cb501"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb501-1"><a href="layers-of-abstraction.html#cb501-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb501-2"><a href="layers-of-abstraction.html#cb501-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_buy(symbol, quantity, price) <span class="kw">do</span></span>
+<span id="cb501-3"><a href="layers-of-abstraction.html#cb501-3" aria-hidden="true" tabindex="-1"></a>    order_limit(symbol, quantity, price, <span class="st">&quot;BUY&quot;</span>)</span>
+<span id="cb501-4"><a href="layers-of-abstraction.html#cb501-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb501-5"><a href="layers-of-abstraction.html#cb501-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb501-6"><a href="layers-of-abstraction.html#cb501-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> order_limit_sell(symbol, quantity, price) <span class="kw">do</span></span>
+<span id="cb501-7"><a href="layers-of-abstraction.html#cb501-7" aria-hidden="true" tabindex="-1"></a>    order_limit(symbol, quantity, price, <span class="st">&quot;SELL&quot;</span>)</span>
+<span id="cb501-8"><a href="layers-of-abstraction.html#cb501-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>In the above functions, we simplify skipped the fourth arguments to fulfil the behaviour.</p>
+<p>The changes to different structs will have a ripple effect in other parts of the BinanceMock module:</p>
+<div class="sourceCode" id="cb502"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb502-1"><a href="layers-of-abstraction.html#cb502-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
+<span id="cb502-2"><a href="layers-of-abstraction.html#cb502-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> generate_fake_order(<span class="op">...</span>) <span class="kw">do</span></span>
+<span id="cb502-3"><a href="layers-of-abstraction.html#cb502-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb502-4"><a href="layers-of-abstraction.html#cb502-4" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{</span>
+<span id="cb502-5"><a href="layers-of-abstraction.html#cb502-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">id:</span> order_id,</span>
+<span id="cb502-6"><a href="layers-of-abstraction.html#cb502-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
+<span id="cb502-7"><a href="layers-of-abstraction.html#cb502-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> price,</span>
+<span id="cb502-8"><a href="layers-of-abstraction.html#cb502-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> quantity,</span>
+<span id="cb502-9"><a href="layers-of-abstraction.html#cb502-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">side:</span> side_to_atom(side),</span>
+<span id="cb502-10"><a href="layers-of-abstraction.html#cb502-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">status:</span> status_to_atom(<span class="st">&quot;NEW&quot;</span>),</span>
+<span id="cb502-11"><a href="layers-of-abstraction.html#cb502-11" aria-hidden="true" tabindex="-1"></a>      <span class="va">timestamp:</span> current_timestamp</span>
+<span id="cb502-12"><a href="layers-of-abstraction.html#cb502-12" aria-hidden="true" tabindex="-1"></a>    } <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-13"><a href="layers-of-abstraction.html#cb502-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-14"><a href="layers-of-abstraction.html#cb502-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-15"><a href="layers-of-abstraction.html#cb502-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
+<span id="cb502-16"><a href="layers-of-abstraction.html#cb502-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:add_order</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order}, <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-17"><a href="layers-of-abstraction.html#cb502-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb502-18"><a href="layers-of-abstraction.html#cb502-18" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb502-19"><a href="layers-of-abstraction.html#cb502-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-20"><a href="layers-of-abstraction.html#cb502-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-21"><a href="layers-of-abstraction.html#cb502-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-22"><a href="layers-of-abstraction.html#cb502-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb502-23"><a href="layers-of-abstraction.html#cb502-23" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:get_order</span>, symbol, time, order_id},</span>
+<span id="cb502-24"><a href="layers-of-abstraction.html#cb502-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb502-25"><a href="layers-of-abstraction.html#cb502-25" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb502-26"><a href="layers-of-abstraction.html#cb502-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb502-27"><a href="layers-of-abstraction.html#cb502-27" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(</span>
+<span id="cb502-28"><a href="layers-of-abstraction.html#cb502-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>symbol <span class="op">==</span> symbol <span class="kw">and</span></span>
+<span id="cb502-29"><a href="layers-of-abstraction.html#cb502-29" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>timestamp <span class="op">==</span> time <span class="kw">and</span> <span class="co"># &lt;= field updated</span></span>
+<span id="cb502-30"><a href="layers-of-abstraction.html#cb502-30" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>id <span class="op">==</span> order_id)               <span class="co"># &lt;= field updated</span></span>
+<span id="cb502-31"><a href="layers-of-abstraction.html#cb502-31" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb502-32"><a href="layers-of-abstraction.html#cb502-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-33"><a href="layers-of-abstraction.html#cb502-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-34"><a href="layers-of-abstraction.html#cb502-34" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb502-35"><a href="layers-of-abstraction.html#cb502-35" aria-hidden="true" tabindex="-1"></a>      %<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event,</span>
+<span id="cb502-36"><a href="layers-of-abstraction.html#cb502-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb502-37"><a href="layers-of-abstraction.html#cb502-37" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb502-38"><a href="layers-of-abstraction.html#cb502-38" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-39"><a href="layers-of-abstraction.html#cb502-39" aria-hidden="true" tabindex="-1"></a>    filled_buy_orders <span class="op">=</span></span>
+<span id="cb502-40"><a href="layers-of-abstraction.html#cb502-40" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb502-41"><a href="layers-of-abstraction.html#cb502-41" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="va">:filled</span>)) <span class="co"># &lt;= changed to atom</span></span>
+<span id="cb502-42"><a href="layers-of-abstraction.html#cb502-42" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-43"><a href="layers-of-abstraction.html#cb502-43" aria-hidden="true" tabindex="-1"></a>    filled_sell_orders <span class="op">=</span></span>
+<span id="cb502-44"><a href="layers-of-abstraction.html#cb502-44" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb502-45"><a href="layers-of-abstraction.html#cb502-45" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="va">:filled</span>)) <span class="co"># &lt;= changed to atom</span></span>
+<span id="cb502-46"><a href="layers-of-abstraction.html#cb502-46" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-47"><a href="layers-of-abstraction.html#cb502-47" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-48"><a href="layers-of-abstraction.html#cb502-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-49"><a href="layers-of-abstraction.html#cb502-49" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
+<span id="cb502-50"><a href="layers-of-abstraction.html#cb502-50" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-51"><a href="layers-of-abstraction.html#cb502-51" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb502-52"><a href="layers-of-abstraction.html#cb502-52" aria-hidden="true" tabindex="-1"></a>   {<span class="va">:ok</span>, fake_order} <span class="co"># &lt;= no need to convert between structs any more</span></span>
+<span id="cb502-53"><a href="layers-of-abstraction.html#cb502-53" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-54"><a href="layers-of-abstraction.html#cb502-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-55"><a href="layers-of-abstraction.html#cb502-55" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> add_order(</span>
+<span id="cb502-56"><a href="layers-of-abstraction.html#cb502-56" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order, <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-57"><a href="layers-of-abstraction.html#cb502-57" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb502-58"><a href="layers-of-abstraction.html#cb502-58" aria-hidden="true" tabindex="-1"></a>   ) <span class="kw">do</span></span>
+<span id="cb502-59"><a href="layers-of-abstraction.html#cb502-59" aria-hidden="true" tabindex="-1"></a>   <span class="op">...</span></span>
+<span id="cb502-60"><a href="layers-of-abstraction.html#cb502-60" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-61"><a href="layers-of-abstraction.html#cb502-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-62"><a href="layers-of-abstraction.html#cb502-62" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and finally ;)</span></span>
+<span id="cb502-63"><a href="layers-of-abstraction.html#cb502-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-64"><a href="layers-of-abstraction.html#cb502-64" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_event(%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order, time) <span class="kw">do</span></span>
+<span id="cb502-65"><a href="layers-of-abstraction.html#cb502-65" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ^= updated struct</span></span>
+<span id="cb502-66"><a href="layers-of-abstraction.html#cb502-66" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">TradeEvent</span>{</span>
+<span id="cb502-67"><a href="layers-of-abstraction.html#cb502-67" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
+<span id="cb502-68"><a href="layers-of-abstraction.html#cb502-68" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> order<span class="op">.</span>symbol,</span>
+<span id="cb502-69"><a href="layers-of-abstraction.html#cb502-69" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_id:</span> <span class="cn">Integer</span><span class="op">.</span>floor_div(time, <span class="dv">1000</span>),</span>
+<span id="cb502-70"><a href="layers-of-abstraction.html#cb502-70" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> order<span class="op">.</span>price,</span>
+<span id="cb502-71"><a href="layers-of-abstraction.html#cb502-71" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> order<span class="op">.</span>quantity,  <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-72"><a href="layers-of-abstraction.html#cb502-72" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-73"><a href="layers-of-abstraction.html#cb502-73" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-74"><a href="layers-of-abstraction.html#cb502-74" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
+<span id="cb502-75"><a href="layers-of-abstraction.html#cb502-75" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
+<span id="cb502-76"><a href="layers-of-abstraction.html#cb502-76" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb502-77"><a href="layers-of-abstraction.html#cb502-77" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The above changes finish the modifications to the BiananceMock. The module now correctly implements the behaviour.</p>
+</div>
+<div id="updating-the-naive.strategy" class="section level3" number="21.3.4">
+<h3><span class="header-section-number">21.3.4</span> Updating the <code>Naive.Strategy</code></h3>
+<p>We can now move on to the code that uses our behaviour - the <code>Naive.Strategy</code> module.</p>
+<p>We will start by adding an alias to the <code>Core.Exchange</code> at the top of the module:</p>
+<div class="sourceCode" id="cb503"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb503-1"><a href="layers-of-abstraction.html#cb503-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb503-2"><a href="layers-of-abstraction.html#cb503-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span></code></pre></div>
+<p>Next, we can rename the configuration based <code>@binance_client</code> to <code>@exchange_client</code> and update references to it throughout the module:</p>
+<div class="sourceCode" id="cb504"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb504-1"><a href="layers-of-abstraction.html#cb504-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb504-2"><a href="layers-of-abstraction.html#cb504-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@exchange_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env(<span class="va">:naive</span>, <span class="va">:exchange_client</span>)</span></code></pre></div>
+<p>Besides the above, we are now relying on the generic structs, so we need to update all reference to the <code>Binance.OrderResponse</code> module with the <code>Exchange.Order</code> (including updating all field names) - for example:</p>
+<div class="sourceCode" id="cb505"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb505-1"><a href="layers-of-abstraction.html#cb505-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb505-2"><a href="layers-of-abstraction.html#cb505-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># from:</span></span>
+<span id="cb505-3"><a href="layers-of-abstraction.html#cb505-3" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb505-4"><a href="layers-of-abstraction.html#cb505-4" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{</span>
+<span id="cb505-5"><a href="layers-of-abstraction.html#cb505-5" aria-hidden="true" tabindex="-1"></a>            <span class="va">order_id:</span> order_id,</span>
+<span id="cb505-6"><a href="layers-of-abstraction.html#cb505-6" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb505-7"><a href="layers-of-abstraction.html#cb505-7" aria-hidden="true" tabindex="-1"></a>          },</span>
+<span id="cb505-8"><a href="layers-of-abstraction.html#cb505-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span>{}</span>
+<span id="cb505-9"><a href="layers-of-abstraction.html#cb505-9" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb505-10"><a href="layers-of-abstraction.html#cb505-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb505-11"><a href="layers-of-abstraction.html#cb505-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># to:</span></span>
+<span id="cb505-12"><a href="layers-of-abstraction.html#cb505-12" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">Position</span>{</span>
+<span id="cb505-13"><a href="layers-of-abstraction.html#cb505-13" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{</span>
+<span id="cb505-14"><a href="layers-of-abstraction.html#cb505-14" aria-hidden="true" tabindex="-1"></a>            <span class="va">id:</span> order_id,</span>
+<span id="cb505-15"><a href="layers-of-abstraction.html#cb505-15" aria-hidden="true" tabindex="-1"></a>            <span class="va">status:</span> <span class="va">:filled</span></span>
+<span id="cb505-16"><a href="layers-of-abstraction.html#cb505-16" aria-hidden="true" tabindex="-1"></a>          },</span>
+<span id="cb505-17"><a href="layers-of-abstraction.html#cb505-17" aria-hidden="true" tabindex="-1"></a>          <span class="va">sell_order:</span> %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{}</span>
+<span id="cb505-18"><a href="layers-of-abstraction.html#cb505-18" aria-hidden="true" tabindex="-1"></a>        }</span></code></pre></div>
+<p>As we modified/unified the interface(public functions) of the exchange, we need to update all calls that we simplified:</p>
+<div class="sourceCode" id="cb506"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb506-1"><a href="layers-of-abstraction.html#cb506-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb506-2"><a href="layers-of-abstraction.html#cb506-2" aria-hidden="true" tabindex="-1"></a>  {<span class="va">:ok</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order} <span class="op">=</span> <span class="ot">@exchange_client</span><span class="op">.</span>order_limit_buy(symbol, quantity, price)</span>
+<span id="cb506-3"><a href="layers-of-abstraction.html#cb506-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb506-4"><a href="layers-of-abstraction.html#cb506-4" aria-hidden="true" tabindex="-1"></a>  {<span class="va">:ok</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order} <span class="op">=</span></span>
+<span id="cb506-5"><a href="layers-of-abstraction.html#cb506-5" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@exchange_client</span><span class="op">.</span>order_limit_sell(symbol, quantity, sell_price)</span>
+<span id="cb506-6"><a href="layers-of-abstraction.html#cb506-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb506-7"><a href="layers-of-abstraction.html#cb506-7" aria-hidden="true" tabindex="-1"></a>  {<span class="va">:ok</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> current_sell_order} <span class="op">=</span></span>
+<span id="cb506-8"><a href="layers-of-abstraction.html#cb506-8" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@exchange_client</span><span class="op">.</span>get_order(</span>
+<span id="cb506-9"><a href="layers-of-abstraction.html#cb506-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb506-10"><a href="layers-of-abstraction.html#cb506-10" aria-hidden="true" tabindex="-1"></a>      )</span></code></pre></div>
+<p>As now we will deal only with the <code>Exchange.Order</code> structs instead a pair of <code>Binance.OrderResponse</code> and <code>Binance.Order</code>, we can simplify the existing two clauses of <code>broadcast_order/1</code> into a single one:</p>
+<div class="sourceCode" id="cb507"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb507-1"><a href="layers-of-abstraction.html#cb507-1" aria-hidden="true" tabindex="-1"></a> <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb507-2"><a href="layers-of-abstraction.html#cb507-2" aria-hidden="true" tabindex="-1"></a> <span class="kw">defp</span> broadcast_order(%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order) <span class="kw">do</span></span>
+<span id="cb507-3"><a href="layers-of-abstraction.html#cb507-3" aria-hidden="true" tabindex="-1"></a>   <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast(</span>
+<span id="cb507-4"><a href="layers-of-abstraction.html#cb507-4" aria-hidden="true" tabindex="-1"></a>     <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb507-5"><a href="layers-of-abstraction.html#cb507-5" aria-hidden="true" tabindex="-1"></a>     <span class="st">&quot;ORDERS:</span><span class="ot">#{</span>order<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb507-6"><a href="layers-of-abstraction.html#cb507-6" aria-hidden="true" tabindex="-1"></a>     order</span>
+<span id="cb507-7"><a href="layers-of-abstraction.html#cb507-7" aria-hidden="true" tabindex="-1"></a>   )</span>
+<span id="cb507-8"><a href="layers-of-abstraction.html#cb507-8" aria-hidden="true" tabindex="-1"></a> <span class="kw">end</span></span></code></pre></div>
+<p>The final change to the <code>Naive.Strategy</code> module will be to update the <code>fetch_symbol_settings/1</code> function (and remove the <code>merge_filters_into_settings/3</code> function):</p>
+<div class="sourceCode" id="cb508"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb508-1"><a href="layers-of-abstraction.html#cb508-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb508-2"><a href="layers-of-abstraction.html#cb508-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
+<span id="cb508-3"><a href="layers-of-abstraction.html#cb508-3" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>, filters} <span class="op">=</span> <span class="ot">@exchange_client</span><span class="op">.</span>fetch_symbol_filters(symbol)</span>
+<span id="cb508-4"><a href="layers-of-abstraction.html#cb508-4" aria-hidden="true" tabindex="-1"></a>    db_settings <span class="op">=</span> <span class="ot">@repo</span><span class="op">.</span>get_by!(<span class="cn">Settings</span>, <span class="va">symbol:</span> symbol)</span>
+<span id="cb508-5"><a href="layers-of-abstraction.html#cb508-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb508-6"><a href="layers-of-abstraction.html#cb508-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
+<span id="cb508-7"><a href="layers-of-abstraction.html#cb508-7" aria-hidden="true" tabindex="-1"></a>      filters <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>from_struct(),</span>
+<span id="cb508-8"><a href="layers-of-abstraction.html#cb508-8" aria-hidden="true" tabindex="-1"></a>      db_settings <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>from_struct()</span>
+<span id="cb508-9"><a href="layers-of-abstraction.html#cb508-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb508-10"><a href="layers-of-abstraction.html#cb508-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The function is now much more straightforward as we use the <code>fetch_symbol_filters/1</code> function implemented by the behaviour.</p>
+<p>At this moment, we can change the configuration to make the <code>Naive.Strategy</code> work:</p>
+<div class="sourceCode" id="cb509"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb509-1"><a href="layers-of-abstraction.html#cb509-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.ex </span></span>
+<span id="cb509-2"><a href="layers-of-abstraction.html#cb509-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb509-3"><a href="layers-of-abstraction.html#cb509-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span>
+<span id="cb509-4"><a href="layers-of-abstraction.html#cb509-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb509-5"><a href="layers-of-abstraction.html#cb509-5" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
+<span id="cb509-6"><a href="layers-of-abstraction.html#cb509-6" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb509-7"><a href="layers-of-abstraction.html#cb509-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key updated</span></span>
+<span id="cb509-8"><a href="layers-of-abstraction.html#cb509-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb509-9"><a href="layers-of-abstraction.html#cb509-9" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
+<span id="cb509-10"><a href="layers-of-abstraction.html#cb509-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key updated</span></span>
+<span id="cb509-11"><a href="layers-of-abstraction.html#cb509-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb509-12"><a href="layers-of-abstraction.html#cb509-12" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb509-13"><a href="layers-of-abstraction.html#cb509-13" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb509-14"><a href="layers-of-abstraction.html#cb509-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
+<p>We can now test that <code>Naive.Strategy</code> works:</p>
+<pre><code>$ iex -S mix
+...</code></pre>
+
+</div>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="idiomatic-trading-strategy.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/21-layers-of-abstraction.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>
