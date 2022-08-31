@@ -771,69 +771,77 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb502-12"><a href="layers-of-abstraction.html#cb502-12" aria-hidden="true" tabindex="-1"></a>    } <span class="co"># &lt;= struct updated</span></span>
 <span id="cb502-13"><a href="layers-of-abstraction.html#cb502-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb502-14"><a href="layers-of-abstraction.html#cb502-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-15"><a href="layers-of-abstraction.html#cb502-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
-<span id="cb502-16"><a href="layers-of-abstraction.html#cb502-16" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:add_order</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order}, <span class="co"># &lt;= struct updated</span></span>
-<span id="cb502-17"><a href="layers-of-abstraction.html#cb502-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb502-18"><a href="layers-of-abstraction.html#cb502-18" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
-<span id="cb502-19"><a href="layers-of-abstraction.html#cb502-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb502-20"><a href="layers-of-abstraction.html#cb502-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb502-21"><a href="layers-of-abstraction.html#cb502-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-22"><a href="layers-of-abstraction.html#cb502-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
-<span id="cb502-23"><a href="layers-of-abstraction.html#cb502-23" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:get_order</span>, symbol, time, order_id},</span>
-<span id="cb502-24"><a href="layers-of-abstraction.html#cb502-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb502-25"><a href="layers-of-abstraction.html#cb502-25" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
-<span id="cb502-26"><a href="layers-of-abstraction.html#cb502-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb502-27"><a href="layers-of-abstraction.html#cb502-27" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(</span>
-<span id="cb502-28"><a href="layers-of-abstraction.html#cb502-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>symbol <span class="op">==</span> symbol <span class="kw">and</span></span>
-<span id="cb502-29"><a href="layers-of-abstraction.html#cb502-29" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>timestamp <span class="op">==</span> time <span class="kw">and</span> <span class="co"># &lt;= field updated</span></span>
-<span id="cb502-30"><a href="layers-of-abstraction.html#cb502-30" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>id <span class="op">==</span> order_id)               <span class="co"># &lt;= field updated</span></span>
-<span id="cb502-31"><a href="layers-of-abstraction.html#cb502-31" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb502-32"><a href="layers-of-abstraction.html#cb502-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb502-33"><a href="layers-of-abstraction.html#cb502-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-34"><a href="layers-of-abstraction.html#cb502-34" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb502-35"><a href="layers-of-abstraction.html#cb502-35" aria-hidden="true" tabindex="-1"></a>      %<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event,</span>
-<span id="cb502-36"><a href="layers-of-abstraction.html#cb502-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb502-37"><a href="layers-of-abstraction.html#cb502-37" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
-<span id="cb502-38"><a href="layers-of-abstraction.html#cb502-38" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb502-39"><a href="layers-of-abstraction.html#cb502-39" aria-hidden="true" tabindex="-1"></a>    filled_buy_orders <span class="op">=</span></span>
-<span id="cb502-40"><a href="layers-of-abstraction.html#cb502-40" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb502-41"><a href="layers-of-abstraction.html#cb502-41" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="va">:filled</span>)) <span class="co"># &lt;= changed to atom</span></span>
-<span id="cb502-42"><a href="layers-of-abstraction.html#cb502-42" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb502-43"><a href="layers-of-abstraction.html#cb502-43" aria-hidden="true" tabindex="-1"></a>    filled_sell_orders <span class="op">=</span></span>
-<span id="cb502-44"><a href="layers-of-abstraction.html#cb502-44" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb502-45"><a href="layers-of-abstraction.html#cb502-45" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="va">:filled</span>)) <span class="co"># &lt;= changed to atom</span></span>
-<span id="cb502-46"><a href="layers-of-abstraction.html#cb502-46" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb502-47"><a href="layers-of-abstraction.html#cb502-47" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb502-48"><a href="layers-of-abstraction.html#cb502-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-49"><a href="layers-of-abstraction.html#cb502-49" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
-<span id="cb502-50"><a href="layers-of-abstraction.html#cb502-50" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> <span class="co"># &lt;= struct updated</span></span>
-<span id="cb502-51"><a href="layers-of-abstraction.html#cb502-51" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb502-52"><a href="layers-of-abstraction.html#cb502-52" aria-hidden="true" tabindex="-1"></a>   {<span class="va">:ok</span>, fake_order} <span class="co"># &lt;= no need to convert between structs any more</span></span>
+<span id="cb502-15"><a href="layers-of-abstraction.html#cb502-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> side_to_atom(<span class="st">&quot;BUY&quot;</span>), <span class="kw">do</span>: <span class="va">:buy</span></span>
+<span id="cb502-16"><a href="layers-of-abstraction.html#cb502-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> side_to_atom(<span class="st">&quot;SELL&quot;</span>), <span class="kw">do</span>: <span class="va">:sell</span></span>
+<span id="cb502-17"><a href="layers-of-abstraction.html#cb502-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-18"><a href="layers-of-abstraction.html#cb502-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> status_to_atom(<span class="st">&quot;NEW&quot;</span>), <span class="kw">do</span>: <span class="va">:new</span></span>
+<span id="cb502-19"><a href="layers-of-abstraction.html#cb502-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> status_to_atom(<span class="st">&quot;FILLED&quot;</span>), <span class="kw">do</span>: <span class="va">:filled</span> </span>
+<span id="cb502-20"><a href="layers-of-abstraction.html#cb502-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-21"><a href="layers-of-abstraction.html#cb502-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_cast(</span>
+<span id="cb502-22"><a href="layers-of-abstraction.html#cb502-22" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:add_order</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order}, <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-23"><a href="layers-of-abstraction.html#cb502-23" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb502-24"><a href="layers-of-abstraction.html#cb502-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb502-25"><a href="layers-of-abstraction.html#cb502-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-26"><a href="layers-of-abstraction.html#cb502-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-27"><a href="layers-of-abstraction.html#cb502-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-28"><a href="layers-of-abstraction.html#cb502-28" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_call(</span>
+<span id="cb502-29"><a href="layers-of-abstraction.html#cb502-29" aria-hidden="true" tabindex="-1"></a>        {<span class="va">:get_order</span>, symbol, time, order_id},</span>
+<span id="cb502-30"><a href="layers-of-abstraction.html#cb502-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb502-31"><a href="layers-of-abstraction.html#cb502-31" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb502-32"><a href="layers-of-abstraction.html#cb502-32" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb502-33"><a href="layers-of-abstraction.html#cb502-33" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(</span>
+<span id="cb502-34"><a href="layers-of-abstraction.html#cb502-34" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>symbol <span class="op">==</span> symbol <span class="kw">and</span></span>
+<span id="cb502-35"><a href="layers-of-abstraction.html#cb502-35" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>timestamp <span class="op">==</span> time <span class="kw">and</span> <span class="co"># &lt;= field updated</span></span>
+<span id="cb502-36"><a href="layers-of-abstraction.html#cb502-36" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>id <span class="op">==</span> order_id)               <span class="co"># &lt;= field updated</span></span>
+<span id="cb502-37"><a href="layers-of-abstraction.html#cb502-37" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb502-38"><a href="layers-of-abstraction.html#cb502-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-39"><a href="layers-of-abstraction.html#cb502-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-40"><a href="layers-of-abstraction.html#cb502-40" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
+<span id="cb502-41"><a href="layers-of-abstraction.html#cb502-41" aria-hidden="true" tabindex="-1"></a>      %<span class="cn">TradeEvent</span>{} <span class="op">=</span> trade_event,</span>
+<span id="cb502-42"><a href="layers-of-abstraction.html#cb502-42" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb502-43"><a href="layers-of-abstraction.html#cb502-43" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">do</span></span>
+<span id="cb502-44"><a href="layers-of-abstraction.html#cb502-44" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-45"><a href="layers-of-abstraction.html#cb502-45" aria-hidden="true" tabindex="-1"></a>    filled_buy_orders <span class="op">=</span></span>
+<span id="cb502-46"><a href="layers-of-abstraction.html#cb502-46" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb502-47"><a href="layers-of-abstraction.html#cb502-47" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="va">:filled</span>)) <span class="co"># &lt;= changed to atom</span></span>
+<span id="cb502-48"><a href="layers-of-abstraction.html#cb502-48" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb502-49"><a href="layers-of-abstraction.html#cb502-49" aria-hidden="true" tabindex="-1"></a>    filled_sell_orders <span class="op">=</span></span>
+<span id="cb502-50"><a href="layers-of-abstraction.html#cb502-50" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb502-51"><a href="layers-of-abstraction.html#cb502-51" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span><span class="cn">Map</span><span class="op">.</span>replace!(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status</span>, <span class="va">:filled</span>)) <span class="co"># &lt;= changed to atom</span></span>
+<span id="cb502-52"><a href="layers-of-abstraction.html#cb502-52" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb502-53"><a href="layers-of-abstraction.html#cb502-53" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb502-54"><a href="layers-of-abstraction.html#cb502-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-55"><a href="layers-of-abstraction.html#cb502-55" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> add_order(</span>
-<span id="cb502-56"><a href="layers-of-abstraction.html#cb502-56" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order, <span class="co"># &lt;= struct updated</span></span>
-<span id="cb502-57"><a href="layers-of-abstraction.html#cb502-57" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
-<span id="cb502-58"><a href="layers-of-abstraction.html#cb502-58" aria-hidden="true" tabindex="-1"></a>   ) <span class="kw">do</span></span>
-<span id="cb502-59"><a href="layers-of-abstraction.html#cb502-59" aria-hidden="true" tabindex="-1"></a>   <span class="op">...</span></span>
-<span id="cb502-60"><a href="layers-of-abstraction.html#cb502-60" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb502-61"><a href="layers-of-abstraction.html#cb502-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-62"><a href="layers-of-abstraction.html#cb502-62" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and finally ;)</span></span>
-<span id="cb502-63"><a href="layers-of-abstraction.html#cb502-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb502-64"><a href="layers-of-abstraction.html#cb502-64" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_event(%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order, time) <span class="kw">do</span></span>
-<span id="cb502-65"><a href="layers-of-abstraction.html#cb502-65" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ^= updated struct</span></span>
-<span id="cb502-66"><a href="layers-of-abstraction.html#cb502-66" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">TradeEvent</span>{</span>
-<span id="cb502-67"><a href="layers-of-abstraction.html#cb502-67" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
-<span id="cb502-68"><a href="layers-of-abstraction.html#cb502-68" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> order<span class="op">.</span>symbol,</span>
-<span id="cb502-69"><a href="layers-of-abstraction.html#cb502-69" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_id:</span> <span class="cn">Integer</span><span class="op">.</span>floor_div(time, <span class="dv">1000</span>),</span>
-<span id="cb502-70"><a href="layers-of-abstraction.html#cb502-70" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> order<span class="op">.</span>price,</span>
-<span id="cb502-71"><a href="layers-of-abstraction.html#cb502-71" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> order<span class="op">.</span>quantity,  <span class="co"># &lt;= updated mapping</span></span>
-<span id="cb502-72"><a href="layers-of-abstraction.html#cb502-72" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
-<span id="cb502-73"><a href="layers-of-abstraction.html#cb502-73" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
-<span id="cb502-74"><a href="layers-of-abstraction.html#cb502-74" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
-<span id="cb502-75"><a href="layers-of-abstraction.html#cb502-75" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
-<span id="cb502-76"><a href="layers-of-abstraction.html#cb502-76" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb502-77"><a href="layers-of-abstraction.html#cb502-77" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb502-55"><a href="layers-of-abstraction.html#cb502-55" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> order_limit(symbol, quantity, price, side) <span class="kw">do</span></span>
+<span id="cb502-56"><a href="layers-of-abstraction.html#cb502-56" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-57"><a href="layers-of-abstraction.html#cb502-57" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb502-58"><a href="layers-of-abstraction.html#cb502-58" aria-hidden="true" tabindex="-1"></a>   {<span class="va">:ok</span>, fake_order} <span class="co"># &lt;= no need to convert between structs any more</span></span>
+<span id="cb502-59"><a href="layers-of-abstraction.html#cb502-59" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-60"><a href="layers-of-abstraction.html#cb502-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-61"><a href="layers-of-abstraction.html#cb502-61" aria-hidden="true" tabindex="-1"></a>  <span class="co"># remove the `convert_order_to_order_response/1` function - not required anymore</span></span>
+<span id="cb502-62"><a href="layers-of-abstraction.html#cb502-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-63"><a href="layers-of-abstraction.html#cb502-63" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> add_order(</span>
+<span id="cb502-64"><a href="layers-of-abstraction.html#cb502-64" aria-hidden="true" tabindex="-1"></a>         %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{<span class="va">symbol:</span> symbol} <span class="op">=</span> order, <span class="co"># &lt;= struct updated</span></span>
+<span id="cb502-65"><a href="layers-of-abstraction.html#cb502-65" aria-hidden="true" tabindex="-1"></a>          <span class="op">...</span></span>
+<span id="cb502-66"><a href="layers-of-abstraction.html#cb502-66" aria-hidden="true" tabindex="-1"></a>   ) <span class="kw">do</span></span>
+<span id="cb502-67"><a href="layers-of-abstraction.html#cb502-67" aria-hidden="true" tabindex="-1"></a>   <span class="op">...</span></span>
+<span id="cb502-68"><a href="layers-of-abstraction.html#cb502-68" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb502-69"><a href="layers-of-abstraction.html#cb502-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-70"><a href="layers-of-abstraction.html#cb502-70" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and finally ;)</span></span>
+<span id="cb502-71"><a href="layers-of-abstraction.html#cb502-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb502-72"><a href="layers-of-abstraction.html#cb502-72" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> convert_order_to_event(%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order, time) <span class="kw">do</span></span>
+<span id="cb502-73"><a href="layers-of-abstraction.html#cb502-73" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ^= updated struct</span></span>
+<span id="cb502-74"><a href="layers-of-abstraction.html#cb502-74" aria-hidden="true" tabindex="-1"></a>    %<span class="cn">TradeEvent</span>{</span>
+<span id="cb502-75"><a href="layers-of-abstraction.html#cb502-75" aria-hidden="true" tabindex="-1"></a>      <span class="va">event_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
+<span id="cb502-76"><a href="layers-of-abstraction.html#cb502-76" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> order<span class="op">.</span>symbol,</span>
+<span id="cb502-77"><a href="layers-of-abstraction.html#cb502-77" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_id:</span> <span class="cn">Integer</span><span class="op">.</span>floor_div(time, <span class="dv">1000</span>),</span>
+<span id="cb502-78"><a href="layers-of-abstraction.html#cb502-78" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> order<span class="op">.</span>price,</span>
+<span id="cb502-79"><a href="layers-of-abstraction.html#cb502-79" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> order<span class="op">.</span>quantity,  <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-80"><a href="layers-of-abstraction.html#cb502-80" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-81"><a href="layers-of-abstraction.html#cb502-81" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-82"><a href="layers-of-abstraction.html#cb502-82" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
+<span id="cb502-83"><a href="layers-of-abstraction.html#cb502-83" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
+<span id="cb502-84"><a href="layers-of-abstraction.html#cb502-84" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb502-85"><a href="layers-of-abstraction.html#cb502-85" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The above changes finish the modifications to the BiananceMock. The module now correctly implements the behaviour.</p>
 </div>
 <div id="updating-the-naive.strategy" class="section level3" number="21.3.4">
@@ -875,7 +883,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb506-8"><a href="layers-of-abstraction.html#cb506-8" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@exchange_client</span><span class="op">.</span>get_order(</span>
 <span id="cb506-9"><a href="layers-of-abstraction.html#cb506-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
 <span id="cb506-10"><a href="layers-of-abstraction.html#cb506-10" aria-hidden="true" tabindex="-1"></a>      )</span></code></pre></div>
-<p>As now we will deal only with the <code>Exchange.Order</code> structs instead a pair of <code>Binance.OrderResponse</code> and <code>Binance.Order</code>, we can simplify the existing two clauses of <code>broadcast_order/1</code> into a single one:</p>
+<p>As now we will deal only with the <code>Exchange.Order</code> structs instead a pair of <code>Binance.OrderResponse</code> and <code>Binance.Order</code>, we can simplify the existing two clauses of <code>broadcast_order/1</code> into a single one(and remove the <code>convert_to_order/1</code> function):</p>
 <div class="sourceCode" id="cb507"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb507-1"><a href="layers-of-abstraction.html#cb507-1" aria-hidden="true" tabindex="-1"></a> <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb507-2"><a href="layers-of-abstraction.html#cb507-2" aria-hidden="true" tabindex="-1"></a> <span class="kw">defp</span> broadcast_order(%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order) <span class="kw">do</span></span>
 <span id="cb507-3"><a href="layers-of-abstraction.html#cb507-3" aria-hidden="true" tabindex="-1"></a>   <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast(</span>
@@ -903,10 +911,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb509-4"><a href="layers-of-abstraction.html#cb509-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb509-5"><a href="layers-of-abstraction.html#cb509-5" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
 <span id="cb509-6"><a href="layers-of-abstraction.html#cb509-6" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb509-7"><a href="layers-of-abstraction.html#cb509-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key updated</span></span>
+<span id="cb509-7"><a href="layers-of-abstraction.html#cb509-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
 <span id="cb509-8"><a href="layers-of-abstraction.html#cb509-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb509-9"><a href="layers-of-abstraction.html#cb509-9" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
-<span id="cb509-10"><a href="layers-of-abstraction.html#cb509-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key updated</span></span>
+<span id="cb509-10"><a href="layers-of-abstraction.html#cb509-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
 <span id="cb509-11"><a href="layers-of-abstraction.html#cb509-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb509-12"><a href="layers-of-abstraction.html#cb509-12" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
 <span id="cb509-13"><a href="layers-of-abstraction.html#cb509-13" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>

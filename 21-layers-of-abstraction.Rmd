@@ -390,6 +390,12 @@ The changes to different structs will have a ripple effect in other parts of the
     } # <= struct updated
   end
 
+  defp side_to_atom("BUY"), do: :buy
+  defp side_to_atom("SELL"), do: :sell
+
+  defp status_to_atom("NEW"), do: :new
+  defp status_to_atom("FILLED"), do: :filled 
+
   def handle_cast(
         {:add_order, %Exchange.Order{symbol: symbol} = order}, # <= struct updated
         ...
@@ -429,6 +435,8 @@ The changes to different structs will have a ripple effect in other parts of the
     ...
    {:ok, fake_order} # <= no need to convert between structs any more
   end
+
+  # remove the `convert_order_to_order_response/1` function - not required anymore
 
   defp add_order(
          %Exchange.Order{symbol: symbol} = order, # <= struct updated
@@ -513,7 +521,7 @@ As we modified/unified the interface(public functions) of the exchange, we need 
       )
 ```
 
-As now we will deal only with the `Exchange.Order` structs instead a pair of `Binance.OrderResponse` and `Binance.Order`, we can simplify the existing two clauses of `broadcast_order/1` into a single one:
+As now we will deal only with the `Exchange.Order` structs instead a pair of `Binance.OrderResponse` and `Binance.Order`, we can simplify the existing two clauses of `broadcast_order/1` into a single one(and remove the `convert_to_order/1` function):
 
  ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -552,10 +560,10 @@ config :naive,
 
 # /config/prod.exs
 config :naive,
-  exchange_client: Core.Exchange.Binance # <= key updated
+  exchange_client: Core.Exchange.Binance # <= key and module updated
 
 config :streamer,
-  exchange_client: Core.Exchange.Binance # <= key updated
+  exchange_client: Core.Exchange.Binance # <= key and module updated
 
 # /config/test.exs
 config :naive,
