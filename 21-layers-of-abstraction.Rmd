@@ -12,7 +12,9 @@ When we were using the `Mox` package, we were disappointed that most packages do
 
 To fix that, we were writing behaviours for 3rd party packages that we are using like `Binance` or even `Ecto.Repo`. This approach felt weird, and it should, as I believe that was **not the intended** usage of the `Mox` package.
 
-Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example of that could be abstracting dealing with an exchange to an behaviour and providing a single implementation(wrapping the `Binance` module):
+\newpage
+
+Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example could be abstracting dealing with an exchange to an behaviour and providing a single implementation(wrapping the `Binance` module):
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_21_01_additional_layer.jpg")
@@ -37,13 +39,14 @@ defmodule Core.Exchange do
 end
 ```
 
+\newpage
+
 Now, based on the way we are currently interacting with the `Binance` module inside the `Naive.Strategy`, we can define the following callback functions:
 
 `order_limit_buy/3` - almost the same as the `Binance`'s `order_limit_buy/4`, just skipped the optional argument
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
-  # add below inside the Core.Exchange module
   @callback order_limit_buy(symbol :: String.t(), quantity :: number(), price :: number()) ::
               {:ok, Core.Exchange.Order.t()}
               | {:error, any()}
@@ -53,7 +56,6 @@ Now, based on the way we are currently interacting with the `Binance` module ins
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
-  # add below inside the Core.Exchange module
   @callback order_limit_sell(symbol :: String.t(), quantity :: number(), price :: number()) ::
               {:ok, Core.Exchange.Order.t()}
               | {:error, any()}
@@ -63,7 +65,6 @@ Now, based on the way we are currently interacting with the `Binance` module ins
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
-  # add below inside the Core.Exchange module
   @callback get_order(
               symbol :: String.t(),
               timestamp :: non_neg_integer(),
@@ -77,7 +78,6 @@ All of the above callbacks rely on the `Core.Exchange.Order` struct which we wil
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
-  # add below inside the Core.Exchange module
   defmodule Order do
     @type t :: %__MODULE__{
             id: non_neg_integer(),
@@ -95,7 +95,7 @@ All of the above callbacks rely on the `Core.Exchange.Order` struct which we wil
 
 The above struct is a simplification of the `Binance.Order` struct limited to just the fields we are using in our strategy.
 
-Additionally, we use the `Binance` module to fetch symbol filters inside the `Naive.Strategy` (we actually fetch the whole exchange info and then dig inside the find our filters) - we will create a dedicated struct for those filters:
+Additionally, we use the `Binance` module to fetch symbol filters inside the `Naive.Strategy` (we actually fetch the whole exchange info and then dig inside to find our filters) - we will create a dedicated struct for those filters:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/exchange.ex
@@ -283,9 +283,9 @@ That finishes our first implementation of the `Core.Exchange` behaviour. It will
 
 ### Updating the `BinanceMock` module to implement the `Core.Exchange` behaviour
 
-As mentioned, the `BinanceMock` module must implement the `Core.Exchange` behaviour. It will (compile time) guarantee that both `Core.Exchange.Binance` and `BinanceMock` share a common interface that can be used by the `Naive.Strategy`.
+As mentioned, the `BinanceMock` module must implement the `Core.Exchange` behaviour. It will (at compile time) guarantee that both `Core.Exchange.Binance` and `BinanceMock` share a common interface that can be used by the `Naive.Strategy`.
 
-Fist we will start by declaring that it actually implements the `Core.Exchange` behaviour:
+Fist we will start by declaring that the `BinanceMock` actually implements the `Core.Exchange` behaviour:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -350,9 +350,13 @@ Moving on the the `get_exchange_info/0`, which will become `fetch_symbols/0` and
   end
 ```
 
-There are a few additional helpers above, and it got a bit long - let's unpack it. First, both  the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0`, which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
+There are a few additional helpers above, and it got a bit long - let's unpack it.
+
+First, both  the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0` function, which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
 
 Next on our list, there's the `get_oder/3` function - as it's working in the same way as per our behaviour, we will leave it as it is.
+
+\newpage
 
 The final two functions to update will be the `order_limit_buy/4` and `order_limit_sell/4`, which will now become three argument functions:
 
@@ -452,3 +456,115 @@ The changes to different structs will have a ripple effect in other parts of the
 ```
 
 The above changes finish the modifications to the BiananceMock. The module now correctly implements the behaviour.
+
+### Updating the `Naive.Strategy`
+
+We can now move on to the code that uses our behaviour - the `Naive.Strategy` module.
+
+We will start by adding an alias to the `Core.Exchange` at the top of the module:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  alias Core.Exchange
+```
+
+Next, we can rename the configuration based `@binance_client` to `@exchange_client` and update references to it throughout the module:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  @exchange_client Application.compile_env(:naive, :exchange_client)
+```
+
+Besides the above, we are now relying on the generic structs, so we need to update all reference to the `Binance.OrderResponse` module with the `Exchange.Order` (including updating all field names) - for example:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  # from:
+        %Position{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id,
+            status: "FILLED"
+          },
+          sell_order: %Binance.OrderResponse{}
+        },
+
+  # to:
+        %Position{
+          buy_order: %Exchange.Order{
+            id: order_id,
+            status: :filled
+          },
+          sell_order: %Exchange.Order{}
+        }
+```
+
+As we modified/unified the interface(public functions) of the exchange, we need to update all calls that we simplified:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  {:ok, %Exchange.Order{} = order} = @exchange_client.order_limit_buy(symbol, quantity, price)
+  ...
+  {:ok, %Exchange.Order{} = order} =
+      @exchange_client.order_limit_sell(symbol, quantity, sell_price)
+  ...
+  {:ok, %Exchange.Order{} = current_sell_order} =
+      @exchange_client.get_order(
+        ...
+      )
+```
+
+As now we will deal only with the `Exchange.Order` structs instead a pair of `Binance.OrderResponse` and `Binance.Order`, we can simplify the existing two clauses of `broadcast_order/1` into a single one:
+
+ ```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  defp broadcast_order(%Exchange.Order{} = order) do
+    @pubsub_client.broadcast(
+      Core.PubSub,
+      "ORDERS:#{order.symbol}",
+      order
+    )
+  end
+```
+
+The final change to the `Naive.Strategy` module will be to update the `fetch_symbol_settings/1` function (and remove the `merge_filters_into_settings/3` function):
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/lib/naive/strategy.ex
+  def fetch_symbol_settings(symbol) do
+    {:ok, filters} = @exchange_client.fetch_symbol_filters(symbol)
+    db_settings = @repo.get_by!(Settings, symbol: symbol)
+
+    Map.merge(
+      filters |> Map.from_struct(),
+      db_settings |> Map.from_struct()
+    )
+  end
+```
+
+The function is now much more straightforward as we use the `fetch_symbol_filters/1` function implemented by the behaviour.
+
+At this moment, we can change the configuration to make the `Naive.Strategy` work:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/config.ex 
+config :naive,
+  exchange_client: BinanceMock, # <= key updated
+
+# /config/prod.exs
+config :naive,
+  exchange_client: Core.Exchange.Binance # <= key updated
+
+config :streamer,
+  exchange_client: Core.Exchange.Binance # <= key updated
+
+# /config/test.exs
+config :naive,
+  exchange_client: Test.BinanceMock, # <= key updated
+```
+
+We can now test that `Naive.Strategy` works:
+
+```
+$ iex -S mix
+...
+```

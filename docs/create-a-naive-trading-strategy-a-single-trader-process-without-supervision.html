@@ -431,6 +431,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="20.8" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#tidying-up"><i class="fa fa-check"></i><b>20.8</b> Tidying up</a></li>
 <li class="chapter" data-level="20.9" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#final-thoughts-1"><i class="fa fa-check"></i><b>20.9</b> Final thoughts</a></li>
 </ul></li>
+<li class="chapter" data-level="21" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html"><i class="fa fa-check"></i><b>21</b> Layers of abstraction</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#objectives-20"><i class="fa fa-check"></i><b>21.1</b> Objectives</a></li>
+<li class="chapter" data-level="21.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#admitting-the-simplification"><i class="fa fa-check"></i><b>21.2</b> Admitting the simplification</a></li>
+<li class="chapter" data-level="21.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#abstracting-the-exchange"><i class="fa fa-check"></i><b>21.3</b> Abstracting the exchange</a>
+<ul>
+<li class="chapter" data-level="21.3.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#defining-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.1</b> Defining the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="21.3.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module"><i class="fa fa-check"></i><b>21.3.2</b> Implementation of the <code>Core.Exchange.Binance</code> module</a></li>
+<li class="chapter" data-level="21.3.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.3</b> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</a></li>
+</ul></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -759,8 +770,8 @@ incoming events as they were not matched by any of the previous pattern matches:
 <div class="sourceCode" id="cb44"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb44-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
 <span id="cb44-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb44-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Import secrets file with Binance keys if it exists</span></span>
-<span id="cb44-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="cn">File</span><span class="op">.</span>exists?(<span class="vs">&#39;config/secrets.exs&#39;</span>) <span class="kw">do</span></span>
-<span id="cb44-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-5" aria-hidden="true" tabindex="-1"></a>  import_config(<span class="vs">&#39;secrets.exs&#39;</span>)</span>
+<span id="cb44-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="cn">File</span><span class="op">.</span>exists?(<span class="st">&quot;config/secrets.exs&quot;</span>) <span class="kw">do</span></span>
+<span id="cb44-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-5" aria-hidden="true" tabindex="-1"></a>  import_config(<span class="st">&quot;secrets.exs&quot;</span>)</span>
 <span id="cb44-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <p><em>Important note</em>: To be able to run the below test and perform real trades, a Binance account is required with a balance of at least 20 USDT. In the 4th chapter, we will focus on creating a <code>BinanceMock</code> that will allow us to run our bot <em>without</em> the requirement for a real Binance account. You don’t need to test run it now if you don’t need/want to have an account.</p>
 </div>
