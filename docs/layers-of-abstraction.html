@@ -474,7 +474,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="admitting-the-simplification" class="section level2" number="21.2">
 <h2><span class="header-section-number">21.2</span> Admitting the simplification</h2>
-<p>It comes the time when I need to admit to something that I’ve learned on the way as I was writing this book and was misused throughout.</p>
+<p>There comes a time when I need to admit to something that I’ve learned on the way as I was writing this book and was misused throughout.</p>
 <p>When we were using the <code>Mox</code> package, we were disappointed that most packages don’t provide behaviours we could use in our tests(to mock the actual implementations).</p>
 <p>To fix that, we were writing behaviours for 3rd party packages that we are using like <code>Binance</code> or even <code>Ecto.Repo</code>. This approach felt weird, and it should, as I believe that was <strong>not the intended</strong> usage of the <code>Mox</code> package.</p>
 <div style="page-break-after: always;"></div>
@@ -488,7 +488,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">21.3</span> Abstracting the exchange</h2>
 <div id="defining-the-core.exchange-behaviour" class="section level3" number="21.3.1">
 <h3><span class="header-section-number">21.3.1</span> Defining the <code>Core.Exchange</code> behaviour</h3>
-<p>We will start by creating a new behaviour module(inside a new file <code>/apps/core/lib/core/exchange.ex</code>) inside the <code>Core</code> application:</p>
+<p>We will start by creating a new file <code>/apps/core/lib/core/exchange.ex</code> together with a new module inside it:</p>
 <div class="sourceCode" id="cb487"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb487-1"><a href="layers-of-abstraction.html#cb487-1" aria-hidden="true" tabindex="-1"></a> <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
 <span id="cb487-2"><a href="layers-of-abstraction.html#cb487-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span> <span class="kw">do</span></span>
 <span id="cb487-3"><a href="layers-of-abstraction.html#cb487-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -612,7 +612,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb496-30"><a href="layers-of-abstraction.html#cb496-30" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
 <span id="cb496-31"><a href="layers-of-abstraction.html#cb496-31" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb496-32"><a href="layers-of-abstraction.html#cb496-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The <code>fetch_symbol_filters/1</code> function follows the previously discussed pattern. The <code>fetch_symbol_filters/2</code>, on the other hand, is a modified copy of the <code>merge_filters_into_settings/2</code> function from the <code>Naive.Strategy</code> module.</p>
+<p>The <code>fetch_symbol_filters/1</code> function follows the previously discussed pattern. The <code>fetch_symbol_filters/2</code>, on the other hand, is a modified copy of the <code>merge_filters_into_settings/2</code> function from the <code>Naive.Strategy</code> module now returning the <code>Exchange.SymbolInfo</code> struct.</p>
 <p>Another function to be implemented to fulfil the behaviour is <code>get_order/3</code>:</p>
 <div class="sourceCode" id="cb497"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb497-1"><a href="layers-of-abstraction.html#cb497-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
 <span id="cb497-2"><a href="layers-of-abstraction.html#cb497-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
@@ -792,7 +792,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb502-33"><a href="layers-of-abstraction.html#cb502-33" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(</span>
 <span id="cb502-34"><a href="layers-of-abstraction.html#cb502-34" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>symbol <span class="op">==</span> symbol <span class="kw">and</span></span>
 <span id="cb502-35"><a href="layers-of-abstraction.html#cb502-35" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>timestamp <span class="op">==</span> time <span class="kw">and</span> <span class="co"># &lt;= field updated</span></span>
-<span id="cb502-36"><a href="layers-of-abstraction.html#cb502-36" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>id <span class="op">==</span> order_id)               <span class="co"># &lt;= field updated</span></span>
+<span id="cb502-36"><a href="layers-of-abstraction.html#cb502-36" aria-hidden="true" tabindex="-1"></a>            <span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>id <span class="op">==</span> order_id)       <span class="co"># &lt;= field updated</span></span>
 <span id="cb502-37"><a href="layers-of-abstraction.html#cb502-37" aria-hidden="true" tabindex="-1"></a>      )</span>
 <span id="cb502-38"><a href="layers-of-abstraction.html#cb502-38" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb502-39"><a href="layers-of-abstraction.html#cb502-39" aria-hidden="true" tabindex="-1"></a></span>
@@ -835,12 +835,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb502-76"><a href="layers-of-abstraction.html#cb502-76" aria-hidden="true" tabindex="-1"></a>      <span class="va">symbol:</span> order<span class="op">.</span>symbol,</span>
 <span id="cb502-77"><a href="layers-of-abstraction.html#cb502-77" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_id:</span> <span class="cn">Integer</span><span class="op">.</span>floor_div(time, <span class="dv">1000</span>),</span>
 <span id="cb502-78"><a href="layers-of-abstraction.html#cb502-78" aria-hidden="true" tabindex="-1"></a>      <span class="va">price:</span> order<span class="op">.</span>price,</span>
-<span id="cb502-79"><a href="layers-of-abstraction.html#cb502-79" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> order<span class="op">.</span>quantity,  <span class="co"># &lt;= updated mapping</span></span>
-<span id="cb502-80"><a href="layers-of-abstraction.html#cb502-80" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
-<span id="cb502-81"><a href="layers-of-abstraction.html#cb502-81" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> order<span class="op">.</span>id, <span class="co"># &lt;= updated mapping</span></span>
+<span id="cb502-79"><a href="layers-of-abstraction.html#cb502-79" aria-hidden="true" tabindex="-1"></a>      <span class="va">quantity:</span> order<span class="op">.</span>quantity,  </span>
+<span id="cb502-80"><a href="layers-of-abstraction.html#cb502-80" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_order_id:</span> order<span class="op">.</span>id,</span>
+<span id="cb502-81"><a href="layers-of-abstraction.html#cb502-81" aria-hidden="true" tabindex="-1"></a>      <span class="va">seller_order_id:</span> order<span class="op">.</span>id,</span>
 <span id="cb502-82"><a href="layers-of-abstraction.html#cb502-82" aria-hidden="true" tabindex="-1"></a>      <span class="va">trade_time:</span> time <span class="op">-</span> <span class="dv">1</span>,</span>
 <span id="cb502-83"><a href="layers-of-abstraction.html#cb502-83" aria-hidden="true" tabindex="-1"></a>      <span class="va">buyer_market_maker:</span> <span class="cn">false</span></span>
-<span id="cb502-84"><a href="layers-of-abstraction.html#cb502-84" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb502-84"><a href="layers-of-abstraction.html#cb502-84" aria-hidden="true" tabindex="-1"></a>    } <span class="co"># ^^^^^^= updated mapping</span></span>
 <span id="cb502-85"><a href="layers-of-abstraction.html#cb502-85" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The above changes finish the modifications to the BiananceMock. The module now correctly implements the behaviour.</p>
 </div>

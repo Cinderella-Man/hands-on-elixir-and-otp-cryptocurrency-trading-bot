@@ -6,7 +6,7 @@
 
 ## Admitting the simplification
 
-It comes the time when I need to admit to something that I've learned on the way as I was writing this book and was misused throughout.
+There comes a time when I need to admit to something that I’ve learned on the way as I was writing this book and was misused throughout.
 
 When we were using the `Mox` package, we were disappointed that most packages don't provide behaviours we could use in our tests(to mock the actual implementations).
 
@@ -30,7 +30,7 @@ Let's see how this will look in action.
 
 ### Defining the `Core.Exchange` behaviour
 
-We will start by creating a new behaviour module(inside a new file `/apps/core/lib/core/exchange.ex`) inside the `Core` application:
+We will start by creating a new file `/apps/core/lib/core/exchange.ex` together with a new module inside it:
 
 ```{r, engine = 'elixir', eval = FALSE}	 
  # /apps/core/lib/core/exchange.ex
@@ -199,7 +199,7 @@ Let's continue with implementing the remaining functions defined in the behaviou
   end
 ```
 
-The `fetch_symbol_filters/1` function follows the previously discussed pattern. The `fetch_symbol_filters/2`, on the other hand, is a modified copy of the `merge_filters_into_settings/2` function from the `Naive.Strategy` module.
+The `fetch_symbol_filters/1` function follows the previously discussed pattern. The `fetch_symbol_filters/2`, on the other hand, is a modified copy of the `merge_filters_into_settings/2` function from the `Naive.Strategy` module now returning the `Exchange.SymbolInfo` struct.
 
 Another function to be implemented to fulfil the behaviour is `get_order/3`:
 
@@ -411,7 +411,7 @@ The changes to different structs will have a ripple effect in other parts of the
       |> Enum.find(
         &(&1.symbol == symbol and
             &1.timestamp == time and # <= field updated
-            &1.id == order_id)               # <= field updated
+            &1.id == order_id)       # <= field updated
       )
   end
 
@@ -454,12 +454,12 @@ The changes to different structs will have a ripple effect in other parts of the
       symbol: order.symbol,
       trade_id: Integer.floor_div(time, 1000),
       price: order.price,
-      quantity: order.quantity,  # <= updated mapping
-      buyer_order_id: order.id, # <= updated mapping
-      seller_order_id: order.id, # <= updated mapping
+      quantity: order.quantity,  
+      buyer_order_id: order.id,
+      seller_order_id: order.id,
       trade_time: time - 1,
       buyer_market_maker: false
-    }
+    } # ^^^^^^= updated mapping
   end
 ```
 
