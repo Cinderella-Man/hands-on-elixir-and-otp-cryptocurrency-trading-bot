@@ -6,27 +6,29 @@
 
 ## Admitting the simplification
 
-There comes a time when I need to admit to something that I’ve learned on the way as I was writing this book and was misused throughout.
+There comes a time when I need to admit to something that I've learned on the way as I was writing this book and was misused throughout.
 
 When we were using the `Mox` package, we were disappointed that most packages don't provide behaviours we could use in our tests(to mock the actual implementations).
 
-To fix that, we were writing behaviours for 3rd party packages that we are using like `Binance` or even `Ecto.Repo`. This approach felt weird, and it should, as I believe that was **not the intended** usage of the `Mox` package.
+To fix that, we were creating behaviours for 3rd party packages that we are using like `Binance` or even `Ecto.Repo`. This approach felt weird, and it should, as I believe that was **not the intended** usage of the `Mox` package.
 
 \newpage
 
-Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example could be abstracting dealing with an exchange to an behaviour and providing a single implementation(wrapping the `Binance` module):
+Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example could be abstracting dealing with an exchange to an behaviour and providing different implementations(for example, one could be wrapping the `Binance` module):
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_21_01_additional_layer.jpg")
 ```
 
-In the example above, we will introduce a new behaviour module called `Core.Exchange` that would define the way we interact with any exchange. As this will be a generic behaviour, it needs to accept and return generic structs(we will need to create those as well).
+In the example above, we will introduce a new behaviour module called `Core.Exchange` that would define the standard way to interact with any exchange. As this will be a generic **exchange** behaviour, it needs to accept and return generic structs(we will need to define those as well).
 
-We will also create a new `Core.Exchange.Binance` module, which will implement the `Core.Exchange` behaviour and wrap the `Binance` module.
+We will also create a new `Core.Exchange.Binance` module(wrapping up the `Binance` module) and update the `BinanceMock` module. Both will implement the `Core.Exchange` behaviour.
 
-Let's see how this will look in action.
+In this chapter, we will look into the intended way/scenario for using the `Mox` package, its advantages and disadvantages and go beyond and look into alternatives.
 
 ## Abstracting the exchange
+
+We will start with an intended use case for the `Mox` module, as it was mentioned above.
 
 ### Defining the `Core.Exchange` behaviour
 
@@ -43,7 +45,7 @@ end
 
 Now, based on the way we are currently interacting with the `Binance` module inside the `Naive.Strategy`, we can define the following callback functions:
 
-`order_limit_buy/3` - almost the same as the `Binance`'s `order_limit_buy/4`, just skipped the optional argument
+`order_limit_buy/3` - almost the same as the `Binance` 's `order_limit_buy/4`, just skipped the optional argument
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
@@ -52,7 +54,7 @@ Now, based on the way we are currently interacting with the `Binance` module ins
               | {:error, any()}
 ```
 
-`order_limit_sell/3` - almost the same as the `Binance`'s `order_limit_sell/4`, just skipped the optional argument
+`order_limit_sell/3` - almost the same as the `Binance` 's `order_limit_sell/4`, just skipped the optional argument
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
@@ -160,7 +162,7 @@ Now we are obliged to implement all functions defined in the behaviour, starting
   end
 ```
 
-As we can see - the `case` statement wraps the call to the `Binance` module, and either we evaluate further business logic or forward the error so the "user" of our library can decide what to do with the error condition. This pattern will appear in all our functions as the `Core.Exchange.Binance` module is our own "library" module.
+As we can see - the `case` statement wraps the call to the `Binance` module, and either we evaluate further business logic or forward the error so the "consumer" of our library can decide what to do with the error condition. This pattern will appear in all our functions as the `Core.Exchange.Binance` module is our own "library" module.
 
 Let's continue with implementing the remaining functions defined in the behaviour:
 
@@ -232,7 +234,7 @@ Another function to be implemented to fulfil the behaviour is `get_order/3`:
   defp status_to_atom("FILLED"), do: :filled
 ```
 
-As in the case of the previously implemented functions, the `get_order/3` implementation follows the same pattern. To satisfy the `Core.Exchange` behaviour, it needs to return the `Exchange.Order` struct - hence the conversion. It also needs to convert the string `side` and `status` fields to atoms before assigning to struct(helper functions added at the bottom of the module).
+As in the case of the previously implemented functions, the `get_order/3` implementation wraps the `Binance`'s function inside the `case` statement . To satisfy the `Core.Exchange` behaviour, it needs to return the `Exchange.Order` struct - hence the conversion. It also needs to convert the string `side` and `status` fields to atoms before assigning to struct(that's the role of the `status_to_atom` and `side_to_atom` helper functions).
 
 The final two functions to be implemented will be the `order_limit_buy/3` and `order_limit_sell/3`:
 
@@ -277,8 +279,6 @@ The final two functions to be implemented will be the `order_limit_buy/3` and `o
   end
 ```
 
-After implementing the previous functions, the last two should look very similar. 
-
 That finishes our first implementation of the `Core.Exchange` behaviour. It will be used in the production by our `Naive.Strategy`, but before we will update it, let's update the `BinanceMock` module to implement the same behaviour for testing/backtesting.
 
 ### Updating the `BinanceMock` module to implement the `Core.Exchange` behaviour
@@ -293,9 +293,18 @@ defmodule BinanceMock do
   @behaviour Core.Exchange # <= added
 ```
 
-Next, we can remove all the aliases to the `Binance` structs as we won't use them anymore. The same goes for all the `@type` and `@callback` attributes.
+Next, we can replace all the aliases to the `Binance` structs with a single alias to the `Core.Exchange` module:
 
-Moving on the the `get_exchange_info/0`, which will become `fetch_symbols/0` and `fetch_symbol_filters/1`:
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/binance_mock/lib/binance_mock.ex
+  alias Core.Exchange
+```
+
+Don't forget to update all references to the `Binance.Order` with `Exchange.Order` module.
+
+As the behaviour is now defined in the `Core.Exchange` module, we can remove all `@type` and `@callback` attributes.
+
+Moving on, we will replace the `get_exchange_info/0`(together with it's `get_cached_exchange_info/0` helper function) with `fetch_symbols/0` and `fetch_symbol_filters/1`(and their helper functions):
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
@@ -354,7 +363,7 @@ There are a few additional helpers above, and it got a bit long - let's unpack i
 
 First, both  the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0` function, which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
 
-Next on our list, there's the `get_oder/3` function - as it's working in the same way as per our behaviour, we will leave it as it is.
+Next, there's the `get_oder/3` function - as it's working in the same way as per our behaviour, we will leave it as it is.
 
 \newpage
 
@@ -387,21 +396,14 @@ The changes to different structs will have a ripple effect in other parts of the
       side: side_to_atom(side),
       status: status_to_atom("NEW"),
       timestamp: current_timestamp
-    } # <= struct updated
+    } # <= keys updated & `.new` dropped
   end
 
-  defp side_to_atom("BUY"), do: :buy
-  defp side_to_atom("SELL"), do: :sell
+  defp side_to_atom("BUY"), do: :buy   # <= added
+  defp side_to_atom("SELL"), do: :sell # <= added
 
-  defp status_to_atom("NEW"), do: :new
-  defp status_to_atom("FILLED"), do: :filled 
-
-  def handle_cast(
-        {:add_order, %Exchange.Order{symbol: symbol} = order}, # <= struct updated
-        ...
-  ) do
-  ...
-  end
+  defp status_to_atom("NEW"), do: :new       # <= added
+  defp status_to_atom("FILLED"), do: :filled # <= added
 
   def handle_call(
         {:get_order, symbol, time, order_id},
@@ -431,24 +433,15 @@ The changes to different structs will have a ripple effect in other parts of the
   end
 
   defp order_limit(symbol, quantity, price, side) do
-    %Exchange.Order{} = # <= struct updated
     ...
    {:ok, fake_order} # <= no need to convert between structs any more
   end
 
   # remove the `convert_order_to_order_response/1` function - not required anymore
 
-  defp add_order(
-         %Exchange.Order{symbol: symbol} = order, # <= struct updated
-          ...
-   ) do
-   ...
-  end
-
   # and finally ;)
 
   defp convert_order_to_event(%Exchange.Order{} = order, time) do
-    # ^= updated struct
     %TradeEvent{
       event_time: time - 1,
       symbol: order.symbol,
@@ -483,27 +476,32 @@ Next, we can rename the configuration based `@binance_client` to `@exchange_clie
   @exchange_client Application.compile_env(:naive, :exchange_client)
 ```
 
-Besides the above, we are now relying on the generic structs, so we need to update all reference to the `Binance.Order` and `Binance.OrderResponse` modules with the `Exchange.Order` (including updating all field names) - for example:
+Besides the above, we are now relying on the generic structs, so we need to update all reference to the `Binance.OrderResponse` and `Binance.Order` modules with the `Exchange.Order` (including updating all field names) - for example:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
   # from:
         %Position{
-          buy_order: %Binance.OrderResponse{
+          buy_order: %Exchange.Order{
             order_id: order_id,
             status: "FILLED"
           },
-          sell_order: %Binance.OrderResponse{}
+          sell_order: Exchange.Order{}
         },
 
   # to:
         %Position{
           buy_order: %Exchange.Order{
-            id: order_id,
-            status: :filled
+            id: order_id,   # <= key updated
+            status: :filled # <= updated to atom
           },
           sell_order: %Exchange.Order{}
         }
+
+  # rename cheatsheet:
+  # 'order_id' to 'id' (do not use "global" file replace)
+  # 'orig_qty' to 'quantity' ("global" file replace safe)
+  # 'transact_time' to 'timestamp' ("global" file replace safe)
 ```
 
 As we modified/unified the interface(public functions) of the exchange, we need to update all calls that we simplified:
@@ -514,11 +512,6 @@ As we modified/unified the interface(public functions) of the exchange, we need 
   ...
   {:ok, %Exchange.Order{} = order} =
       @exchange_client.order_limit_sell(symbol, quantity, sell_price)
-  ...
-  {:ok, %Exchange.Order{} = current_sell_order} =
-      @exchange_client.get_order(
-        ...
-      )
 ```
 
 As now we will deal only with the `Exchange.Order` structs instead a pair of `Binance.OrderResponse` and `Binance.Order`, we can simplify the existing two clauses of `broadcast_order/1` into a single one(and remove the `convert_to_order/1` function):
