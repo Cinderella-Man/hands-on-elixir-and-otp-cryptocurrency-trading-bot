@@ -460,7 +460,7 @@ The above changes finish the modifications to the BiananceMock. The module now c
 
 ### Updating the `Naive.Strategy`
 
-We can now move on to the code that uses our behaviour - the `Naive.Strategy` module.
+We can now move on to the code will use our implementations of the `Core.Exchange` behaviour - the `Naive.Strategy` module.
 
 We will start by adding an alias to the `Core.Exchange` at the top of the module:
 
@@ -499,12 +499,15 @@ Besides the above, we are now relying on the generic structs, so we need to upda
         }
 
   # rename cheatsheet:
-  # 'order_id' to 'id' (do not use "global" file replace)
-  # 'orig_qty' to 'quantity' ("global" file replace safe)
-  # 'transact_time' to 'timestamp' ("global" file replace safe)
+  # order_id to id (do not use "global" file replace)
+  # orig_qty to quantity ("global" file replace safe)
+  # transact_time to timestamp ("global" file replace safe)
+  # "FILLED" to :filled ("global" file replace safe)
 ```
 
-As we modified/unified the interface(public functions) of the exchange, we need to update all calls that we simplified:
+\newpage
+
+As behaviour's interface(public functions) differs from the `Binance` module, we need to update all calls that we simplified:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -551,6 +554,7 @@ At this moment, we can change the configuration to make the `Naive.Strategy` wor
 config :naive,
   exchange_client: BinanceMock, # <= key updated
 
+
 # /config/prod.exs
 config :naive,
   exchange_client: Core.Exchange.Binance # <= key and module updated
@@ -565,7 +569,18 @@ config :naive,
 
 We can now test that `Naive.Strategy` works:
 
-```
+```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
+iex(1)> Streamer.start_streaming("XRPUSDT")
+...
+iex(2)> Naive.start_trading("XRPUSDT")
+...
+21:27:08.947 [info]  Position (XRPUSDT/1662841628946): Placing a BUY order @ 0.35630000, quantity: 561.00000000
+...
+21:42:12.813 [info]  Position (XRPUSDT/1662842530254): Placing a BUY order @ 0.35560000, quantity: 562.00000000
+21:42:15.280 [info]  Position (XRPUSDT/1662842530254): The BUY order is now partially filled
+21:42:15.281 [info]  Position (XRPUSDT/1662842530254): The BUY order is now filled. Placing a SELL order @ 0.35580000, quantity: 562.00000000
+21:42:15.536 [info]  Position (XRPUSDT/1662842530254): The SELL order is now partially filled
+21:42:15.593 [info]  Position (XRPUSDT/1662842530254): Trade cycle finished
 ```

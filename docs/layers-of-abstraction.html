@@ -834,7 +834,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="updating-the-naive.strategy" class="section level3" number="21.3.4">
 <h3><span class="header-section-number">21.3.4</span> Updating the <code>Naive.Strategy</code></h3>
-<p>We can now move on to the code that uses our behaviour - the <code>Naive.Strategy</code> module.</p>
+<p>We can now move on to the code will use our implementations of the <code>Core.Exchange</code> behaviour - the <code>Naive.Strategy</code> module.</p>
 <p>We will start by adding an alias to the <code>Core.Exchange</code> at the top of the module:</p>
 <div class="sourceCode" id="cb504"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb504-1"><a href="layers-of-abstraction.html#cb504-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb504-2"><a href="layers-of-abstraction.html#cb504-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span></code></pre></div>
@@ -862,10 +862,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb506-18"><a href="layers-of-abstraction.html#cb506-18" aria-hidden="true" tabindex="-1"></a>        }</span>
 <span id="cb506-19"><a href="layers-of-abstraction.html#cb506-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb506-20"><a href="layers-of-abstraction.html#cb506-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># rename cheatsheet:</span></span>
-<span id="cb506-21"><a href="layers-of-abstraction.html#cb506-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># &#39;order_id&#39; to &#39;id&#39; (do not use &quot;global&quot; file replace)</span></span>
-<span id="cb506-22"><a href="layers-of-abstraction.html#cb506-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># &#39;orig_qty&#39; to &#39;quantity&#39; (&quot;global&quot; file replace safe)</span></span>
-<span id="cb506-23"><a href="layers-of-abstraction.html#cb506-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># &#39;transact_time&#39; to &#39;timestamp&#39; (&quot;global&quot; file replace safe)</span></span></code></pre></div>
-<p>As we modified/unified the interface(public functions) of the exchange, we need to update all calls that we simplified:</p>
+<span id="cb506-21"><a href="layers-of-abstraction.html#cb506-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># order_id to id (do not use &quot;global&quot; file replace)</span></span>
+<span id="cb506-22"><a href="layers-of-abstraction.html#cb506-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># orig_qty to quantity (&quot;global&quot; file replace safe)</span></span>
+<span id="cb506-23"><a href="layers-of-abstraction.html#cb506-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># transact_time to timestamp (&quot;global&quot; file replace safe)</span></span>
+<span id="cb506-24"><a href="layers-of-abstraction.html#cb506-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># &quot;FILLED&quot; to :filled (&quot;global&quot; file replace safe)</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
+<p>As behaviour’s interface(public functions) differs from the <code>Binance</code> module, we need to update all calls that we simplified:</p>
 <div class="sourceCode" id="cb507"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb507-1"><a href="layers-of-abstraction.html#cb507-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb507-2"><a href="layers-of-abstraction.html#cb507-2" aria-hidden="true" tabindex="-1"></a>  {<span class="va">:ok</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order} <span class="op">=</span> <span class="ot">@exchange_client</span><span class="op">.</span>order_limit_buy(symbol, quantity, price)</span>
 <span id="cb507-3"><a href="layers-of-abstraction.html#cb507-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
@@ -897,19 +899,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
 <span id="cb510-3"><a href="layers-of-abstraction.html#cb510-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span>
 <span id="cb510-4"><a href="layers-of-abstraction.html#cb510-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-5"><a href="layers-of-abstraction.html#cb510-5" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
-<span id="cb510-6"><a href="layers-of-abstraction.html#cb510-6" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb510-7"><a href="layers-of-abstraction.html#cb510-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
-<span id="cb510-8"><a href="layers-of-abstraction.html#cb510-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-9"><a href="layers-of-abstraction.html#cb510-9" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
-<span id="cb510-10"><a href="layers-of-abstraction.html#cb510-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
-<span id="cb510-11"><a href="layers-of-abstraction.html#cb510-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-12"><a href="layers-of-abstraction.html#cb510-12" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
-<span id="cb510-13"><a href="layers-of-abstraction.html#cb510-13" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb510-14"><a href="layers-of-abstraction.html#cb510-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
+<span id="cb510-5"><a href="layers-of-abstraction.html#cb510-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb510-6"><a href="layers-of-abstraction.html#cb510-6" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
+<span id="cb510-7"><a href="layers-of-abstraction.html#cb510-7" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb510-8"><a href="layers-of-abstraction.html#cb510-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
+<span id="cb510-9"><a href="layers-of-abstraction.html#cb510-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb510-10"><a href="layers-of-abstraction.html#cb510-10" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
+<span id="cb510-11"><a href="layers-of-abstraction.html#cb510-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
+<span id="cb510-12"><a href="layers-of-abstraction.html#cb510-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb510-13"><a href="layers-of-abstraction.html#cb510-13" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb510-14"><a href="layers-of-abstraction.html#cb510-14" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb510-15"><a href="layers-of-abstraction.html#cb510-15" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
 <p>We can now test that <code>Naive.Strategy</code> works:</p>
-<pre><code>$ iex -S mix
-...</code></pre>
+<div class="sourceCode" id="cb511"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb511-1"><a href="layers-of-abstraction.html#cb511-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb511-2"><a href="layers-of-abstraction.html#cb511-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb511-3"><a href="layers-of-abstraction.html#cb511-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb511-4"><a href="layers-of-abstraction.html#cb511-4" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb511-5"><a href="layers-of-abstraction.html#cb511-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb511-6"><a href="layers-of-abstraction.html#cb511-6" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb511-7"><a href="layers-of-abstraction.html#cb511-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:27:08.947</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662841628946</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 0.35630000, quantity: 561.00000000</span>
+<span id="cb511-8"><a href="layers-of-abstraction.html#cb511-8" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
 
 </div>
 </div>
