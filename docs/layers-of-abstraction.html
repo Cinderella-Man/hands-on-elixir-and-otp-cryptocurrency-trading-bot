@@ -441,6 +441,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="21.3.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module"><i class="fa fa-check"></i><b>21.3.2</b> Implementation of the <code>Core.Exchange.Binance</code> module</a></li>
 <li class="chapter" data-level="21.3.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.3</b> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</a></li>
 <li class="chapter" data-level="21.3.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy"><i class="fa fa-check"></i><b>21.3.4</b> Updating the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="21.3.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-seed-scripts"><i class="fa fa-check"></i><b>21.3.5</b> Updating seed scripts</a></li>
+<li class="chapter" data-level="21.3.6" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#manual-testing-after-refactoring"><i class="fa fa-check"></i><b>21.3.6</b> Manual testing after refactoring</a></li>
+<li class="chapter" data-level="21.3.7" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#storing-the-data"><i class="fa fa-check"></i><b>21.3.7</b> Storing the data</a></li>
+<li class="chapter" data-level="21.3.8" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#the-mox-approach-summary"><i class="fa fa-check"></i><b>21.3.8</b> The <code>Mox</code> approach summary</a></li>
 </ul></li>
 </ul></li>
 <li class="divider"></li>
@@ -893,32 +897,118 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb509-8"><a href="layers-of-abstraction.html#cb509-8" aria-hidden="true" tabindex="-1"></a>      db_settings <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>from_struct()</span>
 <span id="cb509-9"><a href="layers-of-abstraction.html#cb509-9" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb509-10"><a href="layers-of-abstraction.html#cb509-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The function is now much more straightforward as we use the <code>fetch_symbol_filters/1</code> function implemented by the behaviour.</p>
+<p>The function is now much more straightforward as we use the <code>fetch_symbol_filters/1</code> function implemented as a part of the behaviour.</p>
+</div>
+<div id="updating-seed-scripts" class="section level3" number="21.3.5">
+<h3><span class="header-section-number">21.3.5</span> Updating seed scripts</h3>
+<p>The other place where we are using the exchange are seed scripts that we need to update. First inside the <code>Naive</code> application:</p>
+<div class="sourceCode" id="cb510"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb510-1"><a href="layers-of-abstraction.html#cb510-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/priv/seed_settings.exs</span></span>
+<span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" aria-hidden="true" tabindex="-1"></a>exchange_client <span class="op">=</span> <span class="cn">Application</span><span class="op">.</span>get_env(<span class="va">:naive</span>, <span class="va">:exchange_client</span>)</span>
+<span id="cb510-3"><a href="layers-of-abstraction.html#cb510-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb510-4"><a href="layers-of-abstraction.html#cb510-4" aria-hidden="true" tabindex="-1"></a>{<span class="va">:ok</span>, symbols} <span class="op">=</span> exchange_client<span class="op">.</span>fetch_symbols()</span>
+<span id="cb510-5"><a href="layers-of-abstraction.html#cb510-5" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb510-6"><a href="layers-of-abstraction.html#cb510-6" aria-hidden="true" tabindex="-1"></a>maps <span class="op">=</span> symbols</span>
+<span id="cb510-7"><a href="layers-of-abstraction.html#cb510-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>(%{base_settings <span class="op">|</span> <span class="va">symbol:</span> <span class="op">&amp;</span><span class="dv">1</span>}))</span></code></pre></div>
+<p>We are no longer using the <code>binance_client</code> but <code>exchange_client</code> instead - in the same fashion as inside the <code>Naive.Strategy</code> module. Both implementations provide the <code>fetch_symbols/0</code> function, which returns a list of symbols - hence the change inside the <code>Enum/2</code> function.</p>
+<p>We will follow up with changes to the seeding script of the <code>Streamer</code> application(I will skip listing the changes here as they are <strong>the same</strong> as in case of the <code>Naive</code> application).</p>
 <p>At this moment, we can change the configuration to make the <code>Naive.Strategy</code> work:</p>
-<div class="sourceCode" id="cb510"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb510-1"><a href="layers-of-abstraction.html#cb510-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.ex </span></span>
-<span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb510-3"><a href="layers-of-abstraction.html#cb510-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span>
-<span id="cb510-4"><a href="layers-of-abstraction.html#cb510-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-5"><a href="layers-of-abstraction.html#cb510-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-6"><a href="layers-of-abstraction.html#cb510-6" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
-<span id="cb510-7"><a href="layers-of-abstraction.html#cb510-7" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb510-8"><a href="layers-of-abstraction.html#cb510-8" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
-<span id="cb510-9"><a href="layers-of-abstraction.html#cb510-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-10"><a href="layers-of-abstraction.html#cb510-10" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
-<span id="cb510-11"><a href="layers-of-abstraction.html#cb510-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
-<span id="cb510-12"><a href="layers-of-abstraction.html#cb510-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb510-13"><a href="layers-of-abstraction.html#cb510-13" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
-<span id="cb510-14"><a href="layers-of-abstraction.html#cb510-14" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb510-15"><a href="layers-of-abstraction.html#cb510-15" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
+<div class="sourceCode" id="cb511"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb511-1"><a href="layers-of-abstraction.html#cb511-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/config.ex </span></span>
+<span id="cb511-2"><a href="layers-of-abstraction.html#cb511-2" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb511-3"><a href="layers-of-abstraction.html#cb511-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span>
+<span id="cb511-4"><a href="layers-of-abstraction.html#cb511-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb511-5"><a href="layers-of-abstraction.html#cb511-5" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
+<span id="cb511-6"><a href="layers-of-abstraction.html#cb511-6" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb511-7"><a href="layers-of-abstraction.html#cb511-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
+<span id="cb511-8"><a href="layers-of-abstraction.html#cb511-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb511-9"><a href="layers-of-abstraction.html#cb511-9" aria-hidden="true" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
+<span id="cb511-10"><a href="layers-of-abstraction.html#cb511-10" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
+<span id="cb511-11"><a href="layers-of-abstraction.html#cb511-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb511-12"><a href="layers-of-abstraction.html#cb511-12" aria-hidden="true" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb511-13"><a href="layers-of-abstraction.html#cb511-13" aria-hidden="true" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb511-14"><a href="layers-of-abstraction.html#cb511-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
+</div>
+<div id="manual-testing-after-refactoring" class="section level3" number="21.3.6">
+<h3><span class="header-section-number">21.3.6</span> Manual testing after refactoring</h3>
 <p>We can now test that <code>Naive.Strategy</code> works:</p>
-<div class="sourceCode" id="cb511"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb511-1"><a href="layers-of-abstraction.html#cb511-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb511-2"><a href="layers-of-abstraction.html#cb511-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb511-3"><a href="layers-of-abstraction.html#cb511-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb511-4"><a href="layers-of-abstraction.html#cb511-4" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb511-5"><a href="layers-of-abstraction.html#cb511-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb511-6"><a href="layers-of-abstraction.html#cb511-6" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb511-7"><a href="layers-of-abstraction.html#cb511-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:27:08.947</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662841628946</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 0.35630000, quantity: 561.00000000</span>
-<span id="cb511-8"><a href="layers-of-abstraction.html#cb511-8" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb512"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb512-1"><a href="layers-of-abstraction.html#cb512-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb512-2"><a href="layers-of-abstraction.html#cb512-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb512-3"><a href="layers-of-abstraction.html#cb512-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb512-4"><a href="layers-of-abstraction.html#cb512-4" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb512-5"><a href="layers-of-abstraction.html#cb512-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb512-6"><a href="layers-of-abstraction.html#cb512-6" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb512-7"><a href="layers-of-abstraction.html#cb512-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:42:12.813</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 0.35560000,</span>
+<span id="cb512-8"><a href="layers-of-abstraction.html#cb512-8" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 562.00000000</span>
+<span id="cb512-9"><a href="layers-of-abstraction.html#cb512-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:42:15.280</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> The BUY order is now partially filled</span>
+<span id="cb512-10"><a href="layers-of-abstraction.html#cb512-10" aria-hidden="true" tabindex="-1"></a><span class="ex">21:42:15.281</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> The BUY order is now filled. Placing</span>
+<span id="cb512-11"><a href="layers-of-abstraction.html#cb512-11" aria-hidden="true" tabindex="-1"></a><span class="ex">a</span> SELL order @ 0.35580000, quantity: 562.00000000</span>
+<span id="cb512-12"><a href="layers-of-abstraction.html#cb512-12" aria-hidden="true" tabindex="-1"></a><span class="ex">21:42:15.536</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> The SELL order is now partially</span>
+<span id="cb512-13"><a href="layers-of-abstraction.html#cb512-13" aria-hidden="true" tabindex="-1"></a><span class="ex">filled</span></span>
+<span id="cb512-14"><a href="layers-of-abstraction.html#cb512-14" aria-hidden="true" tabindex="-1"></a><span class="ex">21:42:15.593</span> [info]  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> Trade cycle finished</span></code></pre></div>
+<p>The above output confirms that we now have a full working trading flow that uses either <code>Core.Exchange.Binance</code> or <code>BinanceMock</code>.</p>
+</div>
+<div id="storing-the-data" class="section level3" number="21.3.7">
+<h3><span class="header-section-number">21.3.7</span> Storing the data</h3>
+<p>As we are now using the generic structs like the <code>Core.Exchange.Order</code>, all of the data storage-related code needs to be updated.</p>
+<p>We will start by updating the migration script to store only limited passed data:</p>
+<div class="sourceCode" id="cb513"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb513-1"><a href="layers-of-abstraction.html#cb513-1" aria-hidden="true" tabindex="-1"></a>   <span class="co"># /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs</span></span>
+<span id="cb513-2"><a href="layers-of-abstraction.html#cb513-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
+<span id="cb513-3"><a href="layers-of-abstraction.html#cb513-3" aria-hidden="true" tabindex="-1"></a>    create table(<span class="va">:orders</span>, <span class="va">primary_key:</span> <span class="cn">false</span>) <span class="kw">do</span></span>
+<span id="cb513-4"><a href="layers-of-abstraction.html#cb513-4" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:id</span>, <span class="va">:bigint</span>, <span class="va">primary_key:</span> <span class="cn">true</span>)</span>
+<span id="cb513-5"><a href="layers-of-abstraction.html#cb513-5" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:symbol</span>, <span class="va">:text</span>)</span>
+<span id="cb513-6"><a href="layers-of-abstraction.html#cb513-6" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:price</span>, <span class="va">:text</span>)</span>
+<span id="cb513-7"><a href="layers-of-abstraction.html#cb513-7" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:quantity</span>, <span class="va">:text</span>)</span>
+<span id="cb513-8"><a href="layers-of-abstraction.html#cb513-8" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:side</span>, <span class="va">:text</span>)</span>
+<span id="cb513-9"><a href="layers-of-abstraction.html#cb513-9" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:status</span>, <span class="va">:text</span>)</span>
+<span id="cb513-10"><a href="layers-of-abstraction.html#cb513-10" aria-hidden="true" tabindex="-1"></a>      add(<span class="va">:timestamp</span>, <span class="va">:bigint</span>)</span>
+<span id="cb513-11"><a href="layers-of-abstraction.html#cb513-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb513-12"><a href="layers-of-abstraction.html#cb513-12" aria-hidden="true" tabindex="-1"></a>      timestamps()</span>
+<span id="cb513-13"><a href="layers-of-abstraction.html#cb513-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb513-14"><a href="layers-of-abstraction.html#cb513-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>A lot of fields got removed/renamed, including the primary key. We will follow up by updating the schema for that table:</p>
+<div class="sourceCode" id="cb514"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb514-1"><a href="layers-of-abstraction.html#cb514-1" aria-hidden="true" tabindex="-1"></a> <span class="co"># /apps/data_warehouse/lib/data_warehouse/schema/order.ex</span></span>
+<span id="cb514-2"><a href="layers-of-abstraction.html#cb514-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@primary_key</span> {<span class="va">:id</span>, <span class="va">:integer</span>, <span class="va">autogenerate:</span> <span class="cn">false</span>} <span class="co"># &lt;= column updated</span></span>
+<span id="cb514-3"><a href="layers-of-abstraction.html#cb514-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb514-4"><a href="layers-of-abstraction.html#cb514-4" aria-hidden="true" tabindex="-1"></a>  schema <span class="st">&quot;orders&quot;</span> <span class="kw">do</span></span>
+<span id="cb514-5"><a href="layers-of-abstraction.html#cb514-5" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:symbol</span>, <span class="va">:string</span>)</span>
+<span id="cb514-6"><a href="layers-of-abstraction.html#cb514-6" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:price</span>, <span class="va">:string</span>)</span>
+<span id="cb514-7"><a href="layers-of-abstraction.html#cb514-7" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:quantity</span>, <span class="va">:string</span>)</span>
+<span id="cb514-8"><a href="layers-of-abstraction.html#cb514-8" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:side</span>, <span class="va">:string</span>)</span>
+<span id="cb514-9"><a href="layers-of-abstraction.html#cb514-9" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:status</span>, <span class="va">:string</span>)</span>
+<span id="cb514-10"><a href="layers-of-abstraction.html#cb514-10" aria-hidden="true" tabindex="-1"></a>    field(<span class="va">:timestamp</span>, <span class="va">:integer</span>)</span>
+<span id="cb514-11"><a href="layers-of-abstraction.html#cb514-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb514-12"><a href="layers-of-abstraction.html#cb514-12" aria-hidden="true" tabindex="-1"></a>    timestamps()</span>
+<span id="cb514-13"><a href="layers-of-abstraction.html#cb514-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The schema was updated to mirror the new shape of the <code>orders</code> db table.
+We can now progress to the Worker, where we will start to use the <code>Core.Exchange</code> based structs:</p>
+<div class="sourceCode" id="cb515"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb515-1"><a href="layers-of-abstraction.html#cb515-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex</span></span>
+<span id="cb515-2"><a href="layers-of-abstraction.html#cb515-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span> <span class="co"># &lt;= alias added</span></span>
+<span id="cb515-3"><a href="layers-of-abstraction.html#cb515-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb515-4"><a href="layers-of-abstraction.html#cb515-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span>{} <span class="op">=</span> order, state) <span class="kw">do</span></span>
+<span id="cb515-5"><a href="layers-of-abstraction.html#cb515-5" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span></span>
+<span id="cb515-6"><a href="layers-of-abstraction.html#cb515-6" aria-hidden="true" tabindex="-1"></a>      order</span>
+<span id="cb515-7"><a href="layers-of-abstraction.html#cb515-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>from_struct()</span>
+<span id="cb515-8"><a href="layers-of-abstraction.html#cb515-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>merge(%{</span>
+<span id="cb515-9"><a href="layers-of-abstraction.html#cb515-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">side:</span> atom_to_side(order<span class="op">.</span>side),</span>
+<span id="cb515-10"><a href="layers-of-abstraction.html#cb515-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">status:</span> atom_to_status(order<span class="op">.</span>status)</span>
+<span id="cb515-11"><a href="layers-of-abstraction.html#cb515-11" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="cb515-12"><a href="layers-of-abstraction.html#cb515-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb515-13"><a href="layers-of-abstraction.html#cb515-13" aria-hidden="true" tabindex="-1"></a>    struct(<span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Order</span>, data)</span>
+<span id="cb515-14"><a href="layers-of-abstraction.html#cb515-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span>insert(</span>
+<span id="cb515-15"><a href="layers-of-abstraction.html#cb515-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">on_conflict:</span> <span class="va">:replace_all</span>,</span>
+<span id="cb515-16"><a href="layers-of-abstraction.html#cb515-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">conflict_target:</span> <span class="va">:id</span> <span class="co"># &lt;= column updated</span></span>
+<span id="cb515-17"><a href="layers-of-abstraction.html#cb515-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb515-18"><a href="layers-of-abstraction.html#cb515-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb515-19"><a href="layers-of-abstraction.html#cb515-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb515-20"><a href="layers-of-abstraction.html#cb515-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> atom_to_side(<span class="va">:buy</span>), <span class="kw">do</span>: <span class="st">&quot;BUY&quot;</span></span>
+<span id="cb515-21"><a href="layers-of-abstraction.html#cb515-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> atom_to_side(<span class="va">:sell</span>), <span class="kw">do</span>: <span class="st">&quot;SELL&quot;</span></span>
+<span id="cb515-22"><a href="layers-of-abstraction.html#cb515-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb515-23"><a href="layers-of-abstraction.html#cb515-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> atom_to_status(<span class="va">:new</span>), <span class="kw">do</span>: <span class="st">&quot;NEW&quot;</span></span>
+<span id="cb515-24"><a href="layers-of-abstraction.html#cb515-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> atom_to_status(<span class="va">:filled</span>), <span class="kw">do</span>: <span class="st">&quot;FILLED&quot;</span></span></code></pre></div>
+<p>The <code>Worker</code> will now pattern matches on the <code>Core.Exchange.Order</code> struct instead of <code>Binance.Order</code> as before. Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed <code>id</code> column. Finally, we added the helper function to convert <code>status</code> and <code>side</code> atoms to strings.</p>
+</div>
+<div id="the-mox-approach-summary" class="section level3" number="21.3.8">
+<h3><span class="header-section-number">21.3.8</span> The <code>Mox</code> approach summary</h3>
+<p>Todo</p>
 
 </div>
 </div>

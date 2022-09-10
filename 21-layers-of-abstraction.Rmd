@@ -545,7 +545,25 @@ The final change to the `Naive.Strategy` module will be to update the `fetch_sym
   end
 ```
 
-The function is now much more straightforward as we use the `fetch_symbol_filters/1` function implemented by the behaviour.
+The function is now much more straightforward as we use the `fetch_symbol_filters/1` function implemented as a part of the behaviour.
+
+### Updating seed scripts
+
+The other place where we are using the exchange are seed scripts that we need to update. First inside the `Naive` application:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/priv/seed_settings.exs
+exchange_client = Application.get_env(:naive, :exchange_client)
+...
+{:ok, symbols} = exchange_client.fetch_symbols()
+...
+maps = symbols
+  |> Enum.map(&(%{base_settings | symbol: &1}))
+```
+
+We are no longer using the `binance_client` but `exchange_client` instead - in the same fashion as inside the `Naive.Strategy` module. Both implementations provide the `fetch_symbols/0` function, which returns a list of symbols - hence the change inside the `Enum/2` function.
+
+We will follow up with changes to the seeding script of the `Streamer` application(I will skip listing the changes here as they are  **the same** as in case of the `Naive` application).
 
 At this moment, we can change the configuration to make the `Naive.Strategy` work:
 
@@ -553,7 +571,6 @@ At this moment, we can change the configuration to make the `Naive.Strategy` wor
 # /config/config.ex 
 config :naive,
   exchange_client: BinanceMock, # <= key updated
-
 
 # /config/prod.exs
 config :naive,
@@ -567,6 +584,8 @@ config :naive,
   exchange_client: Test.BinanceMock, # <= key updated
 ```
 
+### Manual testing after refactoring
+
 We can now test that `Naive.Strategy` works:
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -576,11 +595,91 @@ iex(1)> Streamer.start_streaming("XRPUSDT")
 ...
 iex(2)> Naive.start_trading("XRPUSDT")
 ...
-21:27:08.947 [info]  Position (XRPUSDT/1662841628946): Placing a BUY order @ 0.35630000, quantity: 561.00000000
-...
-21:42:12.813 [info]  Position (XRPUSDT/1662842530254): Placing a BUY order @ 0.35560000, quantity: 562.00000000
+21:42:12.813 [info]  Position (XRPUSDT/1662842530254): Placing a BUY order @ 0.35560000,
+quantity: 562.00000000
 21:42:15.280 [info]  Position (XRPUSDT/1662842530254): The BUY order is now partially filled
-21:42:15.281 [info]  Position (XRPUSDT/1662842530254): The BUY order is now filled. Placing a SELL order @ 0.35580000, quantity: 562.00000000
-21:42:15.536 [info]  Position (XRPUSDT/1662842530254): The SELL order is now partially filled
+21:42:15.281 [info]  Position (XRPUSDT/1662842530254): The BUY order is now filled. Placing
+a SELL order @ 0.35580000, quantity: 562.00000000
+21:42:15.536 [info]  Position (XRPUSDT/1662842530254): The SELL order is now partially
+filled
 21:42:15.593 [info]  Position (XRPUSDT/1662842530254): Trade cycle finished
 ```
+
+The above output confirms that we now have a full working trading flow that uses either `Core.Exchange.Binance` or `BinanceMock`. 
+
+### Storing the data
+
+As we are now using the generic structs like the `Core.Exchange.Order`, all of the data storage-related code needs to be updated.
+
+We will start by updating the migration script to store only limited passed data:
+
+```{r, engine = 'elixir', eval = FALSE}
+   # /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs
+  def change do
+    create table(:orders, primary_key: false) do
+      add(:id, :bigint, primary_key: true)
+      add(:symbol, :text)
+      add(:price, :text)
+      add(:quantity, :text)
+      add(:side, :text)
+      add(:status, :text)
+      add(:timestamp, :bigint)
+
+      timestamps()
+    end
+  end
+```
+
+A lot of fields got removed/renamed, including the primary key. We will follow up by updating the schema for that table:
+
+```{r, engine = 'elixir', eval = FALSE}
+ # /apps/data_warehouse/lib/data_warehouse/schema/order.ex
+  @primary_key {:id, :integer, autogenerate: false} # <= column updated
+
+  schema "orders" do
+    field(:symbol, :string)
+    field(:price, :string)
+    field(:quantity, :string)
+    field(:side, :string)
+    field(:status, :string)
+    field(:timestamp, :integer)
+
+    timestamps()
+  end
+```
+
+The schema was updated to mirror the new shape of the `orders`  db table.
+We can now progress to the Worker, where we will start to use the `Core.Exchange` based structs:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
+  alias Core.Exchange # <= alias added
+  ...
+  def handle_info(%Exchange.Order{} = order, state) do
+    data =
+      order
+      |> Map.from_struct()
+      |> Map.merge(%{
+        side: atom_to_side(order.side),
+        status: atom_to_status(order.status)
+      })
+
+    struct(DataWarehouse.Schema.Order, data)
+    |> DataWarehouse.Repo.insert(
+      on_conflict: :replace_all,
+      conflict_target: :id # <= column updated
+    )
+    ...
+
+  defp atom_to_side(:buy), do: "BUY"
+  defp atom_to_side(:sell), do: "SELL"
+
+  defp atom_to_status(:new), do: "NEW"
+  defp atom_to_status(:filled), do: "FILLED"
+```
+
+The `Worker` will now pattern matches on the `Core.Exchange.Order` struct instead of `Binance.Order` as before. Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed `id` column. Finally, we added the helper function to convert `status` and `side` atoms to strings.
+
+### The `Mox` approach summary
+
+Todo
