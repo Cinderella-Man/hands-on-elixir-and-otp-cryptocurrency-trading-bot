@@ -1008,7 +1008,15 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 </div>
 <div id="the-mox-approach-summary" class="section level3" number="21.3.8">
 <h3><span class="header-section-number">21.3.8</span> The <code>Mox</code> approach summary</h3>
-<p>Todo</p>
+<p>We didn’t yet look into updating our tests, but instead of focusing on that, we will chat about our implementation.</p>
+<p>First, it’s worth stressing that it required multiple changes to many parts of the system spanning from the <code>Naive</code> application through <code>Streamer</code> (seeding) and ending in the <code>DataWarehouse</code> application.</p>
+<p>More importantly, we needed to define a behaviour. It gives us a compile-time guarantee, but on the other hand, we were pushed to define it very early.</p>
+<p>Let me explain.</p>
+<p>Up to this moment, we were using only the <code>Binance</code> module. We didn’t have an opportunity to work with other modules/exchanges. In fact, we didn’t want to create an <code>Exchange</code> level abstraction. We were happy with using the <code>Binance</code> module and we added the behaviour just to be able to use the <code>Mox</code> package to mock it inside our tests. All of this feels like a really heavy over-engineering to be able to test.</p>
+<p>Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the <code>Binance</code> module. We have never seen examples of other structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future will require updates to behaviour, behaviour’s existing implementations and most of the code that uses it (like the <code>Naive.Strategy</code>).</p>
+<p>At this moment abstracting our code into behaviour+implementations is uneducated over-engineering and simply asking for troubles in the future.</p>
+<p>What’s the alternative?</p>
+<p>The first thing that comes to mind would be to look for some package that someone else maintains, and it supports/abstracts multiple exchanges. CCXT</p>
 
 </div>
 </div>
