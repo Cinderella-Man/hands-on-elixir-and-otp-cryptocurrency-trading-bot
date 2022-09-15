@@ -3,6 +3,7 @@
 ## Objectives
 - admitting the simplification
 - abstracting the exchange
+- mimicking the reality
 
 ## Admitting the simplification
 
@@ -698,4 +699,19 @@ At this moment abstracting our code into behaviour+implementations is uneducated
 
 What's the alternative?
 
-The first thing that comes to mind would be to look for some package that someone else maintains, and it supports/abstracts multiple exchanges. CCXT
+The first thing that comes to mind would be to look for some "standard" that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be "CCXT" - it's actually a GitHub project that is available for Python, JavaScript and PHP.
+
+We could go a step further and look for an Elixir implementation of the CCXT package, and we could find the package named `ccxtex`. It's a wrapper around the JavaScript version of the CCXT package.
+
+Using the above(either the `ccxtex` or `ccxt` as a "standard") instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.
+
+Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, puts usage of the `Mox` package in serious doubt.
+
+The source code up to this moment can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox)
+
+We will stop here and **revert back** to the source code from the end of the [20th chapter]((https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something that we are definitely not prepared to fix, we will look into alternatives based on the other dependency of the `Naive.Strategy`.
+
+## Mimicking the reality
+
+In this section, we will look into the dependency on the `Ecto.Repo` inside the `Naive.Strategy`.
+

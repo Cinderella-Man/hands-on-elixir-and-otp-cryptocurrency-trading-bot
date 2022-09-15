@@ -446,6 +446,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="21.3.7" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#storing-the-data"><i class="fa fa-check"></i><b>21.3.7</b> Storing the data</a></li>
 <li class="chapter" data-level="21.3.8" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#the-mox-approach-summary"><i class="fa fa-check"></i><b>21.3.8</b> The <code>Mox</code> approach summary</a></li>
 </ul></li>
+<li class="chapter" data-level="21.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#mimicking-the-reality"><i class="fa fa-check"></i><b>21.4</b> Mimicking the reality</a></li>
 </ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
@@ -474,6 +475,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li>admitting the simplification</li>
 <li>abstracting the exchange</li>
+<li>mimicking the reality</li>
 </ul>
 </div>
 <div id="admitting-the-simplification" class="section level2" number="21.2">
@@ -1016,9 +1018,18 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <p>Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the <code>Binance</code> module. We have never seen examples of other structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future will require updates to behaviour, behaviour’s existing implementations and most of the code that uses it (like the <code>Naive.Strategy</code>).</p>
 <p>At this moment abstracting our code into behaviour+implementations is uneducated over-engineering and simply asking for troubles in the future.</p>
 <p>What’s the alternative?</p>
-<p>The first thing that comes to mind would be to look for some package that someone else maintains, and it supports/abstracts multiple exchanges. CCXT</p>
-
+<p>The first thing that comes to mind would be to look for some “standard” that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be “CCXT” - it’s actually a GitHub project that is available for Python, JavaScript and PHP.</p>
+<p>We could go a step further and look for an Elixir implementation of the CCXT package, and we could find the package named <code>ccxtex</code>. It’s a wrapper around the JavaScript version of the CCXT package.</p>
+<p>Using the above(either the <code>ccxtex</code> or <code>ccxt</code> as a “standard”) instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.</p>
+<p>Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, puts usage of the <code>Mox</code> package in serious doubt.</p>
+<p>The source code up to this moment can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox">Github</a></p>
+<p>We will stop here and <strong>revert back</strong> to the source code from the end of the [20th chapter]((<a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20" class="uri">https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20</a>). Instead of leaving something that we are definitely not prepared to fix, we will look into alternatives based on the other dependency of the <code>Naive.Strategy</code>.</p>
 </div>
+</div>
+<div id="mimicking-the-reality" class="section level2" number="21.4">
+<h2><span class="header-section-number">21.4</span> Mimicking the reality</h2>
+<p>In this section, we will look into the dependency on the <code>Ecto.Repo</code> inside the <code>Naive.Strategy</code>.</p>
+
 </div>
 </div>
             </section>
