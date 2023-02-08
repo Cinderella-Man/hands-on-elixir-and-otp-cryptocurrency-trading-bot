@@ -4,7 +4,7 @@
 - admitting the simplification
 - abstracting the exchange
 - mimicking the reality
-- swapping using attributes
+- swapping back to attributes
 
 ## Admitting the simplification
 
@@ -981,7 +981,7 @@ It's worth noting that we were able to capture the log message even with global 
 
 That would wrap up the writing the unit tests. But how will this work with running our code locally(or in "production") or running integration tests?
 
-### Swapping using attributes
+## Swapping back to attributes
 
 We need to have a way to swap implementation between dev and prod environments.
 
@@ -1026,36 +1026,36 @@ We will now move to config files, where we will re-add the `binance_client` conf
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
-config :streamer,                       # <= add
+config :streamer,             # <= add
   binance_client: BinanceMock # <= add
 
-config :naive,                               # <= add
+config :naive,                  # <= add
   binance_client: BinanceMock,  # <= add
-  leader: Naive.Leader,                # <= remove
+  leader: Naive.Leader,         # <= remove
 
 # /config/prod.exs
-config :streamer,               # <= add
+config :streamer,         # <= add
   binance_client: Binance # <= add
 
-config :naive,                      # <= add
+config :naive,              # <= add
   binance_client: Binance,  # <= add
 
 # /config/test.exs
-config :core,                                     # <= remove
-  logger: Test.LoggerMock,             # <= remove
+config :core,                    # <= remove
+  logger: Test.LoggerMock,       # <= remove
   pubsub_client: Test.PubSubMock # <= remove
 
-config :naive,                                       # <= remove
+config :naive,                      # <= remove
   binance_client: Test.BinanceMock, # <= remove
-  leader: Test.Naive.LeaderMock,      # <= remove
-  repo: Test.Naive.RepoMock             # <= remove
+  leader: Test.Naive.LeaderMock,    # <= remove
+  repo: Test.Naive.RepoMock         # <= remove
 ```
 
 It's important to understand that we don't need to configure the `binance_client` inside the test configuration. As we are now utilizing the `mimic` package, we are driving mocking from the test level.
 
 The knock-on effect of bringing back the environment driven `@binance_client` is that now we will need to mimic the `BinanceMock` module instead of `Binance` for our unit tests. To fix that we need to update the test helper:
 
- ```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
 ...
 Mimic.copy(BinanceMock) # <= updated from Binance
@@ -1063,7 +1063,7 @@ Mimic.copy(BinanceMock) # <= updated from Binance
 
 and the unit test:
 
- ```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/test/naive/strategy_test.exs
     ...
     BinanceMock # <= updated from Binance
@@ -1081,7 +1081,9 @@ $ mix test.unit
 Finished in 0.2 seconds (0.2s async, 0.00s sync)
 2 tests, 0 failures, 1 excluded
 ```
+
 As well as run the integration tests:
+
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
 .
@@ -1100,6 +1102,7 @@ iex(2)> Naive.start_trading("ETHUSDT")
 ...
 iex(3)> 
 22:57:53.834 [info] Position (ETHUSDT/1675724273832): Placing a BUY order @ 1632.82000000, quantity: 0.12240000
+```
 
 In this chapter, we've reiterated the ideas behind the `mox` package, highlighting its shortcomings, especially the push to create needless abstractions(behaviours). We then dropped our changes to show the alternative approach using the 'mimic' package, which was way handier and easier to understand. In the end, we realized that to facilitate using different implementations between dev and production, we will need to keep the `@binance_client` attribute.
 
