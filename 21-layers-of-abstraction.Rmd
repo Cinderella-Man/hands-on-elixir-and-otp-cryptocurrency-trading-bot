@@ -285,7 +285,7 @@ That finishes our first implementation of the `Core.Exchange` behaviour. It will
 
 ### Updating the `BinanceMock` module to implement the `Core.Exchange` behaviour
 
-As mentioned, the `BinanceMock` module must implement the `Core.Exchange` behaviour. It will (at compile time) guarantee that both `Core.Exchange.Binance` and `BinanceMock` share a common interface that can be used by the `Naive.Strategy`.
+The `BinanceMock` module must implement the `Core.Exchange` behaviour. It will (at compile time) guarantee that both `Core.Exchange.Binance` and `BinanceMock` share a common interface that can be used by the `Naive.Strategy`.
 
 First, we will start by declaring that the `BinanceMock` actually implements the `Core.Exchange` behaviour:
 
@@ -302,7 +302,7 @@ Next, we can replace all the aliases to the `Binance` structs with a single alia
   alias Core.Exchange
 ```
 
-Don't forget to update all references to the `Binance.Order` with `Exchange.Order` module.
+Don't forget to update all references to the `Binance.Order` with `Exchange.Order` module(and remove it's alias).
 
 As the behaviour is now defined in the `Core.Exchange` module, we can remove all `@type` and `@callback` attributes.
 
@@ -357,7 +357,7 @@ Moving on, we will replace the `get_exchange_info/0`(together with it's `get_cac
   end
 
   defp fetch_symbol_filters(symbol, exchange_info) do
-    # <= this is a copy of `Core.Binance.fetch_symbol_filters/2` function
+    # <= this is a copy of `Core.Exchange.Binance.fetch_symbol_filters/2` function
   end
 ```
 
@@ -484,16 +484,16 @@ Besides the above, we are now relying on the generic structs, so we need to upda
   # /apps/naive/lib/naive/strategy.ex
   # from:
         %Position{
-          buy_order: %Exchange.Order{
+          buy_order: %Binance.Order{
             order_id: order_id,
             status: "FILLED"
           },
-          sell_order: Exchange.Order{}
+          sell_order: Binance.Order{}
         },
 
   # to:
         %Position{
-          buy_order: %Exchange.Order{
+          buy_order: %Exchange.Order{ # <= struct updated
             id: order_id,   # <= key updated
             status: :filled # <= updated to atom
           },
@@ -549,6 +549,8 @@ The final change to the `Naive.Strategy` module will be to update the `fetch_sym
 
 The function is now much more straightforward as we use the `fetch_symbol_filters/1` function implemented as a part of the behaviour.
 
+\newpage
+
 ### Updating seed scripts
 
 The other places we use the exchange are seed scripts that we need to update. First inside the `Naive` application:
@@ -571,6 +573,9 @@ At this moment, we can change the configuration to make the `Naive.Strategy` wor
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.ex 
+config :streamer,
+  exchange_client: BinanceMock, # <= key updated
+
 config :naive,
   exchange_client: BinanceMock, # <= key updated
 
@@ -585,6 +590,8 @@ config :streamer,
 config :naive,
   exchange_client: Test.BinanceMock, # <= key updated
 ```
+
+\newpage
 
 ### Manual testing after refactoring
 
@@ -680,7 +687,7 @@ We can now progress to the Worker, where we will start to use the `Core.Exchange
   defp atom_to_status(:filled), do: "FILLED"
 ```
 
-The `Worker` will now pattern matches on the `Core.Exchange.Order` struct instead of `Binance.Order` as before. Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed `id` column. Finally, we added the helper function to convert `status` and `side` atoms to strings.
+The `Worker` will now pattern matches on the `Core.Exchange.Order` struct instead of `Binance.Order` as before. Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed `id` column. Finally, we added the helper functions to convert `status` and `side` atoms to strings.
 
 ### The `Mox` approach summary
 
@@ -692,7 +699,7 @@ More importantly, we needed to define a behaviour. It gives us a compile-time gu
 
 Let me explain.
 
-Up to this moment, we were using only the `Binance` module. We didn't have an opportunity to work with other modules/exchanges. In fact, we **didn't want to** create an `Exchange` level abstraction. We were happy with using the `Binance` module and we added the behaviour just to be able to use the `Mox` package to mock it inside our tests. All of this feels like a really heavy over-engineering to be able to test.
+Up to this moment, we were using only the `Binance` module. We didn't have an opportunity to work with other modules/exchanges. In fact, we **didn't want to** create an `Exchange` level abstraction. We were happy with using the `Binance` module and we added the behaviour just to be able to use the `Mox` package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.
 
 Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the `Binance` module. We have never seen examples of other structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future will require updates to behaviour, behaviour's existing implementations and most of the code that uses it (like the `Naive.Strategy`).
 
@@ -702,7 +709,7 @@ At this moment, abstracting our code into behaviour+implementations is uneducate
 
 What's the alternative?
 
-The first thing that comes to mind would be to look for some "standard" that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be "CCXT" - it's actually a GitHub project that is available for Python, JavaScript and PHP.
+The first thing that comes to mind would be to look for some "standard" that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be "CCXT" - it's actually a open source "library" that is available for Python, JavaScript and PHP.
 
 We could go a step further and look for an Elixir implementation of the CCXT package, and we could find the package named `ccxtex`. It's a wrapper around the JavaScript version of the CCXT package.
 
@@ -712,7 +719,7 @@ Those updates, coupled with the fact that we would add the behaviour just to be 
 
 The source code up to this moment can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox)
 
-We will stop here, and **revert back** to the source code from the end of the [20th chapter]((https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something that we are definitely not prepared to fix, we will look into alternative ways to test our strategy.
+We will stop here, and **revert back** to the source code from the end of the [20th chapter](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something that we are definitely not prepared to fix, we will look into alternative ways to test our strategy.
 
 ## Mimicking the reality
 

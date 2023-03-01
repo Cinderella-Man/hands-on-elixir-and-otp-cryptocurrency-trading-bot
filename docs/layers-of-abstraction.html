@@ -700,7 +700,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="updating-the-binancemock-module-to-implement-the-core.exchange-behaviour" class="section level3 hasAnchor" number="21.3.3">
 <h3><span class="header-section-number">21.3.3</span> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour<a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>As mentioned, the <code>BinanceMock</code> module must implement the <code>Core.Exchange</code> behaviour. It will (at compile time) guarantee that both <code>Core.Exchange.Binance</code> and <code>BinanceMock</code> share a common interface that can be used by the <code>Naive.Strategy</code>.</p>
+<p>The <code>BinanceMock</code> module must implement the <code>Core.Exchange</code> behaviour. It will (at compile time) guarantee that both <code>Core.Exchange.Binance</code> and <code>BinanceMock</code> share a common interface that can be used by the <code>Naive.Strategy</code>.</p>
 <p>First, we will start by declaring that the <code>BinanceMock</code> actually implements the <code>Core.Exchange</code> behaviour:</p>
 <div class="sourceCode" id="cb499"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb499-1"><a href="layers-of-abstraction.html#cb499-1" tabindex="-1"></a><span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb499-2"><a href="layers-of-abstraction.html#cb499-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">BinanceMock</span> <span class="kw">do</span></span>
@@ -708,7 +708,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Next, we can replace all the aliases to the <code>Binance</code> structs with a single alias to the <code>Core.Exchange</code> module:</p>
 <div class="sourceCode" id="cb500"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb500-1"><a href="layers-of-abstraction.html#cb500-1" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb500-2"><a href="layers-of-abstraction.html#cb500-2" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span></code></pre></div>
-<p>Don’t forget to update all references to the <code>Binance.Order</code> with <code>Exchange.Order</code> module.</p>
+<p>Don’t forget to update all references to the <code>Binance.Order</code> with <code>Exchange.Order</code> module(and remove it’s alias).</p>
 <p>As the behaviour is now defined in the <code>Core.Exchange</code> module, we can remove all <code>@type</code> and <code>@callback</code> attributes.</p>
 <p>Moving on, we will replace the <code>get_exchange_info/0</code>(together with it’s <code>get_cached_exchange_info/0</code> helper function) with <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code>(and their helper functions):</p>
 <div class="sourceCode" id="cb501"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb501-1"><a href="layers-of-abstraction.html#cb501-1" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
@@ -759,7 +759,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb501-46"><a href="layers-of-abstraction.html#cb501-46" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb501-47"><a href="layers-of-abstraction.html#cb501-47" tabindex="-1"></a></span>
 <span id="cb501-48"><a href="layers-of-abstraction.html#cb501-48" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters<span class="fu">(</span>symbol, exchange_info<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb501-49"><a href="layers-of-abstraction.html#cb501-49" tabindex="-1"></a>    <span class="co"># &lt;= this is a copy of `Core.Binance.fetch_symbol_filters/2` function</span></span>
+<span id="cb501-49"><a href="layers-of-abstraction.html#cb501-49" tabindex="-1"></a>    <span class="co"># &lt;= this is a copy of `Core.Exchange.Binance.fetch_symbol_filters/2` function</span></span>
 <span id="cb501-50"><a href="layers-of-abstraction.html#cb501-50" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>There are a few additional helpers above, and it got a bit long - let’s unpack it.</p>
 <p>First, both the <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code> look very similar to the ones we implemented for the <code>Core.Exchange.Binance</code> module. The main difference here is that we are supporting cached exchange info by introducing the <code>fetch_exchange_info/0</code> function, which branches out to either using the <code>Binance</code> module or the <code>get_cached_exchange_info/0</code> function. The latter was updated to return the raw data instead of the <code>Binance.ExchangeInfo</code> struct.</p>
@@ -860,16 +860,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb506"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb506-1"><a href="layers-of-abstraction.html#cb506-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb506-2"><a href="layers-of-abstraction.html#cb506-2" tabindex="-1"></a>  <span class="co"># from:</span></span>
 <span id="cb506-3"><a href="layers-of-abstraction.html#cb506-3" tabindex="-1"></a>        %<span class="cn">Position</span><span class="fu">{</span></span>
-<span id="cb506-4"><a href="layers-of-abstraction.html#cb506-4" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{</span></span>
+<span id="cb506-4"><a href="layers-of-abstraction.html#cb506-4" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{</span></span>
 <span id="cb506-5"><a href="layers-of-abstraction.html#cb506-5" tabindex="-1"></a>            <span class="va">order_id:</span> order_id,</span>
 <span id="cb506-6"><a href="layers-of-abstraction.html#cb506-6" tabindex="-1"></a>            <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
 <span id="cb506-7"><a href="layers-of-abstraction.html#cb506-7" tabindex="-1"></a>          <span class="fu">}</span>,</span>
-<span id="cb506-8"><a href="layers-of-abstraction.html#cb506-8" tabindex="-1"></a>          <span class="va">sell_order:</span> <span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span></span>
+<span id="cb506-8"><a href="layers-of-abstraction.html#cb506-8" tabindex="-1"></a>          <span class="va">sell_order:</span> <span class="cn">Binance</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span></span>
 <span id="cb506-9"><a href="layers-of-abstraction.html#cb506-9" tabindex="-1"></a>        <span class="fu">}</span>,</span>
 <span id="cb506-10"><a href="layers-of-abstraction.html#cb506-10" tabindex="-1"></a></span>
 <span id="cb506-11"><a href="layers-of-abstraction.html#cb506-11" tabindex="-1"></a>  <span class="co"># to:</span></span>
 <span id="cb506-12"><a href="layers-of-abstraction.html#cb506-12" tabindex="-1"></a>        %<span class="cn">Position</span><span class="fu">{</span></span>
-<span id="cb506-13"><a href="layers-of-abstraction.html#cb506-13" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{</span></span>
+<span id="cb506-13"><a href="layers-of-abstraction.html#cb506-13" tabindex="-1"></a>          <span class="va">buy_order:</span> %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{</span> <span class="co"># &lt;= struct updated</span></span>
 <span id="cb506-14"><a href="layers-of-abstraction.html#cb506-14" tabindex="-1"></a>            <span class="va">id:</span> order_id,   <span class="co"># &lt;= key updated</span></span>
 <span id="cb506-15"><a href="layers-of-abstraction.html#cb506-15" tabindex="-1"></a>            <span class="va">status:</span> <span class="va">:filled</span> <span class="co"># &lt;= updated to atom</span></span>
 <span id="cb506-16"><a href="layers-of-abstraction.html#cb506-16" tabindex="-1"></a>          <span class="fu">}</span>,</span>
@@ -909,6 +909,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb509-9"><a href="layers-of-abstraction.html#cb509-9" tabindex="-1"></a>    <span class="fu">)</span></span>
 <span id="cb509-10"><a href="layers-of-abstraction.html#cb509-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The function is now much more straightforward as we use the <code>fetch_symbol_filters/1</code> function implemented as a part of the behaviour.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="updating-seed-scripts" class="section level3 hasAnchor" number="21.3.5">
 <h3><span class="header-section-number">21.3.5</span> Updating seed scripts<a href="layers-of-abstraction.html#updating-seed-scripts" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -924,19 +925,23 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>We will follow up with changes to the seeding script of the <code>Streamer</code> application(I will skip listing the changes here as they are <strong>the same</strong> as in the case of the <code>Naive</code> application).</p>
 <p>At this moment, we can change the configuration to make the <code>Naive.Strategy</code> work:</p>
 <div class="sourceCode" id="cb511"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb511-1"><a href="layers-of-abstraction.html#cb511-1" tabindex="-1"></a><span class="co"># /config/config.ex </span></span>
-<span id="cb511-2"><a href="layers-of-abstraction.html#cb511-2" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb511-2"><a href="layers-of-abstraction.html#cb511-2" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
 <span id="cb511-3"><a href="layers-of-abstraction.html#cb511-3" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span>
 <span id="cb511-4"><a href="layers-of-abstraction.html#cb511-4" tabindex="-1"></a></span>
-<span id="cb511-5"><a href="layers-of-abstraction.html#cb511-5" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
-<span id="cb511-6"><a href="layers-of-abstraction.html#cb511-6" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb511-7"><a href="layers-of-abstraction.html#cb511-7" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
-<span id="cb511-8"><a href="layers-of-abstraction.html#cb511-8" tabindex="-1"></a></span>
-<span id="cb511-9"><a href="layers-of-abstraction.html#cb511-9" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
+<span id="cb511-5"><a href="layers-of-abstraction.html#cb511-5" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb511-6"><a href="layers-of-abstraction.html#cb511-6" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span>
+<span id="cb511-7"><a href="layers-of-abstraction.html#cb511-7" tabindex="-1"></a></span>
+<span id="cb511-8"><a href="layers-of-abstraction.html#cb511-8" tabindex="-1"></a><span class="co"># /config/prod.exs</span></span>
+<span id="cb511-9"><a href="layers-of-abstraction.html#cb511-9" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
 <span id="cb511-10"><a href="layers-of-abstraction.html#cb511-10" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
 <span id="cb511-11"><a href="layers-of-abstraction.html#cb511-11" tabindex="-1"></a></span>
-<span id="cb511-12"><a href="layers-of-abstraction.html#cb511-12" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
-<span id="cb511-13"><a href="layers-of-abstraction.html#cb511-13" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
-<span id="cb511-14"><a href="layers-of-abstraction.html#cb511-14" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
+<span id="cb511-12"><a href="layers-of-abstraction.html#cb511-12" tabindex="-1"></a>config <span class="va">:streamer</span>,</span>
+<span id="cb511-13"><a href="layers-of-abstraction.html#cb511-13" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">Binance</span> <span class="co"># &lt;= key and module updated</span></span>
+<span id="cb511-14"><a href="layers-of-abstraction.html#cb511-14" tabindex="-1"></a></span>
+<span id="cb511-15"><a href="layers-of-abstraction.html#cb511-15" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb511-16"><a href="layers-of-abstraction.html#cb511-16" tabindex="-1"></a>config <span class="va">:naive</span>,</span>
+<span id="cb511-17"><a href="layers-of-abstraction.html#cb511-17" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="manual-testing-after-refactoring" class="section level3 hasAnchor" number="21.3.6">
 <h3><span class="header-section-number">21.3.6</span> Manual testing after refactoring<a href="layers-of-abstraction.html#manual-testing-after-refactoring" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -1015,7 +1020,7 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <span id="cb515-22"><a href="layers-of-abstraction.html#cb515-22" tabindex="-1"></a></span>
 <span id="cb515-23"><a href="layers-of-abstraction.html#cb515-23" tabindex="-1"></a>  <span class="kw">defp</span> atom_to_status<span class="fu">(</span><span class="va">:new</span><span class="fu">)</span>, <span class="va">do:</span> <span class="st">&quot;NEW&quot;</span></span>
 <span id="cb515-24"><a href="layers-of-abstraction.html#cb515-24" tabindex="-1"></a>  <span class="kw">defp</span> atom_to_status<span class="fu">(</span><span class="va">:filled</span><span class="fu">)</span>, <span class="va">do:</span> <span class="st">&quot;FILLED&quot;</span></span></code></pre></div>
-<p>The <code>Worker</code> will now pattern matches on the <code>Core.Exchange.Order</code> struct instead of <code>Binance.Order</code> as before. Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed <code>id</code> column. Finally, we added the helper function to convert <code>status</code> and <code>side</code> atoms to strings.</p>
+<p>The <code>Worker</code> will now pattern matches on the <code>Core.Exchange.Order</code> struct instead of <code>Binance.Order</code> as before. Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed <code>id</code> column. Finally, we added the helper functions to convert <code>status</code> and <code>side</code> atoms to strings.</p>
 </div>
 <div id="the-mox-approach-summary" class="section level3 hasAnchor" number="21.3.8">
 <h3><span class="header-section-number">21.3.8</span> The <code>Mox</code> approach summary<a href="layers-of-abstraction.html#the-mox-approach-summary" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -1023,17 +1028,17 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <p>First, it’s worth stressing that it required multiple changes to many parts of the system spanning from the <code>Naive</code> application through <code>Streamer</code> (seeding) and ending in the <code>DataWarehouse</code> application.</p>
 <p>More importantly, we needed to define a behaviour. It gives us a compile-time guarantee, but on the other hand, we were pushed to define it very early.</p>
 <p>Let me explain.</p>
-<p>Up to this moment, we were using only the <code>Binance</code> module. We didn’t have an opportunity to work with other modules/exchanges. In fact, we <strong>didn’t want to</strong> create an <code>Exchange</code> level abstraction. We were happy with using the <code>Binance</code> module and we added the behaviour just to be able to use the <code>Mox</code> package to mock it inside our tests. All of this feels like a really heavy over-engineering to be able to test.</p>
+<p>Up to this moment, we were using only the <code>Binance</code> module. We didn’t have an opportunity to work with other modules/exchanges. In fact, we <strong>didn’t want to</strong> create an <code>Exchange</code> level abstraction. We were happy with using the <code>Binance</code> module and we added the behaviour just to be able to use the <code>Mox</code> package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.</p>
 <p>Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the <code>Binance</code> module. We have never seen examples of other structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future will require updates to behaviour, behaviour’s existing implementations and most of the code that uses it (like the <code>Naive.Strategy</code>).</p>
 <p>Additionally, we forwarded <code>Binance</code>’s error messages straight to the user of our abstraction(<code>Naive.Strategy</code>). We should be converting those to generic errors, but we don’t have a clue about other exchanges and the errors they could cause.</p>
 <p>At this moment, abstracting our code into behaviour+implementations is uneducated over-engineering and simply asking for troubles in the future.</p>
 <p>What’s the alternative?</p>
-<p>The first thing that comes to mind would be to look for some “standard” that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be “CCXT” - it’s actually a GitHub project that is available for Python, JavaScript and PHP.</p>
+<p>The first thing that comes to mind would be to look for some “standard” that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be “CCXT” - it’s actually a open source “library” that is available for Python, JavaScript and PHP.</p>
 <p>We could go a step further and look for an Elixir implementation of the CCXT package, and we could find the package named <code>ccxtex</code>. It’s a wrapper around the JavaScript version of the CCXT package.</p>
 <p>Using the above(either the <code>ccxtex</code> or <code>ccxt</code> as a “standard”) instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.</p>
 <p>Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, puts usage of the <code>Mox</code> package in serious doubt.</p>
 <p>The source code up to this moment can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox">Github</a></p>
-<p>We will stop here, and <strong>revert back</strong> to the source code from the end of the [20th chapter]((<a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20" class="uri">https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20</a>). Instead of leaving something that we are definitely not prepared to fix, we will look into alternative ways to test our strategy.</p>
+<p>We will stop here, and <strong>revert back</strong> to the source code from the end of the <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20">20th chapter</a>. Instead of leaving something that we are definitely not prepared to fix, we will look into alternative ways to test our strategy.</p>
 </div>
 </div>
 <div id="mimicking-the-reality" class="section level2 hasAnchor" number="21.4">
