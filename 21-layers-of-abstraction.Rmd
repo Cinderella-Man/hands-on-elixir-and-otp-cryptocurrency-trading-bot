@@ -770,26 +770,21 @@ As we are pointing to `Repo` instead of `Naive.Repo`, we need to add an alias at
 alias Naive.Repo
 ```
 
-That finishes our conversion to hardcoded module names. As we are not basing our module on the configuration anymore, we can remove all redundant configurations from the configuration files:
+That finishes our conversion to hardcoded module names. As we are not basing our module on the configuration anymore, we can remove all redundant configuration keys from the the main `config.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
-config :core,
-  logger: Logger,                             # <= remove this
-  pubsub_client: Phoenix.PubSub # <= remove this
-
-config :naive,
-  binance_client: BinanceMock, # <= remove this
-  ...
+config :core,                   # <= remove
+  logger: Logger,               # <= remove
+  pubsub_client: Phoenix.PubSub # <= remove
 
 config :streamer,
-  binance_client: BinanceMock, # <= remove this
+  binance_client: BinanceMock,  # <= remove
   ...
 
 config :naive,
-  binance_client: BinanceMock, # <= remove this
-  leader: Naive.Leader,               # <= remove this
-  repo: Naive.Repo,                     # <= remove this
+  binance_client: BinanceMock,  # <= remove
+  repo: Naive.Repo,             # <= remove
   ...
 ```
 
@@ -815,6 +810,8 @@ end
 ```
 
 As we will stub dependencies using `mimic`, we need to `use` it inside the test module.
+
+\newpage
 
 We will be testing the primary entry function, the `Naive.Strategy.execute/3`, where we will first focus on placing a buy order scenario:
 
@@ -881,7 +878,7 @@ Now, the above call to the `Naive.Strategy.execute/3` will cause the `Binance.or
   )
 ```
 
-We can use the `expected_order` above to assert that the `Naive.Strategy.execute/3` returned the correct value - the `buy_order` field should hold the same data as the `expected_order` above. We can add the below assertions at the end of the test:
+We can use the `expected_order` above to assert that the `Naive.Strategy.execute/3` returned the correct value - the `buy_order` field should hold the same data as the `expected_order`. We can add the below assertions at the end of the test:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -904,6 +901,8 @@ ExUnit.start()
 ```
 
 We removed all references to the `mox` module and replaced them with calls to the `Mimic.copy/1` function.
+
+\newpage
 
 We are now ready to run our new test:
 
@@ -965,12 +964,8 @@ ExUnit provides a helper function for that case as well. We will modify our test
         )
       end)
 
-    assert length(new_positions) == 1
     assert log =~ "0.8"
-
-    %{buy_order: buy_order} = List.first(new_positions)
-
-    assert buy_order == expected_order
+    ...
 ```
 
 In the above code, we wrapped our call to the `Naive.Strategy.execute/3` into a function that we passed as an argument to the `with_log/1` function. The `with_log/1` function returns a tuple containing the result of the passed function and the generated log message(s). We are then able to assert that the logged message contains the expected value, which strengthens our test. We can now rerun our unit test:
@@ -990,11 +985,13 @@ That would wrap up the writing the unit tests. But how will this work with runni
 
 ## Swapping back to attributes
 
-We need to have a way to swap implementation between dev and prod environments.
+We need to have a way to swap implementation between dev/test/integration and prod environments.
 
 We can't use the `mimic` package to swap the implementation as this is a "running" mode, not some tests.
 
 Please note that most of the applications won't have a need to change the implementation based on the environment as the implementation itself will provide some flags to enable/disable the functionality(like sending emails to newly registered users).
+
+\newpage
 
 Let's get back to the `Naive.Strategy` module, where we will bring back the attribute-based `@binance_client`:
 
@@ -1033,29 +1030,18 @@ We will now move to config files, where we will re-add the `binance_client` conf
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
-config :streamer,             # <= add
+config :streamer,
   binance_client: BinanceMock # <= add
 
-config :naive,                  # <= add
+config :naive,
   binance_client: BinanceMock,  # <= add
   leader: Naive.Leader,         # <= remove
 
 # /config/prod.exs
-config :streamer,         # <= add
-  binance_client: Binance # <= add
-
-config :naive,              # <= add
-  binance_client: Binance,  # <= add
+# stays as it was - pointing to the `Binance` module
 
 # /config/test.exs
-config :core,                    # <= remove
-  logger: Test.LoggerMock,       # <= remove
-  pubsub_client: Test.PubSubMock # <= remove
-
-config :naive,                      # <= remove
-  binance_client: Test.BinanceMock, # <= remove
-  leader: Test.Naive.LeaderMock,    # <= remove
-  repo: Test.Naive.RepoMock         # <= remove
+# remove everything besides the `import`
 ```
 
 It's important to understand that we don't need to configure the `binance_client` inside the test configuration. As we are now utilizing the `mimic` package, we are driving mocking from the test level.
@@ -1107,8 +1093,8 @@ iex(1)> Streamer.start_streaming("ETHUSDT")
 ...
 iex(2)> Naive.start_trading("ETHUSDT")
 ...
-iex(3)> 
-22:57:53.834 [info] Position (ETHUSDT/1675724273832): Placing a BUY order @ 1632.82000000, quantity: 0.12240000
+22:57:53.834 [info] Position (ETHUSDT/1675724273832): Placing a BUY order @ 1632.82000000,
+quantity: 0.12240000
 ```
 
 In this chapter, we've reiterated the ideas behind the `mox` package, highlighting its shortcomings, especially the push to create needless abstractions(behaviours). We then dropped our changes to show the alternative approach using the 'mimic' package, which was way handier and easier to understand. In the end, we realized that to facilitate using different implementations between dev and production, we will need to keep the `@binance_client` attribute.
