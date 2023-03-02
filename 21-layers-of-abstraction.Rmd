@@ -12,7 +12,7 @@ There comes a time when I need to admit to something that I've learned on the wa
 
 When we were using the `Mox` package, we were disappointed that most packages don't provide behaviours we could use in our tests(to mock the actual implementations).
 
-To fix that, we were creating behaviours for 3rd party packages that we are using, like `Binance` or even `Ecto.Repo`. This approach felt weird, and it should, as I believe that was **not the intended usage** of the `Mox` package.
+To fix that, we were creating behaviours for 3rd party packages we are using, like `Binance` or even `Ecto.Repo`. This approach felt weird, and it should, as I believe that was **not the intended usage** of the `Mox` package.
 
 \newpage
 
@@ -37,7 +37,7 @@ First, we will look at an intended use case for the `Mox` module, as mentioned a
 We will start by creating a new file `/apps/core/lib/core/exchange.ex` together with a new module inside it:
 
 ```{r, engine = 'elixir', eval = FALSE}	 
- # /apps/core/lib/core/exchange.ex
+# /apps/core/lib/core/exchange.ex
 defmodule Core.Exchange do
 
 end
@@ -119,7 +119,7 @@ Additionally, we use the `Binance` module to fetch symbol filters inside the `Na
               | {:error, any()}
 ```
 
-The final usage of the `Binance` module comes from the seed scripts, which fetch the exchange info just to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:
+The final usage of the `Binance` module comes from the seed scripts, where we fetch the exchange info just to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/exchange.ex
@@ -302,7 +302,7 @@ Next, we can replace all the aliases to the `Binance` structs with a single alia
   alias Core.Exchange
 ```
 
-Don't forget to update all references to the `Binance.Order` with `Exchange.Order` module(and remove it's alias).
+Don't forget to update all references to the `Binance.Order` with `Exchange.Order` module.
 
 As the behaviour is now defined in the `Core.Exchange` module, we can remove all `@type` and `@callback` attributes.
 
@@ -382,7 +382,7 @@ The final two functions to update will be the `order_limit_buy/4` and `order_lim
   end
 ```
 
-In the above functions, we simply skipped the fourth argument in the above functions to fulfil the behaviour.
+In the above functions, we simply skipped the fourth arguments to fulfil the behaviour.
 
 The changes to different structs will have a ripple effect in other parts of the BinanceMock module:
 
@@ -547,7 +547,7 @@ The final change to the `Naive.Strategy` module will be to update the `fetch_sym
   end
 ```
 
-The function is now much more straightforward as we use the `fetch_symbol_filters/1` function implemented as a part of the behaviour.
+The function is now much more straightforward as we use the `fetch_symbol_filters/1` function implemented as a part of the `Core.Exchange` behaviour.
 
 \newpage
 
@@ -623,7 +623,7 @@ As we are now using generic structs like the `Core.Exchange.Order`, all data sto
 We will start by updating the migration script to store only limited passed data:
 
 ```{r, engine = 'elixir', eval = FALSE}
-   # /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs
+  # /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs
   def change do
     create table(:orders, primary_key: false) do
       add(:id, :bigint, primary_key: true)
@@ -701,9 +701,9 @@ Let me explain.
 
 Up to this moment, we were using only the `Binance` module. We didn't have an opportunity to work with other modules/exchanges. In fact, we **didn't want to** create an `Exchange` level abstraction. We were happy with using the `Binance` module and we added the behaviour just to be able to use the `Mox` package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.
 
-Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the `Binance` module. We have never seen examples of other structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future will require updates to behaviour, behaviour's existing implementations and most of the code that uses it (like the `Naive.Strategy`).
+Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the `Binance` module. We have never seen examples of structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future may require updates to the behaviour, behaviour's existing implementations and most of the code that uses it (like the `Naive.Strategy`).
 
-Additionally, we forwarded `Binance`'s error messages straight to the user of our abstraction(`Naive.Strategy`). We should be converting those to generic errors, but we don't have a clue about other exchanges and the errors they could cause.
+Additionally, we returned the `Binance`'s error messages straight to the user of our abstraction(`Naive.Strategy`). We should be converting those to generic errors, but we don't have a clue about other exchanges and the errors they could raise.
 
 At this moment, abstracting our code into behaviour+implementations is uneducated over-engineering and simply asking for troubles in the future.
 
@@ -719,7 +719,7 @@ Those updates, coupled with the fact that we would add the behaviour just to be 
 
 The source code up to this moment can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox)
 
-We will stop here, and **revert back** to the source code from the end of the [20th chapter](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something that we are definitely not prepared to fix, we will look into alternative ways to test our strategy.
+We will stop here, and **revert back** to the source code from the end of the [20th chapter](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something that we are definitely not prepared to continue with, we will look into alternative ways to test our strategy.
 
 ## Mimicking the reality
 
@@ -770,7 +770,7 @@ As we are pointing to `Repo` instead of `Naive.Repo`, we need to add an alias at
 alias Naive.Repo
 ```
 
-That finishes our conversion to hardcoded module names. As we are not basing our module on the configuration anymore, we can remove all redundant configuration keys from the the main `config.exs` file:
+That finishes our conversion to hardcoded module names. As we are not basing our module on the configuration anymore, we can remove all redundant configuration keys from the main `config.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -909,7 +909,8 @@ We are now ready to run our new test:
 ```{r, engine = 'bash', eval = FALSE}
 $ mix test.unit
 ...
-21:49:39.737 [info] Position (ABC/1675460979732): Placing a BUY order @ 0.800000, quantity: 50.000
+21:49:39.737 [info] Position (ABC/1675460979732): Placing a BUY order @ 0.800000,
+quantity: 50.000
 .
 Finished in 0.2 seconds (0.2s async, 0.00s sync)
 2 tests, 0 failures, 1 excluded
@@ -941,7 +942,7 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 
 We can see that ExUnit output is now free of any logs.
 
-But what if we would like to assert the logged message? We were able to do that using the `mox` package as we were mocking and asserting inside those mocks.
+But what if we would like to assert the logged message? We were able to do that using the `mox` package as we were mocking and asserting log messages' contents inside those mocks.
 
 ExUnit provides a helper function for that case as well. We will modify our test to capture the log inside it and assert that it logs the correct value (the price of $0.8):
 
@@ -985,7 +986,7 @@ That would wrap up the writing the unit tests. But how will this work with runni
 
 ## Swapping back to attributes
 
-We need to have a way to swap implementation between dev/test/integration and prod environments.
+We need to have a way to swap Binance's implementation between dev/test/integration and prod environments.
 
 We can't use the `mimic` package to swap the implementation as this is a "running" mode, not some tests.
 
