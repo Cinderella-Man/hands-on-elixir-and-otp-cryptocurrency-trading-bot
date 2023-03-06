@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 7 Introduce a trader budget and calculating the quantity | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
-  
   
   
   <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
@@ -30,10 +29,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"/>
+<link rel="prev" href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"/>
 <link rel="next" href="add-support-for-multiple-transactions-per-order.html"/>
-<script src="libs/header-attrs-2.8/header-attrs.js"></script>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -49,9 +48,9 @@
 
 
 
-
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
 <script>
@@ -101,7 +100,7 @@ code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
 code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
+code span.bu { color: #008000; } /* BuiltIn */
 code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
 code span.ch { color: #4070a0; } /* Char */
 code span.cn { color: #880000; } /* Constant */
@@ -114,7 +113,7 @@ code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
 code span.fl { color: #40a070; } /* Float */
 code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
+code span.im { color: #008000; font-weight: bold; } /* Import */
 code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
 code span.kw { color: #007020; font-weight: bold; } /* Keyword */
 code span.op { color: #666666; } /* Operator */
@@ -163,20 +162,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="1.4" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#connect-to-binances-websocket-stream-using-the-websockex-module"><i class="fa fa-check"></i><b>1.4</b> Connect to Binance’s WebSocket Stream using the WebSockex module</a></li>
 <li class="chapter" data-level="1.5" data-path="stream-live-cryptocurrency-prices-from-the-binance-wss.html"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module"><i class="fa fa-check"></i><b>1.5</b> Decode incoming events using the Jason module</a></li>
 </ul></li>
-<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
+<li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
-<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
-<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
-<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
+<li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
 <ul>
-<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
-<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
-<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
-<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
-<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
-<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
-<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
-<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
+<li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
+<li class="chapter" data-level="2.3.2" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.2</b> Implementation of the second scenario</a></li>
+<li class="chapter" data-level="2.3.3" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.3</b> Implementation of the third scenario</a></li>
+<li class="chapter" data-level="2.3.4" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#implementation-fallback-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation fallback scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.5</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.6" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.6</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.7" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#access-details-to-binance"><i class="fa fa-check"></i><b>2.3.7</b> Access details to Binance</a></li>
+<li class="chapter" data-level="2.3.8" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#test-run"><i class="fa fa-check"></i><b>2.3.8</b> Test run</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
@@ -214,14 +213,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.4.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.4.4</b> IEx testing</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<li class="chapter" data-level="6" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
 <ul>
-<li class="chapter" data-level="6.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
-<li class="chapter" data-level="6.2" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
-<li class="chapter" data-level="6.3" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
-<li class="chapter" data-level="6.4" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<li class="chapter" data-level="6.1" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
 <ul>
-<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
+<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#iex-testing-1"><i class="fa fa-check"></i><b>6.4.1</b> IEx testing</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
@@ -431,6 +430,32 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="20.8" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#tidying-up"><i class="fa fa-check"></i><b>20.8</b> Tidying up</a></li>
 <li class="chapter" data-level="20.9" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#final-thoughts-1"><i class="fa fa-check"></i><b>20.9</b> Final thoughts</a></li>
 </ul></li>
+<li class="chapter" data-level="21" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html"><i class="fa fa-check"></i><b>21</b> Layers of abstraction</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#objectives-20"><i class="fa fa-check"></i><b>21.1</b> Objectives</a></li>
+<li class="chapter" data-level="21.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#admitting-the-simplification"><i class="fa fa-check"></i><b>21.2</b> Admitting the simplification</a></li>
+<li class="chapter" data-level="21.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#abstracting-the-exchange"><i class="fa fa-check"></i><b>21.3</b> Abstracting the exchange</a>
+<ul>
+<li class="chapter" data-level="21.3.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#defining-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.1</b> Defining the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="21.3.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module"><i class="fa fa-check"></i><b>21.3.2</b> Implementation of the <code>Core.Exchange.Binance</code> module</a></li>
+<li class="chapter" data-level="21.3.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.3</b> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="21.3.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy"><i class="fa fa-check"></i><b>21.3.4</b> Updating the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="21.3.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-seed-scripts"><i class="fa fa-check"></i><b>21.3.5</b> Updating the seed scripts</a></li>
+<li class="chapter" data-level="21.3.6" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#manual-testing-after-the-refactoring"><i class="fa fa-check"></i><b>21.3.6</b> Manual testing after the refactoring</a></li>
+<li class="chapter" data-level="21.3.7" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#storing-the-data"><i class="fa fa-check"></i><b>21.3.7</b> Storing the data</a></li>
+<li class="chapter" data-level="21.3.8" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#the-mox-approach-summary"><i class="fa fa-check"></i><b>21.3.8</b> The <code>Mox</code> approach summary</a></li>
+</ul></li>
+<li class="chapter" data-level="21.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#mimicking-the-reality"><i class="fa fa-check"></i><b>21.4</b> Mimicking the reality</a>
+<ul>
+<li class="chapter" data-level="21.4.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy-1"><i class="fa fa-check"></i><b>21.4.1</b> Updating the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="21.4.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#testing-the-naive.strategy"><i class="fa fa-check"></i><b>21.4.2</b> Testing the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="21.4.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#logging-elephant-in-the-room"><i class="fa fa-check"></i><b>21.4.3</b> Logging elephant in the room</a></li>
+</ul></li>
+<li class="chapter" data-level="21.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#swapping-back-to-attributes"><i class="fa fa-check"></i><b>21.5</b> Swapping back to attributes</a>
+<ul>
+<li class="chapter" data-level="21.5.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#config-files"><i class="fa fa-check"></i><b>21.5.1</b> Config files</a></li>
+</ul></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
 
@@ -451,10 +476,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="introduce-a-trader-budget-and-calculating-the-quantity" class="section level1" number="7">
-<h1><span class="header-section-number">Chapter 7</span> Introduce a trader budget and calculating the quantity</h1>
-<div id="objectives-6" class="section level2" number="7.1">
-<h2><span class="header-section-number">7.1</span> Objectives</h2>
+<div id="introduce-a-trader-budget-and-calculating-the-quantity" class="section level1 hasAnchor" number="7">
+<h1><span class="header-section-number">Chapter 7</span> Introduce a trader budget and calculating the quantity<a href="introduce-a-trader-budget-and-calculating-the-quantity.html#introduce-a-trader-budget-and-calculating-the-quantity" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<div id="objectives-6" class="section level2 hasAnchor" number="7.1">
+<h2><span class="header-section-number">7.1</span> Objectives<a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <ul>
 <li>fetch step_size</li>
 <li>append budget and step_size to the <code>Trader</code>’s state compiled by the <code>Leader</code></li>
@@ -462,153 +487,153 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>calculate quantity</li>
 </ul>
 </div>
-<div id="fetch-step_size" class="section level2" number="7.2">
-<h2><span class="header-section-number">7.2</span> Fetch <code>step_size</code></h2>
+<div id="fetch-step_size" class="section level2 hasAnchor" number="7.2">
+<h2><span class="header-section-number">7.2</span> Fetch <code>step_size</code><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>In the 2nd chapter we hardcoded <code>quantity</code> to 100, it’s time to refactor that. We will need <code>step_size</code> information from the Binance which we are
 already retrieving together with <code>tick_size</code> in the <code>exchangeInfo</code> call(but not getting it out from the response). So we will rename the <code>fetch_tick_size/1</code> function to <code>fetch_symbol_filters/1</code> which will allow us to return multiple filters(<code>tick_size</code> and <code>step_size</code>) from that function.</p>
-<div class="sourceCode" id="cb100"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb100-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb100-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb100-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings(symbol) <span class="kw">do</span></span>
-<span id="cb100-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-4" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span> fetch_symbol_filters(symbol) <span class="co"># &lt;= updated fetch_tick_size</span></span>
-<span id="cb100-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb100-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge(</span>
-<span id="cb100-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-7" aria-hidden="true" tabindex="-1"></a>      %{</span>
-<span id="cb100-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,</span>
-<span id="cb100-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">1</span>,</span>
-<span id="cb100-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">20</span>,</span>
-<span id="cb100-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.01% for quick testing</span></span>
-<span id="cb100-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>,</span>
-<span id="cb100-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing</span></span>
-<span id="cb100-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span></span>
-<span id="cb100-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-15" aria-hidden="true" tabindex="-1"></a>      },</span>
-<span id="cb100-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-16" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-17" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb100-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb100-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters(symbol) <span class="kw">do</span>  <span class="co"># &lt;= updated fetch_tick_size</span></span>
-<span id="cb100-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-21" aria-hidden="true" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
-<span id="cb100-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-22" aria-hidden="true" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info()</span>
-<span id="cb100-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-23" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> elem(<span class="dv">1</span>)</span>
-<span id="cb100-24"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-24" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:symbols</span>)</span>
-<span id="cb100-25"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-25" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;symbol&quot;</span>] <span class="op">==</span> symbol))</span>
-<span id="cb100-26"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-26" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;filters&quot;</span>)</span>
-<span id="cb100-27"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-28"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-28" aria-hidden="true" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
-<span id="cb100-29"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-29" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-30"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-30" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span>))</span>
-<span id="cb100-31"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-31" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;tickSize&quot;</span>)</span>
-<span id="cb100-32"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-33"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-33" aria-hidden="true" tabindex="-1"></a>    step_size <span class="op">=</span></span>
-<span id="cb100-34"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-34" aria-hidden="true" tabindex="-1"></a>      symbol_filters</span>
-<span id="cb100-35"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-35" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find(<span class="op">&amp;</span>(<span class="op">&amp;</span><span class="dv">1</span>[<span class="st">&quot;filterType&quot;</span>] <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span>))</span>
-<span id="cb100-36"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="st">&quot;stepSize&quot;</span>)</span>
-<span id="cb100-37"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-38"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-38" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb100-39"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-39" aria-hidden="true" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size,</span>
-<span id="cb100-40"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-40" aria-hidden="true" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
-<span id="cb100-41"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-41" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb100-42"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb100"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb100-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb100-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-2" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb100-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-3" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb100-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-4" tabindex="-1"></a>    symbol_filters <span class="op">=</span> fetch_symbol_filters<span class="fu">(</span>symbol<span class="fu">)</span> <span class="co"># &lt;= updated fetch_tick_size</span></span>
+<span id="cb100-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-5" tabindex="-1"></a>    </span>
+<span id="cb100-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-6" tabindex="-1"></a>    <span class="cn">Map</span><span class="op">.</span>merge<span class="fu">(</span></span>
+<span id="cb100-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-7" tabindex="-1"></a>      %<span class="fu">{</span></span>
+<span id="cb100-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-8" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,</span>
+<span id="cb100-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-9" tabindex="-1"></a>        <span class="va">chunks:</span> <span class="dv">1</span>,</span>
+<span id="cb100-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-10" tabindex="-1"></a>        <span class="va">budget:</span> <span class="dv">20</span>,</span>
+<span id="cb100-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-11" tabindex="-1"></a>        <span class="co"># -0.01% for quick testing</span></span>
+<span id="cb100-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-12" tabindex="-1"></a>        <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>,</span>
+<span id="cb100-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-13" tabindex="-1"></a>        <span class="co"># -0.12% for quick testing</span></span>
+<span id="cb100-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-14" tabindex="-1"></a>        <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span></span>
+<span id="cb100-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-15" tabindex="-1"></a>      <span class="fu">}</span>,</span>
+<span id="cb100-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-16" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb100-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-17" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb100-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-18" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb100-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-19" tabindex="-1"></a></span>
+<span id="cb100-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-20" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_filters<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span>  <span class="co"># &lt;= updated fetch_tick_size</span></span>
+<span id="cb100-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-21" tabindex="-1"></a>    symbol_filters <span class="op">=</span></span>
+<span id="cb100-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-22" tabindex="-1"></a>      <span class="ot">@binance_client</span><span class="op">.</span>get_exchange_info<span class="fu">()</span></span>
+<span id="cb100-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-23" tabindex="-1"></a>      <span class="op">|&gt;</span> elem<span class="fu">(</span><span class="dv">1</span><span class="fu">)</span></span>
+<span id="cb100-24"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-24" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get<span class="fu">(</span><span class="va">:symbols</span><span class="fu">)</span></span>
+<span id="cb100-25"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-25" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">[</span><span class="st">&quot;symbol&quot;</span><span class="ot">]</span> <span class="op">==</span> symbol<span class="fu">))</span></span>
+<span id="cb100-26"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-26" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get<span class="fu">(</span><span class="st">&quot;filters&quot;</span><span class="fu">)</span></span>
+<span id="cb100-27"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-27" tabindex="-1"></a></span>
+<span id="cb100-28"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-28" tabindex="-1"></a>    tick_size <span class="op">=</span></span>
+<span id="cb100-29"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-29" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb100-30"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-30" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">[</span><span class="st">&quot;filterType&quot;</span><span class="ot">]</span> <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span><span class="fu">))</span></span>
+<span id="cb100-31"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-31" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get<span class="fu">(</span><span class="st">&quot;tickSize&quot;</span><span class="fu">)</span></span>
+<span id="cb100-32"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-32" tabindex="-1"></a></span>
+<span id="cb100-33"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-33" tabindex="-1"></a>    step_size <span class="op">=</span></span>
+<span id="cb100-34"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-34" tabindex="-1"></a>      symbol_filters</span>
+<span id="cb100-35"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-35" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">[</span><span class="st">&quot;filterType&quot;</span><span class="ot">]</span> <span class="op">==</span> <span class="st">&quot;LOT_SIZE&quot;</span><span class="fu">))</span></span>
+<span id="cb100-36"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-36" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get<span class="fu">(</span><span class="st">&quot;stepSize&quot;</span><span class="fu">)</span></span>
+<span id="cb100-37"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-37" tabindex="-1"></a></span>
+<span id="cb100-38"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-38" tabindex="-1"></a>    %<span class="fu">{</span></span>
+<span id="cb100-39"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-39" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size,</span>
+<span id="cb100-40"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-40" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
+<span id="cb100-41"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-41" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb100-42"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb100-42" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a <code>budget</code>(#2) which will be shared across all traders of the symbol. Also, we don’t need to assign <code>tick_size</code> here as it’s part of the settings that are merged.</p>
 <div style="page-break-after: always;"></div>
 </div>
-<div id="append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="section level2" number="7.3">
-<h2><span class="header-section-number">7.3</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code></h2>
+<div id="append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="section level2 hasAnchor" number="7.3">
+<h2><span class="header-section-number">7.3</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state inside the <code>Leader</code><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state-inside-the-leader" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The <code>budget</code> needs to be added to the <code>%State{}</code>(<code>step_size</code> will be automatically passed on by <code>struct/2</code>) of the trader inside <code>fresh_trader_state/1</code>(where we initialize the state of traders). Before we will assign it we need to divide it by the number of chunks as each trader gets only a chunk of the budget:</p>
-<div class="sourceCode" id="cb101"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb101-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb101-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state(settings) <span class="kw">do</span></span>
-<span id="cb101-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-3" aria-hidden="true" tabindex="-1"></a>    %{</span>
-<span id="cb101-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-4" aria-hidden="true" tabindex="-1"></a>      struct(<span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings)</span>
-<span id="cb101-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="va">budget:</span> D<span class="op">.</span>div(settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks)</span>
-<span id="cb101-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-6" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb101-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb101"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb101-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb101-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-2" tabindex="-1"></a>  <span class="kw">defp</span> fresh_trader_state<span class="fu">(</span>settings<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb101-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-3" tabindex="-1"></a>    %<span class="fu">{</span></span>
+<span id="cb101-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-4" tabindex="-1"></a>      struct<span class="fu">(</span><span class="cn">Trader</span><span class="op">.</span><span class="cn">State</span>, settings<span class="fu">)</span></span>
+<span id="cb101-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-5" tabindex="-1"></a>      <span class="op">|</span> <span class="va">budget:</span> D<span class="op">.</span>div<span class="fu">(</span>settings<span class="op">.</span>budget, settings<span class="op">.</span>chunks<span class="fu">)</span></span>
+<span id="cb101-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-6" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb101-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb101-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>In the code above we are using the <code>Decimal</code> module(aliased as <code>D</code>) to calculate the budget - we need to alias it at the top of <code>Naive.Leader</code>’s file:</p>
-<div class="sourceCode" id="cb102"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb102-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
-<span id="cb102-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
-<span id="cb102-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
-<span id="cb102-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-5" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D <span class="co"># &lt;= add this line</span></span>
-<span id="cb102-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-6" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
-<span id="cb102-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb102"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb102-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-1" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb102-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Leader</span> <span class="kw">do</span></span>
+<span id="cb102-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">GenServer</span></span>
+<span id="cb102-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-4" tabindex="-1"></a></span>
+<span id="cb102-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-5" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D <span class="co"># &lt;= add this line</span></span>
+<span id="cb102-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-6" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Trader</span></span>
+<span id="cb102-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb102-7" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 </div>
-<div id="append-budget-and-step_size-to-the-traders-state" class="section level2" number="7.4">
-<h2><span class="header-section-number">7.4</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state</h2>
+<div id="append-budget-and-step_size-to-the-traders-state" class="section level2 hasAnchor" number="7.4">
+<h2><span class="header-section-number">7.4</span> Append <code>budget</code> and <code>step_size</code> to the <code>Trader</code>’s state<a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-traders-state" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>We need to add both <code>budget</code> and <code>step_size</code> to the <code>Naive.Trader</code>’s state struct:</p>
-<div class="sourceCode" id="cb103"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb103-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb103-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb103-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
-<span id="cb103-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [</span>
-<span id="cb103-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
-<span id="cb103-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
-<span id="cb103-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
-<span id="cb103-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
-<span id="cb103-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
-<span id="cb103-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
-<span id="cb103-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-11" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb103-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
-<span id="cb103-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
-<span id="cb103-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
-<span id="cb103-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-15" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
-<span id="cb103-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
-<span id="cb103-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-17" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
-<span id="cb103-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-18" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
-<span id="cb103-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-19" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
-<span id="cb103-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
-<span id="cb103-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-21" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb103-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb103-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-23" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb103"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb103-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb103-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-2" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb103-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-3" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb103-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-4" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> <span class="ot">[</span></span>
+<span id="cb103-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-5" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb103-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-6" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb103-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-7" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
+<span id="cb103-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-8" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb103-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-9" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
+<span id="cb103-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-10" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
+<span id="cb103-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-11" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb103-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-12" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="ot">[</span></span>
+<span id="cb103-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-13" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb103-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-14" tabindex="-1"></a>      <span class="va">:budget</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb103-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-15" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
+<span id="cb103-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-16" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
+<span id="cb103-17"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-17" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>,</span>
+<span id="cb103-18"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-18" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb103-19"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-19" tabindex="-1"></a>      <span class="va">:tick_size</span>,</span>
+<span id="cb103-20"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-20" tabindex="-1"></a>      <span class="va">:step_size</span> <span class="co"># &lt;= add this line and comma above</span></span>
+<span id="cb103-21"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-21" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb103-22"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-22" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb103-23"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb103-23" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
 </div>
-<div id="calculate-quantity" class="section level2" number="7.5">
-<h2><span class="header-section-number">7.5</span> Calculate quantity</h2>
+<div id="calculate-quantity" class="section level2 hasAnchor" number="7.5">
+<h2><span class="header-section-number">7.5</span> Calculate quantity<a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Jumping back to the <code>handle_info/2</code> where the <code>Naive.Trader</code> places a buy order, we need to pattern match on the <code>step_size</code> and <code>budget</code> then we will be able to swap hardcoded quantity with the result of calling the <code>calculate_quantity/3</code> function:</p>
-<div class="sourceCode" id="cb104"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb104-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb104-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb104-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> handle_info(</span>
-<span id="cb104-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-4" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">TradeEvent</span>{<span class="va">price:</span> price},</span>
-<span id="cb104-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-5" aria-hidden="true" tabindex="-1"></a>        %<span class="cn">State</span>{</span>
-<span id="cb104-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-6" aria-hidden="true" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
-<span id="cb104-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">budget:</span> budget, <span class="co"># &lt;= add this line</span></span>
-<span id="cb104-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
-<span id="cb104-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-9" aria-hidden="true" tabindex="-1"></a>          <span class="va">buy_down_interval:</span> buy_down_interval,</span>
-<span id="cb104-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-10" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size,</span>
-<span id="cb104-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-11" aria-hidden="true" tabindex="-1"></a>          <span class="va">step_size:</span> step_size <span class="co"># &lt;= add this line</span></span>
-<span id="cb104-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-12" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
-<span id="cb104-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-13" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb104-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb104-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-15" aria-hidden="true" tabindex="-1"></a>    quantity <span class="op">=</span> calculate_quantity(budget, price, step_size)</span>
-<span id="cb104-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb104"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb104-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb104-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-2" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb104-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-3" tabindex="-1"></a>  <span class="kw">def</span> handle_info<span class="fu">(</span></span>
+<span id="cb104-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-4" tabindex="-1"></a>        %<span class="cn">TradeEvent</span><span class="fu">{</span><span class="va">price:</span> price<span class="fu">}</span>,</span>
+<span id="cb104-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-5" tabindex="-1"></a>        %<span class="cn">State</span><span class="fu">{</span></span>
+<span id="cb104-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-6" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
+<span id="cb104-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-7" tabindex="-1"></a>          <span class="va">budget:</span> budget, <span class="co"># &lt;= add this line</span></span>
+<span id="cb104-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-8" tabindex="-1"></a>          <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb104-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-9" tabindex="-1"></a>          <span class="va">buy_down_interval:</span> buy_down_interval,</span>
+<span id="cb104-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-10" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size,</span>
+<span id="cb104-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-11" tabindex="-1"></a>          <span class="va">step_size:</span> step_size <span class="co"># &lt;= add this line</span></span>
+<span id="cb104-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-12" tabindex="-1"></a>        <span class="fu">}</span> <span class="op">=</span> state</span>
+<span id="cb104-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-13" tabindex="-1"></a>      <span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb104-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-14" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb104-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-15" tabindex="-1"></a>    quantity <span class="op">=</span> calculate_quantity<span class="fu">(</span>budget, price, step_size<span class="fu">)</span></span>
+<span id="cb104-16"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb104-16" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
 <p>To calculate quantity we will just divide the <code>budget</code> by the <code>price</code> with a caveat that it’s possible (as with calculating the price) that it’s not a legal quantity value as it needs to be divisible by <code>step_size</code>:</p>
-<div class="sourceCode" id="cb105"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb105-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb105-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add below at the bottom of the file</span></span>
-<span id="cb105-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb105-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_quantity(budget, price, step_size) <span class="kw">do</span></span>
-<span id="cb105-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># not necessarily legal quantity</span></span>
-<span id="cb105-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-6" aria-hidden="true" tabindex="-1"></a>    exact_target_quantity <span class="op">=</span> D<span class="op">.</span>div(budget, price)</span>
-<span id="cb105-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb105-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-8" aria-hidden="true" tabindex="-1"></a>    D<span class="op">.</span>to_string(</span>
-<span id="cb105-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-9" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
-<span id="cb105-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>div_int(exact_target_quantity, step_size),</span>
-<span id="cb105-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-11" aria-hidden="true" tabindex="-1"></a>        step_size</span>
-<span id="cb105-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-12" aria-hidden="true" tabindex="-1"></a>      ),</span>
-<span id="cb105-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">:normal</span></span>
-<span id="cb105-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb105-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div id="iex-testing-2" class="section level3" number="7.5.1">
-<h3><span class="header-section-number">7.5.1</span> IEx testing</h3>
+<div class="sourceCode" id="cb105"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb105-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb105-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-2" tabindex="-1"></a>  <span class="co"># add below at the bottom of the file</span></span>
+<span id="cb105-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-3" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb105-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-4" tabindex="-1"></a>  <span class="kw">defp</span> calculate_quantity<span class="fu">(</span>budget, price, step_size<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb105-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-5" tabindex="-1"></a>    <span class="co"># not necessarily legal quantity</span></span>
+<span id="cb105-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-6" tabindex="-1"></a>    exact_target_quantity <span class="op">=</span> D<span class="op">.</span>div<span class="fu">(</span>budget, price<span class="fu">)</span></span>
+<span id="cb105-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-7" tabindex="-1"></a></span>
+<span id="cb105-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-8" tabindex="-1"></a>    D<span class="op">.</span>to_string<span class="fu">(</span></span>
+<span id="cb105-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-9" tabindex="-1"></a>      D<span class="op">.</span>mult<span class="fu">(</span></span>
+<span id="cb105-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-10" tabindex="-1"></a>        D<span class="op">.</span>div_int<span class="fu">(</span>exact_target_quantity, step_size<span class="fu">)</span>,</span>
+<span id="cb105-11"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-11" tabindex="-1"></a>        step_size</span>
+<span id="cb105-12"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-12" tabindex="-1"></a>      <span class="fu">)</span>,</span>
+<span id="cb105-13"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-13" tabindex="-1"></a>      <span class="va">:normal</span></span>
+<span id="cb105-14"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-14" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb105-15"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb105-15" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div id="iex-testing-2" class="section level3 hasAnchor" number="7.5.1">
+<h3><span class="header-section-number">7.5.1</span> IEx testing<a href="introduce-a-trader-budget-and-calculating-the-quantity.html#iex-testing-2" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>That finishes the <code>quantity</code>(and <code>budget</code>) implementation, we will jump into the IEx session to see how it works.</p>
 <p>First, start the streaming and trading on the same symbol and a moment later you should see a variable amount of quantity that more or less uses the full allowed budget:</p>
-<div class="sourceCode" id="cb106"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb106-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb106-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb106-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb106-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-4" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.313.0&gt;}</span></span>
-<span id="cb106-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-5" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb106-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-6" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:14.829</span> [info]  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb106-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-7" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:16.755</span> [info]  Initializing new trader for XRPUSDT</span>
-<span id="cb106-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-8" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:20.009</span> [info]  Placing BUY order for XRPUSDT @ 0.29506, quantity: 67.7</span>
-<span id="cb106-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-9" aria-hidden="true" tabindex="-1"></a><span class="ex">21:16:23.456</span> [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29529,</span>
-<span id="cb106-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-10" aria-hidden="true" tabindex="-1"></a><span class="ex">quantity:</span> 67.7</span></code></pre></div>
+<div class="sourceCode" id="cb106"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb106-1"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb106-2"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-2" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb106-3"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-3" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb106-4"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-4" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.313.0&gt;}</span></span>
+<span id="cb106-5"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-5" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb106-6"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-6" tabindex="-1"></a><span class="ex">21:16:14.829</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Starting new supervision tree to trade on XRPUSDT</span>
+<span id="cb106-7"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-7" tabindex="-1"></a><span class="ex">21:16:16.755</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Initializing new trader for XRPUSDT</span>
+<span id="cb106-8"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-8" tabindex="-1"></a><span class="ex">21:16:20.009</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Placing BUY order for XRPUSDT @ 0.29506, quantity: 67.7</span>
+<span id="cb106-9"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-9" tabindex="-1"></a><span class="ex">21:16:23.456</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Buy order filled, placing SELL order for XRPUSDT @ 0.29529,</span>
+<span id="cb106-10"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#cb106-10" tabindex="-1"></a><span class="ex">quantity:</span> 67.7</span></code></pre></div>
 <p>As we can see our <code>Naive.Trader</code> process is now buying and selling based on passed budget.</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07">Github</a></p>
+<p>The source code for this chapter can be found on <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07">GitHub</a></p>
 
 </div>
 </div>
@@ -618,12 +643,11 @@ already retrieving together with <code>tick_size</code> in the <code>exchangeInf
           </div>
         </div>
       </div>
-<a href="introduce-a-buy-down-interval-to-make-a-single-trader-more-profitable.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
 <a href="add-support-for-multiple-transactions-per-order.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -663,6 +687,10 @@ gitbook.start({
 "text": null
 },
 "download": null,
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 }

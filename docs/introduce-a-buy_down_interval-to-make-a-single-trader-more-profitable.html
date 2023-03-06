@@ -4,18 +4,18 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 3 Introduce PubSub as a communication method | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
-  <meta name="description" content="Chapter 3 Introduce PubSub as a communication method | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <title>Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 3 Introduce PubSub as a communication method | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:title" content="Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
   
   
   <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 3 Introduce PubSub as a communication method | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:title" content="Chapter 6 Introduce a buy_down_interval to make a single trader more profitable | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="twitter:site" content="@kamilskowron" />
   
   
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"/>
-<link rel="next" href="mock-the-binance-api.html"/>
+<link rel="prev" href="enable-parallel-trading-on-multiple-symbols.html"/>
+<link rel="next" href="introduce-a-trader-budget-and-calculating-the-quantity.html"/>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -476,101 +476,134 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="introduce-pubsub-as-a-communication-method" class="section level1 hasAnchor" number="3">
-<h1><span class="header-section-number">Chapter 3</span> Introduce PubSub as a communication method<a href="introduce-pubsub-as-a-communication-method.html#introduce-pubsub-as-a-communication-method" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<div id="objectives-2" class="section level2 hasAnchor" number="3.1">
-<h2><span class="header-section-number">3.1</span> Objectives<a href="introduce-pubsub-as-a-communication-method.html#objectives-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div id="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable" class="section level1 hasAnchor" number="6">
+<h1><span class="header-section-number">Chapter 6</span> Introduce a <code>buy_down_interval</code> to make a single trader more profitable<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<div id="objectives-5" class="section level2 hasAnchor" number="6.1">
+<h2><span class="header-section-number">6.1</span> Objectives<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#objectives-5" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <ul>
-<li>consider reasons why introducing a PubSub communication would be beneficial</li>
-<li>implement the PubSub communication between the <code>Streamer.Binance</code> and the <code>Naive.Trader</code>(s)</li>
+<li>present reasons why to introduce <code>buy_down_interval</code></li>
+<li>add <code>buy_down interval</code> to <code>Naive.Trader</code>’s state and calculate buy price</li>
+<li>add <code>buy_down interval</code> to <code>Naive.Trader</code>’s state compiled by the <code>Naive.Leader</code></li>
+<li>manually test the implementation inside iex</li>
 </ul>
 </div>
-<div id="design" class="section level2 hasAnchor" number="3.2">
-<h2><span class="header-section-number">3.2</span> Design<a href="introduce-pubsub-as-a-communication-method.html#design" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>First, let’s look at the current situation:</p>
-<p><img src="images/chapter_03_01_current_situation.png" width="30%" style="display: block; margin: auto;" /></p>
-<p>We started with the Binance streamer calling the <code>send_event/1</code> function on the <code>Naive</code> module. The <code>Naive</code> module then calls the trader process using the GenServer’s <code>cast/2</code> function(via its registered name).</p>
+<div id="why-we-need-to-buy-below-the-current-price-feature-overview" class="section level2 hasAnchor" number="6.2">
+<h2><span class="header-section-number">6.2</span> Why we need to buy below the current price? Feature overview<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#why-we-need-to-buy-below-the-current-price-feature-overview" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p><img src="images/chapter_06_01_current_buy_price.png" width="50%" style="display: block; margin: auto;" /></p>
+<p>The <code>Naive.Trader</code> process(marked in above diagram with blue color) at the arrival of the first trade event, immediately places a buy order at the current price. At the moment when the buy order gets filled, it places the sell order which later also gets filled.</p>
+<p>The Trader A exits and a new trader B is started which again immediately places a buy order <em>at the same price</em> as the previous trader just sold. When this gets filled sell order gets placed and the loop continues on and on.</p>
+<p>We can see that there’s a problem here as we just paid a fee twice(once for selling by the Trader A and once for buying by the Trader B) without really gaining anything(the Trader A could just hold the currency and could simply cash in on double profit in this specific situation).</p>
 <div style="page-break-after: always;"></div>
-<p>The next step in the process of extending our trading strategy will be to scale it to run multiple <code>Naive.Trader</code> processes in parallel. To be able to do that we will need to remove the option to register the <code>trader</code> process with a name(as only one process can be registered under a single name).</p>
-<p><img src="images/chapter_03_02_current_situation_failed.png" width="30%" style="display: block; margin: auto;" /></p>
-<p>The second issue with that design was the fact that the <code>Streamer</code> needs to be aware of all processes that are interested in the streamed data and explicitly push that information to them.</p>
-<p>To fix those issues we will invert the design and introduce a PubSub mechanism:</p>
-<p><img src="images/chapter_03_03_phoenix_pubsub.png" width="25%" style="display: block; margin: auto;" /></p>
-<p>The streamer will broadcast trade events to the PubSub topic and whatever is interested in that data, can subscribe to the topic and it will receive the broadcasted messages.
-There’s no coupling between the <code>Streamer</code> and <code>Naive</code> app anymore.</p>
-<div style="page-break-after: always;"></div>
-<p>We can now introduce multiple traders that will subscribe to the topic and they will receive messages from the PubSub:</p>
-<p><img src="images/chapter_03_04_naive_trader_group.png" width="100%" height="35%" style="display: block; margin: auto;" /></p>
-<p>Going even further down the line we can picture that system could consist of other processes interested in the streamed data. An example of those could be a process that will save all streamed information to the database to be utilized in backtesting later on:</p>
-<p><img src="images/chapter_03_05_other_services.png" width="100%" height="45%" style="display: block; margin: auto;" /></p>
-<div style="page-break-after: always;"></div>
+<p>The solution is to be more clever about our buy order’s price. The idea is simple, instead of placing a new buy order at the current price(price from the last TradeEvent), we will introduce a <code>buy_down_interval</code>:</p>
+<p><img src="images/chapter_06_02_rebuy_expl.png" width="50%" style="display: block; margin: auto;" /></p>
+<p>So every new <code>Naive.Trader</code> process as it receives the first trade event, the trader will take its price and will calculate a decreased price by using the <code>buy_down_interval</code> value(for example 0.005 would be 0.5%) and place a buy order at that calculated price.</p>
+<p>When looking at the chart above we can figure out that <code>buy_down_interval</code> should never be smaller than double the fee(at the moment of writing transaction fee is 0.1%) that you are paying per transaction.</p>
 </div>
-<div id="implementation" class="section level2 hasAnchor" number="3.3">
-<h2><span class="header-section-number">3.3</span> Implementation<a href="introduce-pubsub-as-a-communication-method.html#implementation" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>We will start by adding a <a href="https://github.com/phoenixframework/phoenix_pubsub"><code>Phoenix.PubSub</code></a> library to both <code>Streamer</code> and <code>Naive</code> app(as both will be using it, <code>Streamer</code> app as a broadcaster and <code>Naive</code> app as a subscriber).</p>
-<p>Scrolling down through its readme on GitHub we can see that we need to add <code>:phoenix_pubsub</code> to list of dependencies:</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb46-1"><a href="introduce-pubsub-as-a-communication-method.html#cb46-1" tabindex="-1"></a><span class="co"># /apps/streamer/mix.exs &amp; /apps/naive/mix.exs</span></span>
-<span id="cb46-2"><a href="introduce-pubsub-as-a-communication-method.html#cb46-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
-<span id="cb46-3"><a href="introduce-pubsub-as-a-communication-method.html#cb46-3" tabindex="-1"></a>    <span class="ot">[</span></span>
-<span id="cb46-4"><a href="introduce-pubsub-as-a-communication-method.html#cb46-4" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb46-5"><a href="introduce-pubsub-as-a-communication-method.html#cb46-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span><span class="fu">}</span>,</span>
-<span id="cb46-6"><a href="introduce-pubsub-as-a-communication-method.html#cb46-6" tabindex="-1"></a>      <span class="op">...</span></span>
-<span id="cb46-7"><a href="introduce-pubsub-as-a-communication-method.html#cb46-7" tabindex="-1"></a>    <span class="ot">]</span></span>
-<span id="cb46-8"><a href="introduce-pubsub-as-a-communication-method.html#cb46-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Remember to place it so the list will keep alphabetical order. The second step in the readme says that we need to add PubSub as a child of our app. We need to decide where we will put it, <code>Streamer</code> sounds like a good starting point. We will modify the <code>/apps/streamer/lib/streamer/application.ex</code> module by appending the PubSub to it:</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb47-1"><a href="introduce-pubsub-as-a-communication-method.html#cb47-1" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/application.ex</span></span>
-<span id="cb47-2"><a href="introduce-pubsub-as-a-communication-method.html#cb47-2" tabindex="-1"></a>  <span class="kw">def</span> start<span class="fu">(</span>_type, _args<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb47-3"><a href="introduce-pubsub-as-a-communication-method.html#cb47-3" tabindex="-1"></a>    children <span class="op">=</span> <span class="ot">[</span></span>
-<span id="cb47-4"><a href="introduce-pubsub-as-a-communication-method.html#cb47-4" tabindex="-1"></a>      <span class="fu">{</span></span>
-<span id="cb47-5"><a href="introduce-pubsub-as-a-communication-method.html#cb47-5" tabindex="-1"></a>        <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb47-6"><a href="introduce-pubsub-as-a-communication-method.html#cb47-6" tabindex="-1"></a>        <span class="va">name:</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>, <span class="va">adapter_name:</span> <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span><span class="cn">PG2</span></span>
-<span id="cb47-7"><a href="introduce-pubsub-as-a-communication-method.html#cb47-7" tabindex="-1"></a>      <span class="fu">}</span></span>
-<span id="cb47-8"><a href="introduce-pubsub-as-a-communication-method.html#cb47-8" tabindex="-1"></a>    <span class="ot">]</span></span>
-<span id="cb47-9"><a href="introduce-pubsub-as-a-communication-method.html#cb47-9" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb47-10"><a href="introduce-pubsub-as-a-communication-method.html#cb47-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We will add the <code>:adapter_name</code> option to instruct PubSub to use <a href="http://erlang.org/doc/man/pg.html"><code>pg</code></a> adapter, which will give us distributed process groups.</p>
-<p>We will now modify the streamer to broadcast a message to PubSub topic instead of using the <code>Naive</code> module’s function:</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb48-1"><a href="introduce-pubsub-as-a-communication-method.html#cb48-1" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
-<span id="cb48-2"><a href="introduce-pubsub-as-a-communication-method.html#cb48-2" tabindex="-1"></a>  <span class="kw">defp</span> process_event<span class="fu">(</span><span class="op">...</span><span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb48-3"><a href="introduce-pubsub-as-a-communication-method.html#cb48-3" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb48-4"><a href="introduce-pubsub-as-a-communication-method.html#cb48-4" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
-<span id="cb48-5"><a href="introduce-pubsub-as-a-communication-method.html#cb48-5" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb48-6"><a href="introduce-pubsub-as-a-communication-method.html#cb48-6" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb48-7"><a href="introduce-pubsub-as-a-communication-method.html#cb48-7" tabindex="-1"></a>      trade_event</span>
-<span id="cb48-8"><a href="introduce-pubsub-as-a-communication-method.html#cb48-8" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb48-9"><a href="introduce-pubsub-as-a-communication-method.html#cb48-9" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div id="naive.trader-implementation" class="section level2 hasAnchor" number="6.3">
+<h2><span class="header-section-number">6.3</span> <code>Naive.Trader</code> implementation<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Let’s open the <code>Naive.Trader</code> module’s file(<code>/apps/naive/lib/naive/trader.ex</code>) and add <code>buy_down_interval</code> to its state:</p>
+<div class="sourceCode" id="cb94"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb94-1"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb94-2"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-2" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb94-3"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-3" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
+<span id="cb94-4"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-4" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> <span class="ot">[</span></span>
+<span id="cb94-5"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-5" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb94-6"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-6" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb94-7"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-7" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb94-8"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-8" tabindex="-1"></a>      <span class="va">:tick_size</span></span>
+<span id="cb94-9"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-9" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb94-10"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-10" tabindex="-1"></a>    <span class="kw">defstruct</span> <span class="ot">[</span></span>
+<span id="cb94-11"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-11" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
+<span id="cb94-12"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-12" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
+<span id="cb94-13"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-13" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
+<span id="cb94-14"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-14" tabindex="-1"></a>      <span class="va">:buy_down_interval</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb94-15"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-15" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb94-16"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-16" tabindex="-1"></a>      <span class="va">:tick_size</span></span>
+<span id="cb94-17"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-17" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb94-18"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-18" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb94-19"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb94-19" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>Next, we need to update the initial <code>handle_info/2</code> callback which places the buy order. We need to retrieve the <code>buy_down_interval</code> and the <code>tick_size</code> from the <code>state</code> of the trader to be able to calculate the buy price. We will put the logic to calculate that price in a separate function at the end of the file:</p>
+<div class="sourceCode" id="cb95"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb95-1"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb95-2"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-2" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb95-3"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-3" tabindex="-1"></a>  <span class="kw">def</span> handle_info<span class="fu">(</span></span>
+<span id="cb95-4"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-4" tabindex="-1"></a>        %<span class="cn">TradeEvent</span><span class="fu">{</span><span class="va">price:</span> price<span class="fu">}</span>,</span>
+<span id="cb95-5"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-5" tabindex="-1"></a>        %<span class="cn">State</span><span class="fu">{</span></span>
+<span id="cb95-6"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-6" tabindex="-1"></a>          <span class="va">symbol:</span> symbol,</span>
+<span id="cb95-7"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-7" tabindex="-1"></a>          <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb95-8"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-8" tabindex="-1"></a>          <span class="va">buy_down_interval:</span> buy_down_interval, <span class="co"># &lt;= add this line</span></span>
+<span id="cb95-9"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-9" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size                  <span class="co"># &lt;= add this line          </span></span>
+<span id="cb95-10"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-10" tabindex="-1"></a>        <span class="fu">}</span> <span class="op">=</span> state</span>
+<span id="cb95-11"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-11" tabindex="-1"></a>      <span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb95-12"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-12" tabindex="-1"></a>    price <span class="op">=</span> calculate_buy_price<span class="fu">(</span>price, buy_down_interval, tick_size<span class="fu">)</span></span>
+<span id="cb95-13"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-13" tabindex="-1"></a>    <span class="co"># ^ add above call</span></span>
+<span id="cb95-14"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb95-14" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<p>To calculate the buy price we will use a very similar method to the one used
+before to calculate the sell price. First, we will need to cast all variables
+into the <code>Decimal</code> structs and then, we will simply subtract the <code>buy_down_interval</code> of the price from the price. The number that we will end up with won’t necessarily be a legal price as every price needs to be divisible by the <code>tick_size</code> which we will assure in the last calculation:</p>
+<div class="sourceCode" id="cb96"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb96-1"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
+<span id="cb96-2"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-2" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb96-3"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-3" tabindex="-1"></a>  <span class="kw">defp</span> calculate_buy_price<span class="fu">(</span>current_price, buy_down_interval, tick_size<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb96-4"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-4" tabindex="-1"></a>    <span class="co"># not necessarily legal price</span></span>
+<span id="cb96-5"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-5" tabindex="-1"></a>    exact_buy_price <span class="op">=</span></span>
+<span id="cb96-6"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-6" tabindex="-1"></a>      D<span class="op">.</span>sub<span class="fu">(</span></span>
+<span id="cb96-7"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-7" tabindex="-1"></a>        current_price,</span>
+<span id="cb96-8"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-8" tabindex="-1"></a>        D<span class="op">.</span>mult<span class="fu">(</span>current_price, buy_down_interval<span class="fu">)</span></span>
+<span id="cb96-9"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-9" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb96-10"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-10" tabindex="-1"></a></span>
+<span id="cb96-11"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-11" tabindex="-1"></a>    D<span class="op">.</span>to_string<span class="fu">(</span></span>
+<span id="cb96-12"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-12" tabindex="-1"></a>      D<span class="op">.</span>mult<span class="fu">(</span></span>
+<span id="cb96-13"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-13" tabindex="-1"></a>        D<span class="op">.</span>div_int<span class="fu">(</span>exact_buy_price, tick_size<span class="fu">)</span>,</span>
+<span id="cb96-14"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-14" tabindex="-1"></a>        tick_size</span>
+<span id="cb96-15"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-15" tabindex="-1"></a>      <span class="fu">)</span>,</span>
+<span id="cb96-16"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-16" tabindex="-1"></a>      <span class="va">:normal</span></span>
+<span id="cb96-17"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-17" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb96-18"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-18" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb96-19"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb96-19" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="naive.leader-implementation" class="section level2 hasAnchor" number="6.4">
+<h2><span class="header-section-number">6.4</span> <code>Naive.Leader</code> implementation<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Next, we need to update the <code>Naive.Leader</code> as it needs to add <code>buy_down_interval</code> to the <code>Naive.Trader</code>’s state:</p>
+<div class="sourceCode" id="cb97"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb97-1"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/leader.ex</span></span>
+<span id="cb97-2"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-2" tabindex="-1"></a>  <span class="kw">defp</span> fetch_symbol_settings<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb97-3"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-3" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb97-4"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-4" tabindex="-1"></a></span>
+<span id="cb97-5"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-5" tabindex="-1"></a>    %<span class="fu">{</span></span>
+<span id="cb97-6"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-6" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
+<span id="cb97-7"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-7" tabindex="-1"></a>      <span class="va">chunks:</span> <span class="dv">1</span>,</span>
+<span id="cb97-8"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-8" tabindex="-1"></a>      <span class="co"># 0.01% for quick testing</span></span>
+<span id="cb97-9"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-9" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="st">&quot;0.0001&quot;</span>, <span class="co"># &lt;= add this line</span></span>
+<span id="cb97-10"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-10" tabindex="-1"></a>      <span class="co"># -0.12% for quick testing</span></span>
+<span id="cb97-11"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-11" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;-0.0012&quot;</span>,</span>
+<span id="cb97-12"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-12" tabindex="-1"></a>      <span class="va">tick_size:</span> tick_size</span>
+<span id="cb97-13"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-13" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb97-14"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-14" tabindex="-1"></a>  <span class="kw">end</span>  </span>
+<span id="cb97-15"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb97-15" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div id="iex-testing-1" class="section level3 hasAnchor" number="6.4.1">
+<h3><span class="header-section-number">6.4.1</span> IEx testing<a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#iex-testing-1" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>That finishes the <code>buy_down_interval</code> implementation, we will jump into the IEx session to see how it works, but before that, for a moment we will change the logging level to <code>debug</code> to see current prices:</p>
+<div class="sourceCode" id="cb98"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb98-1"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb98-1" tabindex="-1"></a><span class="co"># config/config.exs</span></span>
+<span id="cb98-2"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb98-2" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb98-3"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb98-3" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
+<span id="cb98-4"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb98-4" tabindex="-1"></a>  <span class="va">level:</span> <span class="va">:debug</span> <span class="co"># &lt;= updated for our manual test</span></span>
+<span id="cb98-5"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb98-5" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
-<p>Inside the trader on init we need to subscribe to the “TRADE_EVENTS” PubSub channel:</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb49-1"><a href="introduce-pubsub-as-a-communication-method.html#cb49-1" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb49-2"><a href="introduce-pubsub-as-a-communication-method.html#cb49-2" tabindex="-1"></a>  <span class="kw">def</span> init<span class="fu">(</span><span class="op">...</span><span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb49-3"><a href="introduce-pubsub-as-a-communication-method.html#cb49-3" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb49-4"><a href="introduce-pubsub-as-a-communication-method.html#cb49-4" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>subscribe<span class="fu">(</span></span>
-<span id="cb49-5"><a href="introduce-pubsub-as-a-communication-method.html#cb49-5" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb49-6"><a href="introduce-pubsub-as-a-communication-method.html#cb49-6" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb49-7"><a href="introduce-pubsub-as-a-communication-method.html#cb49-7" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb49-8"><a href="introduce-pubsub-as-a-communication-method.html#cb49-8" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb49-9"><a href="introduce-pubsub-as-a-communication-method.html#cb49-9" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Next, we need to convert all <code>handle_cast</code> callbacks to <code>handle_info</code> inside our <code>Trader</code> module as PubSub doesn’t use <code>GenServer.cast/2</code> to send messages over to subscribers.</p>
-<p>The final change will be to remove the <code>send_event</code> function from the <code>Naive</code>
-module as it’s no longer required.</p>
-<p>Our update is now finished so we can start an iex session to see how it works.</p>
-<p>First, we will start a streamer process that will broadcast messages
-to PubSub. Next, we will start trading on the same symbol. On init, the trader will subscribe to a PubSub channel and it will make a full trade cycle.</p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="introduce-pubsub-as-a-communication-method.html#cb50-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb50-2"><a href="introduce-pubsub-as-a-communication-method.html#cb50-2" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb50-3"><a href="introduce-pubsub-as-a-communication-method.html#cb50-3" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
-<span id="cb50-4"><a href="introduce-pubsub-as-a-communication-method.html#cb50-4" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.483.0&gt;}</span></span>
-<span id="cb50-5"><a href="introduce-pubsub-as-a-communication-method.html#cb50-5" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
-<span id="cb50-6"><a href="introduce-pubsub-as-a-communication-method.html#cb50-6" tabindex="-1"></a><span class="ex">23:46:37.482</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Initializing new trader for XRPUSDT</span>
-<span id="cb50-7"><a href="introduce-pubsub-as-a-communication-method.html#cb50-7" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.474.0&gt;}</span></span>
-<span id="cb50-8"><a href="introduce-pubsub-as-a-communication-method.html#cb50-8" tabindex="-1"></a><span class="ex">23:46:55.179</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Placing BUY order for XRPUSDT @ 0.29462000, quantity: 100</span>
-<span id="cb50-9"><a href="introduce-pubsub-as-a-communication-method.html#cb50-9" tabindex="-1"></a><span class="ex">23:46:55.783</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Buy order filled, placing SELL order for XRPUSDT @ 0.29225<span class="er">)</span><span class="ex">,</span></span>
-<span id="cb50-10"><a href="introduce-pubsub-as-a-communication-method.html#cb50-10" tabindex="-1"></a><span class="ex">quantity:</span> 100.00000000</span>
-<span id="cb50-11"><a href="introduce-pubsub-as-a-communication-method.html#cb50-11" tabindex="-1"></a><span class="ex">23:46:56.029</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Trade finished, trader will now exit</span></code></pre></div>
-<p>This shows that the new trader process successfully subscribed to the PubSub, received the broadcasted messages, placed buy/sell orders, and terminated after the full trade cycle finished.</p>
-<p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>The source code for this chapter can be found on <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_03">GitHub</a></p>
+<p>After starting the streaming we should start seeing log messages with current prices. As we updated our implementation we should place our buy order below the current price as it’s visible below:</p>
+<div class="sourceCode" id="cb99"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb99-1"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb99-2"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-2" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb99-3"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-3" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;FLMUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb99-4"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-4" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.313.0&gt;}</span></span>
+<span id="cb99-5"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-5" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;FLMUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb99-6"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-6" tabindex="-1"></a><span class="ex">21:16:14.829</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Starting new supervision tree to trade on FLMUSDT</span>
+<span id="cb99-7"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-7" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb99-8"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-8" tabindex="-1"></a><span class="ex">21:16:16.755</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Initializing new trader for FLMUSDT</span>
+<span id="cb99-9"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-9" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb99-10"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-10" tabindex="-1"></a><span class="ex">21:16:20.000</span> <span class="pp">[</span><span class="ss">debug</span><span class="pp">]</span> Trade event received FLMUSDT@0.15180000</span>
+<span id="cb99-11"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#cb99-11" tabindex="-1"></a><span class="ex">21:16:20.009</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Placing BUY order for FLMUSDT @ 0.1517, quantity: 100</span></code></pre></div>
+<p>As we can see our <code>Naive.Trader</code> process placed a buy order below the current price (based on the most recent trade event received)</p>
+<p>[Note] Please remember to revert the change to logger level as otherwise there’s too much noise in the logs.</p>
+<p>[Note 2] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
+<p>The source code for this chapter can be found on <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_06">GitHub</a></p>
 
+</div>
 </div>
 </div>
             </section>
@@ -578,8 +611,8 @@ to PubSub. Next, we will start trading on the same symbol. On init, the trader w
           </div>
         </div>
       </div>
-<a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="mock-the-binance-api.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="enable-parallel-trading-on-multiple-symbols.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="introduce-a-trader-budget-and-calculating-the-quantity.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
@@ -610,7 +643,7 @@ gitbook.start({
 "size": 2
 },
 "edit": {
-"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/03-introduce-pubsub.Rmd",
+"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/06-introduce-buydown-interval.Rmd",
 "text": "Edit"
 },
 "history": {
