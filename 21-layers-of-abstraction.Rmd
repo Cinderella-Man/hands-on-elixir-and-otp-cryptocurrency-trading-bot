@@ -45,7 +45,7 @@ end
 
 \newpage
 
-Now, based on the way we are currently interacting with the `Binance` module inside the `Naive.Strategy`, we can define the following callback functions:
+Now, based on how we currently interact with the `Binance` module inside the `Naive.Strategy`, we can define the following callback functions:
 
 `order_limit_buy/3` - almost the same as the `Binance.order_limit_buy/4`, just skipped the optional argument
 
@@ -129,7 +129,8 @@ The final usage of the `Binance` module comes from the seed scripts, where we fe
               | {:error, any()}
 ```
 
-This finishes the definition of the `Core.Exchange` behaviour. It should consist of five callback functions(`fetch_symbols/0`, `fetch_symbol_filters/1`, `get_order/3`, `order_limit_buy/3` and `order_limit_sell/3`) together with two structs(`Order` and `SymbolInfo`).
+This finishes the definition of the `Core.Exchange` behaviour. It should consist of five callback functions(
+`fetch_symbols/0`, `fetch_symbol_filters/1`, `get_order/3`, `order_limit_buy/3` and `order_limit_sell/3`) together with two structs(`Order` and `SymbolInfo`).
 
 ### Implementation of the `Core.Exchange.Binance` module
 
@@ -203,7 +204,7 @@ Let's continue with implementing the remaining functions defined in the behaviou
   end
 ```
 
-The `fetch_symbol_filters/1` function follows the previously discussed pattern. The `fetch_symbol_filters/2`, on the other hand, is a modified copy of the `merge_filters_into_settings/2` function from the `Naive.Strategy` module now returning the `Exchange.SymbolInfo` struct.
+The `fetch_symbol_filters/1` function follows the previously discussed pattern. The `fetch_symbol_filters/2`, on the other hand, is a modified copy of the `merge_filters_into_settings/2` function from the `Naive.Strategy` module is now returning the `Exchange.SymbolInfo` struct.
 
 Another function to be implemented to fulfil the behaviour is `get_order/3`:
 
@@ -363,7 +364,7 @@ Moving on, we will replace the `get_exchange_info/0`(together with it's `get_cac
 
 There are a few additional helpers above, and it got a bit long - let's unpack it.
 
-First, both the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we are supporting cached exchange info by introducing the `fetch_exchange_info/0` function, which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
+First, both the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones we implemented for the `Core.Exchange.Binance` module. The main difference here is that we support cached exchange info by introducing the `fetch_exchange_info/0` function, which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function. The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
 
 Next, there's the `get_oder/3` function - as it's working in the same way as per our behaviour, we will leave it as it is.
 
@@ -519,7 +520,7 @@ As the behaviour's interface(public functions) differs from the `Binance` module
       @exchange_client.order_limit_sell(symbol, quantity, sell_price)
 ```
 
-As now we will deal only with the `Exchange.Order` structs instead a pair of `Binance.OrderResponse` and `Binance.Order`, we can simplify the existing two clauses of `broadcast_order/1` into a single one(and remove the `convert_to_order/1` function):
+As of now, we will deal only with the `Exchange.Order` structs instead a pair of `Binance.OrderResponse` and `Binance.Order`, we can simplify the existing two clauses of `broadcast_order/1` into a single one(and remove the `convert_to_order/1` function):
 
  ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -551,7 +552,7 @@ The function is now much more straightforward as we use the `fetch_symbol_filter
 
 \newpage
 
-### Updating seed scripts
+### Updating the seed scripts
 
 The other places we use the exchange are seed scripts that we need to update. First inside the `Naive` application:
 
@@ -565,7 +566,7 @@ maps = symbols
   |> Enum.map(&(%{base_settings | symbol: &1}))
 ```
 
-We are no longer using the `binance_client` but `exchange_client` instead - in the same fashion as inside the `Naive.Strategy` module. Both implementations provide the `fetch_symbols/0` function, which returns a list of symbols - hence the change inside the `Enum/2` function.
+We no longer use the `binance_client` but `exchange_client` instead - in the same fashion as inside the `Naive.Strategy` module. Both implementations provide the `fetch_symbols/0` function, which returns a list of symbols - hence the change inside the `Enum/2` function.
 
 We will follow up with changes to the seeding script of the `Streamer` application(I will skip listing the changes here as they are  **the same** as in the case of the `Naive` application).
 
@@ -593,7 +594,7 @@ config :naive,
 
 \newpage
 
-### Manual testing after refactoring
+### Manual testing after the refactoring
 
 We can now test that `Naive.Strategy` works:
 
@@ -614,7 +615,7 @@ filled
 21:42:15.593 [info]  Position (XRPUSDT/1662842530254): Trade cycle finished
 ```
 
-The above output confirms that we now have a full working trading flow that uses either `Core.Exchange.Binance` or `BinanceMock`. 
+The above output confirms that we have a full working trading flow using either `Core.Exchange.Binance` or `BinanceMock`. 
 
 ### Storing the data
 
@@ -699,7 +700,7 @@ More importantly, we needed to define a behaviour. It gives us a compile-time gu
 
 Let me explain.
 
-Up to this moment, we were using only the `Binance` module. We didn't have an opportunity to work with other modules/exchanges. In fact, we **didn't want to** create an `Exchange` level abstraction. We were happy with using the `Binance` module and we added the behaviour just to be able to use the `Mox` package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.
+Up to this moment, we have been using only the `Binance` module. We didn't have an opportunity to work with other modules/exchanges. In fact, we **didn't want to** create an `Exchange` level abstraction. We were happy with using the `Binance` module, and we added the behaviour just to be able to use the `Mox` package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.
 
 Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the `Binance` module. We have never seen examples of structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future may require updates to the behaviour, behaviour's existing implementations and most of the code that uses it (like the `Naive.Strategy`).
 
@@ -709,17 +710,17 @@ At this moment, abstracting our code into behaviour+implementations is uneducate
 
 What's the alternative?
 
-The first thing that comes to mind would be to look for some "standard" that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be "CCXT" - it's actually a open source "library" that is available for Python, JavaScript and PHP.
+The first thing that comes to mind would be to look for some "standard" that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be "CCXT" - it's an open-source "library" available for Python, JavaScript and PHP.
 
-We could go a step further and look for an Elixir implementation of the CCXT package, and we could find the package named `ccxtex`. It's a wrapper around the JavaScript version of the CCXT package.
+We could look further and look for an Elixir implementation of the CCXT package and find the package named `ccxtex`. It's a wrapper around the JavaScript version of the CCXT package.
 
-Using the above(either the `ccxtex` or `ccxt` as a "standard") instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.
+Using the above(either the `ccxtex` package or `ccxt` as a "blueprint") instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.
 
-Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, puts usage of the `Mox` package in serious doubt.
+Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, put usage of the `Mox` package in serious doubt.
 
 The source code up to this moment can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox)
 
-We will stop here, and **revert back** to the source code from the end of the [20th chapter](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something that we are definitely not prepared to continue with, we will look into alternative ways to test our strategy.
+We will stop here and **revert** to the source code from the end of the [20th chapter](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20). Instead of leaving something we are not prepared to continue with, we will look into alternative ways to test our strategy.
 
 ## Mimicking the reality
 
@@ -770,7 +771,7 @@ As we are pointing to `Repo` instead of `Naive.Repo`, we need to add an alias at
 alias Naive.Repo
 ```
 
-That finishes our conversion to hardcoded module names. As we are not basing our module on the configuration anymore, we can remove all redundant configuration keys from the main `config.exs` file:
+That finishes our conversion to hardcoded module names. As we are no longer basing our module on the configuration, we can remove all redundant configuration keys from the main `config.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -888,7 +889,7 @@ We can use the `expected_order` above to assert that the `Naive.Strategy.execute
     assert buy_order == expected_order
 ```
 
-That finishes the test implementation, but before we will be able to use the `mimic` module, we need to prepare modules so we can stub them inside tests - here are the new contents of test helper file:
+That finishes the test implementation, but before we will be able to use the `mimic` module, we need to prepare modules so we can stub them inside tests - here are the new contents of the test helper file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
@@ -940,9 +941,9 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 2 tests, 0 failures, 1 excluded
 ```
 
-We can see that ExUnit output is now free of any logs.
+We can see that the ExUnit output is now free of any logs.
 
-But what if we would like to assert the logged message? We were able to do that using the `mox` package as we were mocking and asserting log messages' contents inside those mocks.
+But what if we would like to assert the logged message? We were able to do that using the `mox` package, as we were mocking and asserting log messages' contents inside those mocks.
 
 ExUnit provides a helper function for that case as well. We will modify our test to capture the log inside it and assert that it logs the correct value (the price of $0.8):
 
@@ -969,7 +970,7 @@ ExUnit provides a helper function for that case as well. We will modify our test
     ...
 ```
 
-In the above code, we wrapped our call to the `Naive.Strategy.execute/3` into a function that we passed as an argument to the `with_log/1` function. The `with_log/1` function returns a tuple containing the result of the passed function and the generated log message(s). We are then able to assert that the logged message contains the expected value, which strengthens our test. We can now rerun our unit test:
+In the above code, we wrapped our call to the `Naive.Strategy.execute/3` into an anonymous function that we passed as an argument to the `with_log/1` function. The `with_log/1` function returns a tuple containing the result of the passed function and the generated log message(s). We can then assert that the logged message contains the expected value, strengthening our test. We can now rerun our unit test:
 
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -982,7 +983,7 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 
 It's worth noting that we were able to capture the log message even with global capture_log enabled(inside the test helper when starting ExUnit). This gives us ultimate flexibility. None of the logs are displayed, although whenever we need, we can always capture logs inside test cases on a test-by-tas basis.
 
-That would wrap up the writing the unit tests. But how will this work with running our code locally(or in "production") or running integration tests?
+That would wrap up the writing unit tests part. But how will this work with running our code locally(or in "production") or running integration tests?
 
 ## Swapping back to attributes
 
@@ -990,7 +991,7 @@ We need to have a way to swap Binance's implementation between dev/test/integrat
 
 We can't use the `mimic` package to swap the implementation as this is a "running" mode, not some tests.
 
-Please note that most of the applications won't have a need to change the implementation based on the environment as the implementation itself will provide some flags to enable/disable the functionality(like sending emails to newly registered users).
+Please note that most of the applications won't need to change the implementation based on the environment as the 3rd party library/package itself will provide some flags to enable/disable the functionality(like sending emails to newly registered users).
 
 \newpage
 
@@ -1045,9 +1046,9 @@ config :naive,
 # remove everything besides the `import`
 ```
 
-It's important to understand that we don't need to configure the `binance_client` inside the test configuration. As we are now utilizing the `mimic` package, we are driving mocking from the test level.
+It's important to understand that we don't need to configure the `binance_client` inside the test configuration. As we now utilise the `mimic` package, we can drive mocking from the test level.
 
-The knock-on effect of bringing back the environment driven `@binance_client` is that now we will need to mimic the `BinanceMock` module instead of `Binance` for our unit tests. To fix that we need to update the test helper:
+The knock-on effect of bringing back the environment driven `@binance_client` is that now we will need to mimic the `BinanceMock` module instead of `Binance` for our unit tests. To fix that, we need to update the test helper:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
@@ -1102,4 +1103,4 @@ In this chapter, we've reiterated the ideas behind the `mox` package, highlighti
 
 [Note] Please remember to run the `mix format` to keep things nice and tidy.
 
-Source code for this chapter can be found at [Github](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21)
+The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21)

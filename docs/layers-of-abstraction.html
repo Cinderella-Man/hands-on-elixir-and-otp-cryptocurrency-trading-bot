@@ -440,8 +440,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="21.3.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module"><i class="fa fa-check"></i><b>21.3.2</b> Implementation of the <code>Core.Exchange.Binance</code> module</a></li>
 <li class="chapter" data-level="21.3.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>21.3.3</b> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</a></li>
 <li class="chapter" data-level="21.3.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy"><i class="fa fa-check"></i><b>21.3.4</b> Updating the <code>Naive.Strategy</code></a></li>
-<li class="chapter" data-level="21.3.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-seed-scripts"><i class="fa fa-check"></i><b>21.3.5</b> Updating seed scripts</a></li>
-<li class="chapter" data-level="21.3.6" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#manual-testing-after-refactoring"><i class="fa fa-check"></i><b>21.3.6</b> Manual testing after refactoring</a></li>
+<li class="chapter" data-level="21.3.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-seed-scripts"><i class="fa fa-check"></i><b>21.3.5</b> Updating the seed scripts</a></li>
+<li class="chapter" data-level="21.3.6" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#manual-testing-after-the-refactoring"><i class="fa fa-check"></i><b>21.3.6</b> Manual testing after the refactoring</a></li>
 <li class="chapter" data-level="21.3.7" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#storing-the-data"><i class="fa fa-check"></i><b>21.3.7</b> Storing the data</a></li>
 <li class="chapter" data-level="21.3.8" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#the-mox-approach-summary"><i class="fa fa-check"></i><b>21.3.8</b> The <code>Mox</code> approach summary</a></li>
 </ul></li>
@@ -491,7 +491,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">21.2</span> Admitting the simplification<a href="layers-of-abstraction.html#admitting-the-simplification" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>There comes a time when I need to admit to something that I’ve learned on the way as I was writing this book and was misused throughout.</p>
 <p>When we were using the <code>Mox</code> package, we were disappointed that most packages don’t provide behaviours we could use in our tests(to mock the actual implementations).</p>
-<p>To fix that, we were creating behaviours for 3rd party packages that we are using, like <code>Binance</code> or even <code>Ecto.Repo</code>. This approach felt weird, and it should, as I believe that was <strong>not the intended usage</strong> of the <code>Mox</code> package.</p>
+<p>To fix that, we were creating behaviours for 3rd party packages we are using, like <code>Binance</code> or even <code>Ecto.Repo</code>. This approach felt weird, and it should, as I believe that was <strong>not the intended usage</strong> of the <code>Mox</code> package.</p>
 <div style="page-break-after: always;"></div>
 <p>Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using. A typical example could be abstracting dealing with an exchange to an behaviour and providing different implementations(for example, one could be wrapping the <code>Binance</code> module):</p>
 <p><img src="images/chapter_21_01_additional_layer.jpg" width="100%" style="display: block; margin: auto;" /></p>
@@ -505,12 +505,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="defining-the-core.exchange-behaviour" class="section level3 hasAnchor" number="21.3.1">
 <h3><span class="header-section-number">21.3.1</span> Defining the <code>Core.Exchange</code> behaviour<a href="layers-of-abstraction.html#defining-the-core.exchange-behaviour" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We will start by creating a new file <code>/apps/core/lib/core/exchange.ex</code> together with a new module inside it:</p>
-<div class="sourceCode" id="cb487"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb487-1"><a href="layers-of-abstraction.html#cb487-1" tabindex="-1"></a> <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
+<div class="sourceCode" id="cb487"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb487-1"><a href="layers-of-abstraction.html#cb487-1" tabindex="-1"></a><span class="co"># /apps/core/lib/core/exchange.ex</span></span>
 <span id="cb487-2"><a href="layers-of-abstraction.html#cb487-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span> <span class="kw">do</span></span>
 <span id="cb487-3"><a href="layers-of-abstraction.html#cb487-3" tabindex="-1"></a></span>
 <span id="cb487-4"><a href="layers-of-abstraction.html#cb487-4" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
-<p>Now, based on the way we are currently interacting with the <code>Binance</code> module inside the <code>Naive.Strategy</code>, we can define the following callback functions:</p>
+<p>Now, based on how we currently interact with the <code>Binance</code> module inside the <code>Naive.Strategy</code>, we can define the following callback functions:</p>
 <p><code>order_limit_buy/3</code> - almost the same as the <code>Binance.order_limit_buy/4</code>, just skipped the optional argument</p>
 <div class="sourceCode" id="cb488"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb488-1"><a href="layers-of-abstraction.html#cb488-1" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
 <span id="cb488-2"><a href="layers-of-abstraction.html#cb488-2" tabindex="-1"></a>  <span class="ot">@callback</span> order_limit_buy<span class="fu">(</span>symbol :: <span class="cn">String</span><span class="op">.</span>t<span class="fu">()</span>, quantity :: number<span class="fu">()</span>, price :: number<span class="fu">())</span> ::</span>
@@ -562,13 +562,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb492-13"><a href="layers-of-abstraction.html#cb492-13" tabindex="-1"></a>  <span class="ot">@callback</span> fetch_symbol_filters<span class="fu">(</span>symbol :: <span class="cn">String</span><span class="op">.</span>t<span class="fu">())</span> ::</span>
 <span id="cb492-14"><a href="layers-of-abstraction.html#cb492-14" tabindex="-1"></a>              <span class="fu">{</span><span class="va">:ok</span>, <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span><span class="op">.</span><span class="cn">SymbolInfo</span><span class="op">.</span>t<span class="fu">()}</span></span>
 <span id="cb492-15"><a href="layers-of-abstraction.html#cb492-15" tabindex="-1"></a>              <span class="op">|</span> <span class="fu">{</span><span class="va">:error</span>, any<span class="fu">()}</span></span></code></pre></div>
-<p>The final usage of the <code>Binance</code> module comes from the seed scripts, which fetch the exchange info just to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:</p>
+<p>The final usage of the <code>Binance</code> module comes from the seed scripts, where we fetch the exchange info just to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:</p>
 <div class="sourceCode" id="cb493"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb493-1"><a href="layers-of-abstraction.html#cb493-1" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange.ex</span></span>
 <span id="cb493-2"><a href="layers-of-abstraction.html#cb493-2" tabindex="-1"></a>  <span class="co"># add below inside the Core.Exchange module</span></span>
 <span id="cb493-3"><a href="layers-of-abstraction.html#cb493-3" tabindex="-1"></a>  <span class="ot">@callback</span> fetch_symbols<span class="fu">()</span> ::</span>
 <span id="cb493-4"><a href="layers-of-abstraction.html#cb493-4" tabindex="-1"></a>              <span class="fu">{</span><span class="va">:ok</span>, <span class="ot">[</span><span class="cn">String</span><span class="op">.</span>t<span class="fu">()</span><span class="ot">]</span><span class="fu">}</span></span>
 <span id="cb493-5"><a href="layers-of-abstraction.html#cb493-5" tabindex="-1"></a>              <span class="op">|</span> <span class="fu">{</span><span class="va">:error</span>, any<span class="fu">()}</span></span></code></pre></div>
-<p>This finishes the definition of the <code>Core.Exchange</code> behaviour. It should consist of five callback functions(<code>fetch_symbols/0</code>, <code>fetch_symbol_filters/1</code>, <code>get_order/3</code>, <code>order_limit_buy/3</code> and <code>order_limit_sell/3</code>) together with two structs(<code>Order</code> and <code>SymbolInfo</code>).</p>
+<p>This finishes the definition of the <code>Core.Exchange</code> behaviour. It should consist of five callback functions(
+<code>fetch_symbols/0</code>, <code>fetch_symbol_filters/1</code>, <code>get_order/3</code>, <code>order_limit_buy/3</code> and <code>order_limit_sell/3</code>) together with two structs(<code>Order</code> and <code>SymbolInfo</code>).</p>
 </div>
 <div id="implementation-of-the-core.exchange.binance-module" class="section level3 hasAnchor" number="21.3.2">
 <h3><span class="header-section-number">21.3.2</span> Implementation of the <code>Core.Exchange.Binance</code> module<a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -628,7 +629,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb496-30"><a href="layers-of-abstraction.html#cb496-30" tabindex="-1"></a>      <span class="va">step_size:</span> step_size</span>
 <span id="cb496-31"><a href="layers-of-abstraction.html#cb496-31" tabindex="-1"></a>    <span class="fu">}</span></span>
 <span id="cb496-32"><a href="layers-of-abstraction.html#cb496-32" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The <code>fetch_symbol_filters/1</code> function follows the previously discussed pattern. The <code>fetch_symbol_filters/2</code>, on the other hand, is a modified copy of the <code>merge_filters_into_settings/2</code> function from the <code>Naive.Strategy</code> module now returning the <code>Exchange.SymbolInfo</code> struct.</p>
+<p>The <code>fetch_symbol_filters/1</code> function follows the previously discussed pattern. The <code>fetch_symbol_filters/2</code>, on the other hand, is a modified copy of the <code>merge_filters_into_settings/2</code> function from the <code>Naive.Strategy</code> module is now returning the <code>Exchange.SymbolInfo</code> struct.</p>
 <p>Another function to be implemented to fulfil the behaviour is <code>get_order/3</code>:</p>
 <div class="sourceCode" id="cb497"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb497-1"><a href="layers-of-abstraction.html#cb497-1" tabindex="-1"></a>  <span class="co"># /apps/core/lib/core/exchange/binance.ex</span></span>
 <span id="cb497-2"><a href="layers-of-abstraction.html#cb497-2" tabindex="-1"></a>  <span class="ot">@impl</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span>
@@ -708,7 +709,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Next, we can replace all the aliases to the <code>Binance</code> structs with a single alias to the <code>Core.Exchange</code> module:</p>
 <div class="sourceCode" id="cb500"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb500-1"><a href="layers-of-abstraction.html#cb500-1" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb500-2"><a href="layers-of-abstraction.html#cb500-2" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Exchange</span></span></code></pre></div>
-<p>Don’t forget to update all references to the <code>Binance.Order</code> with <code>Exchange.Order</code> module(and remove it’s alias).</p>
+<p>Don’t forget to update all references to the <code>Binance.Order</code> with <code>Exchange.Order</code> module.</p>
 <p>As the behaviour is now defined in the <code>Core.Exchange</code> module, we can remove all <code>@type</code> and <code>@callback</code> attributes.</p>
 <p>Moving on, we will replace the <code>get_exchange_info/0</code>(together with it’s <code>get_cached_exchange_info/0</code> helper function) with <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code>(and their helper functions):</p>
 <div class="sourceCode" id="cb501"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb501-1"><a href="layers-of-abstraction.html#cb501-1" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
@@ -762,7 +763,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb501-49"><a href="layers-of-abstraction.html#cb501-49" tabindex="-1"></a>    <span class="co"># &lt;= this is a copy of `Core.Exchange.Binance.fetch_symbol_filters/2` function</span></span>
 <span id="cb501-50"><a href="layers-of-abstraction.html#cb501-50" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>There are a few additional helpers above, and it got a bit long - let’s unpack it.</p>
-<p>First, both the <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code> look very similar to the ones we implemented for the <code>Core.Exchange.Binance</code> module. The main difference here is that we are supporting cached exchange info by introducing the <code>fetch_exchange_info/0</code> function, which branches out to either using the <code>Binance</code> module or the <code>get_cached_exchange_info/0</code> function. The latter was updated to return the raw data instead of the <code>Binance.ExchangeInfo</code> struct.</p>
+<p>First, both the <code>fetch_symbols/0</code> and <code>fetch_symbol_filters/1</code> look very similar to the ones we implemented for the <code>Core.Exchange.Binance</code> module. The main difference here is that we support cached exchange info by introducing the <code>fetch_exchange_info/0</code> function, which branches out to either using the <code>Binance</code> module or the <code>get_cached_exchange_info/0</code> function. The latter was updated to return the raw data instead of the <code>Binance.ExchangeInfo</code> struct.</p>
 <p>Next, there’s the <code>get_oder/3</code> function - as it’s working in the same way as per our behaviour, we will leave it as it is.</p>
 <div style="page-break-after: always;"></div>
 <p>The final two functions to update will be the <code>order_limit_buy/4</code> and <code>order_limit_sell/4</code>, which will now become three argument functions:</p>
@@ -774,7 +775,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb502-6"><a href="layers-of-abstraction.html#cb502-6" tabindex="-1"></a>  <span class="kw">def</span> order_limit_sell<span class="fu">(</span>symbol, quantity, price<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb502-7"><a href="layers-of-abstraction.html#cb502-7" tabindex="-1"></a>    order_limit<span class="fu">(</span>symbol, quantity, price, <span class="st">&quot;SELL&quot;</span><span class="fu">)</span></span>
 <span id="cb502-8"><a href="layers-of-abstraction.html#cb502-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>In the above functions, we simply skipped the fourth argument in the above functions to fulfil the behaviour.</p>
+<p>In the above functions, we simply skipped the fourth arguments to fulfil the behaviour.</p>
 <p>The changes to different structs will have a ripple effect in other parts of the BinanceMock module:</p>
 <div class="sourceCode" id="cb503"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb503-1"><a href="layers-of-abstraction.html#cb503-1" tabindex="-1"></a>  <span class="co"># /apps/binance_mock/lib/binance_mock.ex</span></span>
 <span id="cb503-2"><a href="layers-of-abstraction.html#cb503-2" tabindex="-1"></a>  <span class="kw">def</span> generate_fake_order<span class="fu">(</span><span class="op">...</span><span class="fu">)</span> <span class="kw">do</span></span>
@@ -888,7 +889,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb507-3"><a href="layers-of-abstraction.html#cb507-3" tabindex="-1"></a>  <span class="op">...</span></span>
 <span id="cb507-4"><a href="layers-of-abstraction.html#cb507-4" tabindex="-1"></a>  <span class="fu">{</span><span class="va">:ok</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span> <span class="op">=</span> order<span class="fu">}</span> <span class="op">=</span></span>
 <span id="cb507-5"><a href="layers-of-abstraction.html#cb507-5" tabindex="-1"></a>      <span class="ot">@exchange_client</span><span class="op">.</span>order_limit_sell<span class="fu">(</span>symbol, quantity, sell_price<span class="fu">)</span></span></code></pre></div>
-<p>As now we will deal only with the <code>Exchange.Order</code> structs instead a pair of <code>Binance.OrderResponse</code> and <code>Binance.Order</code>, we can simplify the existing two clauses of <code>broadcast_order/1</code> into a single one(and remove the <code>convert_to_order/1</code> function):</p>
+<p>As of now, we will deal only with the <code>Exchange.Order</code> structs instead a pair of <code>Binance.OrderResponse</code> and <code>Binance.Order</code>, we can simplify the existing two clauses of <code>broadcast_order/1</code> into a single one(and remove the <code>convert_to_order/1</code> function):</p>
 <div class="sourceCode" id="cb508"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb508-1"><a href="layers-of-abstraction.html#cb508-1" tabindex="-1"></a> <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb508-2"><a href="layers-of-abstraction.html#cb508-2" tabindex="-1"></a> <span class="kw">defp</span> broadcast_order<span class="fu">(</span>%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span> <span class="op">=</span> order<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb508-3"><a href="layers-of-abstraction.html#cb508-3" tabindex="-1"></a>   <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
@@ -908,11 +909,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb509-8"><a href="layers-of-abstraction.html#cb509-8" tabindex="-1"></a>      db_settings <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>from_struct<span class="fu">()</span></span>
 <span id="cb509-9"><a href="layers-of-abstraction.html#cb509-9" tabindex="-1"></a>    <span class="fu">)</span></span>
 <span id="cb509-10"><a href="layers-of-abstraction.html#cb509-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The function is now much more straightforward as we use the <code>fetch_symbol_filters/1</code> function implemented as a part of the behaviour.</p>
+<p>The function is now much more straightforward as we use the <code>fetch_symbol_filters/1</code> function implemented as a part of the <code>Core.Exchange</code> behaviour.</p>
 <div style="page-break-after: always;"></div>
 </div>
-<div id="updating-seed-scripts" class="section level3 hasAnchor" number="21.3.5">
-<h3><span class="header-section-number">21.3.5</span> Updating seed scripts<a href="layers-of-abstraction.html#updating-seed-scripts" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="updating-the-seed-scripts" class="section level3 hasAnchor" number="21.3.5">
+<h3><span class="header-section-number">21.3.5</span> Updating the seed scripts<a href="layers-of-abstraction.html#updating-the-seed-scripts" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>The other places we use the exchange are seed scripts that we need to update. First inside the <code>Naive</code> application:</p>
 <div class="sourceCode" id="cb510"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb510-1"><a href="layers-of-abstraction.html#cb510-1" tabindex="-1"></a><span class="co"># /apps/naive/priv/seed_settings.exs</span></span>
 <span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" tabindex="-1"></a>exchange_client <span class="op">=</span> <span class="cn">Application</span><span class="op">.</span>get_env<span class="fu">(</span><span class="va">:naive</span>, <span class="va">:exchange_client</span><span class="fu">)</span></span>
@@ -921,7 +922,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb510-5"><a href="layers-of-abstraction.html#cb510-5" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb510-6"><a href="layers-of-abstraction.html#cb510-6" tabindex="-1"></a>maps <span class="op">=</span> symbols</span>
 <span id="cb510-7"><a href="layers-of-abstraction.html#cb510-7" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span>%<span class="fu">{</span>base_settings <span class="op">|</span> <span class="va">symbol:</span> <span class="op">&amp;</span><span class="dv">1</span><span class="fu">}))</span></span></code></pre></div>
-<p>We are no longer using the <code>binance_client</code> but <code>exchange_client</code> instead - in the same fashion as inside the <code>Naive.Strategy</code> module. Both implementations provide the <code>fetch_symbols/0</code> function, which returns a list of symbols - hence the change inside the <code>Enum/2</code> function.</p>
+<p>We no longer use the <code>binance_client</code> but <code>exchange_client</code> instead - in the same fashion as inside the <code>Naive.Strategy</code> module. Both implementations provide the <code>fetch_symbols/0</code> function, which returns a list of symbols - hence the change inside the <code>Enum/2</code> function.</p>
 <p>We will follow up with changes to the seeding script of the <code>Streamer</code> application(I will skip listing the changes here as they are <strong>the same</strong> as in the case of the <code>Naive</code> application).</p>
 <p>At this moment, we can change the configuration to make the <code>Naive.Strategy</code> work:</p>
 <div class="sourceCode" id="cb511"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb511-1"><a href="layers-of-abstraction.html#cb511-1" tabindex="-1"></a><span class="co"># /config/config.ex </span></span>
@@ -943,8 +944,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb511-17"><a href="layers-of-abstraction.html#cb511-17" tabindex="-1"></a>  <span class="va">exchange_client:</span> <span class="cn">Test</span><span class="op">.</span><span class="cn">BinanceMock</span>, <span class="co"># &lt;= key updated</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
 </div>
-<div id="manual-testing-after-refactoring" class="section level3 hasAnchor" number="21.3.6">
-<h3><span class="header-section-number">21.3.6</span> Manual testing after refactoring<a href="layers-of-abstraction.html#manual-testing-after-refactoring" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="manual-testing-after-the-refactoring" class="section level3 hasAnchor" number="21.3.6">
+<h3><span class="header-section-number">21.3.6</span> Manual testing after the refactoring<a href="layers-of-abstraction.html#manual-testing-after-the-refactoring" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We can now test that <code>Naive.Strategy</code> works:</p>
 <div class="sourceCode" id="cb512"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb512-1"><a href="layers-of-abstraction.html#cb512-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb512-2"><a href="layers-of-abstraction.html#cb512-2" tabindex="-1"></a><span class="ex">...</span></span>
@@ -960,13 +961,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb512-12"><a href="layers-of-abstraction.html#cb512-12" tabindex="-1"></a><span class="ex">21:42:15.536</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> The SELL order is now partially</span>
 <span id="cb512-13"><a href="layers-of-abstraction.html#cb512-13" tabindex="-1"></a><span class="ex">filled</span></span>
 <span id="cb512-14"><a href="layers-of-abstraction.html#cb512-14" tabindex="-1"></a><span class="ex">21:42:15.593</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Position <span class="er">(</span><span class="ex">XRPUSDT/1662842530254</span><span class="kw">)</span><span class="bu">:</span> Trade cycle finished</span></code></pre></div>
-<p>The above output confirms that we now have a full working trading flow that uses either <code>Core.Exchange.Binance</code> or <code>BinanceMock</code>.</p>
+<p>The above output confirms that we have a full working trading flow using either <code>Core.Exchange.Binance</code> or <code>BinanceMock</code>.</p>
 </div>
 <div id="storing-the-data" class="section level3 hasAnchor" number="21.3.7">
 <h3><span class="header-section-number">21.3.7</span> Storing the data<a href="layers-of-abstraction.html#storing-the-data" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>As we are now using generic structs like the <code>Core.Exchange.Order</code>, all data storage-related code needs to be updated.</p>
 <p>We will start by updating the migration script to store only limited passed data:</p>
-<div class="sourceCode" id="cb513"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb513-1"><a href="layers-of-abstraction.html#cb513-1" tabindex="-1"></a>   <span class="co"># /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs</span></span>
+<div class="sourceCode" id="cb513"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb513-1"><a href="layers-of-abstraction.html#cb513-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs</span></span>
 <span id="cb513-2"><a href="layers-of-abstraction.html#cb513-2" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
 <span id="cb513-3"><a href="layers-of-abstraction.html#cb513-3" tabindex="-1"></a>    create table<span class="fu">(</span><span class="va">:orders</span>, <span class="va">primary_key:</span> <span class="cn">false</span><span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb513-4"><a href="layers-of-abstraction.html#cb513-4" tabindex="-1"></a>      add<span class="fu">(</span><span class="va">:id</span>, <span class="va">:bigint</span>, <span class="va">primary_key:</span> <span class="cn">true</span><span class="fu">)</span></span>
@@ -1028,17 +1029,17 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <p>First, it’s worth stressing that it required multiple changes to many parts of the system spanning from the <code>Naive</code> application through <code>Streamer</code> (seeding) and ending in the <code>DataWarehouse</code> application.</p>
 <p>More importantly, we needed to define a behaviour. It gives us a compile-time guarantee, but on the other hand, we were pushed to define it very early.</p>
 <p>Let me explain.</p>
-<p>Up to this moment, we were using only the <code>Binance</code> module. We didn’t have an opportunity to work with other modules/exchanges. In fact, we <strong>didn’t want to</strong> create an <code>Exchange</code> level abstraction. We were happy with using the <code>Binance</code> module and we added the behaviour just to be able to use the <code>Mox</code> package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.</p>
-<p>Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the <code>Binance</code> module. We have never seen examples of other structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future will require updates to behaviour, behaviour’s existing implementations and most of the code that uses it (like the <code>Naive.Strategy</code>).</p>
-<p>Additionally, we forwarded <code>Binance</code>’s error messages straight to the user of our abstraction(<code>Naive.Strategy</code>). We should be converting those to generic errors, but we don’t have a clue about other exchanges and the errors they could cause.</p>
+<p>Up to this moment, we have been using only the <code>Binance</code> module. We didn’t have an opportunity to work with other modules/exchanges. In fact, we <strong>didn’t want to</strong> create an <code>Exchange</code> level abstraction. We were happy with using the <code>Binance</code> module, and we added the behaviour just to be able to use the <code>Mox</code> package to mock it inside our tests. All of this feels like a really heavy over-engineering just to be able to test.</p>
+<p>Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the <code>Binance</code> module. We have never seen examples of structs from other packages, so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future. The knock-on effect will be that we are already missing valuable data in the database as well as adding any new exchanges in the future may require updates to the behaviour, behaviour’s existing implementations and most of the code that uses it (like the <code>Naive.Strategy</code>).</p>
+<p>Additionally, we returned the <code>Binance</code>’s error messages straight to the user of our abstraction(<code>Naive.Strategy</code>). We should be converting those to generic errors, but we don’t have a clue about other exchanges and the errors they could raise.</p>
 <p>At this moment, abstracting our code into behaviour+implementations is uneducated over-engineering and simply asking for troubles in the future.</p>
 <p>What’s the alternative?</p>
-<p>The first thing that comes to mind would be to look for some “standard” that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be “CCXT” - it’s actually a open source “library” that is available for Python, JavaScript and PHP.</p>
-<p>We could go a step further and look for an Elixir implementation of the CCXT package, and we could find the package named <code>ccxtex</code>. It’s a wrapper around the JavaScript version of the CCXT package.</p>
-<p>Using the above(either the <code>ccxtex</code> or <code>ccxt</code> as a “standard”) instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.</p>
-<p>Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, puts usage of the <code>Mox</code> package in serious doubt.</p>
+<p>The first thing that comes to mind would be to look for some “standard” that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges, that will be “CCXT” - it’s an open-source “library” available for Python, JavaScript and PHP.</p>
+<p>We could look further and look for an Elixir implementation of the CCXT package and find the package named <code>ccxtex</code>. It’s a wrapper around the JavaScript version of the CCXT package.</p>
+<p>Using the above(either the <code>ccxtex</code> package or <code>ccxt</code> as a “blueprint”) instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly let us avoid continuous updates to our code.</p>
+<p>Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation, put usage of the <code>Mox</code> package in serious doubt.</p>
 <p>The source code up to this moment can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21_mox">Github</a></p>
-<p>We will stop here, and <strong>revert back</strong> to the source code from the end of the <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20">20th chapter</a>. Instead of leaving something that we are definitely not prepared to fix, we will look into alternative ways to test our strategy.</p>
+<p>We will stop here and <strong>revert</strong> to the source code from the end of the <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20">20th chapter</a>. Instead of leaving something we are not prepared to continue with, we will look into alternative ways to test our strategy.</p>
 </div>
 </div>
 <div id="mimicking-the-reality" class="section level2 hasAnchor" number="21.4">
@@ -1072,7 +1073,7 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <p>As we are pointing to <code>Repo</code> instead of <code>Naive.Repo</code>, we need to add an alias at the top of the module:</p>
 <div class="sourceCode" id="cb519"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb519-1"><a href="layers-of-abstraction.html#cb519-1" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb519-2"><a href="layers-of-abstraction.html#cb519-2" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Naive</span><span class="op">.</span><span class="cn">Repo</span></span></code></pre></div>
-<p>That finishes our conversion to hardcoded module names. As we are not basing our module on the configuration anymore, we can remove all redundant configuration keys from the the main <code>config.exs</code> file:</p>
+<p>That finishes our conversion to hardcoded module names. As we are no longer basing our module on the configuration, we can remove all redundant configuration keys from the main <code>config.exs</code> file:</p>
 <div class="sourceCode" id="cb520"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb520-1"><a href="layers-of-abstraction.html#cb520-1" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
 <span id="cb520-2"><a href="layers-of-abstraction.html#cb520-2" tabindex="-1"></a>config <span class="va">:core</span>,                   <span class="co"># &lt;= remove</span></span>
 <span id="cb520-3"><a href="layers-of-abstraction.html#cb520-3" tabindex="-1"></a>  <span class="va">logger:</span> <span class="cn">Logger</span>,               <span class="co"># &lt;= remove</span></span>
@@ -1163,7 +1164,7 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <span id="cb525-3"><a href="layers-of-abstraction.html#cb525-3" tabindex="-1"></a></span>
 <span id="cb525-4"><a href="layers-of-abstraction.html#cb525-4" tabindex="-1"></a>    %<span class="fu">{</span><span class="va">buy_order:</span> buy_order<span class="fu">}</span> <span class="op">=</span> <span class="cn">List</span><span class="op">.</span>first<span class="fu">(</span>new_positions<span class="fu">)</span></span>
 <span id="cb525-5"><a href="layers-of-abstraction.html#cb525-5" tabindex="-1"></a>    assert buy_order <span class="op">==</span> expected_order</span></code></pre></div>
-<p>That finishes the test implementation, but before we will be able to use the <code>mimic</code> module, we need to prepare modules so we can stub them inside tests - here are the new contents of test helper file:</p>
+<p>That finishes the test implementation, but before we will be able to use the <code>mimic</code> module, we need to prepare modules so we can stub them inside tests - here are the new contents of the test helper file:</p>
 <div class="sourceCode" id="cb526"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb526-1"><a href="layers-of-abstraction.html#cb526-1" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
 <span id="cb526-2"><a href="layers-of-abstraction.html#cb526-2" tabindex="-1"></a><span class="cn">Application</span><span class="op">.</span>ensure_all_started<span class="fu">(</span><span class="va">:mimic</span><span class="fu">)</span></span>
 <span id="cb526-3"><a href="layers-of-abstraction.html#cb526-3" tabindex="-1"></a></span>
@@ -1176,10 +1177,11 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <p>We are now ready to run our new test:</p>
 <div class="sourceCode" id="cb527"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb527-1"><a href="layers-of-abstraction.html#cb527-1" tabindex="-1"></a><span class="ex">$</span> mix test.unit</span>
 <span id="cb527-2"><a href="layers-of-abstraction.html#cb527-2" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb527-3"><a href="layers-of-abstraction.html#cb527-3" tabindex="-1"></a><span class="ex">21:49:39.737</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span> Position <span class="er">(</span><span class="ex">ABC/1675460979732</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 0.800000, quantity: 50.000</span>
-<span id="cb527-4"><a href="layers-of-abstraction.html#cb527-4" tabindex="-1"></a><span class="bu">.</span></span>
-<span id="cb527-5"><a href="layers-of-abstraction.html#cb527-5" tabindex="-1"></a><span class="ex">Finished</span> in 0.2 seconds <span class="er">(</span><span class="ex">0.2s</span> async, 0.00s sync<span class="kw">)</span></span>
-<span id="cb527-6"><a href="layers-of-abstraction.html#cb527-6" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
+<span id="cb527-3"><a href="layers-of-abstraction.html#cb527-3" tabindex="-1"></a><span class="ex">21:49:39.737</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span> Position <span class="er">(</span><span class="ex">ABC/1675460979732</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 0.800000,</span>
+<span id="cb527-4"><a href="layers-of-abstraction.html#cb527-4" tabindex="-1"></a><span class="ex">quantity:</span> 50.000</span>
+<span id="cb527-5"><a href="layers-of-abstraction.html#cb527-5" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb527-6"><a href="layers-of-abstraction.html#cb527-6" tabindex="-1"></a><span class="ex">Finished</span> in 0.2 seconds <span class="er">(</span><span class="ex">0.2s</span> async, 0.00s sync<span class="kw">)</span></span>
+<span id="cb527-7"><a href="layers-of-abstraction.html#cb527-7" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
 <p>As we can see, we successfully mocked the <code>Binance</code> and <code>Phoenix.PubSub</code> modules. We can also see that we are getting log messages that we will deal with next.</p>
 </div>
 <div id="logging-elephant-in-the-room" class="section level3 hasAnchor" number="21.4.3">
@@ -1195,8 +1197,8 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <span id="cb529-3"><a href="layers-of-abstraction.html#cb529-3" tabindex="-1"></a><span class="bu">.</span></span>
 <span id="cb529-4"><a href="layers-of-abstraction.html#cb529-4" tabindex="-1"></a><span class="ex">Finished</span> in 0.2 seconds <span class="er">(</span><span class="ex">0.2s</span> async, 0.00s sync<span class="kw">)</span></span>
 <span id="cb529-5"><a href="layers-of-abstraction.html#cb529-5" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
-<p>We can see that ExUnit output is now free of any logs.</p>
-<p>But what if we would like to assert the logged message? We were able to do that using the <code>mox</code> package as we were mocking and asserting inside those mocks.</p>
+<p>We can see that the ExUnit output is now free of any logs.</p>
+<p>But what if we would like to assert the logged message? We were able to do that using the <code>mox</code> package, as we were mocking and asserting log messages’ contents inside those mocks.</p>
 <p>ExUnit provides a helper function for that case as well. We will modify our test to capture the log inside it and assert that it logs the correct value (the price of $0.8):</p>
 <div class="sourceCode" id="cb530"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb530-1"><a href="layers-of-abstraction.html#cb530-1" tabindex="-1"></a><span class="co"># /apps/naive/test/naive/strategy_test.exs</span></span>
 <span id="cb530-2"><a href="layers-of-abstraction.html#cb530-2" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">CaptureLog</span> <span class="co"># &lt;= import logging capturing functionality</span></span>
@@ -1218,21 +1220,21 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <span id="cb530-18"><a href="layers-of-abstraction.html#cb530-18" tabindex="-1"></a></span>
 <span id="cb530-19"><a href="layers-of-abstraction.html#cb530-19" tabindex="-1"></a>    assert log <span class="op">=~</span> <span class="st">&quot;0.8&quot;</span></span>
 <span id="cb530-20"><a href="layers-of-abstraction.html#cb530-20" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
-<p>In the above code, we wrapped our call to the <code>Naive.Strategy.execute/3</code> into a function that we passed as an argument to the <code>with_log/1</code> function. The <code>with_log/1</code> function returns a tuple containing the result of the passed function and the generated log message(s). We are then able to assert that the logged message contains the expected value, which strengthens our test. We can now rerun our unit test:</p>
+<p>In the above code, we wrapped our call to the <code>Naive.Strategy.execute/3</code> into an anonymous function that we passed as an argument to the <code>with_log/1</code> function. The <code>with_log/1</code> function returns a tuple containing the result of the passed function and the generated log message(s). We can then assert that the logged message contains the expected value, strengthening our test. We can now rerun our unit test:</p>
 <div class="sourceCode" id="cb531"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb531-1"><a href="layers-of-abstraction.html#cb531-1" tabindex="-1"></a><span class="ex">$</span> mix test.unit</span>
 <span id="cb531-2"><a href="layers-of-abstraction.html#cb531-2" tabindex="-1"></a><span class="ex">...</span></span>
 <span id="cb531-3"><a href="layers-of-abstraction.html#cb531-3" tabindex="-1"></a><span class="bu">.</span></span>
 <span id="cb531-4"><a href="layers-of-abstraction.html#cb531-4" tabindex="-1"></a><span class="ex">Finished</span> in 0.2 seconds <span class="er">(</span><span class="ex">0.2s</span> async, 0.00s sync<span class="kw">)</span></span>
 <span id="cb531-5"><a href="layers-of-abstraction.html#cb531-5" tabindex="-1"></a><span class="ex">2</span> tests, 0 failures, 1 excluded</span></code></pre></div>
 <p>It’s worth noting that we were able to capture the log message even with global capture_log enabled(inside the test helper when starting ExUnit). This gives us ultimate flexibility. None of the logs are displayed, although whenever we need, we can always capture logs inside test cases on a test-by-tas basis.</p>
-<p>That would wrap up the writing the unit tests. But how will this work with running our code locally(or in “production”) or running integration tests?</p>
+<p>That would wrap up the writing unit tests part. But how will this work with running our code locally(or in “production”) or running integration tests?</p>
 </div>
 </div>
 <div id="swapping-back-to-attributes" class="section level2 hasAnchor" number="21.5">
 <h2><span class="header-section-number">21.5</span> Swapping back to attributes<a href="layers-of-abstraction.html#swapping-back-to-attributes" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>We need to have a way to swap implementation between dev/test/integration and prod environments.</p>
+<p>We need to have a way to swap Binance’s implementation between dev/test/integration and prod environments.</p>
 <p>We can’t use the <code>mimic</code> package to swap the implementation as this is a “running” mode, not some tests.</p>
-<p>Please note that most of the applications won’t have a need to change the implementation based on the environment as the implementation itself will provide some flags to enable/disable the functionality(like sending emails to newly registered users).</p>
+<p>Please note that most of the applications won’t need to change the implementation based on the environment as the 3rd party library/package itself will provide some flags to enable/disable the functionality(like sending emails to newly registered users).</p>
 <div style="page-break-after: always;"></div>
 <p>Let’s get back to the <code>Naive.Strategy</code> module, where we will bring back the attribute-based <code>@binance_client</code>:</p>
 <div class="sourceCode" id="cb532"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb532-1"><a href="layers-of-abstraction.html#cb532-1" tabindex="-1"></a><span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
@@ -1272,8 +1274,8 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <span id="cb534-11"><a href="layers-of-abstraction.html#cb534-11" tabindex="-1"></a></span>
 <span id="cb534-12"><a href="layers-of-abstraction.html#cb534-12" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
 <span id="cb534-13"><a href="layers-of-abstraction.html#cb534-13" tabindex="-1"></a><span class="co"># remove everything besides the `import`</span></span></code></pre></div>
-<p>It’s important to understand that we don’t need to configure the <code>binance_client</code> inside the test configuration. As we are now utilizing the <code>mimic</code> package, we are driving mocking from the test level.</p>
-<p>The knock-on effect of bringing back the environment driven <code>@binance_client</code> is that now we will need to mimic the <code>BinanceMock</code> module instead of <code>Binance</code> for our unit tests. To fix that we need to update the test helper:</p>
+<p>It’s important to understand that we don’t need to configure the <code>binance_client</code> inside the test configuration. As we now utilise the <code>mimic</code> package, we can drive mocking from the test level.</p>
+<p>The knock-on effect of bringing back the environment driven <code>@binance_client</code> is that now we will need to mimic the <code>BinanceMock</code> module instead of <code>Binance</code> for our unit tests. To fix that, we need to update the test helper:</p>
 <div class="sourceCode" id="cb535"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb535-1"><a href="layers-of-abstraction.html#cb535-1" tabindex="-1"></a><span class="co"># /apps/naive/test/test_helper.exs</span></span>
 <span id="cb535-2"><a href="layers-of-abstraction.html#cb535-2" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb535-3"><a href="layers-of-abstraction.html#cb535-3" tabindex="-1"></a><span class="cn">Mimic</span><span class="op">.</span>copy<span class="fu">(</span><span class="cn">BinanceMock</span><span class="fu">)</span> <span class="co"># &lt;= updated from Binance</span></span></code></pre></div>
@@ -1305,7 +1307,7 @@ We can now progress to the Worker, where we will start to use the <code>Core.Exc
 <span id="cb539-8"><a href="layers-of-abstraction.html#cb539-8" tabindex="-1"></a><span class="ex">quantity:</span> 0.12240000</span></code></pre></div>
 <p>In this chapter, we’ve reiterated the ideas behind the <code>mox</code> package, highlighting its shortcomings, especially the push to create needless abstractions(behaviours). We then dropped our changes to show the alternative approach using the ‘mimic’ package, which was way handier and easier to understand. In the end, we realized that to facilitate using different implementations between dev and production, we will need to keep the <code>@binance_client</code> attribute.</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>Source code for this chapter can be found at <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21">Github</a></p>
+<p>The source code for this chapter can be found on <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21">GitHub</a></p>
 
 </div>
 </div>
