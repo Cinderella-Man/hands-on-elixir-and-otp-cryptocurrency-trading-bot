@@ -3,12 +3,12 @@
 ## Objectives
 
 - create another supervised application inside the umbrella to store our trading strategy
-- define callbacks for events dependent on the state of the trader
+- define callbacks for events depending on the state of the trader
 - push events from the streamer app to the naive app
 
-## Initializiation
+## Initialisation
 
-To develop our *naive* strategy will need to create a new supervised application inside our umbrella project:
+To develop our *naive* strategy, we need to create a new supervised application inside our umbrella project:
 
 ```{r, engine = 'bash', eval = FALSE}
 cd apps
@@ -62,7 +62,7 @@ Our trader needs to know:
 - profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)
 - tick_size (yes, I know, jargon warning. We can't ignore it here as it needs to be fetched from Binance and it's used to calculate a valid price. Tick size differs between symbols and it is the smallest acceptable price movement up or down. For example in the physical world tick size for USD is a single cent, you can't sell something for $1.234, it's either $1.23 or $1.24 (a single cent difference between those is the tick size) - more info [here](https://www.investopedia.com/terms/t/tick.asp).
 
-Our strategy won't be able to work without symbol, profit_interval nor tick_size so we added them to the `@enforce_keys` attribute. This will ensure that we won't create an invalid `%State{}` without those values.
+Our strategy won't work without symbol, profit_interval nor tick_size so we added them to the `@enforce_keys` attribute. This will ensure that we won't create an invalid `%State{}` without those values.
 
 \newpage
 
@@ -99,7 +99,7 @@ As we are already in the `init/1` function we will need to modify it to fetch th
   end
 ```
 
-We are uppercasing the symbol above as Binance's REST API accepts only uppercased symbols.
+We are uppercasing the symbol above as Binance's REST API only accepts uppercased symbols.
 
 It's time to connect to Binance's REST API. The easiest way to do that will be to use the [binance](https://github.com/dvcrn/binance.ex) module.
 
@@ -116,7 +116,7 @@ As previously, looking through the module's docs on Github, we can see the `Inst
   end
 ```
 
-Besides adding the `:binance` module, we also added `:decimal` and the `:streamer`. The [decimal](https://github.com/ericmj/decimal) module will help us to calculate the buy and sell prices (without the decimal module we would have problems with precision). Lastly, we need to include the `:streamer` application(created in the first chapter) as we will use the `%Streamer.Binance.TradeEvent{}` struct inside the naive application.
+Besides adding the `:binance` module, we also added `:decimal` and the `:streamer`. The [decimal](https://github.com/ericmj/decimal) module will help us to calculate the buy and sell prices (without the decimal module we will face problems with the precision). Lastly, we need to include the `:streamer` application(created in the first chapter) as we will use the `%Streamer.Binance.TradeEvent{}` struct inside the naive application.
 
 We need to run `mix deps.get` to install our new deps.
 
@@ -135,7 +135,7 @@ We can now get back to the `trader` module and focus on fetching the tick size f
   end
 ```
 
-We are using `get_exchange_info/0` to fetch the list of symbols, which we will filter to find the symbol that we are requested to trade. Tick size is defined as a `PRICE_FILTER` filter. Here's the [link](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information) to the documentation listing all keys in the result. In a nutshell, that's how the important parts of the result look like:
+We are using `get_exchange_info/0` to fetch the list of symbols, which we will filter out to find the symbol that we are requested to trade. Tick size is defined as a `PRICE_FILTER` filter. Here's the [link](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information) to the documentation listing all keys in the result. In a nutshell, that's how the important parts of the result look like:
 
 ```
 {:ok, %{
@@ -175,13 +175,13 @@ We will focus on a trader in 3 different states:
 
 **First state - A new trader**
 
-The trader doesn't have any open orders which we can confirm by pattern matching on the `buy_order` field from its state. From the incoming event, we can get
+The trader doesn't have any open orders which we can confirm by pattern matching on the `buy_order` field from its state. From the incoming event, we can grab
 the current price which we will use in the buy order that the trader will place.
 
 **Second state - Buy order placed**
 
-After placing a buy order, the trader will be pattern matching to confirm that
-has incoming event filled his buy order otherwise ignoring it.
+After placing a buy order, the trader's buy order will be pattern matched from 
+the incoming event to confirm the order otherwise ignoring it.
 When a trade event matching the order id of the trader's buy order will arrive, it means that the buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won't cater for this case, it will always assume that it got filled in a single transaction) and the trader can now place the sell order based on the expected profit and the buy_price.
 
 **Third state - Sell order placed**
@@ -367,7 +367,7 @@ defmodule Naive do
 end
 ```
 
-We will use the fact that we registered our trader process with a name to be able to cast a message to it.
+We will use the fact that we have registered our trader process with a name to be able to cast a message to it.
 
 \newpage
 
