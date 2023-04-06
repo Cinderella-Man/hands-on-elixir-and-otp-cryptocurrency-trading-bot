@@ -165,7 +165,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="2" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><i class="fa fa-check"></i><b>2</b> Create a naive trading strategy - a single trader process without supervision</a>
 <ul>
 <li class="chapter" data-level="2.1" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
-<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#initializiation"><i class="fa fa-check"></i><b>2.2</b> Initializiation</a></li>
+<li class="chapter" data-level="2.2" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#initialisation"><i class="fa fa-check"></i><b>2.2</b> Initialisation</a></li>
 <li class="chapter" data-level="2.3" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#how-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How trading strategy will work?</a>
 <ul>
 <li class="chapter" data-level="2.3.1" data-path="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.1</b> Implementation of the first scenario</a></li>
@@ -482,13 +482,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">2.1</span> Objectives<a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#objectives-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <ul>
 <li>create another supervised application inside the umbrella to store our trading strategy</li>
-<li>define callbacks for events dependent on the state of the trader</li>
+<li>define callbacks for events depending on the state of the trader</li>
 <li>push events from the streamer app to the naive app</li>
 </ul>
 </div>
-<div id="initializiation" class="section level2 hasAnchor" number="2.2">
-<h2><span class="header-section-number">2.2</span> Initializiation<a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#initializiation" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>To develop our <em>naive</em> strategy will need to create a new supervised application inside our umbrella project:</p>
+<div id="initialisation" class="section level2 hasAnchor" number="2.2">
+<h2><span class="header-section-number">2.2</span> Initialisation<a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#initialisation" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>To develop our <em>naive</em> strategy, we need to create a new supervised application inside our umbrella project:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb25-1" tabindex="-1"></a><span class="bu">cd</span> apps</span>
 <span id="cb25-2"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb25-2" tabindex="-1"></a><span class="ex">mix</span> new naive <span class="at">--sup</span></span></code></pre></div>
 <p>We can now focus on creating a <code>trader</code> abstraction inside that newly created application. First we need to create a new file called <code>trader.ex</code> inside <code>apps/naive/lib/naive/</code>.</p>
@@ -528,7 +528,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)</li>
 <li>tick_size (yes, I know, jargon warning. We can’t ignore it here as it needs to be fetched from Binance and it’s used to calculate a valid price. Tick size differs between symbols and it is the smallest acceptable price movement up or down. For example in the physical world tick size for USD is a single cent, you can’t sell something for $1.234, it’s either $1.23 or $1.24 (a single cent difference between those is the tick size) - more info <a href="https://www.investopedia.com/terms/t/tick.asp">here</a>.</li>
 </ul>
-<p>Our strategy won’t be able to work without symbol, profit_interval nor tick_size so we added them to the <code>@enforce_keys</code> attribute. This will ensure that we won’t create an invalid <code>%State{}</code> without those values.</p>
+<p>Our strategy won’t work without symbol, profit_interval nor tick_size so we added them to the <code>@enforce_keys</code> attribute. This will ensure that we won’t create an invalid <code>%State{}</code> without those values.</p>
 <div style="page-break-after: always;"></div>
 <p>As now we know that our GenServer will need to receive those details via args, we can update pattern matching in <code>start_link/1</code> and <code>init/1</code> functions to confirm that passed values are indeed maps:</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb28-1"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb28-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
@@ -555,7 +555,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb29-13"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb29-13" tabindex="-1"></a>       <span class="va">tick_size:</span> tick_size</span>
 <span id="cb29-14"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb29-14" tabindex="-1"></a>     <span class="fu">}}</span></span>
 <span id="cb29-15"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb29-15" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We are uppercasing the symbol above as Binance’s REST API accepts only uppercased symbols.</p>
+<p>We are uppercasing the symbol above as Binance’s REST API only accepts uppercased symbols.</p>
 <p>It’s time to connect to Binance’s REST API. The easiest way to do that will be to use the <a href="https://github.com/dvcrn/binance.ex">binance</a> module.</p>
 <p>As previously, looking through the module’s docs on Github, we can see the <code>Installation</code> section. We will follow the steps mentioned there, starting from adding <code>binance</code> to the deps in <code>/apps/naive/mix.exs</code>:</p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb30-1"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb30-1" tabindex="-1"></a>  <span class="co"># /apps/naive/mix.ex</span></span>
@@ -566,7 +566,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb30-6"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb30-6" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:streamer</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span><span class="fu">}</span></span>
 <span id="cb30-7"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb30-7" tabindex="-1"></a>    <span class="ot">]</span></span>
 <span id="cb30-8"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb30-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Besides adding the <code>:binance</code> module, we also added <code>:decimal</code> and the <code>:streamer</code>. The <a href="https://github.com/ericmj/decimal">decimal</a> module will help us to calculate the buy and sell prices (without the decimal module we would have problems with precision). Lastly, we need to include the <code>:streamer</code> application(created in the first chapter) as we will use the <code>%Streamer.Binance.TradeEvent{}</code> struct inside the naive application.</p>
+<p>Besides adding the <code>:binance</code> module, we also added <code>:decimal</code> and the <code>:streamer</code>. The <a href="https://github.com/ericmj/decimal">decimal</a> module will help us to calculate the buy and sell prices (without the decimal module we will face problems with the precision). Lastly, we need to include the <code>:streamer</code> application(created in the first chapter) as we will use the <code>%Streamer.Binance.TradeEvent{}</code> struct inside the naive application.</p>
 <p>We need to run <code>mix deps.get</code> to install our new deps.</p>
 <p>We can now get back to the <code>trader</code> module and focus on fetching the tick size from Binance:</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb31-1"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb31-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
@@ -579,7 +579,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb31-8"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb31-8" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>find<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">[</span><span class="st">&quot;filterType&quot;</span><span class="ot">]</span> <span class="op">==</span> <span class="st">&quot;PRICE_FILTER&quot;</span><span class="fu">))</span></span>
 <span id="cb31-9"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb31-9" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get<span class="fu">(</span><span class="st">&quot;tickSize&quot;</span><span class="fu">)</span></span>
 <span id="cb31-10"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb31-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We are using <code>get_exchange_info/0</code> to fetch the list of symbols, which we will filter to find the symbol that we are requested to trade. Tick size is defined as a <code>PRICE_FILTER</code> filter. Here’s the <a href="https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information">link</a> to the documentation listing all keys in the result. In a nutshell, that’s how the important parts of the result look like:</p>
+<p>We are using <code>get_exchange_info/0</code> to fetch the list of symbols, which we will filter out to find the symbol that we are requested to trade. Tick size is defined as a <code>PRICE_FILTER</code> filter. Here’s the <a href="https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information">link</a> to the documentation listing all keys in the result. In a nutshell, that’s how the important parts of the result look like:</p>
 <pre><code>{:ok, %{
   ...
   symbols: [
@@ -609,11 +609,11 @@ based on its own state and trade event’s contents.</p>
 <li>a trader with a sell order placed.</li>
 </ul>
 <p><strong>First state - A new trader</strong></p>
-<p>The trader doesn’t have any open orders which we can confirm by pattern matching on the <code>buy_order</code> field from its state. From the incoming event, we can get
+<p>The trader doesn’t have any open orders which we can confirm by pattern matching on the <code>buy_order</code> field from its state. From the incoming event, we can grab
 the current price which we will use in the buy order that the trader will place.</p>
 <p><strong>Second state - Buy order placed</strong></p>
-<p>After placing a buy order, the trader will be pattern matching to confirm that
-has incoming event filled his buy order otherwise ignoring it.
+<p>After placing a buy order, the trader’s buy order will be pattern matched against
+the incoming events’ data to confirm the order got filled, otherwise ignoring it.
 When a trade event matching the order id of the trader’s buy order will arrive, it means that the buy order got filled(simplification - our order could be filled in two or more transactions but implementation in this chapter won’t cater for this case, it will always assume that it got filled in a single transaction) and the trader can now place the sell order based on the expected profit and the buy_price.</p>
 <p><strong>Third state - Sell order placed</strong></p>
 <p>Finally, in a very similar fashion to the previous state, the trader will be pattern matching to confirm that the incoming event has filled his sell order(matching order id), otherwise ignore it.
@@ -755,7 +755,7 @@ incoming events as they were not matched by any of the previous pattern matches:
 <span id="cb40-9"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb40-9" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>cast<span class="fu">(</span><span class="va">:trader</span>, event<span class="fu">)</span></span>
 <span id="cb40-10"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb40-10" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb40-11"><a href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html#cb40-11" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>We will use the fact that we registered our trader process with a name to be able to cast a message to it.</p>
+<p>We will use the fact that we have registered our trader process with a name to be able to cast a message to it.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="updating-streamer-app" class="section level3 hasAnchor" number="2.3.6">
