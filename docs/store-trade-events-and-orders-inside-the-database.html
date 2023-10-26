@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 14 Store trade events and orders inside the database | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 14 Store trade events and orders inside the database | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 14 Store trade events and orders inside the database | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -127,6 +127,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -1097,7 +1101,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb288-9"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-9" tabindex="-1"></a>  <span class="kw">defp</span> stop_child<span class="fu">(</span>args<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb288-10"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-10" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Registry</span><span class="op">.</span>lookup<span class="fu">(</span><span class="ot">@registry</span>, args<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb288-11"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-11" tabindex="-1"></a>      <span class="ot">[</span><span class="fu">{</span>pid, _<span class="fu">}</span><span class="ot">]</span> <span class="op">-&gt;</span> <span class="cn">DynamicSupervisor</span><span class="op">.</span>terminate_child<span class="fu">(</span><span class="cn">__MODULE__</span>, pid<span class="fu">)</span></span>
-<span id="cb288-12"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-12" tabindex="-1"></a>      _ <span class="op">-&gt;</span> <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Unable to locate process assigned to </span><span class="ot">#{</span>inspect<span class="fu">(</span>args<span class="fu">)</span><span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
+<span id="cb288-12"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-12" tabindex="-1"></a>      _ <span class="op">-&gt;</span> <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Unable to locate process assigned to </span><span class="ot">#{</span>inspect<span class="fu">(</span>args<span class="fu">)</span><span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
 <span id="cb288-13"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-13" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb288-14"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-14" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>That is a full implementation of the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module and it’s almost as slim as one from the last chapter where we leveraged macros to achieve that lightness. Using the <code>Registry</code> is the preferred way to manage a list of identifiable processes. We won’t run into an issue of overusing the atoms(as they are not garbage collected, we could hit that limit sooner or later).</p>

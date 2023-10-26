@@ -403,7 +403,7 @@ At this moment, the `generate_decisions/4` can look like overengineered `Enum.ma
 
 \newpage
 
-It's important to note that we are now passing four arguments into the `generate_decision` function - we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above. At this moment though, we will update the `generate_decision/2` clauses to include two additional arguments to **all** clauses:
+It's important to note that we are now passing four arguments into the `generate_decision` function - we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above. At this moment though, we will update **all** the `generate_decision/2` clauses to include two additional arguments:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -592,7 +592,7 @@ Now, the Trader will handle updating the settings, which we will add next, but b
   # /apps/naive/lib/naive/strategy.ex
   def update_status(symbol, status) # <= updated to public
       when is_binary(symbol) and is_binary(status) do
-    @repo.get_by(Settings, symbol: symbol) <= updated to use @repo
+    @repo.get_by(Settings, symbol: symbol) # <= updated to use @repo
     |> Ecto.Changeset.change(%{status: status})
     |> @repo.update() # <= updated to use @repo
   end
@@ -639,7 +639,7 @@ We can now move on to the `Naive.Trader` module, where we need to add  a new `no
         )
 
       _ ->
-        Logger.warn("Unable to locate trader process assigned to #{symbol}")
+        Logger.warning("Unable to locate trader process assigned to #{symbol}")
         {:error, :unable_to_locate_trader}
     end
   end
@@ -727,7 +727,7 @@ As we added a new `:exit` decision that we need to handle inside the `generate_d
       ...
 ```
 
-Inside the recursive function, we are skipping all the positions that ended up with the `:exit` decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the `parse_results/1` function to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the `:exit` atom.:
+Inside the recursive function, we are skipping all the positions that ended up with the `:exit` decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the `parse_results/1` function to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the `:exit` atom:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex

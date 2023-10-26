@@ -120,7 +120,7 @@ The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
           )  # ^^^^^^ inlined `start_symbol_supervisor/1`
 
       pid ->
-        Logger.warn("Trading on #{symbol} already started")
+        Logger.warning("Trading on #{symbol} already started")
         {:ok, _settings} = update_status(symbol, "on") # <= updated name
         {:ok, pid}
     end
@@ -150,7 +150,7 @@ Last function to rename in this module will be the `stop_trading/1` to `stop_wor
   def stop_worker(symbol) when is_binary(symbol) do # <= updated name
     case get_pid(symbol) do
       nil ->
-        Logger.warn("Trading on #{symbol} already stopped")
+        Logger.warning("Trading on #{symbol} already stopped")
         {:ok, _settings} = update_status(symbol, "off") # <= updated name
 
       pid ->
@@ -213,7 +213,7 @@ We also need to update the `shutdown_trading/1` function as we removed all the p
   def shutdown_worker(symbol) when is_binary(symbol) do # <= updated name
     case Core.ServiceSupervisor.get_pid(symbol) do      # <= module added
       nil ->
-        Logger.warn("Trading on #{symbol} already stopped")
+        Logger.warning("Trading on #{symbol} already stopped")
         {:ok, _settings} = Core.ServiceSupervisor.update_status(symbol, "off")
                                                 # ^^^ updated name + module
 
@@ -502,7 +502,7 @@ Let's look at updated functions:
                                                               # ^^^ args used
 
       pid ->
-        Logger.warn("#{worker_module} worker for #{symbol} already started")
+        Logger.warning("#{worker_module} worker for #{symbol} already started")
                         # ^^^ dynamic text
         {:ok, _settings} = update_status(symbol, "on", repo, schema)
         {:ok, pid}
@@ -514,7 +514,7 @@ Let's look at updated functions:
       when is_binary(symbol) do
     case get_pid(worker_module, symbol) do # <= worker_module passed
       nil ->
-        Logger.warn("#{worker_module} worker for #{symbol} already stopped")
+        Logger.warning("#{worker_module} worker for #{symbol} already stopped")
                              # ^^^ dynamic text
         {:ok, _settings} = update_status(symbol, "off", repo, schema)
 
@@ -615,7 +615,7 @@ That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` modul
   def shutdown_worker(symbol) when is_binary(symbol) do
     case Core.ServiceSupervisor.get_pid(Naive.SymbolSupervisor, symbol) do # <= arg added
       nil ->
-        Logger.warn("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
+        Logger.warning("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
                                                               # ^^^ updated
 
         {:ok, _settings} =
@@ -862,7 +862,7 @@ As those will get compiled and "pasted" into the `Naive.DynamicSymbolSupervisor`
   def shutdown_worker(symbol) when is_binary(symbol) do
     case get_pid(symbol) do # <= macro provided function
       nil ->
-        Logger.warn("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
+        Logger.warning("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
         {:ok, _settings} = update_status(symbol, "off") # <= macro provided function
 
       _pid ->

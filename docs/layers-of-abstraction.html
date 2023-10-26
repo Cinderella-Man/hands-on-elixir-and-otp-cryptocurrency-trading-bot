@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 21 Layers of abstraction | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -127,6 +127,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -916,7 +920,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h3><span class="header-section-number">21.3.5</span> Updating the seed scripts<a href="layers-of-abstraction.html#updating-the-seed-scripts" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>The other places we use the exchange are seed scripts that we need to update. First inside the <code>Naive</code> application:</p>
 <div class="sourceCode" id="cb510"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb510-1"><a href="layers-of-abstraction.html#cb510-1" tabindex="-1"></a><span class="co"># /apps/naive/priv/seed_settings.exs</span></span>
-<span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" tabindex="-1"></a>exchange_client <span class="op">=</span> <span class="cn">Application</span><span class="op">.</span>get_env<span class="fu">(</span><span class="va">:naive</span>, <span class="va">:exchange_client</span><span class="fu">)</span></span>
+<span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" tabindex="-1"></a>exchange_client <span class="op">=</span> <span class="cn">Application</span><span class="op">.</span>compile_env<span class="fu">(</span><span class="va">:naive</span>, <span class="va">:exchange_client</span><span class="fu">)</span></span>
 <span id="cb510-3"><a href="layers-of-abstraction.html#cb510-3" tabindex="-1"></a><span class="op">...</span></span>
 <span id="cb510-4"><a href="layers-of-abstraction.html#cb510-4" tabindex="-1"></a><span class="fu">{</span><span class="va">:ok</span>, symbols<span class="fu">}</span> <span class="op">=</span> exchange_client<span class="op">.</span>fetch_symbols<span class="fu">()</span></span>
 <span id="cb510-5"><a href="layers-of-abstraction.html#cb510-5" tabindex="-1"></a><span class="op">...</span></span>

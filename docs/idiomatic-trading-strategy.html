@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 20 Idiomatic trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -127,6 +127,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -808,7 +812,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb454-18"><a href="idiomatic-trading-strategy.html#cb454-18" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>At this moment, the <code>generate_decisions/4</code> can look like overengineered <code>Enum.map/2</code> function, but we are actually preparing the ground for the consequent updates later in this chapter(to get the rest of the functionality running).</p>
 <div style="page-break-after: always;"></div>
-<p>It’s important to note that we are now passing four arguments into the <code>generate_decision</code> function - we added <code>current_positions</code> and <code>settings</code> - those will be required in the further updates as it was mentioned above. At this moment though, we will update the <code>generate_decision/2</code> clauses to include two additional arguments to <strong>all</strong> clauses:</p>
+<p>It’s important to note that we are now passing four arguments into the <code>generate_decision</code> function - we added <code>current_positions</code> and <code>settings</code> - those will be required in the further updates as it was mentioned above. At this moment though, we will update <strong>all</strong> the <code>generate_decision/2</code> clauses to include two additional arguments:</p>
 <div class="sourceCode" id="cb455"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb455-1"><a href="idiomatic-trading-strategy.html#cb455-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb455-2"><a href="idiomatic-trading-strategy.html#cb455-2" tabindex="-1"></a>  <span class="kw">def</span> generate_decision<span class="fu">(</span></span>
 <span id="cb455-3"><a href="idiomatic-trading-strategy.html#cb455-3" tabindex="-1"></a>        %<span class="cn">TradeEvent</span><span class="fu">{</span><span class="op">...</span><span class="fu">}</span>,</span>
@@ -946,7 +950,7 @@ iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
 <div class="sourceCode" id="cb466"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb466-1"><a href="idiomatic-trading-strategy.html#cb466-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb466-2"><a href="idiomatic-trading-strategy.html#cb466-2" tabindex="-1"></a>  <span class="kw">def</span> update_status<span class="fu">(</span>symbol, status<span class="fu">)</span> <span class="co"># &lt;= updated to public</span></span>
 <span id="cb466-3"><a href="idiomatic-trading-strategy.html#cb466-3" tabindex="-1"></a>      <span class="kw">when</span> is_binary<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">and</span> is_binary<span class="fu">(</span>status<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb466-4"><a href="idiomatic-trading-strategy.html#cb466-4" tabindex="-1"></a>    <span class="ot">@repo</span><span class="op">.</span>get_by<span class="fu">(</span><span class="cn">Settings</span>, <span class="va">symbol:</span> symbol<span class="fu">)</span> <span class="op">&lt;=</span> updated to <span class="im">use</span> <span class="ot">@repo</span></span>
+<span id="cb466-4"><a href="idiomatic-trading-strategy.html#cb466-4" tabindex="-1"></a>    <span class="ot">@repo</span><span class="op">.</span>get_by<span class="fu">(</span><span class="cn">Settings</span>, <span class="va">symbol:</span> symbol<span class="fu">)</span> <span class="co"># &lt;= updated to use @repo</span></span>
 <span id="cb466-5"><a href="idiomatic-trading-strategy.html#cb466-5" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Changeset</span><span class="op">.</span>change<span class="fu">(</span>%<span class="fu">{</span><span class="va">status:</span> status<span class="fu">})</span></span>
 <span id="cb466-6"><a href="idiomatic-trading-strategy.html#cb466-6" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="ot">@repo</span><span class="op">.</span>update<span class="fu">()</span> <span class="co"># &lt;= updated to use @repo</span></span>
 <span id="cb466-7"><a href="idiomatic-trading-strategy.html#cb466-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
@@ -985,7 +989,7 @@ iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
 <span id="cb468-12"><a href="idiomatic-trading-strategy.html#cb468-12" tabindex="-1"></a>        <span class="fu">)</span></span>
 <span id="cb468-13"><a href="idiomatic-trading-strategy.html#cb468-13" tabindex="-1"></a></span>
 <span id="cb468-14"><a href="idiomatic-trading-strategy.html#cb468-14" tabindex="-1"></a>      _ <span class="op">-&gt;</span></span>
-<span id="cb468-15"><a href="idiomatic-trading-strategy.html#cb468-15" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Unable to locate trader process assigned to </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
+<span id="cb468-15"><a href="idiomatic-trading-strategy.html#cb468-15" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Unable to locate trader process assigned to </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
 <span id="cb468-16"><a href="idiomatic-trading-strategy.html#cb468-16" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:error</span>, <span class="va">:unable_to_locate_trader</span><span class="fu">}</span></span>
 <span id="cb468-17"><a href="idiomatic-trading-strategy.html#cb468-17" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb468-18"><a href="idiomatic-trading-strategy.html#cb468-18" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
@@ -1054,7 +1058,7 @@ iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
 <span id="cb472-7"><a href="idiomatic-trading-strategy.html#cb472-7" tabindex="-1"></a></span>
 <span id="cb472-8"><a href="idiomatic-trading-strategy.html#cb472-8" tabindex="-1"></a>      decision <span class="op">-&gt;</span> <span class="op">...</span></span>
 <span id="cb472-9"><a href="idiomatic-trading-strategy.html#cb472-9" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
-<p>Inside the recursive function, we are skipping all the positions that ended up with the <code>:exit</code> decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the <code>parse_results/1</code> function to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the <code>:exit</code> atom.:</p>
+<p>Inside the recursive function, we are skipping all the positions that ended up with the <code>:exit</code> decisions. This will slowly cause the list of positions to drain to an empty list, which will cause the <code>parse_results/1</code> function to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the <code>:exit</code> atom:</p>
 <div class="sourceCode" id="cb473"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb473-1"><a href="idiomatic-trading-strategy.html#cb473-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb473-2"><a href="idiomatic-trading-strategy.html#cb473-2" tabindex="-1"></a>  <span class="kw">def</span> parse_results<span class="fu">(</span><span class="ot">[]</span><span class="fu">)</span> <span class="kw">do</span> <span class="co"># &lt;= added clause</span></span>
 <span id="cb473-3"><a href="idiomatic-trading-strategy.html#cb473-3" tabindex="-1"></a>    <span class="va">:exit</span></span>

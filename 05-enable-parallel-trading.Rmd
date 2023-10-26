@@ -426,7 +426,7 @@ trader locally:
   ) do
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warn(
+        Logger.warning(
           "Tried to update the state of trader that leader is not aware of"
         )
         {:reply, :ok, state}
@@ -458,7 +458,7 @@ First, trade finished scenario. As previously, we will try to find the trader da
 
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warn(
+        Logger.warning(
           "Tried to restart finished #{symbol} " <>
             "trader that leader is not aware of"
         )
@@ -489,7 +489,7 @@ The final callback that we need to provide will handle the scenario where the tr
 
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warn(
+        Logger.warning(
           "Tried to restart #{symbol} trader " <>
             "but failed to find its cached state"
         )

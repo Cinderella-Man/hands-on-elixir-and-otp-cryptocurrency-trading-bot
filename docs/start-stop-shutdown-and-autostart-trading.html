@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 12 Start, stop, shutdown and autostart trading | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 12 Start, stop, shutdown and autostart trading | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 12 Start, stop, shutdown and autostart trading | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -127,6 +127,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -539,7 +543,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb186-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-10" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _pid<span class="fu">}</span> <span class="op">=</span> start_symbol_supervisor<span class="fu">(</span>symbol<span class="fu">)</span></span>
 <span id="cb186-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-11" tabindex="-1"></a></span>
 <span id="cb186-12"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-12" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
-<span id="cb186-13"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-13" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span><span class="fu">)</span></span>
+<span id="cb186-13"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-13" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span><span class="fu">)</span></span>
 <span id="cb186-14"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-14" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _settings<span class="fu">}</span> <span class="op">=</span> update_trading_status<span class="fu">(</span>symbol, <span class="st">&quot;on&quot;</span><span class="fu">)</span></span>
 <span id="cb186-15"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-15" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, pid<span class="fu">}</span></span>
 <span id="cb186-16"><a href="start-stop-shutdown-and-autostart-trading.html#cb186-16" tabindex="-1"></a>    <span class="kw">end</span></span>
@@ -597,7 +601,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb190-5"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-5" tabindex="-1"></a></span>
 <span id="cb190-6"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-6" tabindex="-1"></a>    <span class="kw">case</span> get_pid<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb190-7"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-7" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb190-8"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-8" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span><span class="fu">)</span></span>
+<span id="cb190-8"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-8" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span><span class="fu">)</span></span>
 <span id="cb190-9"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-9" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _settings<span class="fu">}</span> <span class="op">=</span> update_trading_status<span class="fu">(</span>symbol, <span class="st">&quot;off&quot;</span><span class="fu">)</span></span>
 <span id="cb190-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-10" tabindex="-1"></a></span>
 <span id="cb190-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb190-11" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
@@ -721,7 +725,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb198-5"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-5" tabindex="-1"></a></span>
 <span id="cb198-6"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-6" tabindex="-1"></a>    <span class="kw">case</span> get_pid<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb198-7"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-7" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb198-8"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-8" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span><span class="fu">)</span></span>
+<span id="cb198-8"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-8" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Trading on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span><span class="fu">)</span></span>
 <span id="cb198-9"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-9" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _settings<span class="fu">}</span> <span class="op">=</span> update_trading_status<span class="fu">(</span>symbol, <span class="st">&quot;off&quot;</span><span class="fu">)</span></span>
 <span id="cb198-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-10" tabindex="-1"></a></span>
 <span id="cb198-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb198-11" tabindex="-1"></a>      _pid <span class="op">-&gt;</span></span>
@@ -769,7 +773,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb200-8"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-8" tabindex="-1"></a></span>
 <span id="cb200-9"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-9" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index<span class="fu">(</span>traders, <span class="op">&amp;</span><span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid<span class="fu">))</span> <span class="kw">do</span></span>
 <span id="cb200-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-10" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb200-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-11" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span></span>
+<span id="cb200-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-11" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span></span>
 <span id="cb200-12"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-12" tabindex="-1"></a>          <span class="st">&quot;Tried to restart finished </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
 <span id="cb200-13"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-13" tabindex="-1"></a>            <span class="st">&quot;trader that leader is not aware of&quot;</span></span>
 <span id="cb200-14"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-14" tabindex="-1"></a>        <span class="fu">)</span></span>
@@ -783,7 +787,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb200-22"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-22" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
 <span id="cb200-23"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-23" tabindex="-1"></a>        new_traders <span class="op">=</span></span>
 <span id="cb200-24"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-24" tabindex="-1"></a>          <span class="cf">if</span> settings<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;shutdown&quot;</span> <span class="kw">do</span> <span class="co"># &lt;= refactored code</span></span>
-<span id="cb200-25"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-25" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span></span>
+<span id="cb200-25"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-25" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span></span>
 <span id="cb200-26"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-26" tabindex="-1"></a>              <span class="st">&quot;The leader won&#39;t start a new trader on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
 <span id="cb200-27"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-27" tabindex="-1"></a>                <span class="st">&quot;as symbol is in the &#39;shutdown&#39; state&quot;</span></span>
 <span id="cb200-28"><a href="start-stop-shutdown-and-autostart-trading.html#cb200-28" tabindex="-1"></a>            <span class="fu">)</span></span>
@@ -813,7 +817,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb201-7"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-7" tabindex="-1"></a>      <span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb201-8"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-8" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Enum</span><span class="op">.</span>find_index<span class="fu">(</span>traders, <span class="op">&amp;</span><span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span><span class="op">.</span>pid <span class="op">==</span> trader_pid<span class="fu">))</span> <span class="kw">do</span></span>
 <span id="cb201-9"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-9" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb201-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-10" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Rebuy triggered by trader that leader is not aware of&quot;</span><span class="fu">)</span></span>
+<span id="cb201-10"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-10" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Rebuy triggered by trader that leader is not aware of&quot;</span><span class="fu">)</span></span>
 <span id="cb201-11"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-11" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:reply</span>, <span class="va">:ok</span>, state<span class="fu">}</span></span>
 <span id="cb201-12"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-12" tabindex="-1"></a></span>
 <span id="cb201-13"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-13" tabindex="-1"></a>      index <span class="op">-&gt;</span></span>
@@ -827,7 +831,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb201-21"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-21" tabindex="-1"></a>            updated_traders</span>
 <span id="cb201-22"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-22" tabindex="-1"></a>          <span class="cf">else</span></span>
 <span id="cb201-23"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-23" tabindex="-1"></a>            <span class="cf">if</span> settings<span class="op">.</span>status <span class="op">==</span> <span class="st">&quot;shutdown&quot;</span> <span class="kw">do</span></span>
-<span id="cb201-24"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-24" tabindex="-1"></a>              <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span></span>
+<span id="cb201-24"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-24" tabindex="-1"></a>              <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span></span>
 <span id="cb201-25"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-25" tabindex="-1"></a>                <span class="st">&quot;The leader won&#39;t start a new trader on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> &quot;</span> <span class="op">&lt;&gt;</span></span>
 <span id="cb201-26"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-26" tabindex="-1"></a>                  <span class="st">&quot;as symbol is in the &#39;shutdown&#39; state&quot;</span></span>
 <span id="cb201-27"><a href="start-stop-shutdown-and-autostart-trading.html#cb201-27" tabindex="-1"></a>              <span class="fu">)</span></span>
