@@ -295,18 +295,42 @@ The second function deals with the race condition when multiple transactions fil
           },
           sell_order: %Binance.OrderResponse{}
         }
-      ) do
+      )
+      when is_number(order_id) do
     :skip
+  end
+```
+
+### Fetch the buy order rules
+
+For the 3th clause, we will return only an atom as there's no pure logic besides the pattern-match in the header itself:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /apps/naive/lib/naive/strategy.ex
+# the third clause
+  def generate_decision(
+        %TradeEvent{
+          buyer_order_id: order_id
+        },
+        %State{
+          buy_order: %Binance.OrderResponse{
+            order_id: order_id
+          },
+          sell_order: nil
+        }
+      )
+      when is_number(order_id) do
+    :fetch_buy_order
   end
 ```
 
 ### Place a sell order rules
 
-We will follow the same logic for the 3rd clause of the `generate_decision/2` function. We will leave only the sell price calculation as it's pure and return a tuple together with the decision:
+We will follow the same logic for the 4th clause of the `generate_decision/2` function. We will leave only the sell price calculation as it's pure and return a tuple together with the decision:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
-# the third clause
+# the fourth clause
   def generate_decision(
         %TradeEvent{},
         %State{
@@ -321,27 +345,6 @@ We will follow the same logic for the 3rd clause of the `generate_decision/2` fu
       ) do
     sell_price = calculate_sell_price(buy_price, profit_interval, tick_size)
     {:place_sell_order, sell_price}
-  end
-```
-
-### Fetch the buy order rules
-
-For the 4th clause, we will return only an atom as there's no pure logic besides the pattern-match in the header itself:
-
-```{r, engine = 'elixir', eval = FALSE}
-# /apps/naive/lib/naive/strategy.ex
-# the fourth clause
-  def generate_decision(
-        %TradeEvent{
-          buyer_order_id: order_id
-        },
-        %State{
-          buy_order: %Binance.OrderResponse{
-            order_id: order_id
-          }
-        }
-      ) do
-    :fetch_buy_order
   end
 ```
 
