@@ -543,36 +543,41 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb421-22"><a href="idiomatic-otp.html#cb421-22" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:ok</span>, <span class="fu">{</span>symbol, duration<span class="fu">}}</span></span>
 <span id="cb421-23"><a href="idiomatic-otp.html#cb421-23" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Following the pattern established by the <code>Naive.Trader</code>, we use the module’s attributes(with values based on the configuration) instead of hardcoded module names.</p>
+<p>Additionally, we used the <code>Core.PubSub</code> module(and we will use other <code>core</code> module’s structs down below) so we need to add the <code>core</code> application to the dependencies list of the <code>indicator</code> application:</p>
+<div class="sourceCode" id="cb422"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb422-1"><a href="idiomatic-otp.html#cb422-1" tabindex="-1"></a><span class="co"># /apps/indicator/mix.exs</span></span>
+<span id="cb422-2"><a href="idiomatic-otp.html#cb422-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb422-3"><a href="idiomatic-otp.html#cb422-3" tabindex="-1"></a>    <span class="ot">[</span></span>
+<span id="cb422-4"><a href="idiomatic-otp.html#cb422-4" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:core</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span><span class="fu">}</span> <span class="co"># &lt;= added</span></span>
+<span id="cb422-5"><a href="idiomatic-otp.html#cb422-5" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
 <p>As we subscribed to the PubSub, we need to provide a callback that will handle the incoming trade events:</p>
-<div class="sourceCode" id="cb422"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb422-1"><a href="idiomatic-otp.html#cb422-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc/worker.ex</span></span>
-<span id="cb422-2"><a href="idiomatic-otp.html#cb422-2" tabindex="-1"></a>  <span class="co"># add this at the top</span></span>
-<span id="cb422-3"><a href="idiomatic-otp.html#cb422-3" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Struct</span><span class="op">.</span><span class="cn">TradeEvent</span></span>
-<span id="cb422-4"><a href="idiomatic-otp.html#cb422-4" tabindex="-1"></a></span>
-<span id="cb422-5"><a href="idiomatic-otp.html#cb422-5" tabindex="-1"></a>  <span class="kw">def</span> handle_info<span class="fu">(</span>%<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event, ohlc<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb422-6"><a href="idiomatic-otp.html#cb422-6" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:noreply</span>, <span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span><span class="op">.</span>process<span class="fu">(</span>ohlc, trade_event<span class="fu">)}</span></span>
-<span id="cb422-7"><a href="idiomatic-otp.html#cb422-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
+<div class="sourceCode" id="cb423"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb423-1"><a href="idiomatic-otp.html#cb423-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc/worker.ex</span></span>
+<span id="cb423-2"><a href="idiomatic-otp.html#cb423-2" tabindex="-1"></a>  <span class="co"># add this at the top</span></span>
+<span id="cb423-3"><a href="idiomatic-otp.html#cb423-3" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Struct</span><span class="op">.</span><span class="cn">TradeEvent</span></span>
+<span id="cb423-4"><a href="idiomatic-otp.html#cb423-4" tabindex="-1"></a></span>
+<span id="cb423-5"><a href="idiomatic-otp.html#cb423-5" tabindex="-1"></a>  <span class="kw">def</span> handle_info<span class="fu">(</span>%<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event, ohlc<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb423-6"><a href="idiomatic-otp.html#cb423-6" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:noreply</span>, <span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span><span class="op">.</span>process<span class="fu">(</span>ohlc, trade_event<span class="fu">)}</span></span>
+<span id="cb423-7"><a href="idiomatic-otp.html#cb423-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>To avoid mixing our business logic with the GenServer boilerplate(as discussed in the last chapter), we will place it in a new module. First, we need to create a new file <code>/apps/indicator/lib/indicator/ohlc.ex</code> and the <code>Indicator.Ohlc</code> module inside it:</p>
-<div class="sourceCode" id="cb423"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb423-1"><a href="idiomatic-otp.html#cb423-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
-<span id="cb423-2"><a href="idiomatic-otp.html#cb423-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span> <span class="kw">do</span></span>
-<span id="cb423-3"><a href="idiomatic-otp.html#cb423-3" tabindex="-1"></a></span>
-<span id="cb423-4"><a href="idiomatic-otp.html#cb423-4" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>The <code>Indicator.Ohlc</code> module will define a struct that the <code>Indicator.Ohlc.Worker</code> will use as a state:</p>
 <div class="sourceCode" id="cb424"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb424-1"><a href="idiomatic-otp.html#cb424-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
-<span id="cb424-2"><a href="idiomatic-otp.html#cb424-2" tabindex="-1"></a>  <span class="ot">@enforce_keys</span> <span class="ot">[</span></span>
-<span id="cb424-3"><a href="idiomatic-otp.html#cb424-3" tabindex="-1"></a>    <span class="va">:symbol</span>,</span>
-<span id="cb424-4"><a href="idiomatic-otp.html#cb424-4" tabindex="-1"></a>    <span class="va">:start_time</span>,</span>
-<span id="cb424-5"><a href="idiomatic-otp.html#cb424-5" tabindex="-1"></a>    <span class="va">:duration</span></span>
-<span id="cb424-6"><a href="idiomatic-otp.html#cb424-6" tabindex="-1"></a>  <span class="ot">]</span></span>
-<span id="cb424-7"><a href="idiomatic-otp.html#cb424-7" tabindex="-1"></a>  <span class="kw">defstruct</span> <span class="ot">[</span></span>
-<span id="cb424-8"><a href="idiomatic-otp.html#cb424-8" tabindex="-1"></a>    <span class="va">:symbol</span>,</span>
-<span id="cb424-9"><a href="idiomatic-otp.html#cb424-9" tabindex="-1"></a>    <span class="va">:start_time</span>,</span>
-<span id="cb424-10"><a href="idiomatic-otp.html#cb424-10" tabindex="-1"></a>    <span class="va">:duration</span>,</span>
-<span id="cb424-11"><a href="idiomatic-otp.html#cb424-11" tabindex="-1"></a>    <span class="va">:open</span>,</span>
-<span id="cb424-12"><a href="idiomatic-otp.html#cb424-12" tabindex="-1"></a>    <span class="va">:high</span>,</span>
-<span id="cb424-13"><a href="idiomatic-otp.html#cb424-13" tabindex="-1"></a>    <span class="va">:low</span>,</span>
-<span id="cb424-14"><a href="idiomatic-otp.html#cb424-14" tabindex="-1"></a>    <span class="va">:close</span></span>
-<span id="cb424-15"><a href="idiomatic-otp.html#cb424-15" tabindex="-1"></a>  <span class="ot">]</span></span></code></pre></div>
+<span id="cb424-2"><a href="idiomatic-otp.html#cb424-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span> <span class="kw">do</span></span>
+<span id="cb424-3"><a href="idiomatic-otp.html#cb424-3" tabindex="-1"></a></span>
+<span id="cb424-4"><a href="idiomatic-otp.html#cb424-4" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>The <code>Indicator.Ohlc</code> module will define a struct that the <code>Indicator.Ohlc.Worker</code> will use as a state:</p>
+<div class="sourceCode" id="cb425"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb425-1"><a href="idiomatic-otp.html#cb425-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
+<span id="cb425-2"><a href="idiomatic-otp.html#cb425-2" tabindex="-1"></a>  <span class="ot">@enforce_keys</span> <span class="ot">[</span></span>
+<span id="cb425-3"><a href="idiomatic-otp.html#cb425-3" tabindex="-1"></a>    <span class="va">:symbol</span>,</span>
+<span id="cb425-4"><a href="idiomatic-otp.html#cb425-4" tabindex="-1"></a>    <span class="va">:start_time</span>,</span>
+<span id="cb425-5"><a href="idiomatic-otp.html#cb425-5" tabindex="-1"></a>    <span class="va">:duration</span></span>
+<span id="cb425-6"><a href="idiomatic-otp.html#cb425-6" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb425-7"><a href="idiomatic-otp.html#cb425-7" tabindex="-1"></a>  <span class="kw">defstruct</span> <span class="ot">[</span></span>
+<span id="cb425-8"><a href="idiomatic-otp.html#cb425-8" tabindex="-1"></a>    <span class="va">:symbol</span>,</span>
+<span id="cb425-9"><a href="idiomatic-otp.html#cb425-9" tabindex="-1"></a>    <span class="va">:start_time</span>,</span>
+<span id="cb425-10"><a href="idiomatic-otp.html#cb425-10" tabindex="-1"></a>    <span class="va">:duration</span>,</span>
+<span id="cb425-11"><a href="idiomatic-otp.html#cb425-11" tabindex="-1"></a>    <span class="va">:open</span>,</span>
+<span id="cb425-12"><a href="idiomatic-otp.html#cb425-12" tabindex="-1"></a>    <span class="va">:high</span>,</span>
+<span id="cb425-13"><a href="idiomatic-otp.html#cb425-13" tabindex="-1"></a>    <span class="va">:low</span>,</span>
+<span id="cb425-14"><a href="idiomatic-otp.html#cb425-14" tabindex="-1"></a>    <span class="va">:close</span></span>
+<span id="cb425-15"><a href="idiomatic-otp.html#cb425-15" tabindex="-1"></a>  <span class="ot">]</span></span></code></pre></div>
 <p>Most of the above are self-descriptive, besides the <code>start_time</code>(a Unix timestamp) and the <code>duration</code>(the timeframe in minutes).</p>
 <p>We can now progress to the implementation of the <code>process/2</code> function, but instead of focusing on it, we will start from the “deepest”/“bottom” function that it will rely on and work our way up. As we discussed in the last chapter, we will try to maximize the amount of pure code.</p>
 <p>We can imagine that the bottom function will be involved in merging of the trade event’s data with the current OHLC data. Two things can happen, either:</p>
@@ -582,50 +587,50 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul>
 <div style="page-break-after: always;"></div>
 <p>Here’s the implementation:</p>
-<div class="sourceCode" id="cb425"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb425-1"><a href="idiomatic-otp.html#cb425-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
-<span id="cb425-2"><a href="idiomatic-otp.html#cb425-2" tabindex="-1"></a>  <span class="kw">def</span> merge_price<span class="fu">(</span>%<span class="cn">__MODULE__</span><span class="fu">{}</span> <span class="op">=</span> ohlc, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb425-3"><a href="idiomatic-otp.html#cb425-3" tabindex="-1"></a>    <span class="cf">if</span> within_current_timeframe<span class="fu">(</span>ohlc<span class="op">.</span>start_time, ohlc<span class="op">.</span>duration, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb425-4"><a href="idiomatic-otp.html#cb425-4" tabindex="-1"></a>      <span class="fu">{</span><span class="cn">nil</span>, %<span class="fu">{</span>ohlc <span class="op">|</span> <span class="va">low:</span> min<span class="fu">(</span>ohlc<span class="op">.</span>low, price<span class="fu">)</span>, <span class="va">high:</span> max<span class="fu">(</span>ohlc<span class="op">.</span>high, price<span class="fu">)</span>, <span class="va">close:</span> price<span class="fu">}}</span></span>
-<span id="cb425-5"><a href="idiomatic-otp.html#cb425-5" tabindex="-1"></a>    <span class="cf">else</span></span>
-<span id="cb425-6"><a href="idiomatic-otp.html#cb425-6" tabindex="-1"></a>      <span class="fu">{</span>ohlc, generate_ohlc<span class="fu">(</span>ohlc<span class="op">.</span>symbol, ohlc<span class="op">.</span>duration, price, trade_time<span class="fu">)}</span></span>
-<span id="cb425-7"><a href="idiomatic-otp.html#cb425-7" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb425-8"><a href="idiomatic-otp.html#cb425-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>together with the <code>within_current_timeframe/3</code> and <code>generate_ohlc/3</code> function:</p>
 <div class="sourceCode" id="cb426"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb426-1"><a href="idiomatic-otp.html#cb426-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
-<span id="cb426-2"><a href="idiomatic-otp.html#cb426-2" tabindex="-1"></a>  <span class="kw">def</span> within_current_timeframe<span class="fu">(</span>start_time, duration, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb426-3"><a href="idiomatic-otp.html#cb426-3" tabindex="-1"></a>    end_time <span class="op">=</span> start_time <span class="op">+</span> duration <span class="op">*</span> <span class="dv">60</span></span>
-<span id="cb426-4"><a href="idiomatic-otp.html#cb426-4" tabindex="-1"></a>    trade_time <span class="op">=</span> div<span class="fu">(</span>trade_time, <span class="dv">1000</span><span class="fu">)</span></span>
-<span id="cb426-5"><a href="idiomatic-otp.html#cb426-5" tabindex="-1"></a></span>
-<span id="cb426-6"><a href="idiomatic-otp.html#cb426-6" tabindex="-1"></a>    start_time <span class="op">&lt;=</span> trade_time <span class="op">&amp;&amp;</span> trade_time <span class="op">&lt;</span> end_time</span>
-<span id="cb426-7"><a href="idiomatic-otp.html#cb426-7" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb426-8"><a href="idiomatic-otp.html#cb426-8" tabindex="-1"></a>  </span>
-<span id="cb426-9"><a href="idiomatic-otp.html#cb426-9" tabindex="-1"></a>  <span class="kw">def</span> generate_ohlc<span class="fu">(</span>symbol, duration, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb426-10"><a href="idiomatic-otp.html#cb426-10" tabindex="-1"></a>    start_time <span class="op">=</span> div<span class="fu">(</span>div<span class="fu">(</span>div<span class="fu">(</span>trade_time, <span class="dv">1000</span><span class="fu">)</span>, <span class="dv">60</span><span class="fu">)</span>, duration<span class="fu">)</span> <span class="op">*</span> duration <span class="op">*</span> <span class="dv">60</span></span>
-<span id="cb426-11"><a href="idiomatic-otp.html#cb426-11" tabindex="-1"></a></span>
-<span id="cb426-12"><a href="idiomatic-otp.html#cb426-12" tabindex="-1"></a>    %<span class="cn">__MODULE__</span><span class="fu">{</span></span>
-<span id="cb426-13"><a href="idiomatic-otp.html#cb426-13" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
-<span id="cb426-14"><a href="idiomatic-otp.html#cb426-14" tabindex="-1"></a>      <span class="va">start_time:</span> start_time,</span>
-<span id="cb426-15"><a href="idiomatic-otp.html#cb426-15" tabindex="-1"></a>      <span class="va">duration:</span> duration,</span>
-<span id="cb426-16"><a href="idiomatic-otp.html#cb426-16" tabindex="-1"></a>      <span class="va">open:</span> price,</span>
-<span id="cb426-17"><a href="idiomatic-otp.html#cb426-17" tabindex="-1"></a>      <span class="va">high:</span> price,</span>
-<span id="cb426-18"><a href="idiomatic-otp.html#cb426-18" tabindex="-1"></a>      <span class="va">low:</span> price,</span>
-<span id="cb426-19"><a href="idiomatic-otp.html#cb426-19" tabindex="-1"></a>      <span class="va">close:</span> price</span>
-<span id="cb426-20"><a href="idiomatic-otp.html#cb426-20" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb426-21"><a href="idiomatic-otp.html#cb426-21" tabindex="-1"></a>  <span class="kw">end</span>  </span></code></pre></div>
-<p>Moving up the call chain, besides merging the trade event’s data into OHLC data, we need to deal with the initial state of the worker(the <code>{symbol, duration}</code> tuple). Let’s add a <code>process/2</code> function with two clauses handling each of those cases:</p>
+<span id="cb426-2"><a href="idiomatic-otp.html#cb426-2" tabindex="-1"></a>  <span class="kw">def</span> merge_price<span class="fu">(</span>%<span class="cn">__MODULE__</span><span class="fu">{}</span> <span class="op">=</span> ohlc, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb426-3"><a href="idiomatic-otp.html#cb426-3" tabindex="-1"></a>    <span class="cf">if</span> within_current_timeframe<span class="fu">(</span>ohlc<span class="op">.</span>start_time, ohlc<span class="op">.</span>duration, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb426-4"><a href="idiomatic-otp.html#cb426-4" tabindex="-1"></a>      <span class="fu">{</span><span class="cn">nil</span>, %<span class="fu">{</span>ohlc <span class="op">|</span> <span class="va">low:</span> min<span class="fu">(</span>ohlc<span class="op">.</span>low, price<span class="fu">)</span>, <span class="va">high:</span> max<span class="fu">(</span>ohlc<span class="op">.</span>high, price<span class="fu">)</span>, <span class="va">close:</span> price<span class="fu">}}</span></span>
+<span id="cb426-5"><a href="idiomatic-otp.html#cb426-5" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb426-6"><a href="idiomatic-otp.html#cb426-6" tabindex="-1"></a>      <span class="fu">{</span>ohlc, generate_ohlc<span class="fu">(</span>ohlc<span class="op">.</span>symbol, ohlc<span class="op">.</span>duration, price, trade_time<span class="fu">)}</span></span>
+<span id="cb426-7"><a href="idiomatic-otp.html#cb426-7" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb426-8"><a href="idiomatic-otp.html#cb426-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>together with the <code>within_current_timeframe/3</code> and <code>generate_ohlc/3</code> function:</p>
 <div class="sourceCode" id="cb427"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb427-1"><a href="idiomatic-otp.html#cb427-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
-<span id="cb427-2"><a href="idiomatic-otp.html#cb427-2" tabindex="-1"></a>  <span class="co"># add the below line at the top of the module</span></span>
-<span id="cb427-3"><a href="idiomatic-otp.html#cb427-3" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Struct</span><span class="op">.</span><span class="cn">TradeEvent</span></span>
-<span id="cb427-4"><a href="idiomatic-otp.html#cb427-4" tabindex="-1"></a></span>
-<span id="cb427-5"><a href="idiomatic-otp.html#cb427-5" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span>%<span class="cn">__MODULE__</span><span class="fu">{}</span> <span class="op">=</span> ohlc, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb427-6"><a href="idiomatic-otp.html#cb427-6" tabindex="-1"></a>    <span class="fu">{</span>old_ohlc, new_ohlc<span class="fu">}</span> <span class="op">=</span> merge_price<span class="fu">(</span>ohlc, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
-<span id="cb427-7"><a href="idiomatic-otp.html#cb427-7" tabindex="-1"></a>    maybe_broadcast<span class="fu">(</span>old_ohlc<span class="fu">)</span></span>
-<span id="cb427-8"><a href="idiomatic-otp.html#cb427-8" tabindex="-1"></a>    new_ohlc</span>
-<span id="cb427-9"><a href="idiomatic-otp.html#cb427-9" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb427-10"><a href="idiomatic-otp.html#cb427-10" tabindex="-1"></a></span>
-<span id="cb427-11"><a href="idiomatic-otp.html#cb427-11" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">({</span>symbol, duration<span class="fu">}</span>, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb427-12"><a href="idiomatic-otp.html#cb427-12" tabindex="-1"></a>    generate_ohlc<span class="fu">(</span>symbol, duration, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
-<span id="cb427-13"><a href="idiomatic-otp.html#cb427-13" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb427-2"><a href="idiomatic-otp.html#cb427-2" tabindex="-1"></a>  <span class="kw">def</span> within_current_timeframe<span class="fu">(</span>start_time, duration, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb427-3"><a href="idiomatic-otp.html#cb427-3" tabindex="-1"></a>    end_time <span class="op">=</span> start_time <span class="op">+</span> duration <span class="op">*</span> <span class="dv">60</span></span>
+<span id="cb427-4"><a href="idiomatic-otp.html#cb427-4" tabindex="-1"></a>    trade_time <span class="op">=</span> div<span class="fu">(</span>trade_time, <span class="dv">1000</span><span class="fu">)</span></span>
+<span id="cb427-5"><a href="idiomatic-otp.html#cb427-5" tabindex="-1"></a></span>
+<span id="cb427-6"><a href="idiomatic-otp.html#cb427-6" tabindex="-1"></a>    start_time <span class="op">&lt;=</span> trade_time <span class="op">&amp;&amp;</span> trade_time <span class="op">&lt;</span> end_time</span>
+<span id="cb427-7"><a href="idiomatic-otp.html#cb427-7" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb427-8"><a href="idiomatic-otp.html#cb427-8" tabindex="-1"></a>  </span>
+<span id="cb427-9"><a href="idiomatic-otp.html#cb427-9" tabindex="-1"></a>  <span class="kw">def</span> generate_ohlc<span class="fu">(</span>symbol, duration, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb427-10"><a href="idiomatic-otp.html#cb427-10" tabindex="-1"></a>    start_time <span class="op">=</span> div<span class="fu">(</span>div<span class="fu">(</span>div<span class="fu">(</span>trade_time, <span class="dv">1000</span><span class="fu">)</span>, <span class="dv">60</span><span class="fu">)</span>, duration<span class="fu">)</span> <span class="op">*</span> duration <span class="op">*</span> <span class="dv">60</span></span>
+<span id="cb427-11"><a href="idiomatic-otp.html#cb427-11" tabindex="-1"></a></span>
+<span id="cb427-12"><a href="idiomatic-otp.html#cb427-12" tabindex="-1"></a>    %<span class="cn">__MODULE__</span><span class="fu">{</span></span>
+<span id="cb427-13"><a href="idiomatic-otp.html#cb427-13" tabindex="-1"></a>      <span class="va">symbol:</span> symbol,</span>
+<span id="cb427-14"><a href="idiomatic-otp.html#cb427-14" tabindex="-1"></a>      <span class="va">start_time:</span> start_time,</span>
+<span id="cb427-15"><a href="idiomatic-otp.html#cb427-15" tabindex="-1"></a>      <span class="va">duration:</span> duration,</span>
+<span id="cb427-16"><a href="idiomatic-otp.html#cb427-16" tabindex="-1"></a>      <span class="va">open:</span> price,</span>
+<span id="cb427-17"><a href="idiomatic-otp.html#cb427-17" tabindex="-1"></a>      <span class="va">high:</span> price,</span>
+<span id="cb427-18"><a href="idiomatic-otp.html#cb427-18" tabindex="-1"></a>      <span class="va">low:</span> price,</span>
+<span id="cb427-19"><a href="idiomatic-otp.html#cb427-19" tabindex="-1"></a>      <span class="va">close:</span> price</span>
+<span id="cb427-20"><a href="idiomatic-otp.html#cb427-20" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb427-21"><a href="idiomatic-otp.html#cb427-21" tabindex="-1"></a>  <span class="kw">end</span>  </span></code></pre></div>
+<p>Moving up the call chain, besides merging the trade event’s data into OHLC data, we need to deal with the initial state of the worker(the <code>{symbol, duration}</code> tuple). Let’s add a <code>process/2</code> function with two clauses handling each of those cases:</p>
+<div class="sourceCode" id="cb428"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb428-1"><a href="idiomatic-otp.html#cb428-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
+<span id="cb428-2"><a href="idiomatic-otp.html#cb428-2" tabindex="-1"></a>  <span class="co"># add the below line at the top of the module</span></span>
+<span id="cb428-3"><a href="idiomatic-otp.html#cb428-3" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Core</span><span class="op">.</span><span class="cn">Struct</span><span class="op">.</span><span class="cn">TradeEvent</span></span>
+<span id="cb428-4"><a href="idiomatic-otp.html#cb428-4" tabindex="-1"></a></span>
+<span id="cb428-5"><a href="idiomatic-otp.html#cb428-5" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span>%<span class="cn">__MODULE__</span><span class="fu">{}</span> <span class="op">=</span> ohlc, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb428-6"><a href="idiomatic-otp.html#cb428-6" tabindex="-1"></a>    <span class="fu">{</span>old_ohlc, new_ohlc<span class="fu">}</span> <span class="op">=</span> merge_price<span class="fu">(</span>ohlc, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
+<span id="cb428-7"><a href="idiomatic-otp.html#cb428-7" tabindex="-1"></a>    maybe_broadcast<span class="fu">(</span>old_ohlc<span class="fu">)</span></span>
+<span id="cb428-8"><a href="idiomatic-otp.html#cb428-8" tabindex="-1"></a>    new_ohlc</span>
+<span id="cb428-9"><a href="idiomatic-otp.html#cb428-9" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb428-10"><a href="idiomatic-otp.html#cb428-10" tabindex="-1"></a></span>
+<span id="cb428-11"><a href="idiomatic-otp.html#cb428-11" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">({</span>symbol, duration<span class="fu">}</span>, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb428-12"><a href="idiomatic-otp.html#cb428-12" tabindex="-1"></a>    generate_ohlc<span class="fu">(</span>symbol, duration, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
+<span id="cb428-13"><a href="idiomatic-otp.html#cb428-13" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The second clause takes care of the initial state of the OHLC worker(happens upon receiving the first trade event - once in the lifetime of the worker process).</p>
 <p>The first clause handles all the other trade events.</p>
 <p>This order of clauses could appear weird, but it makes a lot of sense as Elixir will try pattern match clauses from the top, and in our case, the first(top) clause will be used for almost all of the calls.</p>
@@ -634,70 +639,70 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Let’s get back to the first clause of the <code>process/2</code> function as it uses another Elixir/Erlang pattern that we didn’t discuss before - the <code>maybe_do_x</code> functions.</p>
 <p>In case of the incoming trade event’s <code>trade_time</code> <strong>outside</strong> of the current OHLC’s timeframe, we would like to <strong>broadcast</strong> the current OHLC and return a new OHLC(based on the trade event’s data). Otherwise(trade event’s <code>trade_time</code> <strong>within</strong> the current OHLC), the trade event’s <code>price</code> is merged into the current OHLC, and it’s <strong>not</strong> broadcasted.</p>
 <p>This sounds very similar to the if-else, but it’s most of the time achieved using the pattern matching:</p>
-<div class="sourceCode" id="cb428"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb428-1"><a href="idiomatic-otp.html#cb428-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
-<span id="cb428-2"><a href="idiomatic-otp.html#cb428-2" tabindex="-1"></a> <span class="co"># add below lines at the top of the module</span></span>
-<span id="cb428-3"><a href="idiomatic-otp.html#cb428-3" tabindex="-1"></a> <span class="im">require</span> <span class="cn">Logger</span></span>
-<span id="cb428-4"><a href="idiomatic-otp.html#cb428-4" tabindex="-1"></a></span>
-<span id="cb428-5"><a href="idiomatic-otp.html#cb428-5" tabindex="-1"></a> <span class="ot">@pubsub_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env<span class="fu">(</span><span class="va">:core</span>, <span class="va">:pubsub_client</span><span class="fu">)</span></span>
-<span id="cb428-6"><a href="idiomatic-otp.html#cb428-6" tabindex="-1"></a></span>
-<span id="cb428-7"><a href="idiomatic-otp.html#cb428-7" tabindex="-1"></a>  <span class="kw">defp</span> maybe_broadcast<span class="fu">(</span><span class="cn">nil</span><span class="fu">)</span>, <span class="va">do:</span> <span class="va">:ok</span></span>
-<span id="cb428-8"><a href="idiomatic-otp.html#cb428-8" tabindex="-1"></a></span>
-<span id="cb428-9"><a href="idiomatic-otp.html#cb428-9" tabindex="-1"></a>  <span class="kw">defp</span> maybe_broadcast<span class="fu">(</span>%<span class="cn">__MODULE__</span><span class="fu">{}</span> <span class="op">=</span> ohlc<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb428-10"><a href="idiomatic-otp.html#cb428-10" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>debug<span class="fu">(</span><span class="st">&quot;Broadcasting OHLC: </span><span class="ot">#{</span>inspect<span class="fu">(</span>ohlc<span class="fu">)</span><span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
-<span id="cb428-11"><a href="idiomatic-otp.html#cb428-11" tabindex="-1"></a></span>
-<span id="cb428-12"><a href="idiomatic-otp.html#cb428-12" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
-<span id="cb428-13"><a href="idiomatic-otp.html#cb428-13" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb428-14"><a href="idiomatic-otp.html#cb428-14" tabindex="-1"></a>      <span class="st">&quot;OHLC:</span><span class="ot">#{</span>ohlc<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb428-15"><a href="idiomatic-otp.html#cb428-15" tabindex="-1"></a>      ohlc</span>
-<span id="cb428-16"><a href="idiomatic-otp.html#cb428-16" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb428-17"><a href="idiomatic-otp.html#cb428-17" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb429"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb429-1"><a href="idiomatic-otp.html#cb429-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
+<span id="cb429-2"><a href="idiomatic-otp.html#cb429-2" tabindex="-1"></a> <span class="co"># add below lines at the top of the module</span></span>
+<span id="cb429-3"><a href="idiomatic-otp.html#cb429-3" tabindex="-1"></a> <span class="im">require</span> <span class="cn">Logger</span></span>
+<span id="cb429-4"><a href="idiomatic-otp.html#cb429-4" tabindex="-1"></a></span>
+<span id="cb429-5"><a href="idiomatic-otp.html#cb429-5" tabindex="-1"></a> <span class="ot">@pubsub_client</span> <span class="cn">Application</span><span class="op">.</span>compile_env<span class="fu">(</span><span class="va">:core</span>, <span class="va">:pubsub_client</span><span class="fu">)</span></span>
+<span id="cb429-6"><a href="idiomatic-otp.html#cb429-6" tabindex="-1"></a></span>
+<span id="cb429-7"><a href="idiomatic-otp.html#cb429-7" tabindex="-1"></a>  <span class="kw">defp</span> maybe_broadcast<span class="fu">(</span><span class="cn">nil</span><span class="fu">)</span>, <span class="va">do:</span> <span class="va">:ok</span></span>
+<span id="cb429-8"><a href="idiomatic-otp.html#cb429-8" tabindex="-1"></a></span>
+<span id="cb429-9"><a href="idiomatic-otp.html#cb429-9" tabindex="-1"></a>  <span class="kw">defp</span> maybe_broadcast<span class="fu">(</span>%<span class="cn">__MODULE__</span><span class="fu">{}</span> <span class="op">=</span> ohlc<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb429-10"><a href="idiomatic-otp.html#cb429-10" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>debug<span class="fu">(</span><span class="st">&quot;Broadcasting OHLC: </span><span class="ot">#{</span>inspect<span class="fu">(</span>ohlc<span class="fu">)</span><span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
+<span id="cb429-11"><a href="idiomatic-otp.html#cb429-11" tabindex="-1"></a></span>
+<span id="cb429-12"><a href="idiomatic-otp.html#cb429-12" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
+<span id="cb429-13"><a href="idiomatic-otp.html#cb429-13" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb429-14"><a href="idiomatic-otp.html#cb429-14" tabindex="-1"></a>      <span class="st">&quot;OHLC:</span><span class="ot">#{</span>ohlc<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb429-15"><a href="idiomatic-otp.html#cb429-15" tabindex="-1"></a>      ohlc</span>
+<span id="cb429-16"><a href="idiomatic-otp.html#cb429-16" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb429-17"><a href="idiomatic-otp.html#cb429-17" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>By using a separate function, we avoided branching using if-else inside the <code>process/2</code> function. The idea is not necessarily to avoid if statements but to keep the code at the consistent level of abstraction, so it’s easier to understand. Inside the <code>process/2</code> function, we can understand what’s going on just by reading the function names inside - there’s no “logic”.</p>
 <p>Sometimes people advise that “code should be like well written prose” and <code>maybe_do_x</code> functions are one of the ways to achieve this “nirvana” state.</p>
 </div>
 <div id="testing" class="section level3 hasAnchor" number="19.3.2">
 <h3><span class="header-section-number">19.3.2</span> Testing<a href="idiomatic-otp.html#testing" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>At this moment, our code should compile, and we should already be able to test it. First, let’s change the logging level to <code>debug</code> inside <code>config/config.exs</code> to see what OHLC structs got broadcasted:</p>
-<div class="sourceCode" id="cb429"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb429-1"><a href="idiomatic-otp.html#cb429-1" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
-<span id="cb429-2"><a href="idiomatic-otp.html#cb429-2" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
-<span id="cb429-3"><a href="idiomatic-otp.html#cb429-3" tabindex="-1"></a>  <span class="va">level:</span> <span class="va">:debug</span> <span class="co"># &lt;= updated</span></span></code></pre></div>
+<div class="sourceCode" id="cb430"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb430-1"><a href="idiomatic-otp.html#cb430-1" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
+<span id="cb430-2"><a href="idiomatic-otp.html#cb430-2" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
+<span id="cb430-3"><a href="idiomatic-otp.html#cb430-3" tabindex="-1"></a>  <span class="va">level:</span> <span class="va">:debug</span> <span class="co"># &lt;= updated</span></span></code></pre></div>
 <p>We can now progress with testing:</p>
-<div class="sourceCode" id="cb430"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb430-1"><a href="idiomatic-otp.html#cb430-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb430-2"><a href="idiomatic-otp.html#cb430-2" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb430-3"><a href="idiomatic-otp.html#cb430-3" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb430-4"><a href="idiomatic-otp.html#cb430-4" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Indicator.Ohlc.Worker.start_link<span class="kw">(</span><span class="ex">{</span><span class="st">&quot;XRPUSDT&quot;</span><span class="ex">,</span> 1}<span class="kw">)</span></span>
-<span id="cb430-5"><a href="idiomatic-otp.html#cb430-5" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.447.0&gt;}</span></span>
-<span id="cb430-6"><a href="idiomatic-otp.html#cb430-6" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb430-7"><a href="idiomatic-otp.html#cb430-7" tabindex="-1"></a><span class="ex">22:45:00.335</span> <span class="pp">[</span><span class="ss">debug</span><span class="pp">]</span> Broadcasting OHLC: %Indicator.Ohlc{close: <span class="st">&quot;0.63880000&quot;</span>, duration: 1,</span>
-<span id="cb430-8"><a href="idiomatic-otp.html#cb430-8" tabindex="-1"></a><span class="ex">high:</span> <span class="st">&quot;0.63890000&quot;</span>, low: <span class="st">&quot;0.63840000&quot;</span>, open: <span class="st">&quot;0.63860000&quot;</span>, start_time: 1644014640,</span>
-<span id="cb430-9"><a href="idiomatic-otp.html#cb430-9" tabindex="-1"></a><span class="ex">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>}</span></code></pre></div>
+<div class="sourceCode" id="cb431"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb431-1"><a href="idiomatic-otp.html#cb431-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb431-2"><a href="idiomatic-otp.html#cb431-2" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb431-3"><a href="idiomatic-otp.html#cb431-3" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb431-4"><a href="idiomatic-otp.html#cb431-4" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Indicator.Ohlc.Worker.start_link<span class="kw">(</span><span class="ex">{</span><span class="st">&quot;XRPUSDT&quot;</span><span class="ex">,</span> 1}<span class="kw">)</span></span>
+<span id="cb431-5"><a href="idiomatic-otp.html#cb431-5" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.447.0&gt;}</span></span>
+<span id="cb431-6"><a href="idiomatic-otp.html#cb431-6" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb431-7"><a href="idiomatic-otp.html#cb431-7" tabindex="-1"></a><span class="ex">22:45:00.335</span> <span class="pp">[</span><span class="ss">debug</span><span class="pp">]</span> Broadcasting OHLC: %Indicator.Ohlc{close: <span class="st">&quot;0.63880000&quot;</span>, duration: 1,</span>
+<span id="cb431-8"><a href="idiomatic-otp.html#cb431-8" tabindex="-1"></a><span class="ex">high:</span> <span class="st">&quot;0.63890000&quot;</span>, low: <span class="st">&quot;0.63840000&quot;</span>, open: <span class="st">&quot;0.63860000&quot;</span>, start_time: 1644014640,</span>
+<span id="cb431-9"><a href="idiomatic-otp.html#cb431-9" tabindex="-1"></a><span class="ex">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>}</span></code></pre></div>
 <p>The above test confirms that we can manually start a single OHLC worker that will aggregate data over a single minute timeframe.</p>
 </div>
 <div id="supervision" class="section level3 hasAnchor" number="19.3.3">
 <h3><span class="header-section-number">19.3.3</span> Supervision<a href="idiomatic-otp.html#supervision" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>To supervise multiple <code>Indicators.Worker</code>s we will use the <code>DynamicSupervisor</code>.
 We need to update the Indicators application’s supervision tree to start a dynamic supervisor:</p>
-<div class="sourceCode" id="cb431"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb431-1"><a href="idiomatic-otp.html#cb431-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/application.ex</span></span>
-<span id="cb431-2"><a href="idiomatic-otp.html#cb431-2" tabindex="-1"></a>    children <span class="op">=</span> <span class="ot">[</span></span>
-<span id="cb431-3"><a href="idiomatic-otp.html#cb431-3" tabindex="-1"></a>      <span class="fu">{</span><span class="cn">DynamicSupervisor</span>, <span class="va">strategy:</span> <span class="va">:one_for_one</span>, <span class="va">name:</span> <span class="cn">Indicator</span><span class="op">.</span><span class="cn">DynamicSupervisor</span><span class="fu">}</span></span>
-<span id="cb431-4"><a href="idiomatic-otp.html#cb431-4" tabindex="-1"></a>    <span class="ot">]</span></span></code></pre></div>
+<div class="sourceCode" id="cb432"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb432-1"><a href="idiomatic-otp.html#cb432-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/application.ex</span></span>
+<span id="cb432-2"><a href="idiomatic-otp.html#cb432-2" tabindex="-1"></a>    children <span class="op">=</span> <span class="ot">[</span></span>
+<span id="cb432-3"><a href="idiomatic-otp.html#cb432-3" tabindex="-1"></a>      <span class="fu">{</span><span class="cn">DynamicSupervisor</span>, <span class="va">strategy:</span> <span class="va">:one_for_one</span>, <span class="va">name:</span> <span class="cn">Indicator</span><span class="op">.</span><span class="cn">DynamicSupervisor</span><span class="fu">}</span></span>
+<span id="cb432-4"><a href="idiomatic-otp.html#cb432-4" tabindex="-1"></a>    <span class="ot">]</span></span></code></pre></div>
 <div style="page-break-after: always;"></div>
 <p>We can now add <code>aggregate_ohlcs/1</code> function that will start all workers:</p>
-<div class="sourceCode" id="cb432"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb432-1"><a href="idiomatic-otp.html#cb432-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
-<span id="cb432-2"><a href="idiomatic-otp.html#cb432-2" tabindex="-1"></a>  <span class="kw">def</span> aggregate_ohlcs<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb432-3"><a href="idiomatic-otp.html#cb432-3" tabindex="-1"></a>    <span class="ot">[</span><span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>, <span class="dv">60</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">60</span>, <span class="dv">24</span> <span class="op">*</span> <span class="dv">60</span><span class="ot">]</span></span>
-<span id="cb432-4"><a href="idiomatic-otp.html#cb432-4" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>each<span class="fu">(</span></span>
-<span id="cb432-5"><a href="idiomatic-otp.html#cb432-5" tabindex="-1"></a>      <span class="op">&amp;</span><span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child<span class="fu">(</span></span>
-<span id="cb432-6"><a href="idiomatic-otp.html#cb432-6" tabindex="-1"></a>        <span class="cn">Indicator</span><span class="op">.</span><span class="cn">DynamicSupervisor</span>,</span>
-<span id="cb432-7"><a href="idiomatic-otp.html#cb432-7" tabindex="-1"></a>        <span class="fu">{</span><span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span><span class="op">.</span><span class="cn">Worker</span>, <span class="fu">{</span>symbol, <span class="op">&amp;</span><span class="dv">1</span><span class="fu">}}</span></span>
-<span id="cb432-8"><a href="idiomatic-otp.html#cb432-8" tabindex="-1"></a>      <span class="fu">)</span></span>
-<span id="cb432-9"><a href="idiomatic-otp.html#cb432-9" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb432-10"><a href="idiomatic-otp.html#cb432-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb433"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb433-1"><a href="idiomatic-otp.html#cb433-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
+<span id="cb433-2"><a href="idiomatic-otp.html#cb433-2" tabindex="-1"></a>  <span class="kw">def</span> aggregate_ohlcs<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb433-3"><a href="idiomatic-otp.html#cb433-3" tabindex="-1"></a>    <span class="ot">[</span><span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>, <span class="dv">60</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">60</span>, <span class="dv">24</span> <span class="op">*</span> <span class="dv">60</span><span class="ot">]</span></span>
+<span id="cb433-4"><a href="idiomatic-otp.html#cb433-4" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>each<span class="fu">(</span></span>
+<span id="cb433-5"><a href="idiomatic-otp.html#cb433-5" tabindex="-1"></a>      <span class="op">&amp;</span><span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child<span class="fu">(</span></span>
+<span id="cb433-6"><a href="idiomatic-otp.html#cb433-6" tabindex="-1"></a>        <span class="cn">Indicator</span><span class="op">.</span><span class="cn">DynamicSupervisor</span>,</span>
+<span id="cb433-7"><a href="idiomatic-otp.html#cb433-7" tabindex="-1"></a>        <span class="fu">{</span><span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span><span class="op">.</span><span class="cn">Worker</span>, <span class="fu">{</span>symbol, <span class="op">&amp;</span><span class="dv">1</span><span class="fu">}}</span></span>
+<span id="cb433-8"><a href="idiomatic-otp.html#cb433-8" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb433-9"><a href="idiomatic-otp.html#cb433-9" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb433-10"><a href="idiomatic-otp.html#cb433-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We can now start multiple OHLC workers just by running a single function:</p>
-<div class="sourceCode" id="cb433"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb433-1"><a href="idiomatic-otp.html#cb433-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb433-2"><a href="idiomatic-otp.html#cb433-2" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb433-3"><a href="idiomatic-otp.html#cb433-3" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb433-4"><a href="idiomatic-otp.html#cb433-4" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Indicator.aggregate_ohlcs<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb433-5"><a href="idiomatic-otp.html#cb433-5" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.447.0&gt;}</span></span></code></pre></div>
+<div class="sourceCode" id="cb434"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb434-1"><a href="idiomatic-otp.html#cb434-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb434-2"><a href="idiomatic-otp.html#cb434-2" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb434-3"><a href="idiomatic-otp.html#cb434-3" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb434-4"><a href="idiomatic-otp.html#cb434-4" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Indicator.aggregate_ohlcs<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb434-5"><a href="idiomatic-otp.html#cb434-5" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.447.0&gt;}</span></span></code></pre></div>
 <p>The above calls will start six OHLC worker processes supervised under the <code>Indicator.DynamicSupervisor</code> process.</p>
 <p>We could continue with this exercise, add a Registry to be able to stop the indicators and a database to be able to autostart them. Those improvements would get the “indicators” application in line with the other applications, but that’s not the goal of this chapter.</p>
 </div>
@@ -726,96 +731,96 @@ We need to update the Indicators application’s supervision tree to start a dyn
 <p>Just to be clear - processes <strong>do</strong> have their place, they are a really powerful tool, but as with every tool, the responsibility lies on us developers to use them wisely - they <strong>must not</strong> be used for code organization.</p>
 <p>Enough theory - let’s look into how we could update our <code>Indicator.Ohlc</code> module to be able to deal with multiple timeframes at once.</p>
 <p>Initially, we could be tempted to update the <code>process/2</code> function:</p>
-<div class="sourceCode" id="cb434"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb434-1"><a href="idiomatic-otp.html#cb434-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
-<span id="cb434-2"><a href="idiomatic-otp.html#cb434-2" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span><span class="ot">[</span>_ <span class="op">|</span> _<span class="ot">]</span> <span class="op">=</span> ohlcs, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb434-3"><a href="idiomatic-otp.html#cb434-3" tabindex="-1"></a>    results <span class="op">=</span></span>
-<span id="cb434-4"><a href="idiomatic-otp.html#cb434-4" tabindex="-1"></a>      ohlcs</span>
-<span id="cb434-5"><a href="idiomatic-otp.html#cb434-5" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>merge_price<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">))</span></span>
-<span id="cb434-6"><a href="idiomatic-otp.html#cb434-6" tabindex="-1"></a></span>
-<span id="cb434-7"><a href="idiomatic-otp.html#cb434-7" tabindex="-1"></a>    results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>maybe_broadcast<span class="fu">(</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">0</span><span class="fu">)))</span></span>
-<span id="cb434-8"><a href="idiomatic-otp.html#cb434-8" tabindex="-1"></a>    results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">1</span><span class="fu">))</span></span>
-<span id="cb434-9"><a href="idiomatic-otp.html#cb434-9" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb434-10"><a href="idiomatic-otp.html#cb434-10" tabindex="-1"></a></span>
-<span id="cb434-11"><a href="idiomatic-otp.html#cb434-11" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span>symbol, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb434-12"><a href="idiomatic-otp.html#cb434-12" tabindex="-1"></a>    <span class="ot">[</span><span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>, <span class="dv">60</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">60</span>, <span class="dv">24</span> <span class="op">*</span> <span class="dv">60</span><span class="ot">]</span></span>
-<span id="cb434-13"><a href="idiomatic-otp.html#cb434-13" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span></span>
-<span id="cb434-14"><a href="idiomatic-otp.html#cb434-14" tabindex="-1"></a>      <span class="op">&amp;</span>generate_ohlc<span class="fu">(</span></span>
-<span id="cb434-15"><a href="idiomatic-otp.html#cb434-15" tabindex="-1"></a>        symbol,</span>
-<span id="cb434-16"><a href="idiomatic-otp.html#cb434-16" tabindex="-1"></a>        <span class="op">&amp;</span><span class="dv">1</span>,</span>
-<span id="cb434-17"><a href="idiomatic-otp.html#cb434-17" tabindex="-1"></a>        trade_event<span class="op">.</span>price,</span>
-<span id="cb434-18"><a href="idiomatic-otp.html#cb434-18" tabindex="-1"></a>        trade_event<span class="op">.</span>trade_time</span>
-<span id="cb434-19"><a href="idiomatic-otp.html#cb434-19" tabindex="-1"></a>      <span class="fu">)</span></span>
-<span id="cb434-20"><a href="idiomatic-otp.html#cb434-20" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb434-21"><a href="idiomatic-otp.html#cb434-21" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We added some logic to both clauses. At this moment, it maybe doesn’t look that bad, but it’s a great place to mix even more logic with dirty code. This is a great example where we should stop and rethink how we could maximize the amount of pure code.</p>
-<p>Instead of expanding the <code>process/2</code> function, we could built on top of the <code>merge_price/3</code> and <code>generate_ohlc/4</code> functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:</p>
 <div class="sourceCode" id="cb435"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb435-1"><a href="idiomatic-otp.html#cb435-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
-<span id="cb435-2"><a href="idiomatic-otp.html#cb435-2" tabindex="-1"></a>  <span class="kw">def</span> merge_prices<span class="fu">(</span>ohlcs, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb435-2"><a href="idiomatic-otp.html#cb435-2" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span><span class="ot">[</span>_ <span class="op">|</span> _<span class="ot">]</span> <span class="op">=</span> ohlcs, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb435-3"><a href="idiomatic-otp.html#cb435-3" tabindex="-1"></a>    results <span class="op">=</span></span>
 <span id="cb435-4"><a href="idiomatic-otp.html#cb435-4" tabindex="-1"></a>      ohlcs</span>
-<span id="cb435-5"><a href="idiomatic-otp.html#cb435-5" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>merge_price<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, price, trade_time<span class="fu">))</span></span>
+<span id="cb435-5"><a href="idiomatic-otp.html#cb435-5" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>merge_price<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">))</span></span>
 <span id="cb435-6"><a href="idiomatic-otp.html#cb435-6" tabindex="-1"></a></span>
-<span id="cb435-7"><a href="idiomatic-otp.html#cb435-7" tabindex="-1"></a>    <span class="fu">{</span></span>
-<span id="cb435-8"><a href="idiomatic-otp.html#cb435-8" tabindex="-1"></a>      results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">0</span><span class="fu">))</span> <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>filter<span class="fu">(</span><span class="op">&amp;</span> <span class="op">&amp;</span><span class="dv">1</span><span class="fu">)</span>,</span>
-<span id="cb435-9"><a href="idiomatic-otp.html#cb435-9" tabindex="-1"></a>      results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">1</span><span class="fu">))</span></span>
-<span id="cb435-10"><a href="idiomatic-otp.html#cb435-10" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb435-11"><a href="idiomatic-otp.html#cb435-11" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb435-12"><a href="idiomatic-otp.html#cb435-12" tabindex="-1"></a></span>
-<span id="cb435-13"><a href="idiomatic-otp.html#cb435-13" tabindex="-1"></a>  <span class="kw">def</span> generate_ohlcs<span class="fu">(</span>symbol, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb435-14"><a href="idiomatic-otp.html#cb435-14" tabindex="-1"></a>    <span class="ot">[</span><span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>, <span class="dv">60</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">60</span>, <span class="dv">24</span> <span class="op">*</span> <span class="dv">60</span><span class="ot">]</span></span>
-<span id="cb435-15"><a href="idiomatic-otp.html#cb435-15" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span></span>
-<span id="cb435-16"><a href="idiomatic-otp.html#cb435-16" tabindex="-1"></a>      <span class="op">&amp;</span>generate_ohlc<span class="fu">(</span></span>
-<span id="cb435-17"><a href="idiomatic-otp.html#cb435-17" tabindex="-1"></a>        symbol,</span>
-<span id="cb435-18"><a href="idiomatic-otp.html#cb435-18" tabindex="-1"></a>        <span class="op">&amp;</span><span class="dv">1</span>,</span>
-<span id="cb435-19"><a href="idiomatic-otp.html#cb435-19" tabindex="-1"></a>        price,</span>
-<span id="cb435-20"><a href="idiomatic-otp.html#cb435-20" tabindex="-1"></a>        trade_time</span>
-<span id="cb435-21"><a href="idiomatic-otp.html#cb435-21" tabindex="-1"></a>      <span class="fu">)</span></span>
-<span id="cb435-22"><a href="idiomatic-otp.html#cb435-22" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb435-23"><a href="idiomatic-otp.html#cb435-23" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb435-7"><a href="idiomatic-otp.html#cb435-7" tabindex="-1"></a>    results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>maybe_broadcast<span class="fu">(</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">0</span><span class="fu">)))</span></span>
+<span id="cb435-8"><a href="idiomatic-otp.html#cb435-8" tabindex="-1"></a>    results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">1</span><span class="fu">))</span></span>
+<span id="cb435-9"><a href="idiomatic-otp.html#cb435-9" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb435-10"><a href="idiomatic-otp.html#cb435-10" tabindex="-1"></a></span>
+<span id="cb435-11"><a href="idiomatic-otp.html#cb435-11" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span>symbol, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb435-12"><a href="idiomatic-otp.html#cb435-12" tabindex="-1"></a>    <span class="ot">[</span><span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>, <span class="dv">60</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">60</span>, <span class="dv">24</span> <span class="op">*</span> <span class="dv">60</span><span class="ot">]</span></span>
+<span id="cb435-13"><a href="idiomatic-otp.html#cb435-13" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span></span>
+<span id="cb435-14"><a href="idiomatic-otp.html#cb435-14" tabindex="-1"></a>      <span class="op">&amp;</span>generate_ohlc<span class="fu">(</span></span>
+<span id="cb435-15"><a href="idiomatic-otp.html#cb435-15" tabindex="-1"></a>        symbol,</span>
+<span id="cb435-16"><a href="idiomatic-otp.html#cb435-16" tabindex="-1"></a>        <span class="op">&amp;</span><span class="dv">1</span>,</span>
+<span id="cb435-17"><a href="idiomatic-otp.html#cb435-17" tabindex="-1"></a>        trade_event<span class="op">.</span>price,</span>
+<span id="cb435-18"><a href="idiomatic-otp.html#cb435-18" tabindex="-1"></a>        trade_event<span class="op">.</span>trade_time</span>
+<span id="cb435-19"><a href="idiomatic-otp.html#cb435-19" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb435-20"><a href="idiomatic-otp.html#cb435-20" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb435-21"><a href="idiomatic-otp.html#cb435-21" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>We added some logic to both clauses. At this moment, it maybe doesn’t look that bad, but it’s a great place to mix even more logic with dirty code. This is a great example where we should stop and rethink how we could maximize the amount of pure code.</p>
+<p>Instead of expanding the <code>process/2</code> function, we could built on top of the <code>merge_price/3</code> and <code>generate_ohlc/4</code> functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:</p>
+<div class="sourceCode" id="cb436"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb436-1"><a href="idiomatic-otp.html#cb436-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
+<span id="cb436-2"><a href="idiomatic-otp.html#cb436-2" tabindex="-1"></a>  <span class="kw">def</span> merge_prices<span class="fu">(</span>ohlcs, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb436-3"><a href="idiomatic-otp.html#cb436-3" tabindex="-1"></a>    results <span class="op">=</span></span>
+<span id="cb436-4"><a href="idiomatic-otp.html#cb436-4" tabindex="-1"></a>      ohlcs</span>
+<span id="cb436-5"><a href="idiomatic-otp.html#cb436-5" tabindex="-1"></a>      <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>merge_price<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, price, trade_time<span class="fu">))</span></span>
+<span id="cb436-6"><a href="idiomatic-otp.html#cb436-6" tabindex="-1"></a></span>
+<span id="cb436-7"><a href="idiomatic-otp.html#cb436-7" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb436-8"><a href="idiomatic-otp.html#cb436-8" tabindex="-1"></a>      results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">0</span><span class="fu">))</span> <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>filter<span class="fu">(</span><span class="op">&amp;</span> <span class="op">&amp;</span><span class="dv">1</span><span class="fu">)</span>,</span>
+<span id="cb436-9"><a href="idiomatic-otp.html#cb436-9" tabindex="-1"></a>      results <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span>elem<span class="fu">(</span><span class="op">&amp;</span><span class="dv">1</span>, <span class="dv">1</span><span class="fu">))</span></span>
+<span id="cb436-10"><a href="idiomatic-otp.html#cb436-10" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb436-11"><a href="idiomatic-otp.html#cb436-11" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb436-12"><a href="idiomatic-otp.html#cb436-12" tabindex="-1"></a></span>
+<span id="cb436-13"><a href="idiomatic-otp.html#cb436-13" tabindex="-1"></a>  <span class="kw">def</span> generate_ohlcs<span class="fu">(</span>symbol, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb436-14"><a href="idiomatic-otp.html#cb436-14" tabindex="-1"></a>    <span class="ot">[</span><span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>, <span class="dv">60</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">60</span>, <span class="dv">24</span> <span class="op">*</span> <span class="dv">60</span><span class="ot">]</span></span>
+<span id="cb436-15"><a href="idiomatic-otp.html#cb436-15" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span></span>
+<span id="cb436-16"><a href="idiomatic-otp.html#cb436-16" tabindex="-1"></a>      <span class="op">&amp;</span>generate_ohlc<span class="fu">(</span></span>
+<span id="cb436-17"><a href="idiomatic-otp.html#cb436-17" tabindex="-1"></a>        symbol,</span>
+<span id="cb436-18"><a href="idiomatic-otp.html#cb436-18" tabindex="-1"></a>        <span class="op">&amp;</span><span class="dv">1</span>,</span>
+<span id="cb436-19"><a href="idiomatic-otp.html#cb436-19" tabindex="-1"></a>        price,</span>
+<span id="cb436-20"><a href="idiomatic-otp.html#cb436-20" tabindex="-1"></a>        trade_time</span>
+<span id="cb436-21"><a href="idiomatic-otp.html#cb436-21" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb436-22"><a href="idiomatic-otp.html#cb436-22" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb436-23"><a href="idiomatic-otp.html#cb436-23" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Now the <code>process/2</code> function got back to its almost original shape:</p>
-<div class="sourceCode" id="cb436"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb436-1"><a href="idiomatic-otp.html#cb436-1" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span><span class="ot">[</span>_ <span class="op">|</span> _<span class="ot">]</span> <span class="op">=</span> ohlcs, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb436-2"><a href="idiomatic-otp.html#cb436-2" tabindex="-1"></a>    <span class="fu">{</span>old_ohlcs, new_ohlcs<span class="fu">}</span> <span class="op">=</span> merge_prices<span class="fu">(</span>ohlcs, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
-<span id="cb436-3"><a href="idiomatic-otp.html#cb436-3" tabindex="-1"></a></span>
-<span id="cb436-4"><a href="idiomatic-otp.html#cb436-4" tabindex="-1"></a>    old_ohlcs <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>each<span class="fu">(</span><span class="op">&amp;</span>maybe_broadcast<span class="op">/</span><span class="dv">1</span><span class="fu">)</span></span>
-<span id="cb436-5"><a href="idiomatic-otp.html#cb436-5" tabindex="-1"></a>    new_ohlcs</span>
-<span id="cb436-6"><a href="idiomatic-otp.html#cb436-6" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb436-7"><a href="idiomatic-otp.html#cb436-7" tabindex="-1"></a></span>
-<span id="cb436-8"><a href="idiomatic-otp.html#cb436-8" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span>symbol, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb436-9"><a href="idiomatic-otp.html#cb436-9" tabindex="-1"></a>    generate_ohlcs<span class="fu">(</span>symbol, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
-<span id="cb436-10"><a href="idiomatic-otp.html#cb436-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb437"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb437-1"><a href="idiomatic-otp.html#cb437-1" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span><span class="ot">[</span>_ <span class="op">|</span> _<span class="ot">]</span> <span class="op">=</span> ohlcs, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb437-2"><a href="idiomatic-otp.html#cb437-2" tabindex="-1"></a>    <span class="fu">{</span>old_ohlcs, new_ohlcs<span class="fu">}</span> <span class="op">=</span> merge_prices<span class="fu">(</span>ohlcs, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
+<span id="cb437-3"><a href="idiomatic-otp.html#cb437-3" tabindex="-1"></a></span>
+<span id="cb437-4"><a href="idiomatic-otp.html#cb437-4" tabindex="-1"></a>    old_ohlcs <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>each<span class="fu">(</span><span class="op">&amp;</span>maybe_broadcast<span class="op">/</span><span class="dv">1</span><span class="fu">)</span></span>
+<span id="cb437-5"><a href="idiomatic-otp.html#cb437-5" tabindex="-1"></a>    new_ohlcs</span>
+<span id="cb437-6"><a href="idiomatic-otp.html#cb437-6" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb437-7"><a href="idiomatic-otp.html#cb437-7" tabindex="-1"></a></span>
+<span id="cb437-8"><a href="idiomatic-otp.html#cb437-8" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span>symbol, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb437-9"><a href="idiomatic-otp.html#cb437-9" tabindex="-1"></a>    generate_ohlcs<span class="fu">(</span>symbol, trade_event<span class="op">.</span>price, trade_event<span class="op">.</span>trade_time<span class="fu">)</span></span>
+<span id="cb437-10"><a href="idiomatic-otp.html#cb437-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>By introducing the <code>merge_prices/3</code> and <code>generate_ohlcs/3</code> functions, we were able to keep the dirty part of our code small(it grew only to accommodate multiple broadcasts). The new functions are pure and can be easily tested.</p>
 <p>As we modified the interface of the <code>process/2</code> function (by removing the <code>duration</code>), we need to update the <code>Indicator.Ohlc.Worker</code> module to be blissfully not aware that we have different durations:</p>
-<div class="sourceCode" id="cb437"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb437-1"><a href="idiomatic-otp.html#cb437-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc/worker.ex</span></span>
-<span id="cb437-2"><a href="idiomatic-otp.html#cb437-2" tabindex="-1"></a>  <span class="kw">def</span> start_link<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span> <span class="co"># &lt;= duration removed</span></span>
-<span id="cb437-3"><a href="idiomatic-otp.html#cb437-3" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link<span class="fu">(</span><span class="cn">__MODULE__</span>, symbol<span class="fu">)</span>  <span class="co"># &lt;= duration removed</span></span>
-<span id="cb437-4"><a href="idiomatic-otp.html#cb437-4" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb437-5"><a href="idiomatic-otp.html#cb437-5" tabindex="-1"></a></span>
-<span id="cb437-6"><a href="idiomatic-otp.html#cb437-6" tabindex="-1"></a>  <span class="kw">def</span> init<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span>  <span class="co"># &lt;= duration removed</span></span>
-<span id="cb437-7"><a href="idiomatic-otp.html#cb437-7" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase<span class="fu">(</span>symbol<span class="fu">)</span></span>
-<span id="cb437-8"><a href="idiomatic-otp.html#cb437-8" tabindex="-1"></a></span>
-<span id="cb437-9"><a href="idiomatic-otp.html#cb437-9" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>debug<span class="fu">(</span><span class="st">&quot;Initializing new a OHLC worker for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span> <span class="co"># &lt;= duration skipped</span></span>
-<span id="cb437-10"><a href="idiomatic-otp.html#cb437-10" tabindex="-1"></a></span>
-<span id="cb437-11"><a href="idiomatic-otp.html#cb437-11" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb437-12"><a href="idiomatic-otp.html#cb437-12" tabindex="-1"></a></span>
-<span id="cb437-13"><a href="idiomatic-otp.html#cb437-13" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:ok</span>, symbol<span class="fu">}</span>  <span class="co"># &lt;= duration removed</span></span>
-<span id="cb437-14"><a href="idiomatic-otp.html#cb437-14" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb438"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb438-1"><a href="idiomatic-otp.html#cb438-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc/worker.ex</span></span>
+<span id="cb438-2"><a href="idiomatic-otp.html#cb438-2" tabindex="-1"></a>  <span class="kw">def</span> start_link<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span> <span class="co"># &lt;= duration removed</span></span>
+<span id="cb438-3"><a href="idiomatic-otp.html#cb438-3" tabindex="-1"></a>    <span class="cn">GenServer</span><span class="op">.</span>start_link<span class="fu">(</span><span class="cn">__MODULE__</span>, symbol<span class="fu">)</span>  <span class="co"># &lt;= duration removed</span></span>
+<span id="cb438-4"><a href="idiomatic-otp.html#cb438-4" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb438-5"><a href="idiomatic-otp.html#cb438-5" tabindex="-1"></a></span>
+<span id="cb438-6"><a href="idiomatic-otp.html#cb438-6" tabindex="-1"></a>  <span class="kw">def</span> init<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span>  <span class="co"># &lt;= duration removed</span></span>
+<span id="cb438-7"><a href="idiomatic-otp.html#cb438-7" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase<span class="fu">(</span>symbol<span class="fu">)</span></span>
+<span id="cb438-8"><a href="idiomatic-otp.html#cb438-8" tabindex="-1"></a></span>
+<span id="cb438-9"><a href="idiomatic-otp.html#cb438-9" tabindex="-1"></a>    <span class="ot">@logger</span><span class="op">.</span>debug<span class="fu">(</span><span class="st">&quot;Initializing new a OHLC worker for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span> <span class="co"># &lt;= duration skipped</span></span>
+<span id="cb438-10"><a href="idiomatic-otp.html#cb438-10" tabindex="-1"></a></span>
+<span id="cb438-11"><a href="idiomatic-otp.html#cb438-11" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb438-12"><a href="idiomatic-otp.html#cb438-12" tabindex="-1"></a></span>
+<span id="cb438-13"><a href="idiomatic-otp.html#cb438-13" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:ok</span>, symbol<span class="fu">}</span>  <span class="co"># &lt;= duration removed</span></span>
+<span id="cb438-14"><a href="idiomatic-otp.html#cb438-14" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The final update will be to simplify the <code>Indicator.aggregate_ohlcs/1</code> function just to start a single OHLC worker:</p>
-<div class="sourceCode" id="cb438"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb438-1"><a href="idiomatic-otp.html#cb438-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
-<span id="cb438-2"><a href="idiomatic-otp.html#cb438-2" tabindex="-1"></a>  <span class="kw">def</span> aggregate_ohlcs<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb438-3"><a href="idiomatic-otp.html#cb438-3" tabindex="-1"></a>    <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child<span class="fu">(</span></span>
-<span id="cb438-4"><a href="idiomatic-otp.html#cb438-4" tabindex="-1"></a>      <span class="cn">Indicator</span><span class="op">.</span><span class="cn">DynamicSupervisor</span>,</span>
-<span id="cb438-5"><a href="idiomatic-otp.html#cb438-5" tabindex="-1"></a>      <span class="fu">{</span><span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span><span class="op">.</span><span class="cn">Worker</span>, symbol<span class="fu">}</span></span>
-<span id="cb438-6"><a href="idiomatic-otp.html#cb438-6" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb438-7"><a href="idiomatic-otp.html#cb438-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb439"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb439-1"><a href="idiomatic-otp.html#cb439-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
+<span id="cb439-2"><a href="idiomatic-otp.html#cb439-2" tabindex="-1"></a>  <span class="kw">def</span> aggregate_ohlcs<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb439-3"><a href="idiomatic-otp.html#cb439-3" tabindex="-1"></a>    <span class="cn">DynamicSupervisor</span><span class="op">.</span>start_child<span class="fu">(</span></span>
+<span id="cb439-4"><a href="idiomatic-otp.html#cb439-4" tabindex="-1"></a>      <span class="cn">Indicator</span><span class="op">.</span><span class="cn">DynamicSupervisor</span>,</span>
+<span id="cb439-5"><a href="idiomatic-otp.html#cb439-5" tabindex="-1"></a>      <span class="fu">{</span><span class="cn">Indicator</span><span class="op">.</span><span class="cn">Ohlc</span><span class="op">.</span><span class="cn">Worker</span>, symbol<span class="fu">}</span></span>
+<span id="cb439-6"><a href="idiomatic-otp.html#cb439-6" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb439-7"><a href="idiomatic-otp.html#cb439-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We can now test our implementation by running the following once again:</p>
-<div class="sourceCode" id="cb439"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb439-1"><a href="idiomatic-otp.html#cb439-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb439-2"><a href="idiomatic-otp.html#cb439-2" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb439-3"><a href="idiomatic-otp.html#cb439-3" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb439-4"><a href="idiomatic-otp.html#cb439-4" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Indicator.Ohlc.Worker.start_link<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb439-5"><a href="idiomatic-otp.html#cb439-5" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb439-6"><a href="idiomatic-otp.html#cb439-6" tabindex="-1"></a><span class="ex">23:23:00.416</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Broadcasting OHLC: %Indicator.Ohlc{close: <span class="st">&quot;0.68230000&quot;</span>, duration: 1,</span>
-<span id="cb439-7"><a href="idiomatic-otp.html#cb439-7" tabindex="-1"></a><span class="ex">high:</span> <span class="st">&quot;0.68330000&quot;</span>, low: <span class="st">&quot;0.68130000&quot;</span>, open: <span class="st">&quot;0.68160000&quot;</span>, start_time: 1644189720,</span>
-<span id="cb439-8"><a href="idiomatic-otp.html#cb439-8" tabindex="-1"></a><span class="ex">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>}</span></code></pre></div>
+<div class="sourceCode" id="cb440"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb440-1"><a href="idiomatic-otp.html#cb440-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
+<span id="cb440-2"><a href="idiomatic-otp.html#cb440-2" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb440-3"><a href="idiomatic-otp.html#cb440-3" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb440-4"><a href="idiomatic-otp.html#cb440-4" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Indicator.Ohlc.Worker.start_link<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb440-5"><a href="idiomatic-otp.html#cb440-5" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb440-6"><a href="idiomatic-otp.html#cb440-6" tabindex="-1"></a><span class="ex">23:23:00.416</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Broadcasting OHLC: %Indicator.Ohlc{close: <span class="st">&quot;0.68230000&quot;</span>, duration: 1,</span>
+<span id="cb440-7"><a href="idiomatic-otp.html#cb440-7" tabindex="-1"></a><span class="ex">high:</span> <span class="st">&quot;0.68330000&quot;</span>, low: <span class="st">&quot;0.68130000&quot;</span>, open: <span class="st">&quot;0.68160000&quot;</span>, start_time: 1644189720,</span>
+<span id="cb440-8"><a href="idiomatic-otp.html#cb440-8" tabindex="-1"></a><span class="ex">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>}</span></code></pre></div>
 <p>The logged message(s) confirms that our OHLC aggregator logic works as expected using a single process.</p>
 <p>In the case of the OHLC aggregator, we’ve seen that there are some trade-off between running multiple processes(simpler code) vs single process(more complex merging) - it could be unclear what’s the benefit of limiting the usage of processes(especially that they are “almost free”).</p>
 <p>I totally understand. Please treat this chapter as an introduction to the idiomatic Elixir. In the next chapter, we will apply this concept when refactoring the Naive trading strategy to see its practical benefits.</p>
