@@ -779,7 +779,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb453-9"><a href="idiomatic-trading-strategy.html#cb453-9" tabindex="-1"></a>    <span class="kw">end</span></span></code></pre></div>
 <p>We need all the <code>positions</code> to iterate through them, deciding and executing appropriate actions. The <code>settings</code> will be used inside the strategy later, but we will pass it on now to avoid going back and forward later.</p>
 <p>Additionally, we updated the <code>case</code> match to expect a list of updated positions which we will assign to the <code>Trader</code>’s state.</p>
-<div style="page-break-after: always;"></div>
 <p>Now we can modify the <code>Naive.Strategy</code> to handle multiple positions:</p>
 <div class="sourceCode" id="cb454"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb454-1"><a href="idiomatic-trading-strategy.html#cb454-1" tabindex="-1"></a>   <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb454-2"><a href="idiomatic-trading-strategy.html#cb454-2" tabindex="-1"></a>  <span class="kw">def</span> execute<span class="fu">(</span>%<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event, positions, settings<span class="fu">)</span> <span class="kw">do</span></span>
@@ -790,6 +789,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb454-7"><a href="idiomatic-trading-strategy.html#cb454-7" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Task</span><span class="op">.</span>await_many<span class="fu">()</span></span>
 <span id="cb454-8"><a href="idiomatic-trading-strategy.html#cb454-8" tabindex="-1"></a>    <span class="op">|&gt;</span> then<span class="fu">(</span><span class="op">&amp;</span>parse_results<span class="op">/</span><span class="dv">1</span><span class="fu">)</span></span>
 <span id="cb454-9"><a href="idiomatic-trading-strategy.html#cb454-9" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>We need to write most of the functions used above, but we can already see the idea. We will map each of the decisions that we generate to async tasks that execute them. Next, we wait for all of them to finish and parse the results.</p>
 <p>First, we are calling a new function <code>generate_decisions/4</code>, which is a recursive function on top of the existing <code>generate_decision/2</code>:</p>
 <div class="sourceCode" id="cb455"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb455-1"><a href="idiomatic-trading-strategy.html#cb455-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
@@ -811,7 +811,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb455-17"><a href="idiomatic-trading-strategy.html#cb455-17" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb455-18"><a href="idiomatic-trading-strategy.html#cb455-18" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>At this moment, the <code>generate_decisions/4</code> can look like overengineered <code>Enum.map/2</code> function, but we are actually preparing the ground for the consequent updates later in this chapter(to get the rest of the functionality running).</p>
-<div style="page-break-after: always;"></div>
 <p>It’s important to note that we are now passing four arguments into the <code>generate_decision</code> function - we added <code>current_positions</code> and <code>settings</code> - those will be required in the further updates as it was mentioned above. At this moment though, we will update <strong>all</strong> the <code>generate_decision/2</code> clauses to include two additional arguments:</p>
 <div class="sourceCode" id="cb456"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb456-1"><a href="idiomatic-trading-strategy.html#cb456-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb456-2"><a href="idiomatic-trading-strategy.html#cb456-2" tabindex="-1"></a>  <span class="kw">def</span> generate_decision<span class="fu">(</span></span>
@@ -822,6 +821,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb456-7"><a href="idiomatic-trading-strategy.html#cb456-7" tabindex="-1"></a>        _positions, <span class="co"># &lt;= add this 8 times</span></span>
 <span id="cb456-8"><a href="idiomatic-trading-strategy.html#cb456-8" tabindex="-1"></a>       _settings    <span class="co"># &lt;= add this 8 times</span></span>
 <span id="cb456-9"><a href="idiomatic-trading-strategy.html#cb456-9" tabindex="-1"></a>      <span class="fu">)</span> <span class="kw">do</span></span></code></pre></div>
+<div style="page-break-after: always;"></div>
 <p>Now back to the main <code>execute/3</code> function where we are calling <code>execute_decision/3</code>, which we need to update as well(<strong>all</strong> clauses):</p>
 <div class="sourceCode" id="cb457"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb457-1"><a href="idiomatic-trading-strategy.html#cb457-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb457-2"><a href="idiomatic-trading-strategy.html#cb457-2" tabindex="-1"></a>  <span class="kw">defp</span> execute_decision<span class="fu">(</span></span>
@@ -945,7 +945,6 @@ iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
 <span id="cb466-5"><a href="idiomatic-trading-strategy.html#cb466-5" tabindex="-1"></a>    <span class="cn">Trader</span><span class="op">.</span>notify<span class="fu">(</span><span class="va">:settings_updated</span>, settings<span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
 <span id="cb466-6"><a href="idiomatic-trading-strategy.html#cb466-6" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:ok</span>, settings<span class="fu">}</span></span>
 <span id="cb466-7"><a href="idiomatic-trading-strategy.html#cb466-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
 <p>Now, the Trader will handle updating the settings, which we will add next, but before we do that, we should move the <code>update_status/2</code> function into the <code>Naive.Strategy</code> as it will be used from both the <code>DynamicTraderSupervisor</code> and the <code>Naive.Strategy</code>:</p>
 <div class="sourceCode" id="cb467"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb467-1"><a href="idiomatic-trading-strategy.html#cb467-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb467-2"><a href="idiomatic-trading-strategy.html#cb467-2" tabindex="-1"></a>  <span class="kw">def</span> update_status<span class="fu">(</span>symbol, status<span class="fu">)</span> <span class="co"># &lt;= updated to public</span></span>
@@ -1120,6 +1119,7 @@ iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
 <span id="cb477-22"><a href="idiomatic-trading-strategy.html#cb477-22" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb477-23"><a href="idiomatic-trading-strategy.html#cb477-23" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Now we need to deal with the <code>:rebuy</code> decision(previously, we removed the logic notifying the <code>Naive.Leader</code> about the rebuy being triggered).</p>
+<div style="page-break-after: always;"></div>
 <p>In case of rebuy decision we need to add a new position to the positions list which can be done by modifying the <code>generate_decisions/4</code> function:</p>
 <div class="sourceCode" id="cb478"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb478-1"><a href="idiomatic-trading-strategy.html#cb478-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb478-2"><a href="idiomatic-trading-strategy.html#cb478-2" tabindex="-1"></a>  <span class="kw">def</span> generate_decisions<span class="fu">(</span><span class="ot">[</span>position <span class="op">|</span> rest<span class="ot">]</span> <span class="op">=</span> positions, generated_results, trade_event, settings<span class="fu">)</span> <span class="kw">do</span></span>
@@ -1153,6 +1153,7 @@ iex(2)&gt; Naive.start_trading(&quot;ETHUSDT&quot;)
 <span id="cb479-14"><a href="idiomatic-trading-strategy.html#cb479-14" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:ok</span>, new_position<span class="fu">}</span> <span class="co"># &lt;= updated</span></span>
 <span id="cb479-15"><a href="idiomatic-trading-strategy.html#cb479-15" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We updated the whole function body as now it deals with initialising a new position instead of just flipping the <code>rebuy_triggered</code> flag inside the original position.</p>
+<div style="page-break-after: always;"></div>
 <p>We can now run the strategy to confirm that rebuy starts new positions:</p>
 <div class="sourceCode" id="cb480"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb480-1"><a href="idiomatic-trading-strategy.html#cb480-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb480-2"><a href="idiomatic-trading-strategy.html#cb480-2" tabindex="-1"></a><span class="ex">...</span></span>

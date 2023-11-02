@@ -771,6 +771,13 @@ As we are pointing to `Repo` instead of `Naive.Repo`, we need to add an alias at
 alias Naive.Repo
 ```
 
+[Note: At this moment, we will apply the above changes to the `Indicator.Ohlc.Worker` and `Indicator.Ohlc`(
+  
+`apps/indicator/lib/indicator/ohlc/worker.ex` and `apps/indicator/lib/indicator/ohlc.ex`) to avoid breaking the application when we will clean
+up the config in the next step.]
+
+\newpage
+
 That finishes our conversion to hardcoded module names. As we are no longer basing our module on the configuration, we can remove all redundant configuration keys from the main `config.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -812,8 +819,6 @@ end
 
 As we will stub dependencies using `mimic`, we need to `use` it inside the test module.
 
-\newpage
-
 We will be testing the primary entry function, the `Naive.Strategy.execute/3`, where we will first focus on placing a buy order scenario:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -823,6 +828,8 @@ We will be testing the primary entry function, the `Naive.Strategy.execute/3`, w
     # we will put our code here
   end
 ```
+
+\newpage
 
 The simplest scenario will be to pass hardcoded settings, a fresh position(based on those settings) and a trade event(that will trigger the buy order):
 
@@ -903,8 +910,6 @@ ExUnit.start()
 
 We removed all references to the `mox` module and replaced them with calls to the `Mimic.copy/1` function.
 
-\newpage
-
 We are now ready to run our new test:
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -967,7 +972,6 @@ ExUnit provides a helper function for that case as well. We will modify our test
       end)
 
     assert log =~ "0.8"
-    ...
 ```
 
 In the above code, we wrapped our call to the `Naive.Strategy.execute/3` into an anonymous function that we passed as an argument to the `with_log/1` function. The `with_log/1` function returns a tuple containing the result of the passed function and the generated log message(s). We can then assert that the logged message contains the expected value, strengthening our test. We can now rerun our unit test:
@@ -993,8 +997,6 @@ We can't use the `mimic` package to swap the implementation as this is a "runnin
 
 Please note that most of the applications won't need to change the implementation based on the environment as the 3rd party library/package itself will provide some flags to enable/disable the functionality(like sending emails to newly registered users).
 
-\newpage
-
 Let's get back to the `Naive.Strategy` module, where we will bring back the attribute-based `@binance_client`:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -1013,6 +1015,8 @@ Let's get back to the `Naive.Strategy` module, where we will bring back the attr
 ```
 
 We need to update all references to the Binance module's functions to use the `@binance_client` module's attribute.
+
+\newpage
 
 As we are already modifying the `Naive` application, we can follow up by removing the `@logger` and `@pubsub_client` module's attributes in the `Naive.Trader`:
 

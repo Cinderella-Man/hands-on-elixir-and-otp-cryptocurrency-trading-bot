@@ -358,8 +358,6 @@ We need all the `positions` to iterate through them, deciding and executing appr
 
 Additionally, we updated the `case` match to expect a list of updated positions which we will assign to the `Trader`'s state.
 
-\newpage
-
 Now we can modify the `Naive.Strategy` to handle multiple positions:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -373,6 +371,8 @@ Now we can modify the `Naive.Strategy` to handle multiple positions:
     |> then(&parse_results/1)
   end
 ```
+
+\newpage
 
 We need to write most of the functions used above, but we can already see the idea. We will map each of the decisions that we generate to async tasks that execute them. Next, we wait for all of them to finish and parse the results.
 
@@ -401,8 +401,6 @@ First, we are calling a new function `generate_decisions/4`, which is a recursiv
 
 At this moment, the `generate_decisions/4` can look like overengineered `Enum.map/2` function, but we are actually preparing the ground for the consequent updates later in this chapter(to get the rest of the functionality running).
 
-\newpage
-
 It's important to note that we are now passing four arguments into the `generate_decision` function - we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above. At this moment though, we will update **all** the `generate_decision/2` clauses to include two additional arguments:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -416,6 +414,8 @@ It's important to note that we are now passing four arguments into the `generate
        _settings    # <= add this 8 times
       ) do
 ```
+
+\newpage
 
 Now back to the main `execute/3` function where we are calling `execute_decision/3`, which we need to update as well(**all** clauses):
 
@@ -583,8 +583,6 @@ We will start by modifying the `DynamicTraderSupervisor` where we will update th
     {:ok, settings}
   end
 ```
-
-\newpage
 
 Now, the Trader will handle updating the settings, which we will add next, but before we do that, we should move the `update_status/2` function into the `Naive.Strategy` as it will be used from both the `DynamicTraderSupervisor` and the `Naive.Strategy`:
 
@@ -807,6 +805,8 @@ We will start by updating the `generate_decision/4` clause responsible for match
 
 Now we need to deal with the `:rebuy` decision(previously, we removed the logic notifying the `Naive.Leader` about the rebuy being triggered).
 
+\newpage
+
 In case of rebuy decision we need to add a new position to the positions list which can be done by modifying the `generate_decisions/4` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -850,6 +850,8 @@ The final step will be to update the `execute_decision/3` clause that matches th
 ```
 
 We updated the whole function body as now it deals with initialising a new position instead of just flipping the `rebuy_triggered` flag inside the original position.
+
+\newpage
 
 We can now run the strategy to confirm that rebuy starts new positions:
 
