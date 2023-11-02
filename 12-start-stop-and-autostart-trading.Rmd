@@ -69,7 +69,7 @@ Our `start_trading/1` implementation is almost the same as one for the `streamer
         {:ok, _pid} = start_symbol_supervisor(symbol)
 
       pid ->
-        Logger.warn("Trading on #{symbol} already started")
+        Logger.warning("Trading on #{symbol} already started")
         {:ok, _settings} = update_trading_status(symbol, "on")
         {:ok, pid}
     end
@@ -142,7 +142,7 @@ Stop trading will require a change in two places, first inside the `Naive.Dynami
 
     case get_pid(symbol) do
       nil ->
-        Logger.warn("Trading on #{symbol} already stopped")
+        Logger.warning("Trading on #{symbol} already stopped")
         {:ok, _settings} = update_trading_status(symbol, "off")
 
       pid ->
@@ -309,7 +309,7 @@ Next, we will create a `shutdown_trading/1` function inside the `Naive.DynamicSy
 
     case get_pid(symbol) do
       nil ->
-        Logger.warn("Trading on #{symbol} already stopped")
+        Logger.warning("Trading on #{symbol} already stopped")
         {:ok, _settings} = update_trading_status(symbol, "off")
 
       _pid ->
@@ -367,7 +367,7 @@ Let's look at the updated implementation of the "end of trade" handler:
 
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warn(
+        Logger.warning(
           "Tried to restart finished #{symbol} " <>
             "trader that leader is not aware of"
         )
@@ -381,7 +381,7 @@ Let's look at the updated implementation of the "end of trade" handler:
       index ->
         new_traders =
           if settings.status == "shutdown" do # <= refactored code
-            Logger.warn(
+            Logger.warning(
               "The leader won't start a new trader on #{symbol} " <>
                 "as symbol is in the 'shutdown' state"
             )
@@ -416,7 +416,7 @@ The second callback that we need to modify is the `rebuy` triggered:
       ) do
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warn("Rebuy triggered by trader that leader is not aware of")
+        Logger.warning("Rebuy triggered by trader that leader is not aware of")
         {:reply, :ok, state}
 
       index ->
@@ -430,7 +430,7 @@ The second callback that we need to modify is the `rebuy` triggered:
             updated_traders
           else
             if settings.status == "shutdown" do
-              Logger.warn(
+              Logger.warning(
                 "The leader won't start a new trader on #{symbol} " <>
                   "as symbol is in the 'shutdown' state"
               )

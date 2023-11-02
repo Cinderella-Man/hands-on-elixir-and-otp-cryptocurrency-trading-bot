@@ -50,6 +50,7 @@ We can now follow similar steps as previously and add required dependencies (lik
   # /apps/data_warehouse/mix.exs
   defp deps do
     [
+      {:binance, "~> 1.0"},
       {:ecto_sql, "~> 3.0"},
       {:ecto_enum, "~> 1.4"},
       {:phoenix_pubsub, "~> 2.0"},
@@ -59,7 +60,7 @@ We can now follow similar steps as previously and add required dependencies (lik
   end
 ```
 
-Additionally, we added the `phoenix_pubsub` module to be able to subscribe to the PubSub topic and the `streamer` application to be able to use its `Streamer.Binance.TradeEvent` struct.
+Additionally, we added the `phoenix_pubsub`(to subscribe to the PubSub topic), the `streamer` application(to use its `Streamer.Binance.TradeEvent` struct) and the `binance` package(to pattern match it's structs).
 
 We can now jump back to the terminal to install added dependencies and generate a new `Ecto.Repo` module:
 
@@ -800,7 +801,7 @@ Last function in this module will be `stop_worker/1` which uses private `stop_ch
   defp stop_child(args) do
     case Registry.lookup(@registry, args) do
       [{pid, _}] -> DynamicSupervisor.terminate_child(__MODULE__, pid)
-      _ -> Logger.warn("Unable to locate process assigned to #{inspect(args)}")
+      _ -> Logger.warning("Unable to locate process assigned to #{inspect(args)}")
     end
   end
 ```

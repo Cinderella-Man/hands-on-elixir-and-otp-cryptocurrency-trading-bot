@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 14 Store trade events and orders inside the database | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 14 Store trade events and orders inside the database | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 14 Store trade events and orders inside the database | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -127,6 +127,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -361,8 +365,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="18.4.1" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-buy-order-rules"><i class="fa fa-check"></i><b>18.4.1</b> Place a buy order rules</a></li>
 <li class="chapter" data-level="18.4.2" data-path="functional-elixir.html"><a href="functional-elixir.html#race-condition-rules"><i class="fa fa-check"></i><b>18.4.2</b> Race condition rules</a></li>
-<li class="chapter" data-level="18.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>18.4.3</b> Place a sell order rules</a></li>
-<li class="chapter" data-level="18.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>18.4.4</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="18.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>18.4.3</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="18.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>18.4.4</b> Place a sell order rules</a></li>
 <li class="chapter" data-level="18.4.5" data-path="functional-elixir.html"><a href="functional-elixir.html#terminate-trader-rules"><i class="fa fa-check"></i><b>18.4.5</b> Terminate trader rules</a></li>
 <li class="chapter" data-level="18.4.6" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-sell-order-rules"><i class="fa fa-check"></i><b>18.4.6</b> Fetch the sell order rules</a></li>
 <li class="chapter" data-level="18.4.7" data-path="functional-elixir.html"><a href="functional-elixir.html#trigger-rebuy-rules"><i class="fa fa-check"></i><b>18.4.7</b> Trigger rebuy rules</a></li>
@@ -521,14 +525,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb255"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb255-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/mix.exs</span></span>
 <span id="cb255-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb255-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-3" tabindex="-1"></a>    <span class="ot">[</span></span>
-<span id="cb255-4"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-4" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_sql</span>, <span class="st">&quot;~&gt; 3.0&quot;</span><span class="fu">}</span>,</span>
-<span id="cb255-5"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_enum</span>, <span class="st">&quot;~&gt; 1.4&quot;</span><span class="fu">}</span>,</span>
-<span id="cb255-6"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-6" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span><span class="fu">}</span>,</span>
-<span id="cb255-7"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-7" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:postgrex</span>, <span class="st">&quot;&gt;= 0.0.0&quot;</span><span class="fu">}</span>,</span>
-<span id="cb255-8"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-8" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:streamer</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span><span class="fu">}</span></span>
-<span id="cb255-9"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-9" tabindex="-1"></a>    <span class="ot">]</span></span>
-<span id="cb255-10"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Additionally, we added the <code>phoenix_pubsub</code> module to be able to subscribe to the PubSub topic and the <code>streamer</code> application to be able to use its <code>Streamer.Binance.TradeEvent</code> struct.</p>
+<span id="cb255-4"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-4" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:binance</span>, <span class="st">&quot;~&gt; 1.0&quot;</span><span class="fu">}</span>,</span>
+<span id="cb255-5"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_sql</span>, <span class="st">&quot;~&gt; 3.0&quot;</span><span class="fu">}</span>,</span>
+<span id="cb255-6"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-6" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_enum</span>, <span class="st">&quot;~&gt; 1.4&quot;</span><span class="fu">}</span>,</span>
+<span id="cb255-7"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-7" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:phoenix_pubsub</span>, <span class="st">&quot;~&gt; 2.0&quot;</span><span class="fu">}</span>,</span>
+<span id="cb255-8"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-8" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:postgrex</span>, <span class="st">&quot;&gt;= 0.0.0&quot;</span><span class="fu">}</span>,</span>
+<span id="cb255-9"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-9" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:streamer</span>, <span class="va">in_umbrella:</span> <span class="cn">true</span><span class="fu">}</span></span>
+<span id="cb255-10"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-10" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb255-11"><a href="store-trade-events-and-orders-inside-the-database.html#cb255-11" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Additionally, we added the <code>phoenix_pubsub</code>(to subscribe to the PubSub topic), the <code>streamer</code> application(to use its <code>Streamer.Binance.TradeEvent</code> struct) and the <code>binance</code> package(to pattern match it’s structs).</p>
 <p>We can now jump back to the terminal to install added dependencies and generate a new <code>Ecto.Repo</code> module:</p>
 <div class="sourceCode" id="cb256"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb256-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb256-1" tabindex="-1"></a><span class="ex">$</span> mix deps.get</span>
 <span id="cb256-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb256-2" tabindex="-1"></a>  <span class="ex">...</span></span>
@@ -1097,7 +1102,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb288-9"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-9" tabindex="-1"></a>  <span class="kw">defp</span> stop_child<span class="fu">(</span>args<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb288-10"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-10" tabindex="-1"></a>    <span class="kw">case</span> <span class="cn">Registry</span><span class="op">.</span>lookup<span class="fu">(</span><span class="ot">@registry</span>, args<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb288-11"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-11" tabindex="-1"></a>      <span class="ot">[</span><span class="fu">{</span>pid, _<span class="fu">}</span><span class="ot">]</span> <span class="op">-&gt;</span> <span class="cn">DynamicSupervisor</span><span class="op">.</span>terminate_child<span class="fu">(</span><span class="cn">__MODULE__</span>, pid<span class="fu">)</span></span>
-<span id="cb288-12"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-12" tabindex="-1"></a>      _ <span class="op">-&gt;</span> <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Unable to locate process assigned to </span><span class="ot">#{</span>inspect<span class="fu">(</span>args<span class="fu">)</span><span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
+<span id="cb288-12"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-12" tabindex="-1"></a>      _ <span class="op">-&gt;</span> <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Unable to locate process assigned to </span><span class="ot">#{</span>inspect<span class="fu">(</span>args<span class="fu">)</span><span class="ot">}</span><span class="st">&quot;</span><span class="fu">)</span></span>
 <span id="cb288-13"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-13" tabindex="-1"></a>    <span class="kw">end</span></span>
 <span id="cb288-14"><a href="store-trade-events-and-orders-inside-the-database.html#cb288-14" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>That is a full implementation of the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module and it’s almost as slim as one from the last chapter where we leveraged macros to achieve that lightness. Using the <code>Registry</code> is the preferred way to manage a list of identifiable processes. We won’t run into an issue of overusing the atoms(as they are not garbage collected, we could hit that limit sooner or later).</p>

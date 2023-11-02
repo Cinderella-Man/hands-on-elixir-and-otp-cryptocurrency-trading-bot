@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 11 Supervise and autostart streaming | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 11 Supervise and autostart streaming | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 11 Supervise and autostart streaming | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -127,6 +127,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -361,8 +365,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="18.4.1" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-buy-order-rules"><i class="fa fa-check"></i><b>18.4.1</b> Place a buy order rules</a></li>
 <li class="chapter" data-level="18.4.2" data-path="functional-elixir.html"><a href="functional-elixir.html#race-condition-rules"><i class="fa fa-check"></i><b>18.4.2</b> Race condition rules</a></li>
-<li class="chapter" data-level="18.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>18.4.3</b> Place a sell order rules</a></li>
-<li class="chapter" data-level="18.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>18.4.4</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="18.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>18.4.3</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="18.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>18.4.4</b> Place a sell order rules</a></li>
 <li class="chapter" data-level="18.4.5" data-path="functional-elixir.html"><a href="functional-elixir.html#terminate-trader-rules"><i class="fa fa-check"></i><b>18.4.5</b> Terminate trader rules</a></li>
 <li class="chapter" data-level="18.4.6" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-sell-order-rules"><i class="fa fa-check"></i><b>18.4.6</b> Fetch the sell order rules</a></li>
 <li class="chapter" data-level="18.4.7" data-path="functional-elixir.html"><a href="functional-elixir.html#trigger-rebuy-rules"><i class="fa fa-check"></i><b>18.4.7</b> Trigger rebuy rules</a></li>
@@ -708,7 +712,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb170-8"><a href="supervise-and-autostart-streaming.html#cb170-8" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _pid<span class="fu">}</span> <span class="op">=</span> start_streamer<span class="fu">(</span>symbol<span class="fu">)</span></span>
 <span id="cb170-9"><a href="supervise-and-autostart-streaming.html#cb170-9" tabindex="-1"></a></span>
 <span id="cb170-10"><a href="supervise-and-autostart-streaming.html#cb170-10" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
-<span id="cb170-11"><a href="supervise-and-autostart-streaming.html#cb170-11" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span><span class="fu">)</span></span>
+<span id="cb170-11"><a href="supervise-and-autostart-streaming.html#cb170-11" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already started&quot;</span><span class="fu">)</span></span>
 <span id="cb170-12"><a href="supervise-and-autostart-streaming.html#cb170-12" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _settings<span class="fu">}</span> <span class="op">=</span> update_streaming_status<span class="fu">(</span>symbol, <span class="st">&quot;on&quot;</span><span class="fu">)</span></span>
 <span id="cb170-13"><a href="supervise-and-autostart-streaming.html#cb170-13" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, pid<span class="fu">}</span></span>
 <span id="cb170-14"><a href="supervise-and-autostart-streaming.html#cb170-14" tabindex="-1"></a>    <span class="kw">end</span></span>
@@ -773,7 +777,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb175-2"><a href="supervise-and-autostart-streaming.html#cb175-2" tabindex="-1"></a>  <span class="kw">def</span> stop_streaming<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">when</span> is_binary<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb175-3"><a href="supervise-and-autostart-streaming.html#cb175-3" tabindex="-1"></a>    <span class="kw">case</span> get_pid<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb175-4"><a href="supervise-and-autostart-streaming.html#cb175-4" tabindex="-1"></a>      <span class="cn">nil</span> <span class="op">-&gt;</span></span>
-<span id="cb175-5"><a href="supervise-and-autostart-streaming.html#cb175-5" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warn<span class="fu">(</span><span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span><span class="fu">)</span></span>
+<span id="cb175-5"><a href="supervise-and-autostart-streaming.html#cb175-5" tabindex="-1"></a>        <span class="cn">Logger</span><span class="op">.</span>warning<span class="fu">(</span><span class="st">&quot;Streaming on </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st"> already stopped&quot;</span><span class="fu">)</span></span>
 <span id="cb175-6"><a href="supervise-and-autostart-streaming.html#cb175-6" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, _settings<span class="fu">}</span> <span class="op">=</span> update_streaming_status<span class="fu">(</span>symbol, <span class="st">&quot;off&quot;</span><span class="fu">)</span></span>
 <span id="cb175-7"><a href="supervise-and-autostart-streaming.html#cb175-7" tabindex="-1"></a></span>
 <span id="cb175-8"><a href="supervise-and-autostart-streaming.html#cb175-8" tabindex="-1"></a>      pid <span class="op">-&gt;</span></span>
