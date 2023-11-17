@@ -1,5 +1,5 @@
 --- 
-title: "Hands-on Elixir & OTP: Cryptocurrency trading bot"
+title: "Práctica con Elixir y OTP: Bot de Comercio de Criptomonedas"
 author: "Kamil Skowron"
 date: "0.5.1"
 site: bookdown::bookdown_site
@@ -16,21 +16,21 @@ twitter-handle: kamilskowron
 monofont: Consolas.ttf
 ---
 
-# Preface {-}
+# Prefacio {-}
 
-### Want to learn Elixir & OTP by creating a real-world project? {-}
+### ¿Quieres aprender Elixir y OTP creando un proyecto real? {-}
 
 <img src="images/cover.png" width="250" height="324" alt="The book cover" align="right" style="margin: 0 1em 0 1em"/>
 
-With "Hands-on Elixir & OTP: Cryptocurrency trading bot", you will **gain hands-on experience by writing an exciting software project from scratch.** We will explore all the key abstractions and essential principles through iterative implementation improvements.
+Con "Práctica con Elixir y OTP: Bot de Comercio de Criptomonedas", **ganarás experiencia práctica escribiendo un emocionante proyecto de software desde cero.** Exploraremos todas las abstracciones clave y principios esenciales a través de mejoras iterativas en la implementación.
 
-We will start by creating a new umbrella application, subscribing to WebSocket streams, implementing a basic trading flow, and focusing on improving it by expanding on the topics like supervision trees, resiliency, refactoring using macros, utilising the Registry, testing and others.
+Comenzaremos creando una nueva aplicación paraguas, suscribiéndonos a flujos WebSocket, implementando un flujo de comercio básico y centrándonos en mejorarlo expandiendo temas como árboles de supervisión, resiliencia, refactorización usando macros, utilizando el Registro, pruebas y otros.
 
-**This book is 93% complete - chapters 1-21 are finished,** and I'll add more content soon. It's also a loosely written representation of the [Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video course released on YouTube.
+**Este libro está completado en un 93% - los capítulos 1-21 están terminados,** y pronto añadiré más contenido. También es una representación escrita y poco rigurosa del curso en video [Práctica con Elixir y OTP: Bot de Comercio de Criptomonedas](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) publicado en YouTube.
 
-This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Esta obra está licenciada bajo la licencia Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
-**To get notified about updates** to this book just "watch" the [source code's repository](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot), and don't forget to leave a star:
+**Para recibir notificaciones sobre actualizaciones** de este libro, simplemente "vigila" el [repositorio del código fuente](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot) y no olvides dejar una estrella:
 
 ```{r, fig.align="center", out.width="60%", echo=FALSE}
 knitr::include_graphics("images/watch_book_howto.png")
@@ -38,138 +38,138 @@ knitr::include_graphics("images/watch_book_howto.png")
 
 \newpage
 
-## Limit of Liability/Disclaimer of Warranty {-}
+## Límite de Responsabilidad/Descargo de Garantía {-}
 
-**THIS BOOK IS NOT FINANCIAL ADVICE**
+**ESTE LIBRO NO ES ASESORAMIENTO FINANCIERO**
 
-THE SOFTWARE/BOOK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE/BOOK OR THE USE OR OTHER DEALINGS IN THE SOFTWARE/BOOK.
+EL SOFTWARE/LIBRO SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A LAS GARANTÍAS DE COMERCIABILIDAD, APTITUD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. EN NINGÚN CASO LOS AUTORES O TITULARES DE DERECHOS DE AUTOR SERÁN RESPONSABLES DE CUALQUIER RECLAMACIÓN, DAÑOS U OTRA RESPONSABILIDAD, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO U OTRA, QUE SURJA DE, FUERA DE O EN RELACIÓN CON EL SOFTWARE/LIBRO O EL USO U OTROS TRATOS EN EL SOFTWARE/LIBRO.
 
 ## PDF & EPUB {-}
 
-To keep this book up to date and publicly available for people who can't afford to pay for it, I've released it in the HTML format free online at [https://www.elixircryptobot.com](https://www.elixircryptobot.com).
+Para mantener este libro actualizado y disponible públicamente para las personas que no pueden permitirse pagar por él, lo he publicado en formato HTML de forma gratuita en línea en [https://www.elixircryptobot.com](https://www.elixircryptobot.com).
 
-The PDF & EPUB formats are available for purchase on [Gumroad](https://gum.co/cSGdY).
+Los formatos PDF y EPUB están disponibles para su compra en [Gumroad](https://gum.co/cSGdY).
 
-## Preface {-}
+## Prefacio {-}
 
-In recent years [Elixir](https://elixir-lang.org/) programming language gained a lot of interest in the industry.
+En los últimos años, el lenguaje de programación [Elixir](https://elixir-lang.org/) ha ganado mucho interés en la industria.
 
-Its unmatched parallelisation capabilities are unique and powerful, making it a great candidate for highly concurrent systems like the ones trading assets on exchanges.
+Sus capacidades de paralelización inigualables son únicas y poderosas, lo que lo convierte en un gran candidato para sistemas altamente concurrentes como los que negocian activos en bolsas.
 
-In this book, we will go through the development process of a cryptocurrency trading bot in Elixir. We will start ground up and chapter by chapter progress with the implementation ending up with a fully-fledged *naive* trading strategy. We will be designing process supervision trees, describing why specific decisions were taken and how will they impact the system going forward.
+En este libro, recorreremos el proceso de desarrollo de un bot de comercio de criptomonedas en Elixir. Comenzaremos desde cero y capítulo a capítulo progresaremos con la implementación hasta terminar con una estrategia de comercio naive completamente desarrollada. Diseñaremos árboles de supervisión de procesos, describiendo por qué se tomaron decisiones específicas y cómo afectarán al sistema en el futuro.
 
-By any stretch of the imagination, I don't believe that "this is *the only* way"(nor even the best way) to create a cryptocurrency trading bot in Elixir. This book focuses more on building a real-life project and iterating over it, taking decisions on the way as it would happen in a real work environment. Some parts will be "perfect" the first time around, but there are also others, where we will make compromises to "get it to working", and then when the time is right, we will refactor them as we will gain a better understanding of Elixir/OTP and the domain.
+De ninguna manera creo que "esta es la única manera" (ni siquiera la mejor manera) de crear un bot de comercio de criptomonedas en Elixir. Este libro se enfoca más en construir un proyecto de la vida real e iterar sobre él, tomando decisiones en el camino como ocurriría en un entorno de trabajo real. Algunas partes serán "perfectas" a la primera, pero también hay otras, donde haremos compromisos para "hacer que funcione", y luego, cuando sea el momento adecuado, las refactorizaremos a medida que obtengamos un mejor entendimiento de Elixir/OTP y el dominio.
 
-## Who this book is for {-}
+## Para quién es este libro {-}
 
-This book will be an excellent resource for everyone that already knows the basics of Elixir and wants to get a feel of how developing a non-trivial system looks like using it.
+Este libro será un excelente recurso para todos aquellos que ya conocen los conceptos básicos de Elixir y quieren entender cómo se ve el desarrollo de un sistema no trivial utilizando este lenguaje.
 
-Readers do not need deep knowledge about cryptocurrencies to follow along, as I will shy away from crypto/trading jargon as well as will explain it whenever it's unavoidable.
+Los lectores no necesitan un conocimiento profundo sobre criptomonedas para seguir el contenido, ya que evitaré el argot de cripto/comercio y lo explicaré siempre que sea inevitable.
 
-**This is not a book focused on trading strategies, neither it's financial advice to trade at all.** The main focus of this book is to showcase how the implementation of even complex problems can be achieved in Elixir by simple processes working together in an orchestrated manner.
+**Este no es un libro enfocado en estrategias de comercio, ni es un asesoramiento financiero para comerciar en absoluto.** El enfoque principal de este libro es mostrar cómo la implementación de problemas incluso complejos se puede lograr en Elixir mediante procesos simples que trabajan juntos de manera orquestada.
 
-**The strategy described in this book is naive and most probably will lose money**, but that's not the point of this book. **As we will build up the strategy, we will face a spectrum of problems developers face at work. It's a great primer if you want to get your first "project" behind your belt**.
+**La estrategia descrita en este libro es ingenua y lo más probable es que pierda dinero,** pero ese no es el punto de este libro. **A medida que construimos la estrategia, nos enfrentaremos a un espectro de problemas que los desarrolladores enfrentan en el trabajo. Es un excelente primer paso si quieres tener tu primer "proyecto" bajo tu cinturón.**
 
-So, if you've already gone through the motions and learned Elixir and OTP but still feel like you need to get your hands dirty with a "real problem" to "make it stick", this book is for you.
+Entonces, si ya has pasado por el proceso de aprender Elixir y OTP pero aún sientes que necesitas ensuciarte las manos con un "problema real" para que "se asiente", este libro es para ti.
 
-## What this book covers {-}
+## Qué cubre este libro {-}
 
-This book is an ongoing project, and at present, it contains the following chapters:
+Este libro es un proyecto en curso, y actualmente contiene los siguientes capítulos:
 
-* Chapter 1 - Stream live cryptocurrency prices from the Binance WSS
+* Capítulo 1 - Transmisión en vivo de precios de criptomonedas desde Binance WSS
 
-Stream live cryptocurrency prices (trade events) from the Binance exchange. We will create a new umbrella project and a `streamer` application inside it starting grounds up. The streamer application will use a Websocket client called `WebSockex` to connect with the Binance API and receive a live feed. After receiving the event as a JSON string, we will decode it using the `jason` library and convert it to our data struct. We will see decoded trade events logged to the terminal by the end of the chapter.
+Transmitir precios en vivo de criptomonedas (eventos de comercio) desde el intercambio de Binance. Crearemos un nuevo proyecto paraguas y una aplicación `streamer` dentro de él desde cero. La aplicación `streamer` usará un cliente Websocket llamado `WebSockex` para conectarse con la API de Binance y recibir una transmisión en vivo. Después de recibir el evento como una cadena JSON, lo decodificaremos usando la biblioteca `jason` y lo convertiremos en nuestra estructura de datos. Veremos eventos de comercio decodificados registrados en la terminal al final del capítulo.
 
-* Chapter 2 - Create a naive trading strategy - single trader without supervision
+* Capítulo 2 - Crear una estrategia de comercio ingenua - un solo comerciante sin supervisión
 
-In this chapter, we will create our first *naive* trading strategy. We will generate another application inside our umbrella called `naive`. We will put data streamed to our `streamer` application to good use by sending it over to the `naive` application. We will start with a very basic solution consisting of a single process called `trader` that will utilise the `GenServer` behaviour. It will allow us to go through the complete trading cycle and give us something that "works".
+En este capítulo, crearemos nuestra primera estrategia de comercio *ingenua*. Generaremos otra aplicación dentro de nuestro paraguas llamada `naive`. Pondremos los datos transmitidos a nuestra aplicación `streamer` en buen uso enviándolos a la aplicación `naive`. Comenzaremos con una solución muy básica que consiste en un solo proceso llamado `trader` que utilizará el comportamiento `GenServer`. Nos permitirá pasar por el ciclo completo de comercio y darnos algo que "funciona".
 
-* Chapter 3 - Introduce PubSub as a communication method
+* Capítulo 3 - Introducir PubSub como método de comunicación
 
-To allow our trading strategy to scale to multiple parallel traders, we need to find a way to distribute the latest prices (trade events) to those multiple traders. We will introduce PubSub to broadcast messages from the streamer(s) to the trader(s). PubSub will allow us to break hardcoded references between applications in our umbrella and become a pattern that we will utilise moving forward.
+Para permitir que nuestra estrategia de comercio escale a múltiples comerciantes en paralelo, necesitamos encontrar una manera de distribuir los precios más recientes (eventos de comercio) a esos múltiples comerciantes. Introduciremos PubSub para transmitir mensajes desde el/los streamer(s) al/los trader(s). PubSub nos permitirá romper referencias codificadas entre aplicaciones en nuestro paraguas y se convertirá en un patrón que utilizaremos en adelante.
 
-* Chapter 4 - Mock the Binance API
+* Capítulo 4 - Simular la API de Binance
 
-Besides historical prices (trade events), to perform backtesting, we need to be able to mock placing orders and get trade events back as they are filled. In this chapter, we will focus on developing the solution that will allow our traders to "trade" without contacting the Binance exchange(for people without Binance accounts). This will also allow us to backtest our trading strategy.
+Además de precios históricos (eventos de comercio), para realizar backtesting, necesitamos poder simular la colocación de órdenes y recibir eventos de comercio de vuelta a medida que se llenan. En este capítulo, nos enfocaremos en desarrollar la solución que permitirá a nuestros comerciantes "comerciar" sin contactar al intercambio de Binance (para personas sin cuentas de Binance). Esto también nos permitirá hacer backtesting de nuestra estrategia de comercio.
 
-* Chapter 5 - Enable parallel trading on multiple symbols
+Capítulo 5 - Habilitar el comercio paralelo en múltiples símbolos
 
-Our basic strategy implementation from the last chapter is definitely too basic to be used in a "production environment" - it can't be neither scaled nor it is fault-tolerant. In this chapter, we will upgrade our naive strategy to be more resilient. This will require a supervision tree to be created and will allow us to see different supervision strategies in action and understand the motivation behind using and stacking them.
+Nuestra implementación básica de estrategia del último capítulo es definitivamente demasiado básica para ser usada en un "entorno de producción" - no puede ser escalada ni es tolerante a fallos. En este capítulo, actualizaremos nuestra estrategia ingenua para hacerla más resistente. Esto requerirá la creación de un árbol de supervisión y nos permitirá ver diferentes estrategias de supervisión en acción y entender la motivación detrás de su uso y combinación.
 
-* Chapter 6 - Introduce a `buy_down_interval` to make a single trader more profitable
+* Capítulo 6 - Introducir un "intervalo de compra descendente" para hacer un solo comerciante más rentable
 
-At this moment our `Naive.Trader` implementation will blindly place a buy order at the price of the last trade event. Whenever the `Naive.Trader` process will finish trade, a new `Naive.Trader` process will be started and it will end up placing a buy order at the same price as the price of the previous sell order. This will cost us double the fee without gaining any advantage and would cause further complications down the line, so we will introduce a `buy_down_interval` which will allow the `Naive.Trader` processes to place a buy order below the current trade event's price.
+En este momento, nuestra implementación de `Naive.Trader` colocará una orden de compra ciegamente al precio del último evento de comercio. Siempre que el proceso `Naive.Trader` termine un comercio, se iniciará un nuevo proceso `Naive.Trader` y terminará colocando una orden de compra al mismo precio que el precio de la orden de venta anterior. Esto nos costará el doble de la comisión sin obtener ninguna ventaja y causaría complicaciones adicionales más adelante, por lo que introduciremos un "intervalo de compra descendente" que permitirá a los procesos `Naive.Trader` colocar una orden de compra por debajo del precio del evento de comercio actual.
 
-* Chapter 7 - Introduce a trader budget and calculating the quantity
+* Capítulo 7 - Introducir un presupuesto para el comerciante y calcular la cantidad
 
-Since the second chapter, our `Naive.Trader` processes are placing orders with a hardcoded quantity of 100. In this chapter, we will introduce a budget that will be evenly split between the `Naive.Trader` processes using chunks. We will utilize that budget to calculate quantity (to be able to do that we need to fetch further `step_size` information from the Binance API).
+Desde el segundo capítulo, nuestros procesos `Naive.Trader` están colocando órdenes con una cantidad codificada de 100. En este capítulo, introduciremos un presupuesto que se dividirá uniformemente entre los procesos `Naive.Trader` usando partes. Utilizaremos ese presupuesto para calcular la cantidad (para poder hacerlo necesitamos obtener más información del "tamaño del paso" de la API de Binance).
 
-* Chapter 8 - Add support for multiple transactions per order
+* Capítulo 8 - Añadir soporte para múltiples transacciones por orden
 
-Our `Naive.Trader` implementation assumes that our orders will be filled within a single transaction, but this isn't always the case. In this chapter, we will discuss how could we implement the support for multiple transactions per order and race conditions that could occur between the bot and the Binance API.
+Nuestra implementación de `Naive.Trader` asume que nuestras órdenes se llenarán en una sola transacción, pero esto no siempre es el caso. En este capítulo, discutiremos cómo podríamos implementar el soporte para múltiples transacciones por orden y las condiciones de carrera que podrían ocurrir entre el bot y la API de Binance.
 
-* Chapter 9 - Run multiple traders in parallel
+* Capítulo 9 - Ejecutar múltiples comerciantes en paralelo
 
-With PubSub, supervision tree, buy down and budget in place we can progress with scaling the number of traders. This will require further improvements to our trading strategy like introducing a `rebuy_interval`. At the end of this chapter, our trading strategy will be able to start and run multiple traders in parallel.
+Con PubSub, el árbol de supervisión, la compra descendente y el presupuesto en su lugar, podemos avanzar con la escala del número de comerciantes. Esto requerirá más mejoras en nuestra estrategia de comercio, como introducir un "intervalo de recompra". Al final de este capítulo, nuestra estrategia de comercio será capaz de iniciar y ejecutar múltiples comerciantes en paralelo.
 
-* Chapter 10 - Fine-tune trading strategy per symbol
+* Capítulo 10 - Ajustar la estrategia de comercio por símbolo
 
-Currently, the naive strategy works based on settings hardcoded in the `leader` module. To allow for fine-tuning the naive trading strategy per symbol we will introduce a new database together with the table that will store trading settings.
+Actualmente, la estrategia ingenua funciona basada en configuraciones codificadas en el módulo `leader`. Para permitir un ajuste fino de la estrategia de comercio ingenua por símbolo, introduciremos una nueva base de datos junto con la tabla que almacenará las configuraciones de comercio.
 
-* Chapter 11 - Supervise and autostart streaming
+* Capítulo 11 - Supervisar y autocomenzar la transmisión
 
-In the last chapter, we introduced a new database inside the `naive` application to store default settings, in this chapter we will do the same for the `streamer` application. Inside the settings, there will be a `status` flag that will allow us to implement the autostarting functionality on initialization using Task abstraction.
+En el último capítulo, introdujimos una nueva base de datos dentro de la aplicación `naive` para almacenar configuraciones predeterminadas, en este capítulo haremos lo mismo para la aplicación `streamer`. Dentro de las configuraciones, habrá una bandera de "estado" que nos permitirá implementar la funcionalidad de autocomienzo en la inicialización usando la abstracción de Tarea.
 
-* Chapter 12 - Start, stop, shutdown, and autostart trading
+* Capítulo 12 - Iniciar, detener, apagar y autocomenzar el comercio
 
-To follow up after autostarting streaming we will apply the same trick to the trading supervision tree using Task abstraction. We will need to introduce a new supervision level to achieve the correct supervision strategy.
+Para seguir después de autocomenzar la transmisión, aplicaremos el mismo truco al árbol de supervisión de comercio usando la abstracción de Tarea. Necesitaremos introducir un nuevo nivel de supervisión para lograr la estrategia de supervisión correcta.
 
-* Chapter 13 - Abstract duplicated supervision code
+* Capítulo 13 - Abstraer código de supervisión duplicado
 
-As both the `naive` and the `streamer` applications contain almost the same copy-pasted code that allows us to start, stop and autostart workers. We will look into how could we abstract the common parts of that implementation into a single module. We will venture into utilizing the `__using__` macro to get rid of the boilerplate.
+Tanto las aplicaciones `naive` como `streamer` contienen casi el mismo código copiado y pegado que nos permite iniciar, detener y autocomenzar trabajadores. Veremos cómo podríamos abstraer las partes comunes de esa implementación en un solo módulo. Nos aventuraremos en utilizar la macro `__using__` para deshacernos del código repetitivo.
 
-* Chapter 14 - Store trade events and orders inside the database
+* Capítulo 14 - Almacenar eventos de comercio y órdenes dentro de la base de datos
 
-To be able to backtest the trading strategy, we need to have historical prices (trade events) and a list of orders that were placed stored in the database, which will be the focus of this chapter. At this moment, the latest prices (trade events) are broadcasted to PubSub topic and traders are subscribing to it. We will create a new application called `data_warehouse` inside our umbrella that will be responsible for subscribing to the same PubSub topics and storing incoming prices (trade events) in the Postgres database. We will update the `Naive.Trader` module to broadcast orders as traders will place them.
+Para poder hacer backtesting de la estrategia de comercio, necesitamos tener precios históricos (eventos de comercio) y una lista de órdenes que se colocaron almacenadas en la base de datos, lo cual será el enfoque de este capítulo. En este momento, los últimos precios (eventos de comercio) se transmiten al tema de PubSub y los comerciantes se suscriben a él. Crearemos una nueva aplicación llamada `data_warehouse` dentro de nuestro paraguas que será responsable de suscribirse a los mismos temas de PubSub y almacenar los precios entrantes (eventos de comercio) en la base de datos Postgres. Actualizaremos el módulo `Naive.Trader` para transmitir órdenes a medida que los comerciantes las coloquen.
 
-Then we will move on to adding supervision similar to the one from the `naive` and the `streamer` applications but this time we will show how we could avoid using both common module and macros by utilizing the `Registry` module. 
+Luego pasaremos a agregar supervisión similar a la de las aplicaciones `naive` y `streamer`, pero esta vez mostraremos cómo podríamos evitar usar tanto el módulo común como las macros utilizando el módulo `Registry`.
 
-* Chapter 15 - Backtest trading strategy
+* Capítulo 15 - Prueba de retroceso de la estrategia de comercio
 
-In this chapter, we will be backtesting our trading strategy by developing a publisher inside the DataWarehouse application. It will stream trade events from the database to broadcast them to the `TRADE_EVENTS:#{symbol}` PubSub topic. It will use the same topic as data would be streamed directly from the Binance. From the trader's perspective, it won't any difference and will cause normal trading activity that will be stored inside the database to be analyzed later.
+En este capítulo, realizaremos una prueba de retroceso de nuestra estrategia de comercio desarrollando un publicador dentro de la aplicación DataWarehouse. Transmitirá eventos de comercio desde la base de datos para difundirlos en el tema PubSub `TRADE_EVENTS:#{símbolo}`. Usará el mismo tema como si los datos se transmitieran directamente desde Binance. Desde la perspectiva del comerciante, no habrá ninguna diferencia y provocará una actividad comercial normal que se almacenará en la base de datos para analizarla más tarde.
 
-* Chapter 16 - End-to-end testing
+* Capítulo 16 - Pruebas de extremo a extremo
 
-We've reached the stage where we have a decent solution in place, and to ensure that it's still working correctly after any future refactoring, we will add tests. We will start with the "integration"/"end-to-end"(E2E) test, which will confirm that the whole "trading" works. To perform tests at this level, we will need to orchestrate databases together with processes and broadcast trade events from within the test to cause our trading strategy to place orders. We will be able to confirm the right behaviour by checking the database after running the test.
+Hemos llegado a la etapa en la que tenemos una solución decente en su lugar, y para asegurarnos de que aún funcione correctamente después de cualquier refactorización futura, agregaremos pruebas. Comenzaremos con la prueba de "integración"/"extremo a extremo" (E2E), que confirmará que todo el "comercio" funciona. Para realizar pruebas a este nivel, necesitaremos orquestar bases de datos junto con procesos y difundir eventos de comercio desde dentro de la prueba para hacer que nuestra estrategia de comercio coloque órdenes. Podremos confirmar el comportamiento correcto revisando la base de datos después de ejecutar la prueba.
 
-* Chapter 17 - Mox rocks
+* Capítulo 17 - Mox rocks
 
-In the previous chapter, we’ve implemented the end-to-end test that required a lot of prep work, and we were able to see the downsides of this type of tests clearly. This chapter will focus on implementing a more granular test that will utilize the `mox` package to mock out the dependencies of the `Naive.Trader`. We will look into how the Mox works and how we will need to modify our code to use it.
+En el capítulo anterior, implementamos la prueba de extremo a extremo que requería mucho trabajo de preparación, y pudimos ver claramente las desventajas de este tipo de pruebas. Este capítulo se centrará en implementar una prueba más granular que utilizará el paquete `mox` para simular las dependencias del `Naive.Trader`. Veremos cómo funciona Mox y cómo necesitaremos modificar nuestro código para usarlo.
 
-* Chapter 18 - Functional Elixir
+* Capítulo 18 - Elixir funcional
 
-In this chapter, we will venture into the functional world by looking at how could we improve our code to push side effects to the edge. We will revise the `Naive.Trader` code to abstract away our strategy code into a new module called `Naive.Strategy`. From this place, we will reorganise the code to maximise the amount of easily testable pure functions. Finally, we will explore hypothetical implementations that will allow us to inject data into function or even manage effects to aid testability. We will compare those to solutions built into Elixir like the `with` statement.
+En este capítulo, nos aventuraremos en el mundo funcional mirando cómo podríamos mejorar nuestro código para empujar los efectos secundarios al límite. Revisaremos el código de `Naive.Trader` para abstraer nuestro código de estrategia en un nuevo módulo llamado `Naive.Strategy`. Desde este lugar, reorganizaremos el código para maximizar la cantidad de funciones puras fácilmente comprobables. Finalmente, exploraremos implementaciones hipotéticas que nos permitirán inyectar datos en la función o incluso gestionar efectos para ayudar a la comprobabilidad. Compararemos esos con soluciones integradas en Elixir como la declaración `with`.
 
-* Chapter 19 - Idiomatic OTP
+* Capítulo 19 - OTP idiomático
 
-In the last chapter, we were looking into how we could reorganise *the code* to maximise the amount of pure code. In this chapter, we will look into different ways of implementing the OHLC(open-high-low-close) aggregator, considering similar optimisation but expanding to limit the number of processes to aid testability and maintainability.
+En el último capítulo, estábamos viendo cómo podríamos reorganizar el código para maximizar la cantidad de código puro. En este capítulo, veremos diferentes formas de implementar el agregador OHLC (open-high-low-close), considerando una optimización similar pero expandiéndose para limitar el número de procesos para ayudar a la comprobabilidad y mantenibilidad.
 
-* Chapter 20 - Idiomatic trading strategy
+* Capítulo 20 - Estrategia de comercio idiomática
 
-We will use the knowledge gained in the last chapter to revise our Naive trading strategy so we will minimise the number of processes required to trade. We will move the functionalities provided by the `Naive.Leader` and the `Naive.SymbolSupervisor` into our strategy, taking care to put as much of it as possible into the pure part. In the end, our `Naive.Trader` will be able to manage multiple positions(trade cycles), and the vast majority of code previously scattered across multiple modules/processes will become easily testable pure functions inside our `Naive.Strategy`.
+Usaremos el conocimiento adquirido en el último capítulo para revisar nuestra estrategia de comercio Naive de modo que minimicemos el número de procesos necesarios para comerciar. Moveremos las funcionalidades proporcionadas por `Naive.Leader` y `Naive.SymbolSupervisor` a nuestra estrategia, cuidando de poner tanto como sea posible en la parte pura. Al final, nuestro `Naive.Trader` podrá manejar múltiples posiciones (ciclos de comercio), y la gran mayoría del código previamente disperso en múltiples módulos/procesos se convertirá en funciones puras fácilmente comprobables dentro de nuestro `Naive.Strategy`.
 
-## Contributing, Errata and Source code {-}
+## Contribuyendo, Erratas y Código Fuente {-}
 
-The book is written using [R Markdown](http://rmarkdown.rstudio.com/)(it's a very similar syntax to the GitHub markdown but supports many more features including code execution, etc.) and converted to final form (for example PDF) using the [bookdown](https://www.bookdown.org/) app. This means that editing a chapter is as simple as editing the markdown source of that chapter.
+El libro está escrito usando [R Markdown](http://rmarkdown.rstudio.com/)(tiene una sintaxis muy similar al markdown de GitHub pero soporta muchas más características incluyendo la ejecución de código, etc.) y convertido a su forma final (por ejemplo, PDF) utilizando la aplicación [bookdown](https://www.bookdown.org/). Esto significa que editar un capítulo es tan simple como editar la fuente markdown de ese capítulo.
 
-There are two repositories related to this book(both hosted on Github):
+Hay dos repositorios relacionados con este libro (ambos alojados en Github):
 
-* [source code of the book itself](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
-* [code written across the book where the final code of each chapter has its own branch](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
+* [código fuente del propio libro](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
+* [código escrito a lo largo del libro donde el código final de cada capítulo tiene su propia rama](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
 
-In regards to contributions - I would love to follow the standard process of forking, making changes, opening PR(please look is there a branch for the next version and point to it instead of `main`), merging, and releasing a new version of the book.
+En cuanto a las contribuciones - me encantaría seguir el proceso estándar de hacer fork, realizar cambios, abrir PR (por favor, verifica si hay una rama para la próxima versión y apunta a ella en lugar de `main`), fusionar y lanzar una nueva versión del libro.
 
-This books has also the **GitHub Discussions** enabled for both the [book's repo](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions) as well as [source code's repo](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions), please feel welcome to start any discussions related to book there. 
+Este libro también tiene **Discusiones de GitHub** habilitadas tanto para el [repositorio del libro](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions) como para el [repositorio del código fuente](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions), por favor, siéntete bienvenido a iniciar cualquier discusión relacionada con el libro allí.
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages
