@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 11 Supervise and autostart streaming | Elixir y OTP en la práctica: Bot de Trading de Criptomonedas</title>
   <meta name="description" content="Chapter 11 Supervise and autostart streaming | Elixir y OTP en la práctica: Bot de Trading de Criptomonedas" />
-  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 11 Supervise and autostart streaming | Elixir y OTP en la práctica: Bot de Trading de Criptomonedas" />
   <meta property="og:type" content="book" />
@@ -651,32 +651,31 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb167"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb167-1"><a href="supervise-and-autostart-streaming.html#cb167-1" tabindex="-1"></a><span class="co"># /apps/streamer/priv/seed_settings.exs</span></span>
 <span id="cb167-2"><a href="supervise-and-autostart-streaming.html#cb167-2" tabindex="-1"></a><span class="im">require</span> <span class="cn">Logger</span></span>
 <span id="cb167-3"><a href="supervise-and-autostart-streaming.html#cb167-3" tabindex="-1"></a></span>
-<span id="cb167-4"><a href="supervise-and-autostart-streaming.html#cb167-4" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Decimal</span></span>
-<span id="cb167-5"><a href="supervise-and-autostart-streaming.html#cb167-5" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span></span>
-<span id="cb167-6"><a href="supervise-and-autostart-streaming.html#cb167-6" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span></span>
-<span id="cb167-7"><a href="supervise-and-autostart-streaming.html#cb167-7" tabindex="-1"></a></span>
-<span id="cb167-8"><a href="supervise-and-autostart-streaming.html#cb167-8" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Fetching exchange info from Binance to create streaming settings&quot;</span><span class="fu">)</span></span>
-<span id="cb167-9"><a href="supervise-and-autostart-streaming.html#cb167-9" tabindex="-1"></a></span>
-<span id="cb167-10"><a href="supervise-and-autostart-streaming.html#cb167-10" tabindex="-1"></a><span class="fu">{</span><span class="va">:ok</span>, %<span class="fu">{</span><span class="va">symbols:</span> symbols<span class="fu">}}</span> <span class="op">=</span> <span class="cn">Binance</span><span class="op">.</span>get_exchange_info<span class="fu">()</span></span>
-<span id="cb167-11"><a href="supervise-and-autostart-streaming.html#cb167-11" tabindex="-1"></a></span>
-<span id="cb167-12"><a href="supervise-and-autostart-streaming.html#cb167-12" tabindex="-1"></a>timestamp <span class="op">=</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>utc_now<span class="fu">()</span></span>
-<span id="cb167-13"><a href="supervise-and-autostart-streaming.html#cb167-13" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>truncate<span class="fu">(</span><span class="va">:second</span><span class="fu">)</span></span>
-<span id="cb167-14"><a href="supervise-and-autostart-streaming.html#cb167-14" tabindex="-1"></a></span>
-<span id="cb167-15"><a href="supervise-and-autostart-streaming.html#cb167-15" tabindex="-1"></a>base_settings <span class="op">=</span> %<span class="fu">{</span></span>
-<span id="cb167-16"><a href="supervise-and-autostart-streaming.html#cb167-16" tabindex="-1"></a>  <span class="va">symbol:</span> <span class="st">&quot;&quot;</span>,</span>
-<span id="cb167-17"><a href="supervise-and-autostart-streaming.html#cb167-17" tabindex="-1"></a>  <span class="va">status:</span> <span class="st">&quot;off&quot;</span>,</span>
-<span id="cb167-18"><a href="supervise-and-autostart-streaming.html#cb167-18" tabindex="-1"></a>  <span class="va">inserted_at:</span> timestamp,</span>
-<span id="cb167-19"><a href="supervise-and-autostart-streaming.html#cb167-19" tabindex="-1"></a>  <span class="va">updated_at:</span> timestamp</span>
-<span id="cb167-20"><a href="supervise-and-autostart-streaming.html#cb167-20" tabindex="-1"></a><span class="fu">}</span></span>
-<span id="cb167-21"><a href="supervise-and-autostart-streaming.html#cb167-21" tabindex="-1"></a></span>
-<span id="cb167-22"><a href="supervise-and-autostart-streaming.html#cb167-22" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Inserting default settings for symbols&quot;</span><span class="fu">)</span></span>
-<span id="cb167-23"><a href="supervise-and-autostart-streaming.html#cb167-23" tabindex="-1"></a></span>
-<span id="cb167-24"><a href="supervise-and-autostart-streaming.html#cb167-24" tabindex="-1"></a>maps <span class="op">=</span> symbols</span>
-<span id="cb167-25"><a href="supervise-and-autostart-streaming.html#cb167-25" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span>%<span class="fu">{</span>base_settings <span class="op">|</span> <span class="va">symbol:</span> <span class="op">&amp;</span><span class="dv">1</span><span class="ot">[</span><span class="st">&quot;symbol&quot;</span><span class="ot">]</span><span class="fu">}))</span></span>
-<span id="cb167-26"><a href="supervise-and-autostart-streaming.html#cb167-26" tabindex="-1"></a></span>
-<span id="cb167-27"><a href="supervise-and-autostart-streaming.html#cb167-27" tabindex="-1"></a><span class="fu">{</span>count, <span class="cn">nil</span><span class="fu">}</span> <span class="op">=</span> <span class="cn">Repo</span><span class="op">.</span>insert_all<span class="fu">(</span><span class="cn">Settings</span>, maps<span class="fu">)</span></span>
-<span id="cb167-28"><a href="supervise-and-autostart-streaming.html#cb167-28" tabindex="-1"></a></span>
-<span id="cb167-29"><a href="supervise-and-autostart-streaming.html#cb167-29" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Inserted settings for </span><span class="ot">#{</span>count<span class="ot">}</span><span class="st"> symbols&quot;</span><span class="fu">)</span></span></code></pre></div>
+<span id="cb167-4"><a href="supervise-and-autostart-streaming.html#cb167-4" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Repo</span></span>
+<span id="cb167-5"><a href="supervise-and-autostart-streaming.html#cb167-5" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">Settings</span></span>
+<span id="cb167-6"><a href="supervise-and-autostart-streaming.html#cb167-6" tabindex="-1"></a></span>
+<span id="cb167-7"><a href="supervise-and-autostart-streaming.html#cb167-7" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Fetching exchange info from Binance to create streaming settings&quot;</span><span class="fu">)</span></span>
+<span id="cb167-8"><a href="supervise-and-autostart-streaming.html#cb167-8" tabindex="-1"></a></span>
+<span id="cb167-9"><a href="supervise-and-autostart-streaming.html#cb167-9" tabindex="-1"></a><span class="fu">{</span><span class="va">:ok</span>, %<span class="fu">{</span><span class="va">symbols:</span> symbols<span class="fu">}}</span> <span class="op">=</span> <span class="cn">Binance</span><span class="op">.</span>get_exchange_info<span class="fu">()</span></span>
+<span id="cb167-10"><a href="supervise-and-autostart-streaming.html#cb167-10" tabindex="-1"></a></span>
+<span id="cb167-11"><a href="supervise-and-autostart-streaming.html#cb167-11" tabindex="-1"></a>timestamp <span class="op">=</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>utc_now<span class="fu">()</span></span>
+<span id="cb167-12"><a href="supervise-and-autostart-streaming.html#cb167-12" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>truncate<span class="fu">(</span><span class="va">:second</span><span class="fu">)</span></span>
+<span id="cb167-13"><a href="supervise-and-autostart-streaming.html#cb167-13" tabindex="-1"></a></span>
+<span id="cb167-14"><a href="supervise-and-autostart-streaming.html#cb167-14" tabindex="-1"></a>base_settings <span class="op">=</span> %<span class="fu">{</span></span>
+<span id="cb167-15"><a href="supervise-and-autostart-streaming.html#cb167-15" tabindex="-1"></a>  <span class="va">symbol:</span> <span class="st">&quot;&quot;</span>,</span>
+<span id="cb167-16"><a href="supervise-and-autostart-streaming.html#cb167-16" tabindex="-1"></a>  <span class="va">status:</span> <span class="st">&quot;off&quot;</span>,</span>
+<span id="cb167-17"><a href="supervise-and-autostart-streaming.html#cb167-17" tabindex="-1"></a>  <span class="va">inserted_at:</span> timestamp,</span>
+<span id="cb167-18"><a href="supervise-and-autostart-streaming.html#cb167-18" tabindex="-1"></a>  <span class="va">updated_at:</span> timestamp</span>
+<span id="cb167-19"><a href="supervise-and-autostart-streaming.html#cb167-19" tabindex="-1"></a><span class="fu">}</span></span>
+<span id="cb167-20"><a href="supervise-and-autostart-streaming.html#cb167-20" tabindex="-1"></a></span>
+<span id="cb167-21"><a href="supervise-and-autostart-streaming.html#cb167-21" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Inserting default settings for symbols&quot;</span><span class="fu">)</span></span>
+<span id="cb167-22"><a href="supervise-and-autostart-streaming.html#cb167-22" tabindex="-1"></a></span>
+<span id="cb167-23"><a href="supervise-and-autostart-streaming.html#cb167-23" tabindex="-1"></a>maps <span class="op">=</span> symbols</span>
+<span id="cb167-24"><a href="supervise-and-autostart-streaming.html#cb167-24" tabindex="-1"></a>  <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="op">&amp;</span><span class="fu">(</span>%<span class="fu">{</span>base_settings <span class="op">|</span> <span class="va">symbol:</span> <span class="op">&amp;</span><span class="dv">1</span><span class="ot">[</span><span class="st">&quot;symbol&quot;</span><span class="ot">]</span><span class="fu">}))</span></span>
+<span id="cb167-25"><a href="supervise-and-autostart-streaming.html#cb167-25" tabindex="-1"></a></span>
+<span id="cb167-26"><a href="supervise-and-autostart-streaming.html#cb167-26" tabindex="-1"></a><span class="fu">{</span>count, <span class="cn">nil</span><span class="fu">}</span> <span class="op">=</span> <span class="cn">Repo</span><span class="op">.</span>insert_all<span class="fu">(</span><span class="cn">Settings</span>, maps<span class="fu">)</span></span>
+<span id="cb167-27"><a href="supervise-and-autostart-streaming.html#cb167-27" tabindex="-1"></a></span>
+<span id="cb167-28"><a href="supervise-and-autostart-streaming.html#cb167-28" tabindex="-1"></a><span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Inserted settings for </span><span class="ot">#{</span>count<span class="ot">}</span><span class="st"> symbols&quot;</span><span class="fu">)</span></span></code></pre></div>
 <p>Don’t forget to run the seeding script before progressing forward:</p>
 <div class="sourceCode" id="cb168"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb168-1"><a href="supervise-and-autostart-streaming.html#cb168-1" tabindex="-1"></a><span class="ex">$</span> cd apps/streamer</span>
 <span id="cb168-2"><a href="supervise-and-autostart-streaming.html#cb168-2" tabindex="-1"></a><span class="ex">$</span> mix run priv/seed_settings.exs</span>
