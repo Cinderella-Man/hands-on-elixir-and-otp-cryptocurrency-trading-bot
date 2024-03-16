@@ -1,0 +1,259 @@
+Chapter 22
+
+# 80/20 win with pure logic
+
+## Objectives
+- testing the pure logic
+
+## Testing the pure logic
+
+We worked hard across the last few chapters to make our code more testable. We wandered into the world of mocking and mimicking to allow us to write end-to-end tests, but we didn't really reap the benefits of the fact that we made a substantial part of our code pure.
+
+In this chapter, we will cover most of our trading strategy with tests to showcase the value of pure/non-pure code segregation.
+
+We will start by removing all "hello world" tests that were generated when we were creating each of the umbrella apps - all of them look the same:
+
+```
+  test "greets the world" do
+    assert $app.hello() == :world
+  end
+```
+
+After taking care of this nuisance, we can now focus on testing our strategy.
+
+We will start by opening the `apps/naive/test/naive/strategy_test.exs` where we will add tests of `generate_decision/4` function. We will test each clause starting with the first (returning `:place_buy_order`):
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/lib/strategy_test.exs
+  @tag :unit
+  test "Generating place buy order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: "1.0"
+             },
+             generate_position(%{
+               budget: "10.0",
+               buy_down_interval: "0.01"
+             }),
+             :ignored,
+             :ignored
+           ) == {:place_buy_order, "0.99000000", "10.00000000"}
+  end
+```
+
+The above test checks that the function returns': place_buy_order' in case of a lack of buy/sell order. Inside the test, we are using a helper function that we need to add below:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/lib/strategy_test.exs
+  defp generate_position(data) do
+    %{
+      id: 1_678_920_020_426,
+      symbol: "XRPUSDT",
+      profit_interval: "0.005",
+      rebuy_interval: "0.01",
+      rebuy_notified: false,
+      budget: "10.0",
+      buy_order: nil,
+      sell_order: nil,
+      buy_down_interval: "0.01",
+      tick_size: "0.00010000",
+      step_size: "1.00000000"
+    }
+    |> Map.merge(data)
+    |> then(&struct(Strategy.Position, &1))
+  end
+```
+
+At this moment, we should already be able to run the above test:
+
+```
+$ MIX_ENV=test mix test.unit
+...
+==> naive
+...
+3 tests, 0 failures, 1 excluded
+```
+
+We will now take care of the remaining clauses of `generate_decision/4` function:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/lib/strategy_test.exs
+  @tag :unit
+  test "Generating skip decision as buy and sell already placed(race condition occurred)" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               buyer_order_id: 123
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 order_id: 123,
+                 status: "FILLED"
+               },
+               sell_order: %Binance.OrderResponse{}
+             }),
+             :ignored,
+             :ignored
+           ) == :skip
+  end
+
+  @tag :unit
+  test "Generating place sell order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{},
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 status: "FILLED",
+                 price: "1.00"
+               },
+               sell_order: nil,
+               profit_interval: "0.01",
+               tick_size: "0.0001"
+             }),
+             :ignored,
+             :ignored
+           ) == {:place_sell_order, "1.0120"}
+  end
+
+  @tag :unit
+  test "Generating fetch buy order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               buyer_order_id: 1234
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 order_id: 1234
+               }
+             }),
+             :ignored,
+             :ignored
+           ) == :fetch_buy_order
+  end
+
+  @tag :unit
+  test "Generating finish position decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{},
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               },
+               sell_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               }
+             }),
+             :ignored,
+             %{status: "on"}
+           ) == :finished
+  end
+
+  @tag :unit
+  test "Generating exit position decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{},
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               },
+               sell_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               }
+             }),
+             :ignored,
+             %{status: "shutdown"}
+           ) == :exit
+  end
+
+  @tag :unit
+  test "Generating fetch sell order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               seller_order_id: 1234
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{},
+               sell_order: %Binance.OrderResponse{
+                 order_id: 1234
+               }
+             }),
+             :ignored,
+             :ignored
+           ) == :fetch_sell_order
+  end
+
+  @tag :unit
+  test "Generating rebuy decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: "0.89"
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: "1.00"
+               },
+               rebuy_interval: "0.1",
+               rebuy_notified: false
+             }),
+             [:position],
+             %{status: "on", chunks: 2}
+           ) == :rebuy
+  end
+
+  @tag :unit
+  test "Generating skip(rebuy) decision because rebuy is already notified" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: "0.89"
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: "1.00"
+               },
+               rebuy_interval: "0.1",
+               rebuy_notified: true
+             }),
+             [:position],
+             %{status: "on", chunks: 2}
+           ) == :skip
+  end
+
+  @tag :unit
+  test "Generating skip rebuy decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: "0.9"
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: "1.00"
+               },
+               rebuy_interval: "0.1",
+               rebuy_notified: false
+             }),
+             [:position],
+             %{status: "on", chunks: 1}
+           ) == :skip
+  end
+```
+
+This brings us to 12 tests:
+
+```
+$ MIX_ENV=test mix test.unit
+...
+==> naive
+...
+12 tests, 0 failures, 1 excluded
+```
+
+The above tests are straightforward and uneventful, but that's good. They prove that tests of pure code are easy to write and maintain. 
+
+Furthermore, besides the `generate_decision/4` function, we also have `generate_decisions/4`, `parse_results/1` and helper methods that are all pure functions. After a little bit of math, we can work out that out of 424 lines, 262 lines contain pure code - that's a whopping 61%.
+
+The above shows that we can gain great coverage and easy maintainability by splitting our business logic into pure and effectful functions. This approach is the most pragmatic execution of functional programming and can easily be proven to bring quantitative benefits.
+
+In this chapter, we've tested our trading strategy, emphasizing the simplicity gained from separating pure/non-pure code.
+
+[Note] Please remember to run the `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_22)
