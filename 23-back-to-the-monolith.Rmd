@@ -232,7 +232,7 @@ defmodule Hedgehog.Streaming.Binance.DynamicStreamerSupervisor do
 ...
   alias Hedgehog.Streaming.Binance.Worker
   alias Hedgehog.Repo
-  alias Hedgehog.Streaming.Binance.Schema.Settings
+  alias Hedgehog.Streaming.Settings
 ...
   defp start_child(args) do
     DynamicSupervisor.start_child(
@@ -259,7 +259,7 @@ defmodule Hedgehog.Streaming.Settings do
 
   schema "streaming_settings" do
     field(:symbol, :string)
-    field(:streaming_status, SettingsStatusEnum)
+    field(:status, SettingsStatusEnum)
 
     timestamps()
   end
@@ -272,7 +272,7 @@ and:
 # /lib/hedgehog/streaming/settings_status_enum.ex
 import EctoEnum
 
-defenum(Hedgehog.Streaming.SettingsStatusEnum, :streaming_status, [:on, :off])
+defenum(Hedgehog.Streaming.SettingsStatusEnum, :status, [:on, :off])
 ```
 
 ### application
@@ -331,7 +331,7 @@ Next, we will copy the seeding script's code from `/apps/streamer/priv/seed_sett
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/seeds.exs
 alias Hedgehog.Repo
-alias Hedgehog.Streaming.Binance.Schema.Settings
+alias Hedgehog.Streaming.Settings
 
 binance_client = Application.compile_env(:hedgehog, :binance_client)
 ```
@@ -348,10 +348,43 @@ config :hedgehog,
   ...
 ```
 
-With the above changes, the reintegration of the `Streamer` app is finished, and we can test that everything works up to this point:
+### Deps
+
+We need to add a couple of new dependencies that the streaming code is using:
+
+ ```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+  defp deps do
+    [
+      ...
+      {:ecto_enum, "~> 1.4"},
+      {:websockex, "~> 0.4.2"}
+```
+
+With the above changes, the reintegration of the `Streamer` app is finished. We need to remember about getting new deps, running migrations, seeding database and we can test that everything works up to this point:
 
 ```
+$ mix deps.get
+...
+$ mix ecto.migrate
+...
+$ mix run priv/repo/seeds.exs
+...
 $ iex -S mix phx.server
 ...
-
+iex(1)> Hedgehog.Streaming.Binance.start_streaming("XRPUSDT")
+...
+[info] Binance streamer is connecting to websocket stream for XRPUSDT trade events
+{:ok, #PID<0.801.0>}
+[debug] Trade event received XRPUSDT@0.55080000
+BREAK: (a)bort (A)bort with dump (c)ontinue (p)roc info (i)nfo
+       (l)oaded (v)ersion (k)ill (D)b-tables (d)istribution
+^C
+$ iex -S mix phx.server
+...
+[info] Binance streamer is connecting to websocket stream for XRPUSDT trade events
+[debug] Trade event received XRPUSDT@0.55240000
+iex(1)> Hedgehog.Streaming.Binance.stop_streaming("XRPUSDT")
+[info] Stopping streaming XRPUSDT trade events
+...
 ```
