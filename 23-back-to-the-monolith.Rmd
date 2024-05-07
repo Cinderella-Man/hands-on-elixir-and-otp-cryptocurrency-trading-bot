@@ -8,6 +8,7 @@ Chapter 23
 - reintegrating the 'core' app
 - reintegrating the `binance_mock` app
 - reintegrating the `streamer` app
+- reintegrating the `naive` app
 
 ## Reverting the course to the monolith
 
@@ -48,7 +49,7 @@ With the Phoenix app skeleton in place, we can move on to reintegrating the umbr
 
 We will start with the `core` app, as it is used/referenced by other apps in the umbrella.
 
-It contains just a single module called `Core.Struct.TradeEvent` (inside the `apps/core/lib/core/struct/trade_event.ex` file) which we will rename to `Hedgehog.Trading.TradeEvent` inside the newly created Phoenix app (we need to create a new `trading` directory inside the `/lib/hedgehog` and paste the `trade_event.ex` file inside).
+It contains just a single module called `Core.Struct.TradeEvent` (inside the `apps/core/lib/core/struct/trade_event.ex` file) which we will rename to `Hedgehog.Exchange.TradeEvent` inside the newly created Phoenix app (we need to create a new `exchange` directory inside the `/lib/hedgehog` and paste the `trade_event.ex` file inside).
 
 Besides the `TradeEvent` module, the `core` application supervises the `PubSub` supervision tree. After a quick check inside the `/lib/hedgehog/application.ex` file, we can confirm that Phoenix already uses PubSub:
 
@@ -70,10 +71,10 @@ $ iex -S mix phx.server
 ...
 [info] Running HedgehogWeb.Endpoint with Bandit 1.4.2 at 127.0.0.1:4000 (http)
 ...
-iex(1)> alias Hedgehog.Trading.TradeEvent
+iex(1)> alias Hedgehog.Exchange.TradeEvent
 ...
 iex(2)> %TradeEvent{}
-%Hedgehog.Trading.TradeEvent{
+%Hedgehog.Exchange.TradeEvent{
 ...
 }
 ```
@@ -98,13 +99,13 @@ config :hedgehog,
   ]
 ```
 
-Moving on to the main file of interest - `apps/binance_mock/lib/binance_mock.ex` which we will move to a new directory called `exchange` inside `/lib/hedgehog` path(resulting in `/lib/hedgehog/exchange/binance_mock.ex` filepath).
+Moving on to the main file of interest - `apps/binance_mock/lib/binance_mock.ex`, which we will move to the `/lib/hedgehog/exchange` directory.
 
 Inside the module, we need to apply the following changes:
 change the module name to `Hedgehog.Exchange.BinanceMock`
-update the alias to the `Core.Struct.TradeEvent` struct to be `Hedgehog.Trading.TradeEvent`
+update the alias to the `Core.Struct.TradeEvent` struct to be `Hedgehog.Exchange.TradeEvent`
 update references to the `Core.PubSub` with `Hedgehog.PubSub`
-extract to boolean config flag to an module's attribute and use it inside the `get_exchange_info/0` function:
+extract to boolean config flag to a module's attribute and use it inside the `get_exchange_info/0` function:
 ```{r, engine = 'elixir', eval = FALSE}
   # /lib/hedgehog/exchange/binance_mock.ex
   @use_cached_exchange_info Application.compile_env!(:hedgehog, [
@@ -178,44 +179,44 @@ The above confirms that we now have a `BinanceMock` process running in the backg
 
 ## Reintegrating the `streamer` app
 
-In the case of the `streamer` app, there are multiple files to move, so we will first create a new `/lib/hedgehog/streaming`(inside the new Phoenix app) directory and then copy both the `/apps/streamer/lib/streamer` directory and the `/apps/streamer/lib/streamer.ex` file into that new directory.
+In the case of the `streamer` app, there are multiple files to move, so we will first create a new `/lib/hedgehog/streamer`(inside the new Phoenix app) directory and then copy both the `/apps/streamer/lib/streamer` directory and the `/apps/streamer/lib/streamer.ex` file into that new directory.
 
 As we will be updating/renaming all of those files, we will use this opportunity to place all of them inside the `Binance` namespace.
 
-We now need to modify each file starting with renaming `/lib/hedgehog/streaming/streamer.ex` to `/lib/hedgehog/streaming/binance.ex` and updating the module name and alias:
+We now need to modify each file starting with renaming `/lib/hedgehog/streamer/streamer.ex` to `/lib/hedgehog/streamer/binance.ex` and updating the module name and alias:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/binance.ex
-defmodule Hedgehog.Streaming.Binance do
+# /lib/hedgehog/streamer/binance.ex
+defmodule Hedgehog.Streamer.Binance do
   ...
-  alias Hedgehog.Streaming.Binance.DynamicStreamerSupervisor
+  alias Hedgehog.Streamer.Binance.DynamicStreamerSupervisor
 ```
 
-The next step will be to update the `/lib/hedgehog/streaming/streamer` directory to `/lib/hedgehog/streaming/binance`. We will now move on to the files inside this directory.
+The next step will be to update the `/lib/hedgehog/streamer/streamer` directory to `/lib/hedgehog/streamer/binance`. We will now move on to the files inside this directory.
 
 ### Supervisor
 
 Starting with the `supervisor.ex` file, we need to update the module's name and alias:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/binance/supervisor.ex
-defmodule Hedgehog.Streaming.Binance.Supervisor do
+# /lib/hedgehog/streamer/binance/supervisor.ex
+defmodule Hedgehog.Streamer.Binance.Supervisor do
    ...
-   alias Hedgehog.Streaming.Binance.DynamicStreamerSupervisor
+   alias Hedgehog.Streamer.Binance.DynamicStreamerSupervisor
 ```
 
 Moving forward, we can remove the `repo.ex` file as we will use the `Hedgehog.Repo` module to work with the database.
 
 ### Worker
 
-Next, we will rename the `/lib/hedgehog/streaming/binance/binance.ex` to  `/lib/hedgehog/streaming/binance/worker.ex` - mainly to avoid "binance/binance" name after we added the namespace. Following the filename change, we need to update the module's name and a couple of references to the `Core` module:
+Next, we will rename the `/lib/hedgehog/streamer/binance/binance.ex` to  `/lib/hedgehog/streamer/binance/worker.ex` - mainly to avoid "binance/binance" name after we added the namespace. Following the filename change, we need to update the module's name and a couple of references to the `Core` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/binance/worker.ex
-defmodule Hedgehog.Streaming.Binance.Worker do
+# /lib/hedgehog/streamer/binance/worker.ex
+defmodule Hedgehog.Streamer.Binance.Worker do
 ...
   defp process_event(%{"e" => "trade"} = event) do
-    trade_event = %Hedgehog.Trading.TradeEvent{ # <= updated
+    trade_event = %Hedgehog.Exchange.TradeEvent{ # <= updated
 ...
     Phoenix.PubSub.broadcast(
       Hedgehog.PubSub, # <= updated
@@ -227,12 +228,12 @@ defmodule Hedgehog.Streaming.Binance.Worker do
 Next, we will update the `dynamic_streamer_supervisor.ex`, where we will update the module's name and all the aliases:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/binance/dynamic_streamer_supervisor.ex
-defmodule Hedgehog.Streaming.Binance.DynamicStreamerSupervisor do
+# /lib/hedgehog/streamer/binance/dynamic_streamer_supervisor.ex
+defmodule Hedgehog.Streamer.Binance.DynamicStreamerSupervisor do
 ...
-  alias Hedgehog.Streaming.Binance.Worker
   alias Hedgehog.Repo
-  alias Hedgehog.Streaming.Settings
+  alias Hedgehog.Streamer.Binance.Worker
+  alias Hedgehog.Streamer.Settings
 ...
   defp start_child(args) do
     DynamicSupervisor.start_child(
@@ -245,15 +246,15 @@ defmodule Hedgehog.Streaming.Binance.DynamicStreamerSupervisor do
 
 ### schema/settings.ex and schema/streaming_status_enum.ex
 
-We will move the `/lib/hedgehog/streaming/binance/schema/settings.ex` file to `/lib/hedgehog/streaming/settings.ex` and the `/lib/hedgehog/streaming/binance/schema/streaming_status_enum.ex` file to 
-`/lib/hedgehog/streaming/settings_status_enum.ex`. We can now remove the empty `/lib/hedgehog/streaming/binance/schema` directory. Both of those modules need their modules' names and references updated:
+We will move the `/lib/hedgehog/streamer/binance/schema/settings.ex` file to `/lib/hedgehog/streamer/settings.ex` and the `/lib/hedgehog/streamer/binance/schema/streaming_status_enum.ex` file to 
+`/lib/hedgehog/streamer/settings_status_enum.ex`. We can now remove the empty `/lib/hedgehog/streamer/binance/schema` directory. Both of those modules need their modules' names and references updated:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/settings.ex
-defmodule Hedgehog.Streaming.Settings do
+# /lib/hedgehog/streamer/settings.ex
+defmodule Hedgehog.Streamer.Settings do
   use Ecto.Schema
 
-  alias Hedgehog.Streaming.SettingsStatusEnum
+  alias Hedgehog.Streamer.SettingsStatusEnum
 
   @primary_key {:id, :binary_id, autogenerate: true}
 
@@ -269,51 +270,51 @@ end
 and:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/settings_status_enum.ex
+# /lib/hedgehog/streamer/settings_status_enum.ex
 import EctoEnum
 
-defenum(Hedgehog.Streaming.SettingsStatusEnum, :status, [:on, :off])
+defenum(Hedgehog.Streamer.SettingsStatusEnum, :status, [:on, :off])
 ```
 
 ### application
 
-The final file that we need to look into is `/lib/hedgehog/streaming/binance/application.ex`, where we will look into children who were supervised by the `streamer` app:
+The final file that we need to look into is `/lib/hedgehog/streamer/binance/application.ex`, where we will look into children who were supervised by the `streamer` app:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/hedgehog/streaming/binance/application.ex
+# /lib/hedgehog/streamer/binance/application.ex
     children = [
       {Streamer.Repo, []},
       {Streamer.Supervisor, []}
     ]
 ```
 
-We don't need to worry about the `Streamer.Repo` as we will use `Hedgehog.Repo`. On the other hand, the `Streamer.Supervisor` which we renamed to `Hedgehog.Streaming.Binance.Supervisor` needs to be added to the main `Hedgehog.Application` module:
+We don't need to worry about the `Streamer.Repo` as we will use `Hedgehog.Repo`. On the other hand, the `Streamer.Supervisor` which we renamed to `Hedgehog.Streamer.Binance.Supervisor` needs to be added to the main `Hedgehog.Application` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/application.ex
     children = [
       ...
-      Hedgehog.Streaming.Binance.Supervisor
+      Hedgehog.Streamer.Binance.Supervisor
     ]
 ```
 
-We can now remove `/lib/hedgehog/streaming/binance/application.ex` as it is no longer required.
+We can now remove `/lib/hedgehog/streamer/binance/application.ex` as it is no longer required.
 
 ### DB migrations and seeding
 
- Streaming depends on the database tables and settings(seed data). We will start by copying `apps/streamer/priv/repo/migrations/20210203184805_create_settings.exs` migration to `/priv/repo/migrations`(and renaming the file to `20210203184805_create_streaming_settings.ex`) directory and update the most of the code inside:
+ Streaming depends on the database tables and settings(seed data). We will start by copying `apps/streamer/priv/repo/migrations/20210203184805_create_settings.exs` migration to `/priv/repo/migrations`(and renaming the file to `20210203184805_create_streamer_settings.ex`) directory and update the most of the code inside:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /priv/repo/migrations/20210203184805_create_streaming_settings.exs
-defmodule Hedgehog.Repo.Migrations.CreateStreamingSettings do
+# /priv/repo/migrations/20210203184805_create_streamer_settings.exs
+defmodule Hedgehog.Repo.Migrations.CreateStreamerSettings do
   use Ecto.Migration
 
-  alias Hedgehog.Streaming.SettingsStatusEnum
+  alias Hedgehog.Streamer.SettingsStatusEnum
 
   def change do
     SettingsStatusEnum.create_type()
 
-    create table(:streaming_settings, primary_key: false) do
+    create table(:streamer_settings, primary_key: false) do
       add(:id, :uuid, primary_key: true)
       add(:symbol, :text, null: false)
       add(:status, SettingsStatusEnum.type(), default: "off", null: false)
@@ -321,7 +322,7 @@ defmodule Hedgehog.Repo.Migrations.CreateStreamingSettings do
       timestamps()
     end
 
-    create(unique_index(:streaming_settings, [:symbol]))
+    create(unique_index(:streamer_settings, [:symbol]))
   end
 end
 ```
@@ -331,7 +332,7 @@ Next, we will copy the seeding script's code from `/apps/streamer/priv/seed_sett
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/seeds.exs
 alias Hedgehog.Repo
-alias Hedgehog.Streaming.Settings
+alias Hedgehog.Streamer.Settings
 
 binance_client = Application.compile_env(:hedgehog, :binance_client)
 ```
@@ -372,7 +373,7 @@ $ mix run priv/repo/seeds.exs
 ...
 $ iex -S mix phx.server
 ...
-iex(1)> Hedgehog.Streaming.Binance.start_streaming("XRPUSDT")
+iex(1)> Hedgehog.Streamer.Binance.start_streaming("XRPUSDT")
 ...
 [info] Binance streamer is connecting to websocket stream for XRPUSDT trade events
 {:ok, #PID<0.801.0>}
@@ -384,7 +385,17 @@ $ iex -S mix phx.server
 ...
 [info] Binance streamer is connecting to websocket stream for XRPUSDT trade events
 [debug] Trade event received XRPUSDT@0.55240000
-iex(1)> Hedgehog.Streaming.Binance.stop_streaming("XRPUSDT")
+iex(1)> Hedgehog.Streamer.Binance.stop_streaming("XRPUSDT")
 [info] Stopping streaming XRPUSDT trade events
 ...
 ```
+
+The above confirms that we start and stop streaming, and upon startup, streaming starts on its own when enabled in the database.
+
+## Reintegrating the `naive` app
+
+++ code	
+++ config
+++ migrations
+++ seed
+++ tests
