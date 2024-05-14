@@ -394,8 +394,308 @@ The above confirms that we start and stop streaming, and upon startup, streaming
 
 ## Reintegrating the `naive` app
 
-++ code	
-++ config
-++ migrations
-++ seed
-++ tests
+We will kick off the `naive` application reintegration by creating a new directory called "strategy" inside the "/lib/hedgehog/", where we will place both the `naive.ex` file and the `naive` directory(both originally located inside the "/apps/naive/lib/").
+
+### `Naive.ex`
+
+We can update the module name and aliases inside the `naive.ex` file:
+
+ ```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive.ex
+defmodule Hedgehog.Strategy.Naive do
+  ..
+  alias Hedgehog.Strategy.Naive.DynamicTraderSupervisor
+  alias Hedgehog.Strategy.Naive.Trader
+```
+
+### `strategy.ex` -> `formula.ex`
+
+Moving on to the `naive` directory, first, we will rename the `strategy.ex` file to `formula.ex` and update the references inside:
+
+ ```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/formula.ex
+defmodule Hedgehog.Strategy.Naive.Formula do
+  alias Hedgehog.Exchange.TradeEvent
+  alias Decimal, as: D
+  alias Hedgehog.Repo
+  alias Hedgehog.Strategy.Naive.Settings
+
+  require Logger
+
+  @binance_client Application.compile_env(:hedgehog, :binance_client)
+
+  ...
+  defp broadcast_order(%Binance.Order{} = order) do
+    Phoenix.PubSub.broadcast( # <= updated
+      Hedgehog.PubSub,
+      "ORDERS:#{order.symbol}",
+      order
+    )
+  end
+```
+
+### `trader.ex`
+
+Next, we will update the `trader.ex`:
+
+ ```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/trader.ex
+defmodule Hedgehog.Strategy.Naive.Trader do
+  ...
+  alias Hedgehog.Exchange.TradeEvent
+  alias Hedgehog.Strategy.Naive.Formula
+```
+
+as well as all update all references to:
+- `Naive.Strategy` or `Strategy` to `Formula`
+- `Core.PubSub` to `Hedgehog.PubSub`
+
+### `supervisor.ex`
+
+Similarly, for the `supervisor.ex` file, we need to update the module name and alias:
+
+  ```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/supervisor.ex
+defmodule Hedgehog.Strategy.Naive.Supervisor do
+  ...
+  alias Hedgehog.Strategy.Naive.DynamicTraderSupervisor
+```
+
+### `dynamic_trader_supervisor.ex`
+
+For the `dynamic_trader_supervisor.ex` file, we need to update the module name, aliases and all the references to the `Strategy` module:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/dynamic_trader_supervisor.ex
+defmodule Hedgehog.Strategy.Naive.DynamicTraderSupervisor do
+  ...
+  alias Hedgehog.Repo
+  alias Hedgehog.Strategy.Naive.Settings
+  alias Hedgehog.Strategy.Naive.Formula
+  alias Hedgehog.Strategy.Naive.Trader
+  ...
+  # three occurrences of `Strategy.update_status/2` call
+  Strategy.update_status(...) -> Formula.update_status(...)
+```
+
+### Repo and `schema` files
+
+As we will use `Hedgehog.Repo`, we can remove the `/lib/hedgehog/strategy/naive/repo.ex` file.
+
+We will move both the `schema/settings.ex` and the `schema/trading_status_enum.ex` out of the `schema` directory into the main Naive's strategy directory(`/lib/hedgehog/strategy/naive`). We can now remove the empty `schema` directory.
+
+In line with the other Enum modules' changes, we will update the file name from `/lib/hedgehog/strategy/naive/trading_status_enum.ex` to `/lib/hedgehog/strategy/naive/settings_status_enum.ex`.
+
+Inside the file, we will update the module name inside the `defenum`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/settings_status_enum.ex
+defenum(Hedgehog.Strategy.Naive.SettingsStatusEnum, :naive_trading_status, [:on, :off, :shutdown])
+```
+
+Moving on to the `settings.ex` file, where we need to update the module name, alias as well as table name and status enum module:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/settings_status_enum.ex
+defmodule Hedgehog.Strategy.Naive.Settings do
+  ...
+  alias Hedgehog.Strategy.Naive.SettingsStatusEnum
+  ...
+  schema "naive_strategy_settings" do
+    ...
+    field(:status, SettingsStatusEnum)
+```
+
+### `application.ex`
+
+The final file that we copied across from the `naive` umbrella app's is `application.ex`, where we will look into the supervised `children` list. It was supervising the `Naive.Repo`, which we don't need any more and `Naive.Supervisor`, which we renamed and need to put into our new main `application.ex` file:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/application.ex
+  def start(_type, _args) do
+    children = [
+      ...
+      Hedgehog.Strategy.Naive.Supervisor
+```
+
+After the above addition, we can remove the `/lib/hedgehog/strategy/naive/application.ex` file.
+
+### Migration and seeding
+
+First, we will move two migration files from the `/apps/naive/priv/repo/migrations/` to `/priv/repo/migrations`. We will rename the `20210202223209_create_settings.exs` to `20210202223209_create_naive_strategy_settings.exs` where we will update the module name and all references to modules and table name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210202223209_create_naive_strategy_settings.exs
+defmodule Hedgehog.Repo.Migrations.CreateNaiveStrategySettings do
+  ...
+  alias Hedgehog.Strategy.Naive.SettingsStatusEnum
+
+  def change do
+    SettingsStatusEnum.create_type()
+
+    create table(:naive_strategy_settings, primary_key: false) do
+      ...
+      add(:status, SettingsStatusEnum.type(), default: "off", null: false)
+    ...
+
+    create(unique_index(:naive_strategy_settings, [:symbol]))
+```
+
+Next, we will rename the `20210205232303_update_trading_status.exs` to `20210205232303_update_naive_strategy_settings_status.exs` where we will update the module name and all references to modules:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210205232303_update_naive_strategy_settings_status.exs
+defmodule Hedgehog.Repo.Migrations.UpdateNaiveStrategySettingsStatus do
+  ...
+  def change do
+    Ecto.Migration.execute "ALTER TYPE naive_trading_status ADD VALUE IF NOT EXISTS 'shutdown'"
+```
+
+Finally, we need to merge the code that seeds the naive's strategy settings into the `/priv/repo/seeds.exs` file:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/seeds.exs
+alias Hedgehog.Streamer.Settings, as: StreamerSettings # <= updated
+alias Hedgehog.Strategy.Naive.Settings, as: NaiveStrategySettings # <= added
+...
+Logger.info("Inserting default streamer settings for symbols") # <= updated
+...
+{count, nil} = Repo.insert_all(StreamerSettings, maps) # <= updated
+
+Logger.info("Inserted streamer settings for #{count} symbols") # <= updated
+
+# below added at the end
+%{
+  chunks: chunks,
+  budget: budget,
+  buy_down_interval: buy_down_interval,
+  profit_interval: profit_interval,
+  rebuy_interval: rebuy_interval
+} = Application.compile_env(:hedgehog, [:strategy, :naive]).defaults
+
+base_settings = %{
+  symbol: "",
+  chunks: chunks,
+  budget: Decimal.new(budget),
+  buy_down_interval: Decimal.new(buy_down_interval),
+  profit_interval: Decimal.new(profit_interval),
+  rebuy_interval: Decimal.new(rebuy_interval),
+  status: "off",
+  inserted_at: timestamp,
+  updated_at: timestamp
+}
+
+Logger.info("Inserting default naive strategy settings for symbols")
+
+maps = symbols
+  |> Enum.map(&(%{base_settings | symbol: &1["symbol"]}))
+
+{count, nil} = Repo.insert_all(NaiveStrategySettings, maps)
+
+Logger.info("Inserted naive strategy settings for #{count} symbols")
+```
+
+### Configuration
+
+The seeding script above requires additional configuration that we will add now to the `/config/config.exs` file:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/config.exs
+config :hedgehog,
+  ...
+  strategy: [
+    naive: [
+      defaults: [
+        chunks: 5,
+        budget: 1000,
+        buy_down_interval: "0.0001",
+        profit_interval: "-0.0012",
+        rebuy_interval: "0.001"
+      ]
+    ]
+  ]
+```
+
+### Tests
+
+The final part of the `naive` application that we need to copy across are tests located in `/apps/naive/test`. We will create new directories `/test/hedgehog/strategy` and paste there the `/apps/naive/test/naive_test.exs` file and `/apps/naive/test/naive` directory.
+
+First, we will update the `naive_test.exs` by updating its module name and aliases:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /test/hedgehog/strategy/naive_test.exs
+defmodule Hedgehog.Strategy.NaiveTest do
+  ...
+  doctest Hedgehog.Strategy.Naive
+
+  alias Hedgehog.Exchange.Order # <= to be migrated...
+  alias Hedgehog.Strategy.Naive.Settings, as: TradingSettings
+  alias Hedgehog.Exchange.TradeEvent
+```
+
+Next, we will rename the `/test/hedgehog/strategy/naive/strategy_test.exs` to `/test/hedgehog/strategy/naive/formula_test.exs` and update its module name and aliases:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /test/hedgehog/strategy/naive_test.exs
+defmodule Hedgehog.Strategy.Naive.FormulaTest do
+  ...
+  alias Hedgehog.Exchange.BinanceMock
+  alias Hedgehog.Exchange.TradeEvent
+  alias Hedgehog.Strategy.Naive.Formula
+  ...
+  # update all references to `Strategy` with `Formula`
+```
+
+Finally, we will overwrite the `test_helper.exs` based on the one from the `naive` app:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /test/test_helper.exs
+ExUnit.start(capture_log: true)
+
+Application.ensure_all_started(:mimic)
+
+Mimic.copy(Hedgehog.Exchange.BinanceMock)
+Mimic.copy(Phoenix.PubSub)
+```
+
+### Dependencies
+
+The final part of the integration will be to move dependencies to the `mix.exs` file:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+  defp deps do
+    [
+       ...
+       {:mimic, "~> 1.7", only: [:test, :integration]}
+```
+
+The final test will be to fetch the required deps and run the unit tests:
+
+```
+$ mix deps.get
+...
+TODO: drop, create, migrate, seed
+...
+$ mix test --only unit --no-start
+...
+......
+Finished in 0.1 seconds (0.1s async, 0.00s sync)
+17 tests, 0 failures, 6 excluded
+```
+
+We will see a lot of warnings as we haven't yet migrated the `DataWarehouse` application. Either way, we received the confirmation that unit tests ran successfully. We are also able to run the application to see that it can go through the trading cycle:
+
+```
+$ iex -S mix phx.server
+...
+iex(1)> alias Hedgehog.Strategy.Naive
+...
+iex(2)> alias Hedgehog.Streamer.Binance
+...
+iex(3)> Binance.start_streaming("XRPUSDT")
+...
+iex(4)> Naive.start_trading("XRPUSDT")
+```
+
+## Reintegrating the `data_warehouse` app
