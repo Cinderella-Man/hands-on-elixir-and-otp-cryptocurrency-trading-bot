@@ -118,7 +118,9 @@ extract to boolean config flag to a module's attribute and use it inside the `ge
     case @use_cached_exchange_info do
     ...
 ```
-update the `get_cached_exchange_info/0` function to point to the new location of the `exchange_info.json` file:
+
+Update the `get_cached_exchange_info/0` function to point to the new location of the `exchange_info.json` file:
+
 ```{r, engine = 'elixir', eval = FALSE}
   # /lib/hedgehog/exchange/binance_mock.ex    
   defp get_cached_exchange_info do
@@ -560,7 +562,8 @@ alias Hedgehog.Strategy.Naive.Settings, as: NaiveStrategySettings # <= added
 ...
 Logger.info("Inserting default streamer settings for symbols") # <= updated
 ...
-{count, nil} = Repo.insert_all(StreamerSettings, maps) # <= updated
+# updated, `on_conflict` added
+{count, nil} = Repo.insert_all(StreamerSettings, maps, on_conflict: :nothing)
 
 Logger.info("Inserted streamer settings for #{count} symbols") # <= updated
 
@@ -571,7 +574,7 @@ Logger.info("Inserted streamer settings for #{count} symbols") # <= updated
   buy_down_interval: buy_down_interval,
   profit_interval: profit_interval,
   rebuy_interval: rebuy_interval
-} = Application.compile_env(:hedgehog, [:strategy, :naive]).defaults
+} = Application.compile_env(:hedgehog, [:strategy, :naive, :defaults])
 
 base_settings = %{
   symbol: "",
@@ -590,7 +593,7 @@ Logger.info("Inserting default naive strategy settings for symbols")
 maps = symbols
   |> Enum.map(&(%{base_settings | symbol: &1["symbol"]}))
 
-{count, nil} = Repo.insert_all(NaiveStrategySettings, maps)
+{count, nil} = Repo.insert_all(NaiveStrategySettings, maps, on_conflict: :nothing)
 
 Logger.info("Inserted naive strategy settings for #{count} symbols")
 ```
@@ -605,13 +608,13 @@ config :hedgehog,
   ...
   strategy: [
     naive: [
-      defaults: [
+      defaults: %{
         chunks: 5,
         budget: 1000,
         buy_down_interval: "0.0001",
         profit_interval: "-0.0012",
         rebuy_interval: "0.001"
-      ]
+      }
     ]
   ]
 ```
@@ -675,7 +678,9 @@ The final test will be to fetch the required deps and run the unit tests:
 ```
 $ mix deps.get
 ...
-TODO: drop, create, migrate, seed
+$ mix ecto.migrate
+...
+$ mix run priv/repo/seeds.exs
 ...
 $ mix test --only unit --no-start
 ...
@@ -696,6 +701,272 @@ iex(2)> alias Hedgehog.Streamer.Binance
 iex(3)> Binance.start_streaming("XRPUSDT")
 ...
 iex(4)> Naive.start_trading("XRPUSDT")
+...
+[info] Position (XRPUSDT/1715703392316): Placing a BUY order @ 0.50650000, quantity: 394.86000000
+[info] Position (XRPUSDT/1715704251578): The BUY order is now partially filled
+[info] Position (XRPUSDT/1715704251578): The BUY order is now filled. Placing a SELL order @ 0.50690000, quantity: 394.86000000
+[info] Position (XRPUSDT/1715704251578): The SELL order is now partially filled
+[info] Position (XRPUSDT/1715704251578): Trade cycle finished
+[info] Position (XRPUSDT/1715704342038): Placing a BUY order @ 0.50680000, quantity: 394.63000000
 ```
 
+The above confirms that our trading strategy works - we have successfully integrated the `naive` app. Things will be easier from now on.
+
 ## Reintegrating the `data_warehouse` app
+
+Inside the new Phoenix application, we will reintegrate the previously named `data_warehoure` app into `data/collector` and `data/publisher` "namespaces".
+
+We will start by creating a new directory called `data` inside the `lib/headgehog` directory. Inside the `data` directory, we will create a `collector` directory. We will update all the "subscriber_*" modules to "collector_*".
+
+We will kick off the transition by copying files from the `/apps/data_warehouse/lib/data_warehouse/` directory to `/lib/hedgehog/` and renaming them as follows:
+
+`subscriber_supervisor.ex` -> `data/collector/collector_supervisor.ex`
+`subscriber/dynamic_supervisor.ex` -> `data/collector/dynamic_worker_supervisor.ex`
+`subscriber/worker.ex` -> `data/collector/worker.ex`
+`publisher.ex` -> `data/publisher.ex`
+`schema/order.ex` -> `exchange/order.ex`
+`schema/trade_event.ex` -> `exchange/trade_event.ex`
+`schema/subscriber_settings.ex` -> `data/collector/settings.ex`
+`schema/subscriber_status_enum.ex` -> `data/collector/settings_status_enum.ex`
+`../data_warehouse.ex` -> `data/collector.ex`
+
+Now, we will update the new(copied/renamed) files one by one.
+
+### `exchange/order.ex`
+
+We will start with `exchange/order.ex`, where we will update the module name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/exchange/order.ex
+defmodule Hedgehog.Exchange.Order do
+```
+
+### `exchange/trade_event.ex`
+
+This file got overwritten by the contents from the `data_warehoure` app - we just need to update the module name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/exchange/trade_event.ex
+defmodule Hedgehog.Exchange.TradeEvent do
+```
+
+### `data/publisher.ex`
+
+This module uses tons of other modules, including `Repo` - we need to update all of these:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/publisher.ex
+defmodule Hedgehog.Data.Publisher do
+...
+  alias Hedgehog.Repo
+  alias Hedgehog.Exchange.TradeEvent
+  ...
+  def start(arg) do # <= renamed the `start_link/1` function 
+    ...
+  end
+  ...
+  def run(%{
+    ...
+ }) do
+    ...
+    Repo.transaction(
+      fn ->
+        from(te in TradeEvent,
+          ...
+        )
+        |> Repo.stream()
+    ...
+  end
+
+  defp publish_trade_event(%TradeEvent{} = trade_event) do
+    new_trade_event =
+      struct(
+        TradeEvent,
+        ...
+      )
+
+    Phoenix.PubSub.broadcast(
+      Hedgehog.PubSub,
+      ...
+    )
+...
+```
+
+### `data/collector.ex`
+
+This module was an interface for both collectors and publishers. From now on, it will only cater for collectors:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector.ex
+defmodule Hedgehog.Data.Collector do
+  @moduledoc """
+ Documentation for `Hedgehog.Data.Collector`.
+ """
+  alias Hedgehog.Data.Collector.DynamicWorkerSupervisor
+
+  def start_storing(stream, symbol) do
+    ...
+    |> DynamicWorkerSupervisor.start_worker()
+  end
+
+  def stop_storing(stream, symbol) do
+    ...
+    |> DynamicWorkerSupervisor.stop_worker()
+  end
+
+  # remove `publish_data/1`
+```
+
+### `data/collector/collector_supervisor.ex`
+
+In the case of the main collector supervisor, we need to update the aliases:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/collector_supervisor.ex
+defmodule Hedgehog.Data.Collector.CollectorSupervisor do
+...
+  alias Hedgehog.Data.Collector.DynamicWorkerSupervisor
+...
+  @registry :collector_workers
+...
+  def init(_args) do
+    children = [
+      ...
+      {DynamicWorkerSupervisor, []},
+      {Task,
+        fn ->
+          DynamicWorkerSupervisor.autostart_workers()
+        end}
+     ]
+```
+
+### `/data/collector/dynamic_worker_supervisor.ex`
+
+In the case of the dynamic worker supervisor that we renamed, we need to update the module name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/dynamic_worker_supervisor.ex
+defmodule Hedgehog.Data.Collector.DynamicWorkerSupervisor do
+  ...
+  alias Hedgehog.Repo
+  alias Hedgehog.Data.Collector.Settings
+  alias Hedgehog.Data.Collector.Worker
+  ...
+  @registry :collector_workers
+  ...
+  def autostart_workers do
+    Repo.all(
+      from(s in Settings,
+   ...
+  defp update_status(topic, status)
+       when is_binary(topic) and is_binary(status) do
+ %Settings{
+  ...
+```
+
+### `/data/collector/settings_status_enum.ex`
+
+As in the case of other settings' status enums - we need to update the module name and field name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/settings_status_enum.ex
+import EctoEnum
+
+defenum(Hedgehog.Data.Collector.SettingsStatusEnum, :status, [:on, :off])
+```
+
+### `/data/collector/settings.ex`
+
+For the settings schema, we need to update module name, aliases, and table name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/settings.ex
+defmodule Hedgehog.Data.Collector.Settings do
+  ...
+  alias Hedgehog.Data.Collector.SettingsStatusEnum
+  ...
+  schema "collector_settings" do
+    ...
+    field(:status, SettingsStatusEnum)
+```
+
+### `/data/collector/worker.ex`
+
+The final module from the `data_warehouse` app is a collector worker, where we will update the module name and a few references:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/worker.ex
+defmodule Hedgehog.Data.Collector.Worker do
+  ...
+  alias Hedgehog.Exchange.Order           # <= added
+  alias Hedgehog.Exchange.TradeEvent # <= added
+  alias Hedgehog.Repo                             # <= added
+  ...
+  def init(topic) do
+    Logger.info("Collector worker is subscribing to #{topic}")
+
+    Phoenix.PubSub.subscribe(
+      Hedgehog.PubSub,
+      ...
+     )
+  ...
+  def handle_info(%TradeEvent{} = trade_event, state) do
+    ...
+
+    struct!(TradeEvent, opts)
+    |> Repo.insert()
+  ...
+  def handle_info(%Binance.Order{} = order, state) do
+    ...
+
+    struct(Order, data)
+    |> Map.merge(%{
+      ...
+    })
+    |> Repo.insert(
+    ...
+  ...
+  defp via_tuple(topic) do
+    {:via, Registry, {collector_workers, topic}}
+```
+
+This finishes the module updates. We can move on to the other files from the `data_warehouse` application.
+
+### Migrations
+
+We will copy three migration files across from the `data_warehouse` app (the `/apps/data_warehouse/priv/repo/migrations/` directory) to the new Phoenix application (the `priv/repo/migrations/` directory).
+
+In the case of the `20210227230123_create_subscriber_settings.exs`, we need to rename it to `20210227230123_create_collector_settings.exs`.
+
+For all three of the migration files, we need to update module names:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210222224514_create_trade_events.exs
+defmodule Hedgehog.Repo.Migrations.CreateTradeEvents do
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210222224522_create_orders.exs
+defmodule Hedgehog.Repo.Migrations.CreateOrders do
+```
+
+for the final file we will also change alias and table name:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210227230123_create_collector_settings.exs
+defmodule Hedgehog.Repo.Migrations.CreateSubscriberSettings do
+  ...
+  alias Hedgehog.Data.Collector.SettingsStatusEnum
+
+  def change do
+    SettingsStatusEnum.create_type()
+
+    create table(:collector_settings, primary_key: false) do
+      ...
+      add(:status, SettingsStatusEnum.type(), default: "off", null: false)
+    ...
+    create(unique_index(:collector_settings, [:topic]))
+```
+
+The above changes finish the integration of the `data_warehouse` application. We can go ahead and drop the database, set the application again, and confirm that it still works:
+
