@@ -5,7 +5,7 @@ Chapter 23
 ## Objectives
 - reverting the course to the monolith
 - creating a new Phoenix app
-- reintegrating the 'core' app
+- reintegrating the `core` app
 - reintegrating the `binance_mock` app
 - reintegrating the `streamer` app
 - reintegrating the `naive` app
@@ -47,11 +47,11 @@ $ mix ecto.create
 
 With the Phoenix app skeleton in place, we can move on to reintegrating the umbrella apps' contents into it.
 
-## Reintegrating the 'core' app
+## Reintegrating the `core` app
 
 We will start with the `core` app, as it is used/referenced by other apps in the umbrella.
 
-It contains just a single module called `Core.Struct.TradeEvent` (inside the `apps/core/lib/core/struct/trade_event.ex` file) which we will rename to `Hedgehog.Exchange.TradeEvent` inside the newly created Phoenix app (we need to create a new `exchange` directory inside the `/lib/hedgehog` and paste the `trade_event.ex` file inside).
+It contains just a single module called `Core.Struct.TradeEvent` (inside the `apps/core/lib/core/struct/trade_event.ex` file) which we will rename to `Hedgehog.Exchange.TradeEvent` inside the newly created Phoenix app (we need to create a new `exchange` directory inside the `/lib/hedgehog` and paste the updated `trade_event.ex` file inside).
 
 Besides the `TradeEvent` module, the `core` application supervises the `PubSub` supervision tree. After a quick check inside the `/lib/hedgehog/application.ex` file, we can confirm that Phoenix already uses PubSub:
 
@@ -85,7 +85,9 @@ iex(2)> %TradeEvent{}
 
 The `binance_mock` app is used by both the `naive` and `streamer` apps, so we will need to focus on it next.
 
-First, we will find a new home for the cached exchange info file which was previously based in `/apps/binance_mock/test/assets/exchange_info.json`. We will create a new directory called `/priv/cache` where we will paste the `exchange_info.json` file.
+First, we will find a new home for the cached exchange info file which was previously based in
+
+`/apps/binance_mock/test/assets/exchange_info.json`. We will create a new directory called `/priv/cache` where we will paste the `exchange_info.json` file.
 
 Next, we will take care of configuration that was deciding should we use the cached exchange info file mentioned above - inside the new application it will look as follows:
 
@@ -104,10 +106,11 @@ config :hedgehog,
 Moving on to the main file of interest - `apps/binance_mock/lib/binance_mock.ex`, which we will move to the `/lib/hedgehog/exchange` directory.
 
 Inside the module, we need to apply the following changes:
-change the module name to `Hedgehog.Exchange.BinanceMock`
-update the alias to the `Core.Struct.TradeEvent` struct to be `Hedgehog.Exchange.TradeEvent`
-update references to the `Core.PubSub` with `Hedgehog.PubSub`
-extract to boolean config flag to a module's attribute and use it inside the `get_exchange_info/0` function:
+
+- change the module name to `Hedgehog.Exchange.BinanceMock`
+- update the alias to the `Core.Struct.TradeEvent` struct to be `Hedgehog.Exchange.TradeEvent`
+- update references to the `Core.PubSub` with `Hedgehog.PubSub`
+- extract to boolean config flag to a module's attribute and use it inside the `get_exchange_info/0` function:
 ```{r, engine = 'elixir', eval = FALSE}
   # /lib/hedgehog/exchange/binance_mock.ex
   @use_cached_exchange_info Application.compile_env!(:hedgehog, [
@@ -120,9 +123,7 @@ extract to boolean config flag to a module's attribute and use it inside the `ge
     case @use_cached_exchange_info do
     ...
 ```
-
-Update the `get_cached_exchange_info/0` function to point to the new location of the `exchange_info.json` file:
-
+- Update the `get_cached_exchange_info/0` function to point to the new location of the `exchange_info.json` file:
 ```{r, engine = 'elixir', eval = FALSE}
   # /lib/hedgehog/exchange/binance_mock.ex    
   defp get_cached_exchange_info do
@@ -160,7 +161,6 @@ The `Hedgehog.Exchange.BinanceMock` module depends on a few packages that we nee
       {:binance, "~> 1.0"},
       {:decimal, "~> 2.0"},
       ...
-    ]
 ```
 
 Please remember to run the `mix deps.get` before trying out our changes:
@@ -196,7 +196,9 @@ defmodule Hedgehog.Streamer.Binance do
   alias Hedgehog.Streamer.Binance.DynamicStreamerSupervisor
 ```
 
-The next step will be to update the `/lib/hedgehog/streamer/streamer` directory to `/lib/hedgehog/streamer/binance`. We will now move on to the files inside this directory.
+The next step will be to update the `/lib/hedgehog/streamer/streamer` directory to
+
+`/lib/hedgehog/streamer/binance`. We will now move on to the files inside this directory.
 
 ### Supervisor
 
@@ -213,7 +215,9 @@ Moving forward, we can remove the `repo.ex` file as we will use the `Hedgehog.Re
 
 ### Worker
 
-Next, we will rename the `/lib/hedgehog/streamer/binance/binance.ex` to  `/lib/hedgehog/streamer/binance/worker.ex` - mainly to avoid "binance/binance" name after we added the namespace. Following the filename change, we need to update the module's name and a couple of references to the `Core` module:
+Next, we will rename the `/lib/hedgehog/streamer/binance/binance.ex` to
+
+`/lib/hedgehog/streamer/binance/worker.ex` - mainly to avoid "binance/binance" name after we added the namespace. Following the filename change, we need to update the module's name and a couple of references to the `Core` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/streamer/binance/worker.ex
@@ -250,21 +254,28 @@ defmodule Hedgehog.Streamer.Binance.DynamicStreamerSupervisor do
 
 ### schema/settings.ex and schema/streaming_status_enum.ex
 
-We will move the `/lib/hedgehog/streamer/binance/schema/settings.ex` file to `/lib/hedgehog/streamer/settings.ex` and the `/lib/hedgehog/streamer/binance/schema/streaming_status_enum.ex` file to 
-`/lib/hedgehog/streamer/settings_status_enum.ex`. We can now remove the empty `/lib/hedgehog/streamer/binance/schema` directory. Both of those modules need their modules' names and references updated:
+We will move the `/lib/hedgehog/streamer/binance/schema/settings.ex` file to
+
+`/lib/hedgehog/streamer/settings.ex` and the
+
+`/lib/hedgehog/streamer/binance/schema/streaming_status_enum.ex` file to 
+
+`/lib/hedgehog/streamer/settings_status_enum.ex`(file renamed). We can now remove the empty
+
+`/lib/hedgehog/streamer/binance/schema` directory. Both of those modules need their modules' names and references updated:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/streamer/settings.ex
-defmodule Hedgehog.Streamer.Settings do
+defmodule Hedgehog.Streamer.Settings do # <= updated
   use Ecto.Schema
 
-  alias Hedgehog.Streamer.SettingsStatusEnum
+  alias Hedgehog.Streamer.SettingsStatusEnum # <= updated
 
   @primary_key {:id, :binary_id, autogenerate: true}
 
-  schema "streaming_settings" do
+  schema "streamer_settings" do # <= updated
     field(:symbol, :string)
-    field(:status, SettingsStatusEnum)
+    field(:status, SettingsStatusEnum) # <= updated
 
     timestamps()
   end
@@ -277,7 +288,7 @@ and:
 # /lib/hedgehog/streamer/settings_status_enum.ex
 import EctoEnum
 
-defenum(Hedgehog.Streamer.SettingsStatusEnum, :status, [:on, :off])
+defenum(Hedgehog.Streamer.SettingsStatusEnum, :status, [:on, :off]) # <= updated
 ```
 
 ### application
@@ -292,7 +303,7 @@ The final file that we need to look into is `/lib/hedgehog/streamer/binance/appl
     ]
 ```
 
-We don't need to worry about the `Streamer.Repo` as we will use `Hedgehog.Repo`. On the other hand, the `Streamer.Supervisor` which we renamed to `Hedgehog.Streamer.Binance.Supervisor` needs to be added to the main `Hedgehog.Application` module:
+We don't need to worry about the `Streamer.Repo` as we will use the `Hedgehog.Repo`. On the other hand, the `Streamer.Supervisor` which we renamed to `Hedgehog.Streamer.Binance.Supervisor` needs to be added to the main `Hedgehog.Application` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/application.ex
@@ -306,32 +317,38 @@ We can now remove `/lib/hedgehog/streamer/binance/application.ex` as it is no lo
 
 ### DB migrations and seeding
 
- Streaming depends on the database tables and settings(seed data). We will start by copying `apps/streamer/priv/repo/migrations/20210203184805_create_settings.exs` migration to `/priv/repo/migrations`(and renaming the file to `20210203184805_create_streamer_settings.ex`) directory and update the most of the code inside:
+ Streaming depends on the database tables and settings(seed data). We will start by copying
+ 
+ `apps/streamer/priv/repo/migrations/20210203184805_create_settings.exs` migration to
+ 
+ `/priv/repo/migrations`(and renaming the file to `20210203184805_create_streamer_settings.exs`) directory and update the most of the code inside:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/migrations/20210203184805_create_streamer_settings.exs
-defmodule Hedgehog.Repo.Migrations.CreateStreamerSettings do
+defmodule Hedgehog.Repo.Migrations.CreateStreamerSettings do # <= updated
   use Ecto.Migration
 
-  alias Hedgehog.Streamer.SettingsStatusEnum
+  alias Hedgehog.Streamer.SettingsStatusEnum # <= updated
 
   def change do
-    SettingsStatusEnum.create_type()
+    SettingsStatusEnum.create_type() # <= updated
 
-    create table(:streamer_settings, primary_key: false) do
+    create table(:streamer_settings, primary_key: false) do # <= updated
       add(:id, :uuid, primary_key: true)
       add(:symbol, :text, null: false)
-      add(:status, SettingsStatusEnum.type(), default: "off", null: false)
+      add(:status, SettingsStatusEnum.type(), default: "off", null: false) # <= updated
 
       timestamps()
     end
 
-    create(unique_index(:streamer_settings, [:symbol]))
+    create(unique_index(:streamer_settings, [:symbol])) # <= updated
   end
 end
 ```
 
-Next, we will copy the seeding script's code from `/apps/streamer/priv/seed_settings.exs` to `/priv/repo/seeds.exs` and make the following updates:
+Next, we will copy the seeding script's code from `/apps/streamer/priv/seed_settings.exs` to
+
+`/priv/repo/seeds.exs` and make the following updates:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/seeds.exs
@@ -392,17 +409,17 @@ iex(1)> Hedgehog.Streamer.Binance.stop_streaming("XRPUSDT")
 ...
 ```
 
-The above confirms that we start and stop streaming, and upon startup, streaming starts on its own when enabled in the database.
+The above confirms that we can start and stop streaming, and upon startup, streaming starts on its own when enabled in the database.
 
 ## Reintegrating the `naive` app
 
-We will kick off the `naive` application reintegration by creating a new directory called "strategy" inside the "/lib/hedgehog/", where we will place both the `naive.ex` file and the `naive` directory(both originally located inside the "/apps/naive/lib/").
+We will kick off the `naive` application reintegration by creating a new directory called `strategy` inside the `/lib/hedgehog/`, where we will place both the `naive.ex` file and the `naive` directory(both originally located inside the `/apps/naive/lib/`).
 
-### `Naive.ex`
+### naive.ex
 
 We can update the module name and aliases inside the `naive.ex` file:
 
- ```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/strategy/naive.ex
 defmodule Hedgehog.Strategy.Naive do
   ..
@@ -414,7 +431,7 @@ defmodule Hedgehog.Strategy.Naive do
 
 Moving on to the `naive` directory, first, we will rename the `strategy.ex` file to `formula.ex` and update the references inside:
 
- ```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/strategy/naive/formula.ex
 defmodule Hedgehog.Strategy.Naive.Formula do
   alias Hedgehog.Exchange.TradeEvent
@@ -440,7 +457,7 @@ defmodule Hedgehog.Strategy.Naive.Formula do
 
 Next, we will update the `trader.ex`:
 
- ```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/strategy/naive/trader.ex
 defmodule Hedgehog.Strategy.Naive.Trader do
   ...
@@ -456,7 +473,7 @@ as well as all update all references to:
 
 Similarly, for the `supervisor.ex` file, we need to update the module name and alias:
 
-  ```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/strategy/naive/supervisor.ex
 defmodule Hedgehog.Strategy.Naive.Supervisor do
   ...
