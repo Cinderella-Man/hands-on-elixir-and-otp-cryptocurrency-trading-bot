@@ -60,8 +60,7 @@ Besides the `TradeEvent` module, the `core` application supervises the `PubSub` 
     children = [
       ...
       {Phoenix.PubSub, name: Hedgehog.PubSub},
-      ...
-    ]
+    ...
 ```
 
 Furthermore, the `phoenix_pubsub` dependency is already included in the `mix.lock` file, and its default backend is now `Phoenix.PubSub.PG2`(the adapter we have been explicitly specifying before).
@@ -94,8 +93,7 @@ Next, we will take care of configuration that was deciding should we use the cac
 ```{r, engine = 'elixir', eval = FALSE}
   # /config/config.exs
 config :hedgehog,
-  ecto_repos: [Hedgehog.Repo],
-  generators: [timestamp_type: :utc_datetime],
+  ...
   exchanges: [ # <= added
     binance_mock: [ 
       use_cached_exchange_info: true
@@ -224,10 +222,10 @@ Next, we will rename the `/lib/hedgehog/streamer/binance/binance.ex` to
 defmodule Hedgehog.Streamer.Binance.Worker do
 ...
   defp process_event(%{"e" => "trade"} = event) do
-    trade_event = %Hedgehog.Exchange.TradeEvent{ # <= updated
+    trade_event = %Hedgehog.Exchange.TradeEvent{
 ...
     Phoenix.PubSub.broadcast(
-      Hedgehog.PubSub, # <= updated
+      Hedgehog.PubSub,
 ...
 ```
 
@@ -246,9 +244,7 @@ defmodule Hedgehog.Streamer.Binance.DynamicStreamerSupervisor do
   defp start_child(args) do
     DynamicSupervisor.start_child(
       __MODULE__,
-      {Worker, args} # <= updated
-    )
-  end
+      {Worker, args}
 ...
 ```
 
@@ -266,29 +262,22 @@ We will move the `/lib/hedgehog/streamer/binance/schema/settings.ex` file to
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/streamer/settings.ex
-defmodule Hedgehog.Streamer.Settings do # <= updated
-  use Ecto.Schema
-
-  alias Hedgehog.Streamer.SettingsStatusEnum # <= updated
-
-  @primary_key {:id, :binary_id, autogenerate: true}
-
-  schema "streamer_settings" do # <= updated
-    field(:symbol, :string)
-    field(:status, SettingsStatusEnum) # <= updated
-
-    timestamps()
-  end
-end
+defmodule Hedgehog.Streamer.Settings do
+  ...
+  alias Hedgehog.Streamer.SettingsStatusEnum
+  ...
+  schema "streamer_settings" do
+    ...
+    field(:status, SettingsStatusEnum)
+  ...
 ```
 
 and:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/streamer/settings_status_enum.ex
-import EctoEnum
-
-defenum(Hedgehog.Streamer.SettingsStatusEnum, :status, [:on, :off]) # <= updated
+...
+defenum(Hedgehog.Streamer.SettingsStatusEnum, :status, [:on, :off])
 ```
 
 ### application
@@ -325,26 +314,22 @@ We can now remove `/lib/hedgehog/streamer/binance/application.ex` as it is no lo
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/migrations/20210203184805_create_streamer_settings.exs
-defmodule Hedgehog.Repo.Migrations.CreateStreamerSettings do # <= updated
-  use Ecto.Migration
-
-  alias Hedgehog.Streamer.SettingsStatusEnum # <= updated
+defmodule Hedgehog.Repo.Migrations.CreateStreamerSettings do
+  ...
+  alias Hedgehog.Streamer.SettingsStatusEnum
 
   def change do
-    SettingsStatusEnum.create_type() # <= updated
+    SettingsStatusEnum.create_type()
 
-    create table(:streamer_settings, primary_key: false) do # <= updated
-      add(:id, :uuid, primary_key: true)
-      add(:symbol, :text, null: false)
-      add(:status, SettingsStatusEnum.type(), default: "off", null: false) # <= updated
-
-      timestamps()
-    end
-
-    create(unique_index(:streamer_settings, [:symbol])) # <= updated
-  end
-end
+    create table(:streamer_settings, primary_key: false) do
+      ...
+      add(:status, SettingsStatusEnum.type(), default: "off", null: false)
+    ...
+    create(unique_index(:streamer_settings, [:symbol]))
+  ...
 ```
+
+\newpage
 
 Next, we will copy the seeding script's code from `/apps/streamer/priv/seed_settings.exs` to
 
@@ -427,7 +412,7 @@ defmodule Hedgehog.Strategy.Naive do
   alias Hedgehog.Strategy.Naive.Trader
 ```
 
-### `strategy.ex` -> `formula.ex`
+### strategy.ex -> formula.ex
 
 Moving on to the `naive` directory, first, we will rename the `strategy.ex` file to `formula.ex` and update the references inside:
 
@@ -435,22 +420,16 @@ Moving on to the `naive` directory, first, we will rename the `strategy.ex` file
 # /lib/hedgehog/strategy/naive/formula.ex
 defmodule Hedgehog.Strategy.Naive.Formula do
   alias Hedgehog.Exchange.TradeEvent
-  alias Decimal, as: D
   alias Hedgehog.Repo
   alias Hedgehog.Strategy.Naive.Settings
-
-  require Logger
+  ...
 
   @binance_client Application.compile_env(:hedgehog, :binance_client)
-
   ...
   defp broadcast_order(%Binance.Order{} = order) do
-    Phoenix.PubSub.broadcast( # <= updated
+    Phoenix.PubSub.broadcast(
       Hedgehog.PubSub,
-      "ORDERS:#{order.symbol}",
-      order
-    )
-  end
+    ...
 ```
 
 ### `trader.ex`
@@ -466,6 +445,7 @@ defmodule Hedgehog.Strategy.Naive.Trader do
 ```
 
 as well as all update all references to:
+
 - `Naive.Strategy` or `Strategy` to `Formula`
 - `Core.PubSub` to `Hedgehog.PubSub`
 
@@ -503,13 +483,23 @@ As we will use `Hedgehog.Repo`, we can remove the `/lib/hedgehog/strategy/naive/
 
 We will move both the `schema/settings.ex` and the `schema/trading_status_enum.ex` out of the `schema` directory into the main Naive's strategy directory(`/lib/hedgehog/strategy/naive`). We can now remove the empty `schema` directory.
 
-In line with the other Enum modules' changes, we will update the file name from `/lib/hedgehog/strategy/naive/trading_status_enum.ex` to `/lib/hedgehog/strategy/naive/settings_status_enum.ex`.
+\newpage
+
+In line with the other Enum modules' changes, we will update the file name from
+
+`/lib/hedgehog/strategy/naive/trading_status_enum.ex` to
+
+`/lib/hedgehog/strategy/naive/settings_status_enum.ex`.
 
 Inside the file, we will update the module name inside the `defenum`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/strategy/naive/settings_status_enum.ex
-defenum(Hedgehog.Strategy.Naive.SettingsStatusEnum, :naive_trading_status, [:on, :off, :shutdown])
+defenum(
+  Hedgehog.Strategy.Naive.SettingsStatusEnum,
+  :naive_trading_status,
+  [:on, :off, :shutdown]
+)
 ```
 
 Moving on to the `settings.ex` file, where we need to update the module name, alias as well as table name and status enum module:
@@ -527,7 +517,7 @@ defmodule Hedgehog.Strategy.Naive.Settings do
 
 ### `application.ex`
 
-The final file that we copied across from the `naive` umbrella app's is `application.ex`, where we will look into the supervised `children` list. It was supervising the `Naive.Repo`, which we don't need any more and `Naive.Supervisor`, which we renamed and need to put into our new main `application.ex` file:
+The final file that we copied across from the `naive` umbrella app is `application.ex`, where we will look into the supervised `children` list. It was supervising the `Naive.Repo`, which we don't need any more and `Naive.Supervisor`, which we renamed and need to put into our new main `application.ex` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/application.ex
@@ -541,7 +531,9 @@ After the above addition, we can remove the `/lib/hedgehog/strategy/naive/applic
 
 ### Migration and seeding
 
-First, we will move two migration files from the `/apps/naive/priv/repo/migrations/` to `/priv/repo/migrations`. We will rename the `20210202223209_create_settings.exs` to `20210202223209_create_naive_strategy_settings.exs` where we will update the module name and all references to modules and table name:
+First, we will move two migration files from the `/apps/naive/priv/repo/migrations/` to `/priv/repo/migrations`. We will rename the `20210202223209_create_settings.exs` to 
+
+`20210202223209_create_naive_strategy_settings.exs` where we will update the module name and all references to modules and table name:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/migrations/20210202223209_create_naive_strategy_settings.exs
@@ -560,14 +552,18 @@ defmodule Hedgehog.Repo.Migrations.CreateNaiveStrategySettings do
     create(unique_index(:naive_strategy_settings, [:symbol]))
 ```
 
-Next, we will rename the `20210205232303_update_trading_status.exs` to `20210205232303_update_naive_strategy_settings_status.exs` where we will update the module name and all references to modules:
+Next, we will rename the `20210205232303_update_trading_status.exs` to
+
+`20210205232303_update_naive_strategy_settings_status.exs` where we will update the module name and all references to modules:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /priv/repo/migrations/20210205232303_update_naive_strategy_settings_status.exs
 defmodule Hedgehog.Repo.Migrations.UpdateNaiveStrategySettingsStatus do
   ...
   def change do
-    Ecto.Migration.execute "ALTER TYPE naive_trading_status ADD VALUE IF NOT EXISTS 'shutdown'"
+    Ecto.Migration.execute(
+      "ALTER TYPE naive_trading_status ADD VALUE IF NOT EXISTS 'shutdown'"
+    )
 ```
 
 Finally, we need to merge the code that seeds the naive's strategy settings into the `/priv/repo/seeds.exs` file:
@@ -577,12 +573,12 @@ Finally, we need to merge the code that seeds the naive's strategy settings into
 alias Hedgehog.Streamer.Settings, as: StreamerSettings # <= updated
 alias Hedgehog.Strategy.Naive.Settings, as: NaiveStrategySettings # <= added
 ...
-Logger.info("Inserting default streamer settings for symbols") # <= updated
+Logger.info("Inserting default streamer settings for symbols")
 ...
 # updated, `on_conflict` added
 {count, nil} = Repo.insert_all(StreamerSettings, maps, on_conflict: :nothing)
 
-Logger.info("Inserted streamer settings for #{count} symbols") # <= updated
+Logger.info("Inserted streamer settings for #{count} symbols")
 
 # below added at the end
 %{
@@ -653,13 +649,15 @@ defmodule Hedgehog.Strategy.NaiveTest do
   alias Hedgehog.Exchange.TradeEvent
 ```
 
-Next, we will rename the `/test/hedgehog/strategy/naive/strategy_test.exs` to `/test/hedgehog/strategy/naive/formula_test.exs` and update its module name and aliases:
+Next, we will rename the `/test/hedgehog/strategy/naive/strategy_test.exs` to
+
+`/test/hedgehog/strategy/naive/formula_test.exs` and update its module name and aliases:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /test/hedgehog/strategy/naive_test.exs
+# /test/hedgehog/strategy/naive/formula_test.exs
 defmodule Hedgehog.Strategy.Naive.FormulaTest do
   ...
-  alias Hedgehog.Exchange.BinanceMock
+  alias Hedgehog.Exchange.BinanceMock    # <= added
   alias Hedgehog.Exchange.TradeEvent
   alias Hedgehog.Strategy.Naive.Formula
   ...
@@ -717,12 +715,15 @@ iex(3)> Binance.start_streaming("XRPUSDT")
 ...
 iex(4)> Naive.start_trading("XRPUSDT")
 ...
-[info] Position (XRPUSDT/1715703392316): Placing a BUY order @ 0.50650000, quantity: 394.86000000
+[info] Position (XRPUSDT/1715703392316): Placing a BUY order @ 0.50650000,
+quantity: 394.86000000
 [info] Position (XRPUSDT/1715704251578): The BUY order is now partially filled
-[info] Position (XRPUSDT/1715704251578): The BUY order is now filled. Placing a SELL order @ 0.50690000, quantity: 394.86000000
+[info] Position (XRPUSDT/1715704251578): The BUY order is now filled. Placing a
+SELL order @ 0.50690000, quantity: 394.86000000
 [info] Position (XRPUSDT/1715704251578): The SELL order is now partially filled
 [info] Position (XRPUSDT/1715704251578): Trade cycle finished
-[info] Position (XRPUSDT/1715704342038): Placing a BUY order @ 0.50680000, quantity: 394.63000000
+[info] Position (XRPUSDT/1715704342038): Placing a BUY order @ 0.50680000,
+quantity: 394.63000000
 ```
 
 The above confirms that our trading strategy works - we have successfully integrated the `naive` app. Things will be easier from now on.
@@ -731,19 +732,19 @@ The above confirms that our trading strategy works - we have successfully integr
 
 Inside the new Phoenix application, we will reintegrate the previously named `data_warehoure` app into `data/collector` and `data/publisher` "namespaces".
 
-We will start by creating a new directory called `data` inside the `lib/headgehog` directory. Inside the `data` directory, we will create a `collector` directory. We will update all the "subscriber_*" modules to "collector_*".
+We will start by creating a new directory called `data` inside the `lib/headgehog` directory. Inside the `data` directory, we will create a `collector` directory. We will update all the `subscriber_*` modules to `collector_*`.
 
 We will kick off the transition by copying files from the `/apps/data_warehouse/lib/data_warehouse/` directory to `/lib/hedgehog/` and renaming them as follows:
 
-`subscriber_supervisor.ex` -> `data/collector/collector_supervisor.ex`
-`subscriber/dynamic_supervisor.ex` -> `data/collector/dynamic_worker_supervisor.ex`
-`subscriber/worker.ex` -> `data/collector/worker.ex`
-`publisher.ex` -> `data/publisher.ex`
-`schema/order.ex` -> `exchange/order.ex`
-`schema/trade_event.ex` -> `exchange/trade_event.ex`
-`schema/subscriber_settings.ex` -> `data/collector/settings.ex`
-`schema/subscriber_status_enum.ex` -> `data/collector/settings_status_enum.ex`
-`../data_warehouse.ex` -> `data/collector.ex`
+- `subscriber_supervisor.ex` -> `data/collector/collector_supervisor.ex`
+- `subscriber/dynamic_supervisor.ex` -> `data/collector/dynamic_worker_supervisor.ex`
+- `subscriber/worker.ex` -> `data/collector/worker.ex`
+- `publisher.ex` -> `data/publisher.ex`
+- `schema/order.ex` -> `exchange/order.ex`
+- `schema/trade_event.ex` -> `exchange/trade_event.ex` (overwrite)
+- `schema/subscriber_settings.ex` -> `data/collector/settings.ex`
+- `schema/subscriber_status_enum.ex` -> `data/collector/settings_status_enum.ex`
+- `../data_warehouse.ex` -> `data/collector.ex`
 
 Now, we will update the new(copied/renamed) files one by one.
 
@@ -773,8 +774,8 @@ This module uses tons of other modules, including `Repo` - we need to update all
 # /lib/hedgehog/data/publisher.ex
 defmodule Hedgehog.Data.Publisher do
 ...
-  alias Hedgehog.Repo
-  alias Hedgehog.Exchange.TradeEvent
+  alias Hedgehog.Repo                 # <= added
+  alias Hedgehog.Exchange.TradeEvent  # <= added
   ...
   def start(arg) do # <= renamed the `start_link/1` function 
     ...
@@ -853,6 +854,7 @@ defmodule Hedgehog.Data.Collector.CollectorSupervisor do
           DynamicWorkerSupervisor.autostart_workers()
         end}
      ]
+    ...
 ```
 
 ### `/data/collector/dynamic_worker_supervisor.ex`
@@ -913,9 +915,9 @@ The final module from the `data_warehouse` app is a collector worker, where we w
 # /lib/hedgehog/data/collector/worker.ex
 defmodule Hedgehog.Data.Collector.Worker do
   ...
-  alias Hedgehog.Exchange.Order           # <= added
+  alias Hedgehog.Exchange.Order      # <= added
   alias Hedgehog.Exchange.TradeEvent # <= added
-  alias Hedgehog.Repo                             # <= added
+  alias Hedgehog.Repo                # <= added
   ...
   def init(topic) do
     Logger.info("Collector worker is subscribing to #{topic}")
@@ -942,7 +944,7 @@ defmodule Hedgehog.Data.Collector.Worker do
     ...
   ...
   defp via_tuple(topic) do
-    {:via, Registry, {collector_workers, topic}}
+    {:via, Registry, {:collector_workers, topic}}
 ```
 
 This finishes the module updates. We can move on to the other files from the `data_warehouse` application.
@@ -961,9 +963,15 @@ When we were copying the modules from the `data_warehouse` app, we skipped over 
 
 ### Migrations
 
-We will copy three migration files across from the `data_warehouse` app (the `/apps/data_warehouse/priv/repo/migrations/` directory) to the new Phoenix application (the `priv/repo/migrations/` directory).
+We will copy three migration files across from the `data_warehouse` app (the
 
-In the case of the `20210227230123_create_subscriber_settings.exs`, we need to rename it to `20210227230123_create_collector_settings.exs`.
+`/apps/data_warehouse/priv/repo/migrations/` directory) to the new Phoenix application (the
+
+`priv/repo/migrations/` directory).
+
+In the case of the `20210227230123_create_subscriber_settings.exs`, we need to rename it to
+
+`20210227230123_create_collector_settings.exs`.
 
 For all three of the migration files, we need to update module names:
 
@@ -976,6 +984,8 @@ defmodule Hedgehog.Repo.Migrations.CreateTradeEvents do
 # /priv/repo/migrations/20210222224522_create_orders.exs
 defmodule Hedgehog.Repo.Migrations.CreateOrders do
 ```
+
+\newpage
 
 for the final file we will also change alias and table name:
 
@@ -1042,13 +1052,15 @@ We will use this opportunity to rename the `indicators` to `aggregators`.
 
 Let's start by creating a new directory called `aggregator` inside the `/lib/hedgehog/data/` directory.
 
-We will copy the `/apps/indicator/lib/indicator/ohlc` directory and the `/apps/indicator/lib/indicator/ohlc.ex` file into it.
+We will copy the `/apps/indicator/lib/indicator/ohlc` directory and the
+
+`/apps/indicator/lib/indicator/ohlc.ex` file into it.
 
 We will also copy the `/apps/indicator/lib/indicator.ex` to the `/lib/hedgehog/data` directory and rename it to `aggregator.ex`.
 
 Now, we can update each file to fit the new naming convention.
 
-### `/data/aggregator.ex`
+### /data/aggregator.ex
 
 Here, we need to update the module name a reference to the worker module:
 
@@ -1063,11 +1075,9 @@ defmodule Hedgehog.Data.Aggregator do
     DynamicSupervisor.start_child(
       Hedgehog.Data.Aggregator.DynamicWorkerSupervisor,
  {Hedgehog.Data.Aggregator.Ohlc.Worker, symbol}
-   )
-...
 ```
 
-### `/data/aggregator/ohlc.ex`
+### /data/aggregator/ohlc.ex
 
 Inside the ohlc module we need to update the reference to the trade event and pubsub:
 
@@ -1078,13 +1088,13 @@ defmodule Hedgehog.Data.Aggregator.Ohlc do
   alias Hedgehog.Exchange.TradeEvent
   ...
   defp maybe_broadcast(%__MODULE__{} = ohlc) do
-    Logger.debug("Broadcasting OHLC: #{inspect(ohlc)}")
-
+    ...
     Phoenix.PubSub.broadcast(
       Hedgehog.PubSub,
+    ...
 ```
 
-### `/data/aggregator/ohlc/worker.ex`
+### /data/aggregator/ohlc/worker.ex
 
 The final file to update will be the worker module, where we need to update the references to pubsub and the ohlc module:
 
@@ -1102,11 +1112,14 @@ defmodule Hedgehog.Data.Aggregator.Ohlc.Worker do
   ...
   def handle_info(%TradeEvent{} = trade_event, ohlc) do
     {:noreply, Ohlc.process(ohlc, trade_event)}
+    ...
 ```
 
 ### Supervision tree
 
-A quick look at the `application.ex` module of the `indicator` app will tell us that we need to add a dynamic supervisor to the supervision tree of the new app (we referred to it already as `Hedgehog.Data.Aggregator.DynamicWorkerSupervisor` inside the `Hedgehog.Data.Aggregator` as we were updating it):
+A quick look at the `application.ex` module of the `indicator` app will tell us that we need to add a dynamic supervisor to the supervision tree of the new app (we referred to it already as
+
+`Hedgehog.Data.Aggregator.DynamicWorkerSupervisor` inside the `Hedgehog.Data.Aggregator` as we were updating it):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /lib/hedgehog/application.ex
@@ -1115,6 +1128,7 @@ A quick look at the `application.ex` module of the `indicator` app will tell us 
       ...
       {DynamicSupervisor,
        strategy: :one_for_one, name: Hedgehog.Data.Aggregator.DynamicWorkerSupervisor}
+    ...
 ```
 
 The above change finishes integrating the `indicator` app and the changes in this chapter, as it was the last application to be merged in.
@@ -1122,6 +1136,10 @@ The above change finishes integrating the `indicator` app and the changes in thi
 We can make the last check that everything works by starting the streaming and aggregating:
 
 ```
+$ mix ecto.drop
+...
+$ mix setup
+...
 $ iex -S mix phx.server
 ...
 iex(1)> alias Hedgehog.Streamer.Binance
@@ -1132,9 +1150,10 @@ iex(3)> Aggregator.aggregate_ohlcs("XRPUSDT")
 ...
 iex(4)> Binance.start_streaming("XRPUSDT")
 ...
-[debug] Broadcasting OHLC: %Hedgehog.Data.Aggregator.Ohlc{symbol: "XRPUSDT", start_time: 1717173780, duration: 1, open: "0.51350000", high: "0.51380000", low: "0.51350000", close: "0.51370000"}
+[debug] Broadcasting OHLC: %Hedgehog.Data.Aggregator.Ohlc{symbol: "XRPUSDT",
+start_time: 1717173780, duration: 1, open: "0.51350000", high: "0.51380000",
+low: "0.51350000", close: "0.51370000"}
 ```
-
 
 The above log confirms that we have a fully working aggregation that gets broadcasted and could be stored in the database or used inside the strategy.
 
