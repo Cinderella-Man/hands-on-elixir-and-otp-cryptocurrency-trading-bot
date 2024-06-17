@@ -1,7 +1,7 @@
 --- 
 title: "Hands-on Elixir & OTP: Cryptocurrency trading bot"
 author: "Kamil Skowron"
-date: "0.5.4"
+date: "0.6.0"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
 documentclass: book
@@ -26,7 +26,7 @@ With "Hands-on Elixir & OTP: Cryptocurrency trading bot", you will **gain hands-
 
 We will start by creating a new umbrella application, subscribing to WebSocket streams, implementing a basic trading flow, and focusing on improving it by expanding on the topics like supervision trees, resiliency, refactoring using macros, utilising the Registry, testing and others.
 
-**This book is 93% complete - chapters 1-21 are finished,** and I'll add more content soon. It's also a loosely written representation of the [Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video course released on YouTube.
+**This book is 95% complete - chapters 1-23 are finished,** and I'll add more content soon. It's also a loosely written representation of the [Hands-on Elixir & OTP: Cryptocurrency trading bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video course released on YouTube.
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
@@ -157,6 +157,18 @@ In the last chapter, we were looking into how we could reorganise *the code* to 
 * Chapter 20 - Idiomatic trading strategy
 
 We will use the knowledge gained in the last chapter to revise our Naive trading strategy so we will minimise the number of processes required to trade. We will move the functionalities provided by the `Naive.Leader` and the `Naive.SymbolSupervisor` into our strategy, taking care to put as much of it as possible into the pure part. In the end, our `Naive.Trader` will be able to manage multiple positions(trade cycles), and the vast majority of code previously scattered across multiple modules/processes will become easily testable pure functions inside our `Naive.Strategy`.
+
+* Chapter 21 - Layers of abstraction
+
+In this chapter, I acknowledge that the Mox package was misused throughout the book. We will look into the idiomatic way of using it, its consequences, and why you should avoid it. On the other hand, we will check out the `Mimic` package, which does not impact our production system at all. Along the way, we will reconsider how to deal with logging and the usage of module attributes as "dependency injection."
+
+* Chapter 22 - 80/20 win with pure logic
+
+In the 20th chapter, we refactored most of the code inside the Naive strategy, promising ourselves that it would make testing and maintenance easy. In this chapter, we will test that, proving that we are now able to test the vast majority of the system using trivial, easy-to-understand input-output tests.
+
+* Chapter 23 - Back to the Monolith
+
+In this chapter, we will look back at the issues/complexity umbrella applications cause. We will port the whole application to a new Phoenix skeleton, using this opportunity to refactor/merge logic that was previously spread across multiple apps.
 
 ## Contributing, Errata and Source code {-}
 

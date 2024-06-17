@@ -4,18 +4,18 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 15 Backtest trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
-  <meta name="description" content="Chapter 15 Backtest trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <title>Chapter 22 80/20 win with pure logic | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
+  <meta name="description" content="Chapter 22 80/20 win with pure logic | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 15 Backtest trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta property="og:title" content="Chapter 22 80/20 win with pure logic | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
   
   
   <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 15 Backtest trading strategy | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
+  <meta name="twitter:title" content="Chapter 22 80/20 win with pure logic | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta name="twitter:site" content="@kamilskowron" />
   
   
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="store-trade-events-and-orders-inside-the-database.html"/>
-<link rel="next" href="end-to-end-testing.html"/>
+<link rel="prev" href="layers-of-abstraction.html"/>
+<link rel="next" href="back-to-the-monolith.html"/>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -539,218 +539,236 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="backtest-trading-strategy" class="section level1 hasAnchor" number="15">
-<h1><span class="header-section-number">Chapter 15</span> Backtest trading strategy<a href="backtest-trading-strategy.html#backtest-trading-strategy" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<div id="objectives-14" class="section level2 hasAnchor" number="15.1">
-<h2><span class="header-section-number">15.1</span> Objectives<a href="backtest-trading-strategy.html#objectives-14" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div id="win-with-pure-logic" class="section level1 hasAnchor" number="22">
+<h1><span class="header-section-number">Chapter 22</span> 80/20 win with pure logic<a href="win-with-pure-logic.html#win-with-pure-logic" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<div id="objectives-21" class="section level2 hasAnchor" number="22.1">
+<h2><span class="header-section-number">22.1</span> Objectives<a href="win-with-pure-logic.html#objectives-21" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <ul>
-<li>overview of requirements</li>
-<li>implement the storing task</li>
-<li>test the backtesting</li>
+<li>testing the pure logic</li>
 </ul>
 </div>
-<div id="overview-of-requirements-2" class="section level2 hasAnchor" number="15.2">
-<h2><span class="header-section-number">15.2</span> Overview of requirements<a href="backtest-trading-strategy.html#overview-of-requirements-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>In the last chapter, we started storing trade events and orders in the database which will be crucial for backtesting, which we will focus on in this chapter.</p>
-<p>Backtesting is a procedure of running historical data through the system and observing how our strategy would perform as if we would run it “in the past”. Backtesting works on assumption that the market will behave in a similar fashion in the future as it was in the past.</p>
-<div style="page-break-after: always;"></div>
-<p>At this moment we are receiving the trade events from the Binance through WebSocket. The <code>Streamer.Binance</code> process is handling those messages by parsing them from JSON string to map, then converting them to structs and broadcasting them to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic. The <code>Naive.Trader</code> subscribes to the <code>TRADE_EVENTS:#{symbol}</code> topic and takes decisions based on incoming data. As it places buy and sell orders it broadcasts them to the <code>ORDERS:#{symbol}</code> PubSub topic. The <code>DataWarehouse.Subscriber.Worker</code> processes subscribe to both trade events and orders topics and store incoming data inside the database.</p>
-<p>We can visualize this flow like that:</p>
-<p><img src="images/chapter_14_02_current_pubsub.png" width="100%" height="60%" style="display: block; margin: auto;" /></p>
-<div style="page-break-after: always;"></div>
-<p>To backtest we can substitute the <code>Streamer.Binance</code> process with a <code>Task</code> that will <code>stream</code> trade events’ data from the database and broadcasts it to the <code>TRADE_EVENTS:#{symbol}</code> PubSub topic(the same topic as the <code>Streamer.Binance</code> process).</p>
-<p>From the perspective of the <code>Naive.Trader</code> it <em>does not</em> make any difference who is broadcasting those trade events. This should be a clear indication of the value of publish/subscribe model that we implemented from the beginning. It allows us to swap producer and consumers freely to backtest our trading strategies:</p>
-<p><img src="images/chapter_14_03_backtest_pubsub.png" width="100%" height="60%" style="display: block; margin: auto;" /></p>
-<div style="page-break-after: always;"></div>
-</div>
-<div id="implement-the-storing-task" class="section level2 hasAnchor" number="15.3">
-<h2><span class="header-section-number">15.3</span> Implement the storing task<a href="backtest-trading-strategy.html#implement-the-storing-task" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>We will start by creating a new file called <code>publisher.ex</code> inside the<br />
-<code>apps/data_warehouse/lib/data_warehouse</code> directory. We will start by implementing the basic <code>Task</code> behavior:</p>
-<div class="sourceCode" id="cb294"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb294-1"><a href="backtest-trading-strategy.html#cb294-1" tabindex="-1"></a><span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
-<span id="cb294-2"><a href="backtest-trading-strategy.html#cb294-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Publisher</span> <span class="kw">do</span></span>
-<span id="cb294-3"><a href="backtest-trading-strategy.html#cb294-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Task</span></span>
-<span id="cb294-4"><a href="backtest-trading-strategy.html#cb294-4" tabindex="-1"></a></span>
-<span id="cb294-5"><a href="backtest-trading-strategy.html#cb294-5" tabindex="-1"></a>  <span class="kw">def</span> start_link<span class="fu">(</span>arg<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb294-6"><a href="backtest-trading-strategy.html#cb294-6" tabindex="-1"></a>    <span class="cn">Task</span><span class="op">.</span>start_link<span class="fu">(</span><span class="cn">__MODULE__</span>, <span class="va">:run</span>, <span class="ot">[</span>arg<span class="ot">]</span><span class="fu">)</span></span>
-<span id="cb294-7"><a href="backtest-trading-strategy.html#cb294-7" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb294-8"><a href="backtest-trading-strategy.html#cb294-8" tabindex="-1"></a></span>
-<span id="cb294-9"><a href="backtest-trading-strategy.html#cb294-9" tabindex="-1"></a>  <span class="kw">def</span> run<span class="fu">(</span>arg<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb294-10"><a href="backtest-trading-strategy.html#cb294-10" tabindex="-1"></a>    <span class="co"># ...</span></span>
-<span id="cb294-11"><a href="backtest-trading-strategy.html#cb294-11" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb294-12"><a href="backtest-trading-strategy.html#cb294-12" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
-<p>To be able to query the database we will import <code>Ecto</code> and require <code>Logger</code> for logging:</p>
-<div class="sourceCode" id="cb295"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb295-1"><a href="backtest-trading-strategy.html#cb295-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
-<span id="cb295-2"><a href="backtest-trading-strategy.html#cb295-2" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb295-3"><a href="backtest-trading-strategy.html#cb295-3" tabindex="-1"></a>  <span class="im">import</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Query</span>, <span class="va">only:</span> <span class="ot">[</span><span class="va">from:</span> <span class="dv">2</span><span class="ot">]</span></span>
-<span id="cb295-4"><a href="backtest-trading-strategy.html#cb295-4" tabindex="-1"></a></span>
-<span id="cb295-5"><a href="backtest-trading-strategy.html#cb295-5" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span>
-<span id="cb295-6"><a href="backtest-trading-strategy.html#cb295-6" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
-<p>We can now modify the <code>run/1</code> function to expect specific <code>type</code>, <code>symbol</code>, <code>from</code>, <code>to</code> and <code>interval</code>:</p>
-<div class="sourceCode" id="cb296"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb296-1"><a href="backtest-trading-strategy.html#cb296-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex  </span></span>
-<span id="cb296-2"><a href="backtest-trading-strategy.html#cb296-2" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb296-3"><a href="backtest-trading-strategy.html#cb296-3" tabindex="-1"></a>  <span class="kw">def</span> run<span class="fu">(</span>%<span class="fu">{</span></span>
-<span id="cb296-4"><a href="backtest-trading-strategy.html#cb296-4" tabindex="-1"></a>        <span class="va">type:</span> <span class="va">:trade_events</span>,</span>
-<span id="cb296-5"><a href="backtest-trading-strategy.html#cb296-5" tabindex="-1"></a>        <span class="va">symbol:</span> symbol,</span>
-<span id="cb296-6"><a href="backtest-trading-strategy.html#cb296-6" tabindex="-1"></a>        <span class="va">from:</span> from,</span>
-<span id="cb296-7"><a href="backtest-trading-strategy.html#cb296-7" tabindex="-1"></a>        <span class="va">to:</span> to,</span>
-<span id="cb296-8"><a href="backtest-trading-strategy.html#cb296-8" tabindex="-1"></a>        <span class="va">interval:</span> interval</span>
-<span id="cb296-9"><a href="backtest-trading-strategy.html#cb296-9" tabindex="-1"></a>      <span class="fu">})</span> <span class="kw">do</span></span>
-<span id="cb296-10"><a href="backtest-trading-strategy.html#cb296-10" tabindex="-1"></a>    <span class="op">...</span>  </span></code></pre></div>
-<div style="page-break-after: always;"></div>
-<p>Inside the body of the <code>run/1</code> function, first, we will convert <code>from</code> and <code>to</code> Unix timestamps by using private helper functions as well as make sure that the passed symbol is uppercase:</p>
-<div class="sourceCode" id="cb297"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb297-1"><a href="backtest-trading-strategy.html#cb297-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex  </span></span>
-<span id="cb297-2"><a href="backtest-trading-strategy.html#cb297-2" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb297-3"><a href="backtest-trading-strategy.html#cb297-3" tabindex="-1"></a>  <span class="kw">def</span> run<span class="fu">(</span>%<span class="fu">{</span></span>
-<span id="cb297-4"><a href="backtest-trading-strategy.html#cb297-4" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb297-5"><a href="backtest-trading-strategy.html#cb297-5" tabindex="-1"></a>      <span class="fu">})</span> <span class="kw">do</span></span>
-<span id="cb297-6"><a href="backtest-trading-strategy.html#cb297-6" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase<span class="fu">(</span>symbol<span class="fu">)</span></span>
-<span id="cb297-7"><a href="backtest-trading-strategy.html#cb297-7" tabindex="-1"></a></span>
-<span id="cb297-8"><a href="backtest-trading-strategy.html#cb297-8" tabindex="-1"></a>    from_ts <span class="op">=</span></span>
-<span id="cb297-9"><a href="backtest-trading-strategy.html#cb297-9" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>from<span class="ot">}</span><span class="st">T00:00:00.000Z&quot;</span></span>
-<span id="cb297-10"><a href="backtest-trading-strategy.html#cb297-10" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms<span class="fu">()</span></span>
-<span id="cb297-11"><a href="backtest-trading-strategy.html#cb297-11" tabindex="-1"></a></span>
-<span id="cb297-12"><a href="backtest-trading-strategy.html#cb297-12" tabindex="-1"></a>    to_ts <span class="op">=</span></span>
-<span id="cb297-13"><a href="backtest-trading-strategy.html#cb297-13" tabindex="-1"></a>      <span class="st">&quot;</span><span class="ot">#{</span>to<span class="ot">}</span><span class="st">T23:59:59.000Z&quot;</span></span>
-<span id="cb297-14"><a href="backtest-trading-strategy.html#cb297-14" tabindex="-1"></a>      <span class="op">|&gt;</span> convert_to_ms<span class="fu">()</span></span>
-<span id="cb297-15"><a href="backtest-trading-strategy.html#cb297-15" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb297-16"><a href="backtest-trading-strategy.html#cb297-16" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb297-17"><a href="backtest-trading-strategy.html#cb297-17" tabindex="-1"></a>  <span class="kw">defp</span> convert_to_ms<span class="fu">(</span>iso8601DateString<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb297-18"><a href="backtest-trading-strategy.html#cb297-18" tabindex="-1"></a>    iso8601DateString</span>
-<span id="cb297-19"><a href="backtest-trading-strategy.html#cb297-19" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">NaiveDateTime</span><span class="op">.</span>from_iso8601!<span class="fu">()</span></span>
-<span id="cb297-20"><a href="backtest-trading-strategy.html#cb297-20" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>from_naive!<span class="fu">(</span><span class="st">&quot;Etc/UTC&quot;</span><span class="fu">)</span></span>
-<span id="cb297-21"><a href="backtest-trading-strategy.html#cb297-21" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">DateTime</span><span class="op">.</span>to_unix<span class="fu">()</span></span>
-<span id="cb297-22"><a href="backtest-trading-strategy.html#cb297-22" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Kernel</span><span class="op">.*</span><span class="fu">(</span><span class="dv">1000</span><span class="fu">)</span></span>
-<span id="cb297-23"><a href="backtest-trading-strategy.html#cb297-23" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Next, we will select data from the database but because of possibly hundreds of thousands of rows being selected and because we are broadcasting them to the PubSub every x ms it could take a substantial amount of time to <code>broadcast</code> all of them. Instead of <code>select</code>ing data and storing all of it in the memory, we will use <code>Repo.stream/1</code> function to keep <code>broadcast</code>ing it on the go. Additionally, we will add <code>index</code> to the data to be able to log info messages every 10k messages. The last thing that we need to define will be the timeout value - the default value is 5 seconds and we will change it to <code>:infinity</code>:</p>
-<div class="sourceCode" id="cb298"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb298-1"><a href="backtest-trading-strategy.html#cb298-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
-<span id="cb298-2"><a href="backtest-trading-strategy.html#cb298-2" tabindex="-1"></a>  <span class="kw">def</span> run<span class="fu">(</span>%<span class="fu">{</span></span>
-<span id="cb298-3"><a href="backtest-trading-strategy.html#cb298-3" tabindex="-1"></a>        <span class="op">...</span></span>
-<span id="cb298-4"><a href="backtest-trading-strategy.html#cb298-4" tabindex="-1"></a>      <span class="fu">})</span> <span class="kw">do</span></span>
-<span id="cb298-5"><a href="backtest-trading-strategy.html#cb298-5" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb298-6"><a href="backtest-trading-strategy.html#cb298-6" tabindex="-1"></a>    <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span>transaction<span class="fu">(</span></span>
-<span id="cb298-7"><a href="backtest-trading-strategy.html#cb298-7" tabindex="-1"></a>      <span class="kw">fn</span> <span class="op">-&gt;</span></span>
-<span id="cb298-8"><a href="backtest-trading-strategy.html#cb298-8" tabindex="-1"></a>        from<span class="fu">(</span>te <span class="kw">in</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span>,</span>
-<span id="cb298-9"><a href="backtest-trading-strategy.html#cb298-9" tabindex="-1"></a>          <span class="va">where:</span></span>
-<span id="cb298-10"><a href="backtest-trading-strategy.html#cb298-10" tabindex="-1"></a>            te<span class="op">.</span>symbol <span class="op">==</span> <span class="op">^</span>symbol <span class="kw">and</span></span>
-<span id="cb298-11"><a href="backtest-trading-strategy.html#cb298-11" tabindex="-1"></a>              te<span class="op">.</span>trade_time <span class="op">&gt;=</span> <span class="op">^</span>from_ts <span class="kw">and</span></span>
-<span id="cb298-12"><a href="backtest-trading-strategy.html#cb298-12" tabindex="-1"></a>              te<span class="op">.</span>trade_time <span class="op">&lt;</span> <span class="op">^</span>to_ts,</span>
-<span id="cb298-13"><a href="backtest-trading-strategy.html#cb298-13" tabindex="-1"></a>          <span class="va">order_by:</span> te<span class="op">.</span>trade_time</span>
-<span id="cb298-14"><a href="backtest-trading-strategy.html#cb298-14" tabindex="-1"></a>        <span class="fu">)</span></span>
-<span id="cb298-15"><a href="backtest-trading-strategy.html#cb298-15" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span>stream<span class="fu">()</span></span>
-<span id="cb298-16"><a href="backtest-trading-strategy.html#cb298-16" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>with_index<span class="fu">()</span></span>
-<span id="cb298-17"><a href="backtest-trading-strategy.html#cb298-17" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map<span class="fu">(</span><span class="kw">fn</span> <span class="fu">{</span>row, index<span class="fu">}</span> <span class="op">-&gt;</span></span>
-<span id="cb298-18"><a href="backtest-trading-strategy.html#cb298-18" tabindex="-1"></a>          <span class="va">:timer</span><span class="op">.</span>sleep<span class="fu">(</span>interval<span class="fu">)</span></span>
-<span id="cb298-19"><a href="backtest-trading-strategy.html#cb298-19" tabindex="-1"></a></span>
-<span id="cb298-20"><a href="backtest-trading-strategy.html#cb298-20" tabindex="-1"></a>          <span class="cf">if</span> rem<span class="fu">(</span>index, <span class="dv">10_000</span><span class="fu">)</span> <span class="op">==</span> <span class="dv">0</span> <span class="kw">do</span></span>
-<span id="cb298-21"><a href="backtest-trading-strategy.html#cb298-21" tabindex="-1"></a>            <span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Publisher broadcasted </span><span class="ot">#{</span>index<span class="ot">}</span><span class="st"> events&quot;</span><span class="fu">)</span></span>
-<span id="cb298-22"><a href="backtest-trading-strategy.html#cb298-22" tabindex="-1"></a>          <span class="kw">end</span></span>
-<span id="cb298-23"><a href="backtest-trading-strategy.html#cb298-23" tabindex="-1"></a></span>
-<span id="cb298-24"><a href="backtest-trading-strategy.html#cb298-24" tabindex="-1"></a>          publish_trade_event<span class="fu">(</span>row<span class="fu">)</span></span>
-<span id="cb298-25"><a href="backtest-trading-strategy.html#cb298-25" tabindex="-1"></a>        <span class="kw">end</span><span class="fu">)</span></span>
-<span id="cb298-26"><a href="backtest-trading-strategy.html#cb298-26" tabindex="-1"></a>      <span class="kw">end</span>,</span>
-<span id="cb298-27"><a href="backtest-trading-strategy.html#cb298-27" tabindex="-1"></a>      <span class="va">timeout:</span> <span class="va">:infinity</span></span>
-<span id="cb298-28"><a href="backtest-trading-strategy.html#cb298-28" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb298-29"><a href="backtest-trading-strategy.html#cb298-29" tabindex="-1"></a></span>
-<span id="cb298-30"><a href="backtest-trading-strategy.html#cb298-30" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info<span class="fu">(</span><span class="st">&quot;Publisher finished streaming trade events&quot;</span><span class="fu">)</span></span>
-<span id="cb298-31"><a href="backtest-trading-strategy.html#cb298-31" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Finally, the above code uses the <code>publish_trade_event/1</code> helper function which converts DataWarehouse’s TradeEvent to the Streamer’s TradeEvent to broadcast the same structs as the <code>streamer</code> application:</p>
-<div class="sourceCode" id="cb299"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb299-1"><a href="backtest-trading-strategy.html#cb299-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse/publisher.ex</span></span>
-<span id="cb299-2"><a href="backtest-trading-strategy.html#cb299-2" tabindex="-1"></a>  <span class="op">...</span></span>
-<span id="cb299-3"><a href="backtest-trading-strategy.html#cb299-3" tabindex="-1"></a>  <span class="kw">defp</span> publish_trade_event<span class="fu">(</span>%<span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Schema</span><span class="op">.</span><span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb299-4"><a href="backtest-trading-strategy.html#cb299-4" tabindex="-1"></a>    new_trade_event <span class="op">=</span></span>
-<span id="cb299-5"><a href="backtest-trading-strategy.html#cb299-5" tabindex="-1"></a>      struct<span class="fu">(</span></span>
-<span id="cb299-6"><a href="backtest-trading-strategy.html#cb299-6" tabindex="-1"></a>        <span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span>,</span>
-<span id="cb299-7"><a href="backtest-trading-strategy.html#cb299-7" tabindex="-1"></a>        trade_event <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>to_list<span class="fu">()</span></span>
-<span id="cb299-8"><a href="backtest-trading-strategy.html#cb299-8" tabindex="-1"></a>      <span class="fu">)</span></span>
-<span id="cb299-9"><a href="backtest-trading-strategy.html#cb299-9" tabindex="-1"></a></span>
-<span id="cb299-10"><a href="backtest-trading-strategy.html#cb299-10" tabindex="-1"></a>    <span class="cn">Phoenix</span><span class="op">.</span><span class="cn">PubSub</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
-<span id="cb299-11"><a href="backtest-trading-strategy.html#cb299-11" tabindex="-1"></a>      <span class="cn">Streamer</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb299-12"><a href="backtest-trading-strategy.html#cb299-12" tabindex="-1"></a>      <span class="st">&quot;TRADE_EVENTS:</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb299-13"><a href="backtest-trading-strategy.html#cb299-13" tabindex="-1"></a>      new_trade_event</span>
-<span id="cb299-14"><a href="backtest-trading-strategy.html#cb299-14" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb299-15"><a href="backtest-trading-strategy.html#cb299-15" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<div style="page-break-after: always;"></div>
-<p>We also need to remember about keeping the interface tidy so we will add <code>publish_data</code> to the <code>DataWarehouse</code> module:</p>
-<div class="sourceCode" id="cb300"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb300-1"><a href="backtest-trading-strategy.html#cb300-1" tabindex="-1"></a>  <span class="co"># /apps/data_warehouse/lib/data_warehouse.ex</span></span>
-<span id="cb300-2"><a href="backtest-trading-strategy.html#cb300-2" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb300-3"><a href="backtest-trading-strategy.html#cb300-3" tabindex="-1"></a>  <span class="kw">def</span> publish_data<span class="fu">(</span>args<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb300-4"><a href="backtest-trading-strategy.html#cb300-4" tabindex="-1"></a>    <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Publisher</span><span class="op">.</span>start_link<span class="fu">(</span>args<span class="fu">)</span></span>
-<span id="cb300-5"><a href="backtest-trading-strategy.html#cb300-5" tabindex="-1"></a>  <span class="kw">end</span></span>
-<span id="cb300-6"><a href="backtest-trading-strategy.html#cb300-6" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
-<p>This finishes our implementation - we should be able to stream trade events from the database to the PubSub using the above Task which we will do below.</p>
-</div>
-<div id="test-the-backtesting" class="section level2 hasAnchor" number="15.4">
-<h2><span class="header-section-number">15.4</span> Test the backtesting<a href="backtest-trading-strategy.html#test-the-backtesting" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>For consistency and ease of testing/use, I prepared an compressed single data of trade events for XRPUSDT(2019-06-03). We can download that file from GitHub using <code>wget</code>:</p>
-<div class="sourceCode" id="cb301"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb301-1"><a href="backtest-trading-strategy.html#cb301-1" tabindex="-1"></a><span class="ex">$</span> cd /tmp</span>
-<span id="cb301-2"><a href="backtest-trading-strategy.html#cb301-2" tabindex="-1"></a><span class="ex">$</span> wget https://github.com/Cinderella-Man/binance-trade-events <span class="dt">\</span></span>
-<span id="cb301-3"><a href="backtest-trading-strategy.html#cb301-3" tabindex="-1"></a>/raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz</span></code></pre></div>
-<p>We can now uncompress the archive and load those trade events into our database:</p>
-<div class="sourceCode" id="cb302"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb302-1"><a href="backtest-trading-strategy.html#cb302-1" tabindex="-1"></a><span class="ex">$</span> gunzip XRPUSDT-2019-06-03.csv.gz</span>
-<span id="cb302-2"><a href="backtest-trading-strategy.html#cb302-2" tabindex="-1"></a><span class="ex">$</span> PGPASSWORD=hedgehogSecretPassword psql <span class="at">-Upostgres</span> <span class="at">-h</span> localhost <span class="at">-ddata_warehouse</span> <span class="dt">\</span></span>
-<span id="cb302-3"><a href="backtest-trading-strategy.html#cb302-3" tabindex="-1"></a>-c <span class="st">&quot;\COPY trade_events FROM &#39;/tmp/XRPUSDT-2019-06-03.csv&#39; WITH (FORMAT csv, delimiter &#39;;&#39;);&quot;</span></span>
-<span id="cb302-4"><a href="backtest-trading-strategy.html#cb302-4" tabindex="-1"></a><span class="ex">COPY</span> 206115</span></code></pre></div>
-<p>The number after the word <code>COPY</code> in the response indicates the number of rows that got copied into the database.</p>
-<p>We can now give it a try and run full backtesting but first let’s clean the orders table:</p>
-<div class="sourceCode" id="cb303"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb303-1"><a href="backtest-trading-strategy.html#cb303-1" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span></span>
-<span id="cb303-2"><a href="backtest-trading-strategy.html#cb303-2" tabindex="-1"></a><span class="ex">Password</span> for user postgres: </span>
-<span id="cb303-3"><a href="backtest-trading-strategy.html#cb303-3" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb303-4"><a href="backtest-trading-strategy.html#cb303-4" tabindex="-1"></a><span class="va">postgres</span><span class="op">=</span># <span class="ex">\c</span> data_warehouse</span>
-<span id="cb303-5"><a href="backtest-trading-strategy.html#cb303-5" tabindex="-1"></a><span class="ex">You</span> are now connected to database <span class="st">&quot;data_warehouse&quot;</span> as user <span class="st">&quot;postgres&quot;</span>.</span>
-<span id="cb303-6"><a href="backtest-trading-strategy.html#cb303-6" tabindex="-1"></a><span class="va">data_warehouse</span><span class="op">=</span># <span class="ex">DELETE</span> FROM orders<span class="kw">;</span></span>
-<span id="cb303-7"><a href="backtest-trading-strategy.html#cb303-7" tabindex="-1"></a><span class="ex">DELETE</span> ...</span></code></pre></div>
-<div style="page-break-after: always;"></div>
-<p>We can now start a new iex session where we will start trading(the <code>naive</code> application) as well as storing orders(the <code>data_warehouse</code> application) and instead of starting the <code>Streamer.Binance</code> worker we will start the <code>DataWarehouse.Publisher</code> task with arguments matching the imported day and symbol:</p>
-<div class="sourceCode" id="cb304"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb304-1"><a href="backtest-trading-strategy.html#cb304-1" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
-<span id="cb304-2"><a href="backtest-trading-strategy.html#cb304-2" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb304-3"><a href="backtest-trading-strategy.html#cb304-3" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.start_storing<span class="kw">(</span><span class="st">&quot;ORDERS&quot;</span><span class="ex">,</span> <span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span>      </span>
-<span id="cb304-4"><a href="backtest-trading-strategy.html#cb304-4" tabindex="-1"></a><span class="ex">19:17:59.596</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Starting storing data from ORDERS:XRPUSDT topic</span>
-<span id="cb304-5"><a href="backtest-trading-strategy.html#cb304-5" tabindex="-1"></a><span class="ex">19:17:59.632</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  DataWarehouse worker is subscribing to ORDERS:XRPUSDT</span>
-<span id="cb304-6"><a href="backtest-trading-strategy.html#cb304-6" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.417.0&gt;}</span></span>
-<span id="cb304-7"><a href="backtest-trading-strategy.html#cb304-7" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
-<span id="cb304-8"><a href="backtest-trading-strategy.html#cb304-8" tabindex="-1"></a><span class="ex">19:18:16.293</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Starting Elixir.Naive.SymbolSupervisor worker for XRPUSDT</span>
-<span id="cb304-9"><a href="backtest-trading-strategy.html#cb304-9" tabindex="-1"></a><span class="ex">19:18:16.332</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Starting new supervision tree to trade on XRPUSDT</span>
-<span id="cb304-10"><a href="backtest-trading-strategy.html#cb304-10" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.419.0&gt;}</span></span>
-<span id="cb304-11"><a href="backtest-trading-strategy.html#cb304-11" tabindex="-1"></a><span class="ex">19:18:18.327</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Initializing new trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="cf">for</span> XRPUSDT</span>
-<span id="cb304-12"><a href="backtest-trading-strategy.html#cb304-12" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> DataWarehouse.publish_data<span class="kw">(</span><span class="ex">%{</span></span>
-<span id="cb304-13"><a href="backtest-trading-strategy.html#cb304-13" tabindex="-1"></a>  <span class="ex">type:</span> :trade_events,</span>
-<span id="cb304-14"><a href="backtest-trading-strategy.html#cb304-14" tabindex="-1"></a>  <span class="ex">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>,</span>
-<span id="cb304-15"><a href="backtest-trading-strategy.html#cb304-15" tabindex="-1"></a>  <span class="ex">from:</span> <span class="st">&quot;2019-06-02&quot;</span>,</span>
-<span id="cb304-16"><a href="backtest-trading-strategy.html#cb304-16" tabindex="-1"></a>  <span class="ex">to:</span> <span class="st">&quot;2019-06-04&quot;</span>,</span>
-<span id="cb304-17"><a href="backtest-trading-strategy.html#cb304-17" tabindex="-1"></a>  <span class="ex">interval:</span> 5</span>
-<span id="cb304-18"><a href="backtest-trading-strategy.html#cb304-18" tabindex="-1"></a><span class="er">}</span><span class="kw">)</span></span>
-<span id="cb304-19"><a href="backtest-trading-strategy.html#cb304-19" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.428.0&gt;}</span></span>
-<span id="cb304-20"><a href="backtest-trading-strategy.html#cb304-20" tabindex="-1"></a><span class="ex">19:19:07.532</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Publisher broadcasted 0 events</span>
-<span id="cb304-21"><a href="backtest-trading-strategy.html#cb304-21" tabindex="-1"></a><span class="ex">19:19:07.534</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a BUY order for</span>
-<span id="cb304-22"><a href="backtest-trading-strategy.html#cb304-22" tabindex="-1"></a><span class="ex">XRPUSDT</span> @ 0.44391, quantity: 450.5</span>
-<span id="cb304-23"><a href="backtest-trading-strategy.html#cb304-23" tabindex="-1"></a><span class="ex">19:19:07.749</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  The trader<span class="er">(</span><span class="ex">1615288698325</span><span class="kw">)</span> <span class="ex">is</span> placing a SELL order for</span>
-<span id="cb304-24"><a href="backtest-trading-strategy.html#cb304-24" tabindex="-1"></a><span class="ex">XRPUSDT</span> @ 0.44426, quantity: 450.5.</span>
-<span id="cb304-25"><a href="backtest-trading-strategy.html#cb304-25" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb304-26"><a href="backtest-trading-strategy.html#cb304-26" tabindex="-1"></a><span class="ex">19:20:07.568</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Publisher broadcasted 10000 events</span>
-<span id="cb304-27"><a href="backtest-trading-strategy.html#cb304-27" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb304-28"><a href="backtest-trading-strategy.html#cb304-28" tabindex="-1"></a><span class="ex">19:21:07.571</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Publisher broadcasted 20000 events</span>
-<span id="cb304-29"><a href="backtest-trading-strategy.html#cb304-29" tabindex="-1"></a><span class="ex">19:22:07.576</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Publisher broadcasted 30000 events</span>
-<span id="cb304-30"><a href="backtest-trading-strategy.html#cb304-30" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb304-31"><a href="backtest-trading-strategy.html#cb304-31" tabindex="-1"></a><span class="ex">19:39:07.875</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Publisher broadcasted 200000 events</span>
-<span id="cb304-32"><a href="backtest-trading-strategy.html#cb304-32" tabindex="-1"></a><span class="ex">19:39:44.576</span> <span class="pp">[</span><span class="ss">info</span><span class="pp">]</span>  Publisher finished streaming trade events</span></code></pre></div>
-<p>From the above log, we can see that it took about 20 minutes to run 206k records through the system(a lot of that time[17+ minutes] was indeed the 5ms <code>sleep</code>).</p>
-<div style="page-break-after: always;"></div>
-<p>After the streaming finished we can check out the orders table inside the database to figure out how many trades we made and what income have they generated.</p>
-<div class="sourceCode" id="cb305"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb305-1"><a href="backtest-trading-strategy.html#cb305-1" tabindex="-1"></a><span class="ex">$</span> psql <span class="at">-Upostgres</span> <span class="at">-h127.0.0.1</span>    </span>
-<span id="cb305-2"><a href="backtest-trading-strategy.html#cb305-2" tabindex="-1"></a><span class="ex">Password</span> for user postgres: </span>
-<span id="cb305-3"><a href="backtest-trading-strategy.html#cb305-3" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb305-4"><a href="backtest-trading-strategy.html#cb305-4" tabindex="-1"></a><span class="va">postgres</span><span class="op">=</span># <span class="ex">\c</span> data_warehouse</span>
-<span id="cb305-5"><a href="backtest-trading-strategy.html#cb305-5" tabindex="-1"></a><span class="ex">You</span> are now connected to database <span class="st">&quot;data_warehouse&quot;</span> as user <span class="st">&quot;postgres&quot;</span>.</span>
-<span id="cb305-6"><a href="backtest-trading-strategy.html#cb305-6" tabindex="-1"></a><span class="va">data_warehouse</span><span class="op">=</span># <span class="ex">SELECT</span> COUNT<span class="er">(</span><span class="ex">*</span><span class="kw">)</span> <span class="ex">FROM</span> orders<span class="kw">;</span></span>
-<span id="cb305-7"><a href="backtest-trading-strategy.html#cb305-7" tabindex="-1"></a> <span class="ex">count</span> </span>
-<span id="cb305-8"><a href="backtest-trading-strategy.html#cb305-8" tabindex="-1"></a><span class="ex">-------</span></span>
-<span id="cb305-9"><a href="backtest-trading-strategy.html#cb305-9" tabindex="-1"></a>   <span class="ex">224</span></span>
-<span id="cb305-10"><a href="backtest-trading-strategy.html#cb305-10" tabindex="-1"></a><span class="kw">(</span><span class="ex">1</span> row<span class="kw">)</span></span></code></pre></div>
-<p>By looking at the orders we can figure out some performance metrics but that’s less than perfect to get answers to simple questions like “what’s the performance of my strategy?”. We will address that and other concerns in future chapters.</p>
+<div id="testing-the-pure-logic" class="section level2 hasAnchor" number="22.2">
+<h2><span class="header-section-number">22.2</span> Testing the pure logic<a href="win-with-pure-logic.html#testing-the-pure-logic" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>We worked hard across the last few chapters to make our code more testable. We wandered into the world of mocking and mimicking to allow us to write end-to-end tests, but we didn’t really reap the benefits of the fact that we made a substantial part of our code pure.</p>
+<p>In this chapter, we will cover most of our trading strategy with tests to showcase the value of pure/non-pure code segregation.</p>
+<p>We will start by removing all “hello world” tests that were generated when we were creating each of the umbrella apps - all of them look the same:</p>
+<pre><code>  test &quot;greets the world&quot; do
+    assert $app.hello() == :world
+  end</code></pre>
+<p>After taking care of this nuisance, we can now focus on testing our strategy.</p>
+<p>We will start by opening the <code>apps/naive/test/naive/strategy_test.exs</code> where we will add tests of <code>generate_decision/4</code> function. We will test each clause starting with the first (returning <code>:place_buy_order</code>):</p>
+<div class="sourceCode" id="cb542"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb542-1"><a href="win-with-pure-logic.html#cb542-1" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive/lib/strategy_test.exs</span></span>
+<span id="cb542-2"><a href="win-with-pure-logic.html#cb542-2" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb542-3"><a href="win-with-pure-logic.html#cb542-3" tabindex="-1"></a>  test <span class="st">&quot;Generating place buy order decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb542-4"><a href="win-with-pure-logic.html#cb542-4" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb542-5"><a href="win-with-pure-logic.html#cb542-5" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb542-6"><a href="win-with-pure-logic.html#cb542-6" tabindex="-1"></a>               <span class="va">price:</span> <span class="st">&quot;1.0&quot;</span></span>
+<span id="cb542-7"><a href="win-with-pure-logic.html#cb542-7" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb542-8"><a href="win-with-pure-logic.html#cb542-8" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb542-9"><a href="win-with-pure-logic.html#cb542-9" tabindex="-1"></a>               <span class="va">budget:</span> <span class="st">&quot;10.0&quot;</span>,</span>
+<span id="cb542-10"><a href="win-with-pure-logic.html#cb542-10" tabindex="-1"></a>               <span class="va">buy_down_interval:</span> <span class="st">&quot;0.01&quot;</span></span>
+<span id="cb542-11"><a href="win-with-pure-logic.html#cb542-11" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb542-12"><a href="win-with-pure-logic.html#cb542-12" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb542-13"><a href="win-with-pure-logic.html#cb542-13" tabindex="-1"></a>             <span class="va">:ignored</span></span>
+<span id="cb542-14"><a href="win-with-pure-logic.html#cb542-14" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="fu">{</span><span class="va">:place_buy_order</span>, <span class="st">&quot;0.99000000&quot;</span>, <span class="st">&quot;10.00000000&quot;</span><span class="fu">}</span></span>
+<span id="cb542-15"><a href="win-with-pure-logic.html#cb542-15" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The above test checks that the function returns’: place_buy_order’ in case of a lack of buy/sell order. Inside the test, we are using a helper function that we need to add below:</p>
+<div class="sourceCode" id="cb543"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb543-1"><a href="win-with-pure-logic.html#cb543-1" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive/lib/strategy_test.exs</span></span>
+<span id="cb543-2"><a href="win-with-pure-logic.html#cb543-2" tabindex="-1"></a>  <span class="kw">defp</span> generate_position<span class="fu">(</span>data<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb543-3"><a href="win-with-pure-logic.html#cb543-3" tabindex="-1"></a>    %<span class="fu">{</span></span>
+<span id="cb543-4"><a href="win-with-pure-logic.html#cb543-4" tabindex="-1"></a>      <span class="va">id:</span> <span class="dv">1_678_920_020_426</span>,</span>
+<span id="cb543-5"><a href="win-with-pure-logic.html#cb543-5" tabindex="-1"></a>      <span class="va">symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>,</span>
+<span id="cb543-6"><a href="win-with-pure-logic.html#cb543-6" tabindex="-1"></a>      <span class="va">profit_interval:</span> <span class="st">&quot;0.005&quot;</span>,</span>
+<span id="cb543-7"><a href="win-with-pure-logic.html#cb543-7" tabindex="-1"></a>      <span class="va">rebuy_interval:</span> <span class="st">&quot;0.01&quot;</span>,</span>
+<span id="cb543-8"><a href="win-with-pure-logic.html#cb543-8" tabindex="-1"></a>      <span class="va">rebuy_notified:</span> <span class="cn">false</span>,</span>
+<span id="cb543-9"><a href="win-with-pure-logic.html#cb543-9" tabindex="-1"></a>      <span class="va">budget:</span> <span class="st">&quot;10.0&quot;</span>,</span>
+<span id="cb543-10"><a href="win-with-pure-logic.html#cb543-10" tabindex="-1"></a>      <span class="va">buy_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb543-11"><a href="win-with-pure-logic.html#cb543-11" tabindex="-1"></a>      <span class="va">sell_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb543-12"><a href="win-with-pure-logic.html#cb543-12" tabindex="-1"></a>      <span class="va">buy_down_interval:</span> <span class="st">&quot;0.01&quot;</span>,</span>
+<span id="cb543-13"><a href="win-with-pure-logic.html#cb543-13" tabindex="-1"></a>      <span class="va">tick_size:</span> <span class="st">&quot;0.00010000&quot;</span>,</span>
+<span id="cb543-14"><a href="win-with-pure-logic.html#cb543-14" tabindex="-1"></a>      <span class="va">step_size:</span> <span class="st">&quot;1.00000000&quot;</span></span>
+<span id="cb543-15"><a href="win-with-pure-logic.html#cb543-15" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb543-16"><a href="win-with-pure-logic.html#cb543-16" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>merge<span class="fu">(</span>data<span class="fu">)</span></span>
+<span id="cb543-17"><a href="win-with-pure-logic.html#cb543-17" tabindex="-1"></a>    <span class="op">|&gt;</span> then<span class="fu">(</span><span class="op">&amp;</span>struct<span class="fu">(</span><span class="cn">Strategy</span><span class="op">.</span><span class="cn">Position</span>, <span class="op">&amp;</span><span class="dv">1</span><span class="fu">))</span></span>
+<span id="cb543-18"><a href="win-with-pure-logic.html#cb543-18" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>At this moment, we should already be able to run the above test:</p>
+<pre><code>$ MIX_ENV=test mix test.unit
+...
+==&gt; naive
+...
+3 tests, 0 failures, 1 excluded</code></pre>
+<p>We will now take care of the remaining clauses of <code>generate_decision/4</code> function:</p>
+<div class="sourceCode" id="cb545"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb545-1"><a href="win-with-pure-logic.html#cb545-1" tabindex="-1"></a>  <span class="co"># /apps/naive/test/naive/lib/strategy_test.exs</span></span>
+<span id="cb545-2"><a href="win-with-pure-logic.html#cb545-2" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-3"><a href="win-with-pure-logic.html#cb545-3" tabindex="-1"></a>  test <span class="st">&quot;Generating skip decision as buy and sell already placed(race condition occurred)&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-4"><a href="win-with-pure-logic.html#cb545-4" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-5"><a href="win-with-pure-logic.html#cb545-5" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb545-6"><a href="win-with-pure-logic.html#cb545-6" tabindex="-1"></a>               <span class="va">buyer_order_id:</span> <span class="dv">123</span></span>
+<span id="cb545-7"><a href="win-with-pure-logic.html#cb545-7" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb545-8"><a href="win-with-pure-logic.html#cb545-8" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-9"><a href="win-with-pure-logic.html#cb545-9" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-10"><a href="win-with-pure-logic.html#cb545-10" tabindex="-1"></a>                 <span class="va">order_id:</span> <span class="dv">123</span>,</span>
+<span id="cb545-11"><a href="win-with-pure-logic.html#cb545-11" tabindex="-1"></a>                 <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb545-12"><a href="win-with-pure-logic.html#cb545-12" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-13"><a href="win-with-pure-logic.html#cb545-13" tabindex="-1"></a>               <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{}</span></span>
+<span id="cb545-14"><a href="win-with-pure-logic.html#cb545-14" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-15"><a href="win-with-pure-logic.html#cb545-15" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb545-16"><a href="win-with-pure-logic.html#cb545-16" tabindex="-1"></a>             <span class="va">:ignored</span></span>
+<span id="cb545-17"><a href="win-with-pure-logic.html#cb545-17" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:skip</span></span>
+<span id="cb545-18"><a href="win-with-pure-logic.html#cb545-18" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-19"><a href="win-with-pure-logic.html#cb545-19" tabindex="-1"></a></span>
+<span id="cb545-20"><a href="win-with-pure-logic.html#cb545-20" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-21"><a href="win-with-pure-logic.html#cb545-21" tabindex="-1"></a>  test <span class="st">&quot;Generating place sell order decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-22"><a href="win-with-pure-logic.html#cb545-22" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-23"><a href="win-with-pure-logic.html#cb545-23" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{}</span>,</span>
+<span id="cb545-24"><a href="win-with-pure-logic.html#cb545-24" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-25"><a href="win-with-pure-logic.html#cb545-25" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-26"><a href="win-with-pure-logic.html#cb545-26" tabindex="-1"></a>                 <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span>,</span>
+<span id="cb545-27"><a href="win-with-pure-logic.html#cb545-27" tabindex="-1"></a>                 <span class="va">price:</span> <span class="st">&quot;1.00&quot;</span></span>
+<span id="cb545-28"><a href="win-with-pure-logic.html#cb545-28" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-29"><a href="win-with-pure-logic.html#cb545-29" tabindex="-1"></a>               <span class="va">sell_order:</span> <span class="cn">nil</span>,</span>
+<span id="cb545-30"><a href="win-with-pure-logic.html#cb545-30" tabindex="-1"></a>               <span class="va">profit_interval:</span> <span class="st">&quot;0.01&quot;</span>,</span>
+<span id="cb545-31"><a href="win-with-pure-logic.html#cb545-31" tabindex="-1"></a>               <span class="va">tick_size:</span> <span class="st">&quot;0.0001&quot;</span></span>
+<span id="cb545-32"><a href="win-with-pure-logic.html#cb545-32" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-33"><a href="win-with-pure-logic.html#cb545-33" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb545-34"><a href="win-with-pure-logic.html#cb545-34" tabindex="-1"></a>             <span class="va">:ignored</span></span>
+<span id="cb545-35"><a href="win-with-pure-logic.html#cb545-35" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="fu">{</span><span class="va">:place_sell_order</span>, <span class="st">&quot;1.0120&quot;</span><span class="fu">}</span></span>
+<span id="cb545-36"><a href="win-with-pure-logic.html#cb545-36" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-37"><a href="win-with-pure-logic.html#cb545-37" tabindex="-1"></a></span>
+<span id="cb545-38"><a href="win-with-pure-logic.html#cb545-38" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-39"><a href="win-with-pure-logic.html#cb545-39" tabindex="-1"></a>  test <span class="st">&quot;Generating fetch buy order decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-40"><a href="win-with-pure-logic.html#cb545-40" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-41"><a href="win-with-pure-logic.html#cb545-41" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb545-42"><a href="win-with-pure-logic.html#cb545-42" tabindex="-1"></a>               <span class="va">buyer_order_id:</span> <span class="dv">1234</span></span>
+<span id="cb545-43"><a href="win-with-pure-logic.html#cb545-43" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb545-44"><a href="win-with-pure-logic.html#cb545-44" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-45"><a href="win-with-pure-logic.html#cb545-45" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-46"><a href="win-with-pure-logic.html#cb545-46" tabindex="-1"></a>                 <span class="va">order_id:</span> <span class="dv">1234</span></span>
+<span id="cb545-47"><a href="win-with-pure-logic.html#cb545-47" tabindex="-1"></a>               <span class="fu">}</span></span>
+<span id="cb545-48"><a href="win-with-pure-logic.html#cb545-48" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-49"><a href="win-with-pure-logic.html#cb545-49" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb545-50"><a href="win-with-pure-logic.html#cb545-50" tabindex="-1"></a>             <span class="va">:ignored</span></span>
+<span id="cb545-51"><a href="win-with-pure-logic.html#cb545-51" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:fetch_buy_order</span></span>
+<span id="cb545-52"><a href="win-with-pure-logic.html#cb545-52" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-53"><a href="win-with-pure-logic.html#cb545-53" tabindex="-1"></a></span>
+<span id="cb545-54"><a href="win-with-pure-logic.html#cb545-54" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-55"><a href="win-with-pure-logic.html#cb545-55" tabindex="-1"></a>  test <span class="st">&quot;Generating finish position decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-56"><a href="win-with-pure-logic.html#cb545-56" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-57"><a href="win-with-pure-logic.html#cb545-57" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{}</span>,</span>
+<span id="cb545-58"><a href="win-with-pure-logic.html#cb545-58" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-59"><a href="win-with-pure-logic.html#cb545-59" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-60"><a href="win-with-pure-logic.html#cb545-60" tabindex="-1"></a>                 <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb545-61"><a href="win-with-pure-logic.html#cb545-61" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-62"><a href="win-with-pure-logic.html#cb545-62" tabindex="-1"></a>               <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-63"><a href="win-with-pure-logic.html#cb545-63" tabindex="-1"></a>                 <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb545-64"><a href="win-with-pure-logic.html#cb545-64" tabindex="-1"></a>               <span class="fu">}</span></span>
+<span id="cb545-65"><a href="win-with-pure-logic.html#cb545-65" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-66"><a href="win-with-pure-logic.html#cb545-66" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb545-67"><a href="win-with-pure-logic.html#cb545-67" tabindex="-1"></a>             %<span class="fu">{</span><span class="va">status:</span> <span class="st">&quot;on&quot;</span><span class="fu">}</span></span>
+<span id="cb545-68"><a href="win-with-pure-logic.html#cb545-68" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:finished</span></span>
+<span id="cb545-69"><a href="win-with-pure-logic.html#cb545-69" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-70"><a href="win-with-pure-logic.html#cb545-70" tabindex="-1"></a></span>
+<span id="cb545-71"><a href="win-with-pure-logic.html#cb545-71" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-72"><a href="win-with-pure-logic.html#cb545-72" tabindex="-1"></a>  test <span class="st">&quot;Generating exit position decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-73"><a href="win-with-pure-logic.html#cb545-73" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-74"><a href="win-with-pure-logic.html#cb545-74" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{}</span>,</span>
+<span id="cb545-75"><a href="win-with-pure-logic.html#cb545-75" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-76"><a href="win-with-pure-logic.html#cb545-76" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-77"><a href="win-with-pure-logic.html#cb545-77" tabindex="-1"></a>                 <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb545-78"><a href="win-with-pure-logic.html#cb545-78" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-79"><a href="win-with-pure-logic.html#cb545-79" tabindex="-1"></a>               <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-80"><a href="win-with-pure-logic.html#cb545-80" tabindex="-1"></a>                 <span class="va">status:</span> <span class="st">&quot;FILLED&quot;</span></span>
+<span id="cb545-81"><a href="win-with-pure-logic.html#cb545-81" tabindex="-1"></a>               <span class="fu">}</span></span>
+<span id="cb545-82"><a href="win-with-pure-logic.html#cb545-82" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-83"><a href="win-with-pure-logic.html#cb545-83" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb545-84"><a href="win-with-pure-logic.html#cb545-84" tabindex="-1"></a>             %<span class="fu">{</span><span class="va">status:</span> <span class="st">&quot;shutdown&quot;</span><span class="fu">}</span></span>
+<span id="cb545-85"><a href="win-with-pure-logic.html#cb545-85" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:exit</span></span>
+<span id="cb545-86"><a href="win-with-pure-logic.html#cb545-86" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-87"><a href="win-with-pure-logic.html#cb545-87" tabindex="-1"></a></span>
+<span id="cb545-88"><a href="win-with-pure-logic.html#cb545-88" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-89"><a href="win-with-pure-logic.html#cb545-89" tabindex="-1"></a>  test <span class="st">&quot;Generating fetch sell order decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-90"><a href="win-with-pure-logic.html#cb545-90" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-91"><a href="win-with-pure-logic.html#cb545-91" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb545-92"><a href="win-with-pure-logic.html#cb545-92" tabindex="-1"></a>               <span class="va">seller_order_id:</span> <span class="dv">1234</span></span>
+<span id="cb545-93"><a href="win-with-pure-logic.html#cb545-93" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb545-94"><a href="win-with-pure-logic.html#cb545-94" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-95"><a href="win-with-pure-logic.html#cb545-95" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{}</span>,</span>
+<span id="cb545-96"><a href="win-with-pure-logic.html#cb545-96" tabindex="-1"></a>               <span class="va">sell_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-97"><a href="win-with-pure-logic.html#cb545-97" tabindex="-1"></a>                 <span class="va">order_id:</span> <span class="dv">1234</span></span>
+<span id="cb545-98"><a href="win-with-pure-logic.html#cb545-98" tabindex="-1"></a>               <span class="fu">}</span></span>
+<span id="cb545-99"><a href="win-with-pure-logic.html#cb545-99" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-100"><a href="win-with-pure-logic.html#cb545-100" tabindex="-1"></a>             <span class="va">:ignored</span>,</span>
+<span id="cb545-101"><a href="win-with-pure-logic.html#cb545-101" tabindex="-1"></a>             <span class="va">:ignored</span></span>
+<span id="cb545-102"><a href="win-with-pure-logic.html#cb545-102" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:fetch_sell_order</span></span>
+<span id="cb545-103"><a href="win-with-pure-logic.html#cb545-103" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-104"><a href="win-with-pure-logic.html#cb545-104" tabindex="-1"></a></span>
+<span id="cb545-105"><a href="win-with-pure-logic.html#cb545-105" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-106"><a href="win-with-pure-logic.html#cb545-106" tabindex="-1"></a>  test <span class="st">&quot;Generating rebuy decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-107"><a href="win-with-pure-logic.html#cb545-107" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-108"><a href="win-with-pure-logic.html#cb545-108" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb545-109"><a href="win-with-pure-logic.html#cb545-109" tabindex="-1"></a>               <span class="va">price:</span> <span class="st">&quot;0.89&quot;</span></span>
+<span id="cb545-110"><a href="win-with-pure-logic.html#cb545-110" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb545-111"><a href="win-with-pure-logic.html#cb545-111" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-112"><a href="win-with-pure-logic.html#cb545-112" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-113"><a href="win-with-pure-logic.html#cb545-113" tabindex="-1"></a>                 <span class="va">price:</span> <span class="st">&quot;1.00&quot;</span></span>
+<span id="cb545-114"><a href="win-with-pure-logic.html#cb545-114" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-115"><a href="win-with-pure-logic.html#cb545-115" tabindex="-1"></a>               <span class="va">rebuy_interval:</span> <span class="st">&quot;0.1&quot;</span>,</span>
+<span id="cb545-116"><a href="win-with-pure-logic.html#cb545-116" tabindex="-1"></a>               <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb545-117"><a href="win-with-pure-logic.html#cb545-117" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-118"><a href="win-with-pure-logic.html#cb545-118" tabindex="-1"></a>             <span class="ot">[</span><span class="va">:position</span><span class="ot">]</span>,</span>
+<span id="cb545-119"><a href="win-with-pure-logic.html#cb545-119" tabindex="-1"></a>             %<span class="fu">{</span><span class="va">status:</span> <span class="st">&quot;on&quot;</span>, <span class="va">chunks:</span> <span class="dv">2</span><span class="fu">}</span></span>
+<span id="cb545-120"><a href="win-with-pure-logic.html#cb545-120" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:rebuy</span></span>
+<span id="cb545-121"><a href="win-with-pure-logic.html#cb545-121" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-122"><a href="win-with-pure-logic.html#cb545-122" tabindex="-1"></a></span>
+<span id="cb545-123"><a href="win-with-pure-logic.html#cb545-123" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-124"><a href="win-with-pure-logic.html#cb545-124" tabindex="-1"></a>  test <span class="st">&quot;Generating skip(rebuy) decision because rebuy is already notified&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-125"><a href="win-with-pure-logic.html#cb545-125" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-126"><a href="win-with-pure-logic.html#cb545-126" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb545-127"><a href="win-with-pure-logic.html#cb545-127" tabindex="-1"></a>               <span class="va">price:</span> <span class="st">&quot;0.89&quot;</span></span>
+<span id="cb545-128"><a href="win-with-pure-logic.html#cb545-128" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb545-129"><a href="win-with-pure-logic.html#cb545-129" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-130"><a href="win-with-pure-logic.html#cb545-130" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-131"><a href="win-with-pure-logic.html#cb545-131" tabindex="-1"></a>                 <span class="va">price:</span> <span class="st">&quot;1.00&quot;</span></span>
+<span id="cb545-132"><a href="win-with-pure-logic.html#cb545-132" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-133"><a href="win-with-pure-logic.html#cb545-133" tabindex="-1"></a>               <span class="va">rebuy_interval:</span> <span class="st">&quot;0.1&quot;</span>,</span>
+<span id="cb545-134"><a href="win-with-pure-logic.html#cb545-134" tabindex="-1"></a>               <span class="va">rebuy_notified:</span> <span class="cn">true</span></span>
+<span id="cb545-135"><a href="win-with-pure-logic.html#cb545-135" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-136"><a href="win-with-pure-logic.html#cb545-136" tabindex="-1"></a>             <span class="ot">[</span><span class="va">:position</span><span class="ot">]</span>,</span>
+<span id="cb545-137"><a href="win-with-pure-logic.html#cb545-137" tabindex="-1"></a>             %<span class="fu">{</span><span class="va">status:</span> <span class="st">&quot;on&quot;</span>, <span class="va">chunks:</span> <span class="dv">2</span><span class="fu">}</span></span>
+<span id="cb545-138"><a href="win-with-pure-logic.html#cb545-138" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:skip</span></span>
+<span id="cb545-139"><a href="win-with-pure-logic.html#cb545-139" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb545-140"><a href="win-with-pure-logic.html#cb545-140" tabindex="-1"></a></span>
+<span id="cb545-141"><a href="win-with-pure-logic.html#cb545-141" tabindex="-1"></a>  <span class="ot">@tag</span> <span class="va">:unit</span></span>
+<span id="cb545-142"><a href="win-with-pure-logic.html#cb545-142" tabindex="-1"></a>  test <span class="st">&quot;Generating skip rebuy decision&quot;</span> <span class="kw">do</span></span>
+<span id="cb545-143"><a href="win-with-pure-logic.html#cb545-143" tabindex="-1"></a>    assert <span class="cn">Strategy</span><span class="op">.</span>generate_decision<span class="fu">(</span></span>
+<span id="cb545-144"><a href="win-with-pure-logic.html#cb545-144" tabindex="-1"></a>             %<span class="cn">TradeEvent</span><span class="fu">{</span></span>
+<span id="cb545-145"><a href="win-with-pure-logic.html#cb545-145" tabindex="-1"></a>               <span class="va">price:</span> <span class="st">&quot;0.9&quot;</span></span>
+<span id="cb545-146"><a href="win-with-pure-logic.html#cb545-146" tabindex="-1"></a>             <span class="fu">}</span>,</span>
+<span id="cb545-147"><a href="win-with-pure-logic.html#cb545-147" tabindex="-1"></a>             generate_position<span class="fu">(</span>%<span class="fu">{</span></span>
+<span id="cb545-148"><a href="win-with-pure-logic.html#cb545-148" tabindex="-1"></a>               <span class="va">buy_order:</span> %<span class="cn">Binance</span><span class="op">.</span><span class="cn">OrderResponse</span><span class="fu">{</span></span>
+<span id="cb545-149"><a href="win-with-pure-logic.html#cb545-149" tabindex="-1"></a>                 <span class="va">price:</span> <span class="st">&quot;1.00&quot;</span></span>
+<span id="cb545-150"><a href="win-with-pure-logic.html#cb545-150" tabindex="-1"></a>               <span class="fu">}</span>,</span>
+<span id="cb545-151"><a href="win-with-pure-logic.html#cb545-151" tabindex="-1"></a>               <span class="va">rebuy_interval:</span> <span class="st">&quot;0.1&quot;</span>,</span>
+<span id="cb545-152"><a href="win-with-pure-logic.html#cb545-152" tabindex="-1"></a>               <span class="va">rebuy_notified:</span> <span class="cn">false</span></span>
+<span id="cb545-153"><a href="win-with-pure-logic.html#cb545-153" tabindex="-1"></a>             <span class="fu">})</span>,</span>
+<span id="cb545-154"><a href="win-with-pure-logic.html#cb545-154" tabindex="-1"></a>             <span class="ot">[</span><span class="va">:position</span><span class="ot">]</span>,</span>
+<span id="cb545-155"><a href="win-with-pure-logic.html#cb545-155" tabindex="-1"></a>             %<span class="fu">{</span><span class="va">status:</span> <span class="st">&quot;on&quot;</span>, <span class="va">chunks:</span> <span class="dv">1</span><span class="fu">}</span></span>
+<span id="cb545-156"><a href="win-with-pure-logic.html#cb545-156" tabindex="-1"></a>           <span class="fu">)</span> <span class="op">==</span> <span class="va">:skip</span></span>
+<span id="cb545-157"><a href="win-with-pure-logic.html#cb545-157" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>This brings us to 12 tests:</p>
+<pre><code>$ MIX_ENV=test mix test.unit
+...
+==&gt; naive
+...
+12 tests, 0 failures, 1 excluded</code></pre>
+<p>The above tests are straightforward and uneventful, but that’s good. They prove that tests of pure code are easy to write and maintain.</p>
+<p>Furthermore, besides the <code>generate_decision/4</code> function, we also have <code>generate_decisions/4</code>, <code>parse_results/1</code> and helper methods that are all pure functions. After a little bit of math, we can work out that out of 424 lines, 262 lines contain pure code - that’s a whopping 61%.</p>
+<p>The above shows that we can gain great coverage and easy maintainability by splitting our business logic into pure and effectful functions. This approach is the most pragmatic execution of functional programming and can easily be proven to bring quantitative benefits.</p>
+<p>In this chapter, we’ve tested our trading strategy, emphasizing the simplicity gained from separating pure/non-pure code.</p>
 <p>[Note] Please remember to run the <code>mix format</code> to keep things nice and tidy.</p>
-<p>The source code for this chapter can be found on <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_15">GitHub</a></p>
+<p>The source code for this chapter can be found on <a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_22">GitHub</a></p>
 
+<p>Chapter 23</p>
 </div>
 </div>
             </section>
@@ -758,8 +776,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           </div>
         </div>
       </div>
-<a href="store-trade-events-and-orders-inside-the-database.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="end-to-end-testing.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="layers-of-abstraction.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="back-to-the-monolith.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
@@ -790,7 +808,7 @@ gitbook.start({
 "size": 2
 },
 "edit": {
-"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/15-backtest-trading-strategy.Rmd",
+"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/22-80-20-win-with-pure-code.Rmd",
 "text": "Edit"
 },
 "history": {
