@@ -64,7 +64,7 @@
 
 <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -953,14 +953,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb508-4"><a href="layers-of-abstraction.html#cb508-4" tabindex="-1"></a>  <span class="fu">{</span><span class="va">:ok</span>, %<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span> <span class="op">=</span> order<span class="fu">}</span> <span class="op">=</span></span>
 <span id="cb508-5"><a href="layers-of-abstraction.html#cb508-5" tabindex="-1"></a>      <span class="ot">@exchange_client</span><span class="op">.</span>order_limit_sell<span class="fu">(</span>symbol, quantity, sell_price<span class="fu">)</span></span></code></pre></div>
 <p>As of now, we will deal only with the <code>Exchange.Order</code> structs instead a pair of <code>Binance.OrderResponse</code> and <code>Binance.Order</code>, we can simplify the existing two clauses of <code>broadcast_order/1</code> into a single one(and remove the <code>convert_to_order/1</code> function):</p>
-<div class="sourceCode" id="cb509"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb509-1"><a href="layers-of-abstraction.html#cb509-1" tabindex="-1"></a> <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
-<span id="cb509-2"><a href="layers-of-abstraction.html#cb509-2" tabindex="-1"></a> <span class="kw">defp</span> broadcast_order<span class="fu">(</span>%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span> <span class="op">=</span> order<span class="fu">)</span> <span class="kw">do</span></span>
-<span id="cb509-3"><a href="layers-of-abstraction.html#cb509-3" tabindex="-1"></a>   <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
-<span id="cb509-4"><a href="layers-of-abstraction.html#cb509-4" tabindex="-1"></a>     <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
-<span id="cb509-5"><a href="layers-of-abstraction.html#cb509-5" tabindex="-1"></a>     <span class="st">&quot;ORDERS:</span><span class="ot">#{</span>order<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
-<span id="cb509-6"><a href="layers-of-abstraction.html#cb509-6" tabindex="-1"></a>     order</span>
-<span id="cb509-7"><a href="layers-of-abstraction.html#cb509-7" tabindex="-1"></a>   <span class="fu">)</span></span>
-<span id="cb509-8"><a href="layers-of-abstraction.html#cb509-8" tabindex="-1"></a> <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb509"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb509-1"><a href="layers-of-abstraction.html#cb509-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
+<span id="cb509-2"><a href="layers-of-abstraction.html#cb509-2" tabindex="-1"></a>  <span class="kw">defp</span> broadcast_order<span class="fu">(</span>%<span class="cn">Exchange</span><span class="op">.</span><span class="cn">Order</span><span class="fu">{}</span> <span class="op">=</span> order<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb509-3"><a href="layers-of-abstraction.html#cb509-3" tabindex="-1"></a>    <span class="ot">@pubsub_client</span><span class="op">.</span>broadcast<span class="fu">(</span></span>
+<span id="cb509-4"><a href="layers-of-abstraction.html#cb509-4" tabindex="-1"></a>      <span class="cn">Core</span><span class="op">.</span><span class="cn">PubSub</span>,</span>
+<span id="cb509-5"><a href="layers-of-abstraction.html#cb509-5" tabindex="-1"></a>      <span class="st">&quot;ORDERS:</span><span class="ot">#{</span>order<span class="op">.</span>symbol<span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb509-6"><a href="layers-of-abstraction.html#cb509-6" tabindex="-1"></a>      order</span>
+<span id="cb509-7"><a href="layers-of-abstraction.html#cb509-7" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb509-8"><a href="layers-of-abstraction.html#cb509-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>The final change to the <code>Naive.Strategy</code> module will be to update the <code>fetch_symbol_settings/1</code> function (and remove the <code>merge_filters_into_settings/3</code> function):</p>
 <div class="sourceCode" id="cb510"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb510-1"><a href="layers-of-abstraction.html#cb510-1" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/strategy.ex</span></span>
 <span id="cb510-2"><a href="layers-of-abstraction.html#cb510-2" tabindex="-1"></a>  <span class="kw">def</span> fetch_symbol_settings<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">do</span></span>

@@ -64,7 +64,7 @@
 
 <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -803,11 +803,11 @@ iex(4)&gt; BinanceMock.get_exchange_info()
 <h3><span class="header-section-number">23.6.8</span> Deps<a href="back-to-the-monolith.html#deps" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We need to add a couple of new dependencies that the streaming code is using:</p>
 <div class="sourceCode" id="cb568"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb568-1"><a href="back-to-the-monolith.html#cb568-1" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
-<span id="cb568-2"><a href="back-to-the-monolith.html#cb568-2" tabindex="-1"></a> <span class="kw">defp</span> deps <span class="kw">do</span></span>
-<span id="cb568-3"><a href="back-to-the-monolith.html#cb568-3" tabindex="-1"></a>   <span class="ot">[</span></span>
-<span id="cb568-4"><a href="back-to-the-monolith.html#cb568-4" tabindex="-1"></a>     <span class="op">...</span></span>
-<span id="cb568-5"><a href="back-to-the-monolith.html#cb568-5" tabindex="-1"></a>     <span class="fu">{</span><span class="va">:ecto_enum</span>, <span class="st">&quot;~&gt; 1.4&quot;</span><span class="fu">}</span>,</span>
-<span id="cb568-6"><a href="back-to-the-monolith.html#cb568-6" tabindex="-1"></a>     <span class="fu">{</span><span class="va">:websockex</span>, <span class="st">&quot;~&gt; 0.4.2&quot;</span><span class="fu">}</span></span></code></pre></div>
+<span id="cb568-2"><a href="back-to-the-monolith.html#cb568-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb568-3"><a href="back-to-the-monolith.html#cb568-3" tabindex="-1"></a>    <span class="ot">[</span></span>
+<span id="cb568-4"><a href="back-to-the-monolith.html#cb568-4" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb568-5"><a href="back-to-the-monolith.html#cb568-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_enum</span>, <span class="st">&quot;~&gt; 1.4&quot;</span><span class="fu">}</span>,</span>
+<span id="cb568-6"><a href="back-to-the-monolith.html#cb568-6" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:websockex</span>, <span class="st">&quot;~&gt; 0.4.2&quot;</span><span class="fu">}</span></span></code></pre></div>
 <p>With the above changes, the reintegration of the <code>Streamer</code> app is finished. We need to remember about getting new deps, running migrations, seeding database and we can test that everything works up to this point:</p>
 <pre><code>$ mix deps.get
 ...

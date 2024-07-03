@@ -64,7 +64,7 @@
 
 <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -630,7 +630,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb259"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb259-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb259-1" tabindex="-1"></a>$ cd apps<span class="op">/</span>data_warehouse</span>
 <span id="cb259-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb259-2" tabindex="-1"></a>$ mix ecto<span class="op">.</span>gen<span class="op">.</span>migration create_trade_events</span>
 <span id="cb259-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb259-3" tabindex="-1"></a><span class="op">*</span> creating priv<span class="op">/</span>repo<span class="op">/</span>migrations</span>
-<span id="cb259-4"><a href="store-trade-events-and-orders-inside-the-database.html#cb259-4" tabindex="-1"></a><span class="op">*</span> creating priv<span class="op">/</span>repo<span class="op">/</span>migrations<span class="op">/</span><span class="dv">2</span>0210222224514_create_trade_events<span class="op">.</span>exs</span></code></pre></div>
+<span id="cb259-4"><a href="store-trade-events-and-orders-inside-the-database.html#cb259-4" tabindex="-1"></a><span class="op">*</span> creating priv<span class="op">/</span>repo<span class="op">/</span>migrations<span class="op">/</span><span class="dv">20210222224514</span>_create_trade_events<span class="op">.</span>exs</span></code></pre></div>
 <p>The <code>Streamer.Binance.TradeEvent</code> struct will serve as a list of columns for our new <code>trade_events</code> table. Here’s the full implementation of our migration:</p>
 <div class="sourceCode" id="cb260"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb260-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb260-1" tabindex="-1"></a><span class="co"># /apps/data_warehouse/priv/repo/migrations/20210222224514_create_trade_events.exs</span></span>
 <span id="cb260-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb260-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span><span class="cn">Migrations</span><span class="op">.</span><span class="cn">CreateTradeEvents</span> <span class="kw">do</span></span>
@@ -784,7 +784,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>In the same fashion as with trade events’ data above, to store orders data we will create an <code>orders</code> table inside a new migration:</p>
 <div class="sourceCode" id="cb269"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb269-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb269-1" tabindex="-1"></a>$ cd apps<span class="op">/</span>data_warehouse</span>
 <span id="cb269-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb269-2" tabindex="-1"></a>$ mix ecto<span class="op">.</span>gen<span class="op">.</span>migration create_orders</span>
-<span id="cb269-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb269-3" tabindex="-1"></a><span class="op">*</span> creating priv<span class="op">/</span>repo<span class="op">/</span>migrations<span class="op">/</span><span class="dv">2</span>0210222224522_create_orders<span class="op">.</span>exs</span></code></pre></div>
+<span id="cb269-3"><a href="store-trade-events-and-orders-inside-the-database.html#cb269-3" tabindex="-1"></a><span class="op">*</span> creating priv<span class="op">/</span>repo<span class="op">/</span>migrations<span class="op">/</span><span class="dv">20210222224522</span>_create_orders<span class="op">.</span>exs</span></code></pre></div>
 <p>The list of columns for this table will be a copy of <a href="https://github.com/dvcrn/binance.ex/blob/master/lib/binance/order.ex"><code>Binance.Order</code></a> struct returned from the Binance exchange:</p>
 <div class="sourceCode" id="cb270"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb270-1"><a href="store-trade-events-and-orders-inside-the-database.html#cb270-1" tabindex="-1"></a><span class="co"># /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs</span></span>
 <span id="cb270-2"><a href="store-trade-events-and-orders-inside-the-database.html#cb270-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">DataWarehouse</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span><span class="cn">Migrations</span><span class="op">.</span><span class="cn">CreateOrders</span> <span class="kw">do</span></span>
