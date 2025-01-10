@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 19 Idiomatic OTP | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 19 Idiomatic OTP | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.42 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 19 Idiomatic OTP | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,7 @@
   
 <link rel="prev" href="functional-elixir.html"/>
 <link rel="next" href="idiomatic-trading-strategy.html"/>
-<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -74,7 +74,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -792,7 +792,7 @@ We need to update the Indicators application’s supervision tree to start a dyn
 <p>Just to be clear - processes <strong>do</strong> have their place, they are a really powerful tool, but as with every tool, the responsibility lies on us developers to use them wisely - they <strong>must not</strong> be used for code organization.</p>
 <p>Enough theory - let’s look into how we could update our <code>Indicator.Ohlc</code> module to be able to deal with multiple timeframes at once.</p>
 <p>Initially, we could be tempted to update the <code>process/2</code> function:</p>
-<div class="sourceCode" id="cb435"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb435-1"><a href="idiomatic-otp.html#cb435-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
+<div class="sourceCode" id="cb435"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb435-1"><a href="idiomatic-otp.html#cb435-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
 <span id="cb435-2"><a href="idiomatic-otp.html#cb435-2" tabindex="-1"></a>  <span class="kw">def</span> process<span class="fu">(</span><span class="ot">[</span>_ <span class="op">|</span> _<span class="ot">]</span> <span class="op">=</span> ohlcs, %<span class="cn">TradeEvent</span><span class="fu">{}</span> <span class="op">=</span> trade_event<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb435-3"><a href="idiomatic-otp.html#cb435-3" tabindex="-1"></a>    results <span class="op">=</span></span>
 <span id="cb435-4"><a href="idiomatic-otp.html#cb435-4" tabindex="-1"></a>      ohlcs</span>
@@ -815,7 +815,7 @@ We need to update the Indicators application’s supervision tree to start a dyn
 <span id="cb435-21"><a href="idiomatic-otp.html#cb435-21" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We added some logic to both clauses. At this moment, it maybe doesn’t look that bad, but it’s a great place to mix even more logic with dirty code. This is a great example where we should stop and rethink how we could maximize the amount of pure code.</p>
 <p>Instead of expanding the <code>process/2</code> function, we could built on top of the <code>merge_price/3</code> and <code>generate_ohlc/4</code> functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:</p>
-<div class="sourceCode" id="cb436"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb436-1"><a href="idiomatic-otp.html#cb436-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator.ex</span></span>
+<div class="sourceCode" id="cb436"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb436-1"><a href="idiomatic-otp.html#cb436-1" tabindex="-1"></a><span class="co"># /apps/indicator/lib/indicator/ohlc.ex</span></span>
 <span id="cb436-2"><a href="idiomatic-otp.html#cb436-2" tabindex="-1"></a>  <span class="kw">def</span> merge_prices<span class="fu">(</span>ohlcs, price, trade_time<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb436-3"><a href="idiomatic-otp.html#cb436-3" tabindex="-1"></a>    results <span class="op">=</span></span>
 <span id="cb436-4"><a href="idiomatic-otp.html#cb436-4" tabindex="-1"></a>      ohlcs</span>

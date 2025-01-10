@@ -342,7 +342,7 @@ Enough theory - let's look into how we could update our `Indicator.Ohlc` module 
 Initially, we could be tempted to update the `process/2` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /apps/indicator/lib/indicator.ex
+# /apps/indicator/lib/indicator/ohlc.ex
   def process([_ | _] = ohlcs, %TradeEvent{} = trade_event) do
     results =
       ohlcs
@@ -370,7 +370,7 @@ We added some logic to both clauses. At this moment, it maybe doesn't look that 
 Instead of expanding the `process/2` function, we could built on top of the `merge_price/3` and `generate_ohlc/4` functions, which deal with a single OHLC data. We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /apps/indicator/lib/indicator.ex
+# /apps/indicator/lib/indicator/ohlc.ex
   def merge_prices(ohlcs, price, trade_time) do
     results =
       ohlcs
