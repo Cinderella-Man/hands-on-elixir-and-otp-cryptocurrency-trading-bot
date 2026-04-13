@@ -1,5 +1,24 @@
 # Store trade events and orders inside the database
 
+In the last chapter, we built a macro-based `Core.ServiceSupervisor` to eliminate duplicated supervision code.
+It works - but if you felt like we were reaching for a sledgehammer to hang a picture frame, you're not alone.
+Macros are powerful, but they add complexity that can make debugging harder and confuse developers unfamiliar with metaprogramming.
+
+Here's the good news: Elixir provides a simpler tool for exactly this problem.
+The `Registry` module lets us track dynamic processes using plain strings instead of atoms,
+and it integrates seamlessly with `DynamicSupervisor`.
+By the end of this chapter, we'll have a supervision pattern so clean that the `Core.ServiceSupervisor` becomes obsolete.
+
+But first, we need data to work with. Our trading bot can execute trades, but it has amnesia -
+every time we restart, all history vanishes. That's a problem for two reasons:
+
+1. **Backtesting**: We can't evaluate our strategy against historical data if we don't store that data.
+2. **Auditing**: Any serious trading system needs a record of what happened and when.
+
+In this chapter, we'll create a `data_warehouse` application that subscribes to trade events and orders,
+persisting them to a database. Along the way, we'll discover that `Registry` plus `DynamicSupervisor`
+gives us everything the macro approach provided - with half the complexity.
+
 ## Objectives
 - overview of requirements
 - create a new `data_warehouse` application in the umbrella
@@ -10,17 +29,30 @@
 
 ## Overview of requirements
 
-In the next chapter, we will move on to testing our strategy against historical data(aka backtesting - I will explain that process in the next chapter). What we need to have in place before we will be able to do that is both trade events and orders stored in the database.
+In the next chapter, we will test our strategy against historical data - a process called backtesting that I'll explain in detail when we get there.
 
-Starting with the trade events. The `streamer` application could store trade events from Binance inside its database but how would that work if we would like to introduce another source of non-streamed trade events(ie. flat files, HTTP polling). It would be better if the `Streamer.Binance` process would keep on streaming those trade events as it is and we would create a new application that would subscribe to the existing `TRADE_EVENTS:#{symbol}` topic and store them in the database.
+What we need to have in place before we will be able to do that is both trade events and orders stored in the database.
 
-A similar idea applies to the orders' data. At this moment the `naive` application uses the Binance module to place orders. We could store them inside the `naive` application's database but how would that work if we would like to introduce another trading strategy. Holding data in separate databases for each strategy would cause further complications in future reporting, auditing, etc.
+Starting with the trade events.
+The `streamer` application could store trade events from Binance inside its database but how would that work
+if we would like to introduce another source of non-streamed trade events(ie. flat files, HTTP polling).
+It would be better if the `Streamer.Binance` process would keep on streaming those trade events
+as it is and we would create a new application that would subscribe to the existing `TRADE_EVENTS:#{symbol}` topic and store them in the database.
 
-To store trade events' and orders' data we will create a new application called `data_warehouse` inside our umbrella project. It will subscribe to a `TRADE_EVENTS:#{symbol}` stream as well as `ORDERS:#{symbol}` stream, convert broadcasted data to its own representations(structs) and store it inside the database.
+A similar idea applies to the orders' data. At this moment the `naive` application uses the Binance module to place orders.
+We could store them inside the `naive` application's database but how would that work if we would like to introduce another trading strategy.
+Holding data in separate databases for each strategy would cause further complications in future reporting, auditing, etc.
 
-Trade events are already broadcasted to the PubSub topic, orders on the other hand aren't. We will need to modify the `Naive.Trader` module to broadcast the new and updated orders to the `ORDERS:#{symbol}` topic.
+To store trade events' and orders' data we will create a new application called `data_warehouse` inside our umbrella project.
+It will subscribe to a `TRADE_EVENTS:#{symbol}` stream as well as `ORDERS:#{symbol}` stream,
+convert broadcasted data to its own representations(structs) and store it inside the database.
 
-After implementing the basic worker that will store the incoming data(trade events and orders) inside the database, we will look into adding a supervision tree utilizing [Elixir Registry](https://hexdocs.pm/elixir/master/Registry.html). It will allow us to skip registering every worker with a unique atom and will offer an easy lookup to fetch PIDs instead.
+Trade events are already broadcasted to the PubSub topic, orders on the other hand aren't.
+We will need to modify the `Naive.Trader` module to broadcast the new and updated orders to the `ORDERS:#{symbol}` topic.
+
+After implementing the basic worker that will store the incoming data(trade events and orders) inside the database,
+we will look into adding a supervision tree utilizing [Elixir Registry](https://hexdocs.pm/elixir/master/Registry.html).
+It will allow us to skip registering every worker with a unique atom and will offer an easy lookup to fetch PIDs instead.
 
 ## Create a new `data_warehouse` application in the umbrella
 
@@ -51,6 +83,7 @@ We can now follow similar steps as previously and add required dependencies (lik
   defp deps do
     [
       {:binance, "~> 1.0"},
+      {:decimal, "~> 2.0"},
       {:ecto_sql, "~> 3.0"},
       {:ecto_enum, "~> 1.4"},
       {:phoenix_pubsub, "~> 2.0"},
@@ -60,7 +93,8 @@ We can now follow similar steps as previously and add required dependencies (lik
   end
 ```
 
-Additionally, we added the `phoenix_pubsub`(to subscribe to the PubSub topic), the `streamer` application(to use its `Streamer.Binance.TradeEvent` struct) and the `binance` package(to pattern match it's structs).
+Additionally, we added the `phoenix_pubsub`(to subscribe to the PubSub topic), the `streamer` application(to use its `Streamer.Binance.TradeEvent` struct),
+the `decimal` module to convert numbers and the `binance` package(to pattern match its structs).
 
 We can now jump back to the terminal to install added dependencies and generate a new `Ecto.Repo` module:
 
@@ -79,15 +113,14 @@ Before we will be able to create migrations that will create our tables we need 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
 ...
-config :data_warehouse,            # <= added line
-  ecto_repos: [DataWarehouse.Repo] # <= added line
-
 config :data_warehouse, DataWarehouse.Repo,
-  database: "data_warehouse",         # <= updated line
-  username: "postgres",               # <= updated line
-  password: "hedgehogSecretPassword", # <= updated line
+  database: "data_warehouse", # <= update this line
+  username: "postgres",       # <= update this line
+  password: "postgres",       # <= update this line
   hostname: "localhost"
 ...
+config :data_warehouse,            # <= add this line
+  ecto_repos: [DataWarehouse.Repo] # <= add this line
 ```
 
 and add the `DataWarehouse.Repo` module to the children list of the `DataWarehouse.Application`'s process:
@@ -105,7 +138,7 @@ The last step will be to create a database by running `mix ecto.create -r DataWa
 
 This ends up the setup of the `Ecto` - we can now move on to the implementation of storing the orders and the trade events.
 
-\newpage
+
 
 ## Store trade events' data
 
@@ -118,7 +151,15 @@ $ mix ecto.gen.migration create_trade_events
 * creating priv/repo/migrations/20210222224514_create_trade_events.exs
 ```
 
-The `Streamer.Binance.TradeEvent` struct will serve as a list of columns for our new `trade_events` table. Here's the full implementation of our migration:
+The `Streamer.Binance.TradeEvent` struct will serve as a list of columns for our new `trade_events` table.
+
+Please note that we'll store `price` and `quantity` as `:decimal` rather than `:string` to enable mathematical
+comparisons in SQL queries (e.g., `WHERE price > 1000.5`).
+String columns would perform lexicographic comparisons `where "9.0" > "10.0"`,
+which would give incorrect results. We'll use `:decimal` instead of `:float` to
+maintain exact precision for financial calculations without floating-point rounding errors.
+
+Here's the full implementation of our migration:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210222224514_create_trade_events.exs
@@ -131,11 +172,9 @@ defmodule DataWarehouse.Repo.Migrations.CreateTradeEvents do
       add(:event_type, :text)
       add(:event_time, :bigint)
       add(:symbol, :text)
-      add(:trade_id, :integer)
-      add(:price, :text)
-      add(:quantity, :text)
-      add(:buyer_order_id, :bigint)
-      add(:seller_order_id, :bigint)
+      add(:trade_id, :bigint)
+      add(:price, :decimal)
+      add(:quantity, :decimal)
       add(:trade_time, :bigint)
       add(:buyer_market_maker, :bool)
 
@@ -153,10 +192,10 @@ Let's run the migration so it will create a new `trade_events` table for us:
 $ mix ecto.migrate
 ```
 
-\newpage
-
 The next step will be to create a new directory called `schema` inside the                              
-`apps/data_warehouse/lib/data_warehouse` directory. Inside it, we need to create a new schema file called `trade_event.ex`. We can copy across the same columns from the migration straight to schema:
+`apps/data_warehouse/lib/data_warehouse` directory.
+Inside it, we need to create a new schema file called `trade_event.ex`.
+We can copy across the same columns from the migration straight to schema:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/trade_event.ex
@@ -170,10 +209,8 @@ defmodule DataWarehouse.Schema.TradeEvent do
     field(:event_time, :integer)
     field(:symbol, :string)
     field(:trade_id, :integer)
-    field(:price, :string)
-    field(:quantity, :string)
-    field(:buyer_order_id, :integer)
-    field(:seller_order_id, :integer)
+    field(:price, :decimal)
+    field(:quantity, :decimal)
     field(:trade_time, :integer)
     field(:buyer_market_maker, :boolean)
 
@@ -184,7 +221,8 @@ end
 
 At this moment we should be able to execute crud(create, read[select], update, delete) operations over the table using the above struct.
 
-Currently, we can already store the trade events' data inside the database so we can move on to collecting it. Trade events are getting broadcasted by the `Streamer.Binance` process here:
+Currently, we can already store the trade events' data inside the database so we can move on to collecting it.
+Trade events are getting broadcasted by the `Streamer.Binance` process here:
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/streamer/lib/streamer/binance.ex
@@ -199,7 +237,7 @@ Currently, we can already store the trade events' data inside the database so we
 
 We will implement a `subscriber` process that will be given a PubSub topic and will store incoming data inside the database.
 
-\newpage
+
 
 Let's start by creating a new folder called `subscriber` inside the                              
 `apps/data_warehouse/lib/data_warehouse` directory together with a new file called `worker.ex` inside it:
@@ -233,7 +271,12 @@ defmodule DataWarehouse.Subscriber.Worker do
 end
 ```
 
-At this moment it's just a box standard implementation of the `GenServer` with a state struct containing a single key(`:topic`). We need to update the `init/1` function to subscribe to the PubSub topic:
+At this moment it's just a bog-standard implementation of the `GenServer` with a state struct containing a single key(`:topic`).
+
+**Note:** We're using an atom-based name here (`:"#{__MODULE__}-#{topic}"`).
+This works for now, but we'll replace it with Registry-based naming in the supervision section.
+
+We need to update the `init/1` function to subscribe to the PubSub topic:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -247,7 +290,7 @@ At this moment it's just a box standard implementation of the `GenServer` with a
     ...
 ```
 
-\newpage
+
 
 Next, we need to add a handler for received messages:
 
@@ -257,6 +300,8 @@ Next, we need to add a handler for received messages:
     opts =
       trade_event
       |> Map.from_struct()
+      |> Map.update!(:price, &Decimal.from_float/1)
+      |> Map.update!(:quantity, &Decimal.new/1)
 
     struct!(DataWarehouse.Schema.TradeEvent, opts)
     |> DataWarehouse.Repo.insert()
@@ -265,9 +310,11 @@ Next, we need to add a handler for received messages:
   end
 ```
 
-As we did in the case of the `Naive.Trader`, all incoming messages trigger a `handle_info/2` callback with the contents of the message and the current state of the subscriber worker. We just convert that incoming trade event to a map and then that map to the `TradeEvent` struct that gets inserted into the database.
+As we did in the case of the `Naive.Trader`, all incoming messages trigger a `handle_info/2` callback with the contents of
+the message and the current state of the subscriber worker.
+We just convert that incoming trade event to a map and then that map to the `TradeEvent` struct that gets inserted into the database.
 
-This finishes storing of trade events implementation which we can test by in the interactive shell by running:
+That's all the code we need to store trade events. Let's test it in the interactive shell:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -299,8 +346,6 @@ symbol             | XRPUSDT
 trade_id           | 152765072
 price              | 0.56554000
 quantity           | 1199.10000000
-buyer_order_id     | 1762454848
-seller_order_id    | 1762454775
 trade_time         | 1614041388235
 buyer_market_maker | f
 inserted_at        | 2021-02-23 00:49:48
@@ -319,7 +364,8 @@ $ mix ecto.gen.migration create_orders
 * creating priv/repo/migrations/20210222224522_create_orders.exs
 ```
 
-The list of columns for this table will be a copy of [`Binance.Order`](https://github.com/dvcrn/binance.ex/blob/master/lib/binance/order.ex) struct returned from the Binance exchange:
+The list of columns for this table will be a copy of [`Binance.Order`](https://github.com/dvcrn/binance.ex/blob/master/lib/binance/order.ex)
+struct returned from the Binance exchange:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs
@@ -331,16 +377,16 @@ defmodule DataWarehouse.Repo.Migrations.CreateOrders do
       add(:order_id, :bigint, primary_key: true)
       add(:client_order_id, :text)
       add(:symbol, :text)
-      add(:price, :text)
-      add(:original_quantity, :text)
-      add(:executed_quantity, :text)
-      add(:cummulative_quote_quantity, :text)
+      add(:price, :decimal)
+      add(:original_quantity, :decimal)
+      add(:executed_quantity, :decimal)
+      add(:cummulative_quote_quantity, :decimal)
       add(:status, :text)
       add(:time_in_force, :text)
       add(:type, :text)
       add(:side, :text)
-      add(:stop_price, :text)
-      add(:iceberg_quantity, :text)
+      add(:stop_price, :decimal)
+      add(:iceberg_quantity, :decimal)
       add(:time, :bigint)
       add(:update_time, :bigint)
 
@@ -360,7 +406,8 @@ Let's run the migration so it will create a new `orders` table for us:
 $ mix ecto.migrate
 ```
 
-We can copy the above fields list to create a schema module. First, let's create a new file called `order.ex` inside the `apps/data_warehouse/lib/data_warehouse/schema` directory:
+We can copy the above fields list to create a schema module.
+First, let's create a new file called `order.ex` inside the `apps/data_warehouse/lib/data_warehouse/schema` directory:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/order.ex
@@ -372,16 +419,16 @@ defmodule DataWarehouse.Schema.Order do
   schema "orders" do
     field(:client_order_id, :string)
     field(:symbol, :string)
-    field(:price, :string)
-    field(:original_quantity, :string)
-    field(:executed_quantity, :string)
-    field(:cummulative_quote_quantity, :string)
+    field(:price, :decimal)
+    field(:original_quantity, :decimal)
+    field(:executed_quantity, :decimal)
+    field(:cummulative_quote_quantity, :decimal)
     field(:status, :string)
     field(:time_in_force, :string)
     field(:type, :string)
     field(:side, :string)
-    field(:stop_price, :string)
-    field(:iceberg_quantity, :string)
+    field(:stop_price, :decimal)
+    field(:iceberg_quantity, :decimal)
     field(:time, :integer)
     field(:update_time, :integer)
 
@@ -390,9 +437,8 @@ defmodule DataWarehouse.Schema.Order do
 end
 ```
 
-\newpage
-
-We can now add a handler to our `DataWarehouse.Subscriber.Worker` that will convert the `Binance.Order` struct to `DataWarehouse.Schema.Order` and store data inside the database:
+We can now add a handler to our `DataWarehouse.Subscriber.Worker` that will convert the `Binance.Order` struct
+to `DataWarehouse.Schema.Order` and store data inside the database:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -400,13 +446,15 @@ We can now add a handler to our `DataWarehouse.Subscriber.Worker` that will conv
     data =
       order
       |> Map.from_struct()
+      |> Map.update!(:price, &Decimal.from_float/1)
+      |> Map.update!(:stop_price, &Decimal.new/1)
 
     struct(DataWarehouse.Schema.Order, data)
     |> Map.merge(%{
-      original_quantity: order.orig_qty,
-      executed_quantity: order.executed_qty,
-      cummulative_quote_quantity: order.cummulative_quote_qty,
-      iceberg_quantity: order.iceberg_qty
+      original_quantity: Decimal.new(order.orig_qty),
+      executed_quantity: Decimal.new(order.executed_qty),
+      cummulative_quote_quantity: Decimal.new(order.cummulative_quote_qty),
+      iceberg_quantity: Decimal.new(order.iceberg_qty)
     })
     |> DataWarehouse.Repo.insert(
       on_conflict: :replace_all,
@@ -418,23 +466,35 @@ We can now add a handler to our `DataWarehouse.Subscriber.Worker` that will conv
   ...
 ```
 
-In the above code, we are copying the matching fields using the `struct/2` function but all other fields that aren't 1 to 1 between two structs won't be copied, so we need to merge them in the second step(using the `Map.merge/2` function). We are also using the `on_conflict: :replace_all` option to make the `insert/2` function act as it would be `upsert/2`(to avoid writing separate logic for inserting and updating the orders).
+In the above code, we are copying the matching fields using the `struct/2` function but all other fields
+that aren't 1 to 1 between two structs won't be copied,
+so we need to merge them in the second step(using the `Map.merge/2` function).
+We are also using the `on_conflict: :replace_all` option to make the `insert/2` function act as
+it would be `upsert/2`(to avoid writing separate logic for inserting and updating the orders).
 
 Having all of this in place we will now be able to store broadcasted orders' data in the database but there's nothing actually broadcasting them.
 
-We need to modify the `Naive.Trader` module to broadcast the `Binance.Order` whenever it places buy/sell orders or fetches them again:
+We need to modify the `Naive.Trader` module to broadcast the `Binance.Order` whenever it places buy/sell orders:
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/trader.ex
     ...
-    # inside placing initial buy order callback
+  # inside placing initial buy order callback
     {:ok, %Binance.OrderResponse{} = order} =
       @binance_client.order_limit_buy(symbol, quantity, price, "GTC")
 
     :ok = broadcast_order(order)
     ...
 
-    # inside buy order (partially) filled callback
+  # inside buy order filled callback
+  def handle_info(
+        %TradeEvent{
+          ...
+        },
+        %State{
+          ...
+        } ...
+  ) ... do
     {:ok, %Binance.Order{} = current_buy_order} =
       @binance_client.get_order(
         symbol,
@@ -442,39 +502,46 @@ We need to modify the `Naive.Trader` module to broadcast the `Binance.Order` whe
         order_id
       )
 
-    :ok = broadcast_order(current_buy_order)
+    buy_order_response = convert_order_to_order_response(current_buy_order)
+    :ok = broadcast_order(buy_order_response)
+    ...
+    {:ok, %Binance.OrderResponse{} = order} =
+      @binance_client.order_limit_sell(symbol, quantity, sell_price, "GTC")
+
+    :ok = broadcast_order(order)
     ...
 
-        # inside the same callback in case of buy order filled
-        {:ok, %Binance.OrderResponse{} = order} =
-          @binance_client.order_limit_sell(symbol, quantity, sell_price, "GTC")
-        
-        :ok = broadcast_order(order)
-    ...
-
-    # inside sell order (partially) filled callback
+  # inside sell order filled callback
+  def handle_info(
+        %TradeEvent{
+          ...
+        },
+        %State{
+          ...
+        } ...
+  ) ... do
     {:ok, %Binance.Order{} = current_sell_order} =
       @binance_client.get_order(
         symbol,
         timestamp,
         order_id
       )
-    
-    :ok = broadcast_order(current_sell_order)
+
+    sell_order_response = convert_order_to_order_response(current_sell_order)
+    :ok = broadcast_order(sell_order_response)
     ...
 ```
 
-Above 4 places send both the `Binance.OrderResponse` and the `Binance.Order` structs - our `broadcast_order/1` function needs to be able to handle them both. Add the following at the bottom of the `Naive.Trader` module:
+The above four places send the `Binance.OrderResponse` structs - our `broadcast_order/1` function needs to convert them to the `Binance.Order` structs.
+Add the following at the bottom of the `Naive.Trader` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   defp broadcast_order(%Binance.OrderResponse{} = response) do
-    response
-    |> convert_to_order()
-    |> broadcast_order()
-  end
+    order =
+      response
+      |> convert_to_order()
 
-  defp broadcast_order(%Binance.Order{} = order) do
     Phoenix.PubSub.broadcast(
       Streamer.PubSub,
       "ORDERS:#{order.symbol}",
@@ -497,33 +564,34 @@ Above 4 places send both the `Binance.OrderResponse` and the `Binance.Order` str
   end
 ```
 
-As `DataWarehouse.Subscriber.Worker` process expects only the `Binance.Order` structs to be broadcasted, we first check is it the `Binance.OrderResponse` struct and convert the passed value to the `Binance.Order` struct (if that's the case) and only then broadcast it to the PubSub topic.
+As `DataWarehouse.Subscriber.Worker` process expects only the `Binance.Order` structs to be broadcasted,
+we first convert the passed `Binance.OrderResponse` struct to the `Binance.Order` struct
+and only then broadcast it to the PubSub topic.
 
-The converting logic as previously uses the `struct/2` function but it also merges in default values that are missing from the much smaller `Binance.OrderResponse` struct(with comparison to the `Binance.Order`).
+The converting logic as previously uses the `struct/2` function but it also merges in default values that
+are missing from the much smaller `Binance.OrderResponse` struct(with comparison to the `Binance.Order`).
 
 At this moment we will be able to store orders inside the database and we can check that by running:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> DataWarehouse.Subscriber.Worker.start_link("ORDERS:NEOUSDT")
+iex(1)> DataWarehouse.Subscriber.Worker.start_link("ORDERS:XRPUSDT")
 22:37:43.043 [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT
 {:ok, #PID<0.400.0>}
-iex(2)> Naive.start_trading("NEOUSDT")
-22:38:39.741 [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT
-22:38:39.832 [info]  Starting new supervision tree to trade on NEOUSDT
+iex(2)> Naive.start_trading("XRPUSDT")
+22:38:39.741 [info]  Starting Elixir.Naive.SymbolSupervisor worker for XRPUSDT
+22:38:39.832 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.402.0>}
-22:38:41.654 [info]  Initializing new trader(1614119921653) for NEOUSDT
-iex(3)> Streamer.start_streaming("NEOUSDT")
-22:39:23.786 [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT
+22:38:41.654 [info]  Initializing new trader(1614119921653) for XRPUSDT
+iex(3)> Streamer.start_streaming("XRPUSDT")
+22:39:23.786 [info]  Starting Elixir.Streamer.Binance worker for XRPUSDT
 {:ok, #PID<0.412.0>}
-22:39:27.187 [info]  The trader(1614119921653) is placing a BUY order for NEOUSDT @ 37.549,
+22:39:27.187 [info]  The trader(1614119921653) is placing a BUY order for XRPUSDT @ 37.549,
 quantity: 5.326
-22:39:27.449 [info]  The trader(1614119921653) is placing a SELL order for NEOUSDT @ 37.578,
+22:39:27.449 [info]  The trader(1614119921653) is placing a SELL order for XRPUSDT @ 37.578,
 quantity: 5.326.
 ```
-
-\newpage
 
 At this moment inside the DataWarehouse's database we should see orders:
 
@@ -539,7 +607,7 @@ data_warehouse=# SELECT * FROM orders;
 -[ RECORD 1 ]--------------+---------------------------------
 order_id                   | 1
 client_order_id            | C81E728D9D4C2F636F067F89CC14862C
-symbol                     | NEOUSDT
+symbol                     | XRPUSDT
 price                      | 38.16
 original_quantity          | 5.241
 executed_quantity          | 0.00000000
@@ -557,7 +625,7 @@ updated_at                 | 2021-02-23 22:55:10
 -[ RECORD 2 ]--------------+---------------------------------
 order_id                   | 2
 client_order_id            | ECCBC87E4B5CE2FE28308FD9F2A7BAF3
-symbol                     | NEOUSDT
+symbol                     | XRPUSDT
 price                      | 38.19
 original_quantity          | 5.241
 executed_quantity          | 0.00000000
@@ -574,23 +642,37 @@ inserted_at                | 2021-02-23 22:55:10
 updated_at                 | 2021-02-23 22:55:10
 ```
 
-The first record above got inserted and updated as its state is "FILLED", the second one wasn't updated yet as it's still in "NEW" state - that confirms that the upsert trick works.
+The first record above got inserted and updated as its state is "FILLED",
+the second one wasn't updated yet as it's still in "NEW" state - that confirms that the upsert trick works.
 
 That finishes the implementation of storing orders inside the database.
 
+At this point we can manually start workers to store data, but there's no fault tolerance.
+If a worker crashes, the data stops flowing and nobody restarts it.
+Let's fix that by building a proper supervision tree - and while we're at it,
+we'll discover a pattern that makes our macro-based `Core.ServiceSupervisor` obsolete.
+
 ## Implement supervision
 
-Currently, we have a `DataWarehouse.Subscriber.Worker` process that will take care of storing data into the database, but sadly if anything will go wrong inside our worker and it will crash there's no supervision in place to restart it.
+The supervision tree for the `data_warehouse` application will be similar to ones from the `naive` and `streamer` apps
+but different enough to *not* use the `Core.ServiceSupervisor` abstraction.
 
-The supervision tree for the `data_warehouse` application will be similar to ones from the `naive` and `streamer` apps but different enough to *not* use the `Core.ServiceSupervisor` abstraction.
+For example, our schema uses a `topic` column instead of `symbol`. We could update `Core.ServiceSupervisor` to accept a configurable column name,
+but that's adding complexity to solve a problem we created by overengineering in the first place.
 
-For example, it doesn't use the `symbol` column, it works based on the `topic` column. This would require changes to the `Core.ServiceSupervisor`'s functions like `update_status/4` or `fetch_symbols_to_start/2`, we could update them to accept column name but that would need to be passed through other functions. We can see that this is probably not the best approach and the further we will get the more complex it will become. The second issue would be that we are registering all processes with names and that can be problematic as the list of processes will start to grow(as we can imagine in the case of the `data_warehouse` application).
+There's a deeper issue too: we're registering every worker with an atom name. Atoms aren't garbage collected - once created,
+they live forever in the VM's atom table. With enough symbols and topics, we could eventually hit Erlang's atom limit(about 1 million by default).
+That's unlikely in practice, but it's a code smell that suggests we're using the wrong tool.
 
-The better approach would be to mix the [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html) together with [Registry](https://hexdocs.pm/elixir/master/Registry.html).  
+The better approach is to combine [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html)
+with [Registry](https://hexdocs.pm/elixir/master/Registry.html).
 
-The `DynamicSupervisor` will supervise the `Subscriber.Worker`s and instead of keeping track of them by registering them using atoms we will start them `:via` Elixir `Registry`.
+The `DynamicSupervisor` will supervise the `Subscriber.Worker`s and instead of keeping track of them by registering them
+using atoms we will start them `:via` Elixir `Registry`.
 
-We will add all functionality that we implemented for `naive` and `streamer` applications. We will provide the functions to start and stop storing data on passed PubSub topics as well as store those topics inside the database so storing will be autostarted.
+We will add all functionality that we implemented for `naive` and `streamer` applications.
+We will provide the functions to start and stop storing data on passed PubSub topics
+as well as store those topics inside the database so storing will be autostarted.
 
 ### Create `subscriber_settings` table
 
@@ -602,9 +684,10 @@ $ mix ecto.gen.migration create_subscriber_settings
 * creating priv/repo/migrations/20210227230123_create_subscriber_settings.exs
 ```
 
-\newpage
-
-At this moment we can copy the code to create the `settings` table(enum and index as well) from the `streamer` application and tweak it to fit the `data_warehouse` application. So the first important change (besides updating namespaces from `Streamer` to `DataWarehouse`) will be to make a note that we have a setting per topic - not per symbol as for the `naive` and `streamer` applications:
+At this moment we can copy the code to create the `settings` table(enum and index as well)
+from the `streamer` application and tweak it to fit the `data_warehouse` application.
+So the first important change (besides updating namespaces from `Streamer` to `DataWarehouse`)
+will be to make a note that we have a setting per topic - not per symbol as for the `naive` and `streamer` applications:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210227230123_create_subscriber_settings.exs
@@ -629,7 +712,7 @@ defmodule DataWarehouse.Repo.Migrations.CreateSubscriberSettings do
 end
 ```
 
-Both schema and enum will be almost identical to the ones from the `streamer` application - we can simply copy those files and apply basic tweaks like updating the namespace:
+The schema and enum are nearly identical to the `streamer` versions - copy them and update the namespaces:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cp apps/streamer/lib/streamer/schema/settings.ex \
@@ -638,7 +721,8 @@ $ cp apps/streamer/lib/streamer/schema/streaming_status_enum.ex \
 apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex
 ```
 
-Remember about updating the `symbol` column to `topic` as well as table name inside the
+
+After copying, update `symbol` to `topic` and change the table name in
 
 `DataWarehouse.Schema.SubscriberSettings`:
 
@@ -660,7 +744,8 @@ defmodule DataWarehouse.Schema.SubscriberSettings do
 end
 ```
 
-Inside `apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex` we need to swap references of `Streamer` to `DataWarehouse` and references of `StreamingStatusEnum` to `SubscriberStatusEnum`:
+Inside `apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex` we need to swap references
+of `Streamer` to `DataWarehouse` and references of `StreamingStatusEnum` to `SubscriberStatusEnum`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex
@@ -675,15 +760,16 @@ Don't forget to run the migration:
 $ mix ecto.migrate
 ```
 
-At this moment we have all pieces in place to execute queries on our new table. In this place, we can think about the seeding script. For the `data_warehouse` specifically, we won't need to provide that script as we don't know in advance what topic names we will use. Instead of seeding settings in advance, our code will "upsert"(using `insert` function) settings when `start_storing/1` or `stop_storing/1` are called.
+At this moment we have all pieces in place to execute queries on our new table.
+In this place, we can think about the seeding script. For the `data_warehouse` specifically,
+we won't need to provide that script as we don't know in advance what topic names we will use.
+Instead of seeding settings in advance, our code will "upsert"(using `insert` function)
+settings when `start_storing/1` or `stop_storing/1` are called.
 
 ### Redesign supervision using Registry
 
-We can now focus on drafting a supervision tree for the `data_warehouse` application. At this moment we have only the `DataWarehouse.Subscriber.Worker` and the `DataWarehouse.Application` modules.
-
-As it was with the case of `naive` and `streamer` applications, we will need an additional level of supervision to cater for "autostarting" `Task` as well as, in the case of the `data_warehouse` application the `Registry`.
-
-\newpage
+We can now focus on the supervision tree. As with the `naive` and `streamer` applications,
+we'll need an additional supervision level for the autostart `Task` - plus, for `data_warehouse`, the `Registry`.
 
 The full supervision tree will look as follows:
 
@@ -691,11 +777,24 @@ The full supervision tree will look as follows:
 knitr::include_graphics("images/chapter_14_01_sup_diagram.png")
 ```
 
-Everything looks very similar to the supervision tree that we created in the `streamer` and the `naive` applications but there's an additional `Registry` that is supervised by the `SubscriberSupervisior` process.
+Everything looks very similar to the supervision tree that we created in the `streamer` and the `naive` applications
+but there's an additional `Registry` that is supervised by the `SubscriberSupervisor` process.
 
-The idea is that inside the `Worker` module's `start_link/1` we will register worker processes using [:via](https://hexdocs.pm/elixir/master/GenServer.html#module-name-registration) tuple. Internally, GenServer will utilize `Registry`'s functions like `register_name/2` to add process to the registry under the `topic` string. This way we will be able to retrieve PIDs assigned to topics using those topic strings instead of registering each worker process with an atom name.
+The idea is that inside the `Worker` module's `start_link/1` we will register worker processes
+using [:via](https://hexdocs.pm/elixir/master/GenServer.html#module-name-registration) tuple.
+Internally, GenServer will utilize `Registry`'s functions like `register_name/2` to add process
+to the registry under the `topic` string. This way we will be able to retrieve PIDs assigned to
+topics using those topic strings instead of registering each worker process with an atom name.
 
-Just as previously the `DynamicSupervisor` will be in charge of supervising the `Worker` processes and it won't be even aware that we are using the `Registry` to keep track of `topic => PID` association.
+Just as previously the `DynamicSupervisor` will be in charge of supervising the `Worker` processes
+and it won't be even aware that we are using the `Registry` to keep track of `topic => PID` association.
+
+This is the payoff for the atom concern we flagged back in Chapter 5.
+Instead of creating atoms like `:"Naive.SymbolSupervisor-XRPUSDT"` for every symbol,
+we now use plain strings as Registry keys.
+No atom table growth, no risk of hitting the VM's atom limit - just clean, garbage-collectible strings.
+
+And here's the best part: this entire pattern required zero macros.
 
 ### Create the `DataWarehouse.Subscriber.DynamicSupervisor` module
 
@@ -734,7 +833,8 @@ As we will put all our logic related to autostarting, starting and stopping insi
 
 Additionally, we added the `@registry` module attribute that we will use to retrieve PID for the specific topic.
 
-We can move on to implementing `autostart_workers/0` which will look very similar to the ones that we implemented in the `streamer` and the `naive` applications:
+We can move on to implementing `autostart_workers/0` which will look very similar to the ones
+that we implemented in the `streamer` and the `naive` applications:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -759,9 +859,10 @@ We can move on to implementing `autostart_workers/0` which will look very simila
 
 We can see that we are querying the database for a list of `topic`s(not symbols) and we are calling `start_child/2` for each result.
 
+The `start_worker/1` is where the `Registry` will shine as we won't need
+to check if there's already a process running for that topic - we can leave that check to the `Registry`.
 
-
-The `start_worker/1` is where the `Registry` will shine as we won't need to check is there already a process running for that topic - we can leave that check to the `Registry`. If there's a process already running for that topic it will just return a tuple starting with `:error` atom:
+If there's a process already running for that topic it will just return a tuple starting with `:error` atom:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -785,9 +886,10 @@ The `start_worker/1` is where the `Registry` will shine as we won't need to chec
   end
 ```
 
-As we are not seeding the database with the default settings we will use the `insert/2` function with options(as previously) to make it work as it would be an "upsert" function.
+Since we're not seeding the database with default settings, we use the same upsert pattern we used for orders.
 
-Last function in this module will be `stop_worker/1` which uses private `stop_child/1` function. The `stop_child/1` function shows how to retrieve `PID` of the process assigned to the passed `topic`:
+Last function in this module will be `stop_worker/1` which uses private `stop_child/1` function.
+The `stop_child/1` function shows how to retrieve `PID` of the process assigned to the passed `topic`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -806,13 +908,13 @@ Last function in this module will be `stop_worker/1` which uses private `stop_ch
   end
 ```
 
-That is a full implementation of the `DataWarehouse.Subscriber.DynamicSupervisor` module and it's almost as slim as one from the last chapter where we leveraged macros to achieve that lightness. Using the `Registry` is the preferred way to manage a list of identifiable processes. We won't run into an issue of overusing the atoms(as they are not garbage collected, we could hit that limit sooner or later).
-
-
+That's the full implementation of `DataWarehouse.Subscriber.DynamicSupervisor` -
+and it's nearly as slim as our macro-based version from the last chapter, but without any metaprogramming.
 
 ### Register Worker processes using :via
 
-The above `DynamicSupervisor` module assumes that Workers are registered inside the `Registry` - to make this happen we will need to update the `start_link/1` function of the                   
+The above `DynamicSupervisor` module assumes that Workers are registered inside the `Registry` -
+to make this happen we will need to update the `start_link/1` function of the
 `DataWarehouse.Subscriber.Worker` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -827,16 +929,20 @@ The above `DynamicSupervisor` module assumes that Workers are registered inside 
   end
   ...
   defp via_tuple(topic) do
-    {:via, Registry, {:subscriber_workers, topic}}
+    {:via, Registry, {:subscriber_workers, String.upcase(topic)}}
   end
   ...    
 ```
 
-Passing the `:name` option to the `GenServer`'s `start_link/3` function we instruct it to utilize the `Registry` module to register processes under topic names.
+Passing the `:name` option to the `GenServer`'s `start_link/3` function we instruct it to
+utilize the `Registry` module to register processes under topic names.
 
 ### Create a new supervision level for Registry, Task and the DynamicSupervisor
 
-We have the lowest level modules - the `Worker` and the `DynamicSupervisor` implemented - time to add a new `Supervisor` that will start the `Registry`, the `DynamicSupervisor`, and the autostart storing `Task`. First create a new file called `subscriber_supervisor.ex` inside the `apps/data_warehouse/lib/data_warehouse` directory:
+We have the lowest level modules - the `Worker` and the `DynamicSupervisor` implemented -
+time to add a new `Supervisor` that will start the `Registry`, the `DynamicSupervisor`,
+and the autostart storing `Task`.
+First create a new file called `subscriber_supervisor.ex` inside the `apps/data_warehouse/lib/data_warehouse` directory:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber_supervisor.ex
@@ -882,8 +988,6 @@ We need to update the `DataWarehouse.Application` module to start our new
       {DataWarehouse.SubscriberSupervisor, []} # <= new module added
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: __MODULE__] # <= name updated
     Supervisor.start_link(children, opts)
   end
@@ -915,7 +1019,8 @@ The final step will be to add an interface to the `DataWarehouse` application to
   end
 ```
 
-Inside the above functions, we are just doing a couple of sanity checks on the case of the passed arguments assuming that both topics and stream are uppercase.
+Inside the above functions, we are just doing a couple of sanity checks on the case of
+the passed arguments assuming that both topics and stream are uppercase.
 
 ### Test
 
@@ -924,53 +1029,87 @@ The interface above was the last step in our implementation, we can now test tha
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> DataWarehouse.start_storing("TRADE_EVENTS", "NEOUSDT")
-19:34:00.740 [info]  Starting storing data from TRADE_EVENTS:NEOUSDT topic
-19:34:00.847 [info]  DataWarehouse worker is subscribing to TRADE_EVENTS:NEOUSDT
+iex(1)> DataWarehouse.start_storing("TRADE_EVENTS", "XRPUSDT")
+19:34:00.740 [info]  Starting storing data from TRADE_EVENTS:XRPUSDT topic
+19:34:00.847 [info]  DataWarehouse worker is subscribing to TRADE_EVENTS:XRPUSDT
 {:ok, #PID<0.429.0>}
-iex(2)> DataWarehouse.start_storing("TRADE_EVENTS", "NEOUSDT")
-19:34:04.753 [info]  Starting storing data from TRADE_EVENTS:NEOUSDT topic
+iex(2)> DataWarehouse.start_storing("TRADE_EVENTS", "XRPUSDT")
+19:34:04.753 [info]  Starting storing data from TRADE_EVENTS:XRPUSDT topic
 {:error, {:already_started, #PID<0.459.0>}}
-iex(3)> DataWarehouse.start_storing("ORDERS", "NEOUSDT")
-19:34:09.386 [info]  Starting storing data from ORDERS:NEOUSDT topic
-19:34:09.403 [info]  DataWarehouse worker is subscribing to ORDERS:NEOUSDT
+iex(3)> DataWarehouse.start_storing("ORDERS", "XRPUSDT")
+19:34:09.386 [info]  Starting storing data from ORDERS:XRPUSDT topic
+19:34:09.403 [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT
 {:ok, #PID<0.431.0>}
 BREAK: (a)bort (A)bort with dump (c)ontinue (p)roc info (i)nfo
        (l)oaded (v)ersion (k)ill (D)b-tables (d)istribution
 ^C%
 $ iex -S mix
 ...
-19:35:30.058 [info]  DataWarehouse worker is subscribing to TRADE_EVENTS:NEOUSDT
-19:35:30.062 [info]  DataWarehouse worker is subscribing to ORDERS:NEOUSDT
+19:35:30.058 [info]  DataWarehouse worker is subscribing to TRADE_EVENTS:XRPUSDT
+19:35:30.062 [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT
 # autostart works ^^^
-iex(1)> Naive.start_trading("NEOUSDT")
-19:36:45.316 [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT
-19:36:45.417 [info]  Starting new supervision tree to trade on NEOUSDT
+iex(1)> Naive.start_trading("XRPUSDT")
+19:36:45.316 [info]  Starting Elixir.Naive.SymbolSupervisor worker for XRPUSDT
+19:36:45.417 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.419.0>}
 iex(3)> 
-19:36:47.484 [info]  Initializing new trader(1615221407466) for NEOUSDT
-iex(2)> Streamer.start_streaming("NEOUSDT")
-16:37:39.660 [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT
+19:36:47.484 [info]  Initializing new trader(1615221407466) for XRPUSDT
+iex(2)> Streamer.start_streaming("XRPUSDT")
+16:37:39.660 [info]  Starting Elixir.Streamer.Binance worker for XRPUSDT
 {:ok, #PID<0.428.0>}
 ...
-iex(3)> DataWarehouse.stop_storing("trade_events", "NEOUSDT")
-19:39:26.398 [info]  Stopping storing data from trade_events:NEOUSDT topic
+iex(3)> DataWarehouse.stop_storing("trade_events", "XRPUSDT")
+19:39:26.398 [info]  Stopping storing data from trade_events:XRPUSDT topic
 :ok
-iex(4)> DataWarehouse.stop_storing("trade_events", "NEOUSDT")
-19:39:28.151 [info]  Stopping storing data from trade_events:NEOUSDT topic
-19:39:28.160 [warn]  Unable to locate process assigned to "trade_events:NEOUSDT"
+iex(4)> DataWarehouse.stop_storing("trade_events", "XRPUSDT")
+19:39:28.151 [info]  Stopping storing data from trade_events:XRPUSDT topic
+19:39:28.160 [warn]  Unable to locate process assigned to "trade_events:XRPUSDT"
 :ok
-iex(5)> [{pid, nil}] = Registry.lookup(:subscriber_workers, "ORDERS:NEOUSDT")
+iex(5)> [{pid, nil}] = Registry.lookup(:subscriber_workers, "ORDERS:XRPUSDT")
 [{#PID<0.417.0>, nil}]
 iex(6)> Process.exit(pid, :crash)
 true
-16:43:40.812 [info]  DataWarehouse worker is subscribing to ORDERS:NEOUSDT
+16:43:40.812 [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT
 ```
 
-As we can see even this simple implementation handles starting, autostarting, and stopping. It also gracefully handles starting workers when one is already running as well as stopping when there none running.
+As we can see even this simple implementation handles starting, autostarting, and stopping.
+It also gracefully handles starting workers when one is already running as well as stopping when there are none running.
 
-As a challenge, you could update the `naive` and the `streamer` application to use the `Registry` and remove `Core.ServiceSupervisor` module as it was superseded by the above solution - here's the [link to PR](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/pull/7)(pull request) that sums up the required changes.
+As a challenge, you could update the `naive` and the `streamer` application to use the `Registry`
+and remove the `Core.ServiceSupervisor` module(together with the `core` application)
+as it was superseded by the above solution -
+here's the [link to PR](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/pull/27)(pull request)
+that sums up the required changes.
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**We now have persistent storage and a cleaner supervision pattern.** Here's what we achieved:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_14)
+- Created a `data_warehouse` application that subscribes to PubSub topics and stores incoming data
+- Implemented handlers for both trade events and orders
+- Used `Registry` with `:via` tuples to track worker processes by topic - no atoms required
+- Built a complete supervision tree with autostart capability
+
+The key insight is that `Registry` solves the same "identify processes dynamically" problem as our macro approach,
+but without any metaprogramming. We register processes using plain strings (like `"TRADE_EVENTS:XRPUSDT"`),
+look them up when needed, and let the Registry handle all the bookkeeping.
+The DynamicSupervisor doesn't even know we're using Registry - it just supervises children as usual.
+
+This pattern is so much simpler that the `Core.ServiceSupervisor` module is now dead weight.
+If you completed the challenge to refactor `naive` and `streamer` to use Registry,
+you've already deleted it. If not, I encourage you to try - the PR linked above shows exactly what changes are needed.
+
+**So, What's Next?**
+
+With trade events flowing into our database, we finally have the raw material for backtesting.
+In the next chapter, we'll build a `Publisher` task that streams historical trade events from the database
+back through PubSub - essentially replaying the past. Our `Naive.Trader` won't know the difference
+between live data and historical data, which means we can test our strategy against real market conditions
+without risking real money.
+
+This is where all our architectural decisions pay off: the pub/sub model we've used from the beginning
+makes swapping data sources trivial. Same interface, different producer.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter(including the above challenge) can be found in the book's source code repository
+(branch:
+[chapter_13](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_13)).

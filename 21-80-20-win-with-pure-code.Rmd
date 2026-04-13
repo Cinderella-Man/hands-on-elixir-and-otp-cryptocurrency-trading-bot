@@ -1,0 +1,298 @@
+# 80/20 win with pure logic
+
+In the last chapter, we went in a full circle - built a complete exchange
+abstraction, admitted it was premature, tore it out, and landed on `Mimic` with
+compile-time module attributes. We now have a clean testing setup that doesn't
+force us into unnecessary behaviours.
+
+But we haven't exploited the real payoff yet. Remember when we split the
+`Naive.Strategy` into pure functions like `generate_decision/4` and effectful
+ones that talk to Binance? That separation wasn't just for aesthetics - it
+was an investment. Pure functions are trivially testable: no mocks, no setup,
+no state. You call them with inputs and assert on outputs.
+
+In this chapter, we'll cash in that investment. We'll write tests for every
+clause of `generate_decision/4` and show that more than half our strategy code
+can be covered without touching a single external dependency. The Pareto
+principle applies here almost literally - a small effort on pure code testing
+buys us the majority of our confidence.
+
+## Objectives
+- testing the pure logic
+
+## Testing the pure logic
+
+With the testing infrastructure behind us, let's put it to work. The `generate_decision/4` function
+has multiple clauses - each one a pure branch that maps inputs to a decision atom.
+We'll write a test for every one of them.
+
+We will start by removing all "hello world" tests that were generated when we were creating each of the umbrella apps - all of them look the same:
+
+```
+  test "greets the world" do
+    assert $app.hello() == :world
+  end
+```
+
+After taking care of this nuisance, we can now focus on testing our strategy.
+
+Let's open the `apps/naive/test/naive/strategy_test.exs` where we will add tests of `generate_decision/4` function.
+We will test each clause starting with the first (returning `:place_buy_order`):
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/strategy_test.exs
+  @tag :unit
+  test "Generating place buy order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: 1.0
+             },
+             generate_position(%{
+               budget: "10.0",
+               buy_down_interval: "0.01"
+             }),
+             :ignored,
+             :ignored
+           ) == {:place_buy_order, 0.99000000, "10.00000000"}
+  end
+```
+
+The above test checks that the function returns `:place_buy_order` in case of a lack of buy/sell order.
+Inside the test, we are using a helper function that we need to add below:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/strategy_test.exs
+  defp generate_position(data) do
+    %{
+      id: 1_678_920_020_426,
+      symbol: "XRPUSDT",
+      profit_target: "0.005",
+      rebuy_interval: "0.01",
+      rebuy_notified: false,
+      budget: "10.0",
+      buy_order: nil,
+      sell_order: nil,
+      buy_down_interval: "0.01",
+      tick_size: "0.00010000",
+      step_size: "1.00000000"
+    }
+    |> Map.merge(data)
+    |> then(&struct(Strategy.Position, &1))
+  end
+```
+
+At this moment, we should already be able to run the above test(together with the one from the previous chapter):
+
+```
+$ MIX_ENV=test mix test.unit
+...
+==> naive
+...
+2 tests, 0 failures (1 excluded)
+```
+
+We will now take care of the remaining clauses of `generate_decision/4` function.
+Each test targets a specific branch: placing a sell order when a buy fills,
+fetching order status when the price crosses a threshold, finishing or exiting a position,
+triggering a rebuy, and the catch-all skip. The structure is identical every time -
+call the function with the right inputs, assert the right atom comes back:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/naive/test/naive/strategy_test.exs
+  @tag :unit
+  test "Generating place sell order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{},
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 status: "FILLED",
+                 price: 1.00
+               },
+               sell_order: nil,
+               profit_target: "0.01",
+               tick_size: "0.0001"
+             }),
+             :ignored,
+             :ignored
+           ) == {:place_sell_order, 1.0120}
+  end
+
+  @tag :unit
+  test "Generating fetch buy order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: 1.01
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: 1.02
+               }
+             }),
+             :ignored,
+             :ignored
+           ) == :fetch_buy_order
+  end
+
+  @tag :unit
+  test "Generating finish position decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{},
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               },
+               sell_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               }
+             }),
+             :ignored,
+             %{status: "on"}
+           ) == :finished
+  end
+
+  @tag :unit
+  test "Generating exit position decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{},
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               },
+               sell_order: %Binance.OrderResponse{
+                 status: "FILLED"
+               }
+             }),
+             :ignored,
+             %{status: "shutdown"}
+           ) == :exit
+  end
+
+  @tag :unit
+  test "Generating fetch sell order decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: 1.02
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{},
+               sell_order: %Binance.OrderResponse{
+                 price: 1.01
+               }
+             }),
+             :ignored,
+             :ignored
+           ) == :fetch_sell_order
+  end
+
+  @tag :unit
+  test "Generating rebuy decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: 0.89
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: 1.00
+               },
+               sell_order: %Binance.OrderResponse{
+                 price: 1.1
+               },
+               rebuy_interval: "0.1",
+               rebuy_notified: false
+             }),
+             [:position],
+             %{status: "on", chunks: 2}
+           ) == :rebuy
+  end
+
+  @tag :unit
+  test "Generating skip(rebuy) decision because rebuy is already notified" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: 0.89
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: 1.00
+               },
+               sell_order: %Binance.OrderResponse{
+                 price: 1.1
+               },
+               rebuy_interval: "0.1",
+               rebuy_notified: true
+             }),
+             [:position],
+             %{status: "on", chunks: 2}
+           ) == :skip
+  end
+
+  @tag :unit
+  test "Generating skip decision" do
+    assert Strategy.generate_decision(
+             %TradeEvent{
+               price: 0.9
+             },
+             generate_position(%{
+               buy_order: %Binance.OrderResponse{
+                 price: 1.00
+               },
+               sell_order: %Binance.OrderResponse{
+                 price: 1.1
+               },
+               rebuy_interval: "0.1",
+               rebuy_notified: false
+             }),
+             [:position],
+             %{status: "on", chunks: 1}
+           ) == :skip
+  end
+```
+
+This brings us to 10 tests:
+
+```
+$ MIX_ENV=test mix test.unit
+...
+==> naive
+
+...
+10 tests, 0 failures (1 excluded)
+```
+
+The above tests are straightforward and uneventful, but that's good. They prove that tests of pure code are easy to write and maintain.
+
+Furthermore, besides the `generate_decision/4` function, we also have `generate_decisions/4`,
+`parse_results/1` and helper methods that are all pure functions. After a little bit of math,
+we can work out that out of 424 lines, 262 lines contain pure code - that's a whopping 61%.
+
+## Final thoughts
+
+**This was the shortest chapter in the book - and that's the point.** Here's what we covered:
+
+- Removed boilerplate "hello world" tests generated by the umbrella scaffold
+- Wrote tests for every clause of `generate_decision/4` using only pure function calls
+- Measured the pure-to-effectful ratio in `Naive.Strategy` to quantify the payoff
+
+The pattern worth remembering is the testing pyramid this creates:
+
+1. Pure functions like `generate_decision/4` need only inputs and assertions - they're the cheapest tests to write and maintain
+2. Effectful functions that call Binance or write to the database need `Mimic` stubs - more setup, but still manageable
+3. Integration tests that spin up the full system are the most expensive and should cover the least ground
+
+The underlying principle is simple: push side effects to the edges, keep the core pure, and your test suite becomes fast,
+reliable, and cheap to maintain. We've been doing exactly that - perhaps without naming it -
+since we split `Naive.Strategy` into decision functions and execution functions.
+
+**So, What's Next?**
+
+Our strategy is tested, our mocking story is clean, and our code is structured
+well. But we're still running as an umbrella application with multiple databases
+and duplicated configuration. In the next chapter, we'll ditch the umbrella
+entirely and migrate to a single Phoenix application - simplifying deployment
+and setting us up for clustering.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_21](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21)).

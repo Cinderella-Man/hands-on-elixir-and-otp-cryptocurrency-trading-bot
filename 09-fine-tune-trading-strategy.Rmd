@@ -1,17 +1,33 @@
 # Fine-tune trading strategy per symbol
 
+In the previous chapter, we achieved a major milestone:
+our trading strategy can now dynamically scale from 1 to 5 parallel traders as the price moves.
+But all those traders share the same hardcoded settings - the same budget, the same intervals, the same profit targets.
+
+That's a problem. Different trading pairs have wildly different characteristics.
+A volatile meme coin might need wider intervals to avoid getting wiped,
+while a stable blue-chip pair could use tighter settings.
+And right now, if we want to change any parameter, we have to edit code and redeploy.
+
+In this chapter, we'll fix this by moving our settings out of the code and into a Postgres database.
+We'll set up Docker to run Postgres, add Ecto to our project, create a settings table,
+and seed it with default values for every trading pair Binance supports.
+By the end, each symbol will have its own configurable settings that we can tweak without touching code.
+
+Let's make our strategy configurable!
+
 ## Objectives
 
 - describe and design the required functionality
 - add docker to project
-- set up `ecto` inside the `naive` app
+- set up Ecto inside the `naive` app
 - create and migrate the DB
 - seed symbols' settings
 - update the `Naive.Leader` to fetch settings
 
 ## Describe and design the required functionality
 
-At this moment the settings of our naive strategy are hardcoded inside the `Naive.Leader`:
+At this moment, the settings of our naive strategy are hardcoded inside the `Naive.Leader`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -27,7 +43,7 @@ At this moment the settings of our naive strategy are hardcoded inside the `Naiv
         # -0.01% for quick testing   # <=
         buy_down_interval: "0.0001", # <= all of those settings
         # -0.12% for quick testing   # <=
-        profit_interval: "-0.0012",  # <=
+        profit_target: "-0.0012",    # <=
         rebuy_interval: "0.001"      # <=
       },
       symbol_filters
@@ -36,19 +52,18 @@ At this moment the settings of our naive strategy are hardcoded inside the `Naiv
   ...
 ```
 
-The problem about those is that they are hardcoded and there's no flexibility to define them per symbol at the moment.
+The problem is that they're hardcoded - there's no flexibility to define different values per symbol.
 
 In this chapter, we will move them out from this file into the Postgres database.
 
 ## Add docker to project
 
-The requirements for this section are `docker` and `docker-compose` installed in your system.
+The requirement for this section is `docker` installed on your system.
 
 Inside the main directory of our project create a new file called `docker-compose.yml` and fill it with the below details:
 
 ```{r, engine = 'yaml', eval = FALSE}
 # /docker-compose.yml
-version: "3.2"
 services:
   db:
     image: postgres:latest
@@ -61,20 +76,18 @@ services:
       - ../postgres-data:/var/lib/postgresql/data
 ```
 
-If you are new to docker here's the gist of what the above will do:
+If you are new to Docker, here's the gist of what the above will do:
 
 - it will start a single service called "db"
 - "db" service will use the `latest` version of the `postgres` (image) inside the docker container (`latest` version as tagged per https://hub.docker.com/_/postgres/)
-- we map TCP port 5432 in the container to port 5432 on the Docker host(format container_port:hosts_port)
-- we set up environmental variable inside the docker container that will be used by the Postgres app as a password for the default (`postgres`) user
+- we map TCP port 5432 in the container to port 5432 on the Docker host(format: host_port:container_port)
+- we set up an environment variable inside the Docker container that will be used by Postgres as the password for the default (`postgres`) user
 - `volumes` option maps the directory from inside of the container to the host. This way we will keep the state of the database between restarts.
 
-\newpage
-
-We can now start the service using `docker-compose`:
+We can now start the service using `docker compose`:
 
 ```{r, engine = 'bash', eval = FALSE}
-$ docker-compose up -d
+$ docker compose up -d
 Creating hedgehog_db_1 ... done
 ```
 
@@ -88,9 +101,7 @@ PORTS                    NAMES
 0.0.0.0:5432->5432/tcp   hedgehog_db_1
 ```
 
-
-
-## Set up `ecto` inside the `naive` app
+## Set up Ecto inside the `naive` app
 
 Let's start by adding database access to the `naive` application. The first step is to add the [Ecto](https://github.com/elixir-ecto/ecto) module together with the [Postgrex](https://github.com/elixir-ecto/postgrex) ecto's driver package to the `deps` function inside the `mix.exs` file. As we are going to use Enums inside Postgres, we need to add the [EctoEnum](https://github.com/gjaldon/ecto_enum) module as well:
 
@@ -98,8 +109,8 @@ Let's start by adding database access to the `naive` application. The first step
   # /apps/naive/mix.exs
   defp deps do
     [
-      {:binance, "~> 1.0"},
       {:binance_mock, in_umbrella: true},
+      {:binance, "~> 1.0"},
       {:decimal, "~> 2.0"},
       {:ecto_sql, "~> 3.0"},     # <= New line
       {:ecto_enum, "~> 1.4"},    # <= New line
@@ -116,7 +127,7 @@ Remember about installing those deps using:
 $ mix deps.get
 ```
 
-We can now use the ecto generator to add an the ecto repository to the Naive application:
+We can now use the Ecto generator to add a repository to the Naive application:
 
 ```{r, eval = FALSE}
 $ cd apps/naive
@@ -140,15 +151,15 @@ Back to the IDE, the generator updated our `config/config.exs` file with the def
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
-config :naive,                # <= added line
-  ecto_repos: [Naive.Repo],   # <= added line
-  binance_client: BinanceMock # <= merged from existing config
-
 config :naive, Naive.Repo,
-  database: "naive",                  # <= updated
-  username: "postgres",               # <= updated
-  password: "hedgehogSecretPassword", # <= updated
+  database: "naive",    # <= updated
+  username: "postgres", # <= updated
+  password: "postgres", # <= updated
   hostname: "localhost"
+...
+config :naive,
+  ecto_repos: [Naive.Repo],   # <= added line
+  binance_client: BinanceMock
 ```
 
 Here we can use `localhost` as inside the `docker-compose.yml` file we defined port forwarding from the container to the host(Postgres is available at localhost:5432). We also merged the existing `binance_client` setting together with the new `ecto_repos` setting.
@@ -193,7 +204,7 @@ We can now copy the current hardcoded settings from the `Naive.Leader` module an
       add(:chunks, :integer, null: false)
       add(:budget, :decimal, null: false)
       add(:buy_down_interval, :decimal, null: false)
-      add(:profit_interval, :decimal, null: false)
+      add(:profit_target, :decimal, null: false)
       add(:rebuy_interval, :decimal, null: false)
     end
   end
@@ -209,7 +220,7 @@ At this moment we just copied the settings and converted them to columns using t
       ...
 ```
 
-\newpage
+
 
 We will also add create and update timestamps that come as a bundle when using the `timestamps()` function inside the `create table` macro:
 
@@ -257,7 +268,7 @@ defmodule Naive.Repo.Migrations.CreateSettings do
       add(:chunks, :integer, null: false)
       add(:budget, :decimal, null: false)
       add(:buy_down_interval, :decimal, null: false)
-      add(:profit_interval, :decimal, null: false)
+      add(:profit_target, :decimal, null: false)
       add(:rebuy_interval, :decimal, null: false)
       add(:status, TradingStatusEnum.type(), default: "off", null: false)
 
@@ -308,7 +319,7 @@ defmodule Naive.Schema.Settings do
     field(:chunks, :integer)
     field(:budget, :decimal)
     field(:buy_down_interval, :decimal)
-    field(:profit_interval, :decimal)
+    field(:profit_target, :decimal)
     field(:rebuy_interval, :decimal)
     field(:status, TradingStatusEnum)
 
@@ -333,16 +344,14 @@ config :naive,
       chunks: 5,
       budget: 1000,
       buy_down_interval: "0.0001",
-      profit_interval: "-0.0012",
+      profit_target: "-0.0012",
       rebuy_interval: "0.001"
     }
   }
 ```
 
-\newpage
-
-Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the                           
-`/apps/naive/lib/naive/priv/` directory. Let's start by aliasing the required modules and requiring the `Logger`:
+Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the `/apps/naive/priv/` directory.
+Let's start by aliasing the required modules and requiring the `Logger`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -359,8 +368,6 @@ Next, we will get the Binance client from the config:
 ...
 binance_client = Application.compile_env(:naive, :binance_client)
 ```
-
-
 
 Now, it's time to fetch all the symbols(pairs) that Binance supports:
 
@@ -381,7 +388,7 @@ Now we need to fetch default trading settings from the config file as well as th
   chunks: chunks,
   budget: budget,
   buy_down_interval: buy_down_interval,
-  profit_interval: profit_interval,
+  profit_target: profit_target,
   rebuy_interval: rebuy_interval
 } = Application.compile_env(:naive, :trading).defaults
 
@@ -389,7 +396,12 @@ timestamp = NaiveDateTime.utc_now()
   |> NaiveDateTime.truncate(:second)
 ```
 
-We will use the default settings for all rows to be able to insert data into the database. Normally we wouldn't need to set `inserted_at` and `updated_at` fields as Ecto would generate those values for us when using `Repo.insert/2` but we won't be able to use this functionality as it takes a *single* record at the time. We will be using `Repo.insert_all/3` which is a bit more low-level function without those nice features like filling timestamps(sadly). Just to be crystal clear - `Repo.insert/2` takes *at least a couple of seconds*(on my machine) for 1000+ symbols currently supported by Binance, on the other hand `Repo.insert_all/3`, will insert all of them in a couple of hundred milliseconds.
+We will use the default settings for all rows to be able to insert data into the database.
+Normally we wouldn't need to set `inserted_at` and `updated_at` fields as Ecto would generate those values for us
+when using `Repo.insert/2` but we won't be able to use this functionality as it takes a *single* record at a time.
+We will be using `Repo.insert_all/3` which is a bit more low-level function without those nice features like filling timestamps(sadly).
+Just to be crystal clear - `Repo.insert/2` takes *at least a couple of seconds*(on my machine) for thousands of symbols currently supported by Binance,
+on the other hand `Repo.insert_all/3`, will insert all of them in a couple of hundred milliseconds.
 
 As our structs will differ by only the `symbol` column we can first create a full struct that will serve as a template:
 
@@ -401,7 +413,7 @@ base_settings = %{
   chunks: chunks,
   budget: Decimal.new(budget),
   buy_down_interval: Decimal.new(buy_down_interval),
-  profit_interval: Decimal.new(profit_interval),
+  profit_target: Decimal.new(profit_target),
   rebuy_interval: Decimal.new(rebuy_interval),
   status: "off",
   inserted_at: timestamp,
@@ -409,21 +421,25 @@ base_settings = %{
 }
 ```
 
-
-
-We will now map each of the retrieved symbols and inject them to the `base_settings` structs and pushing all of those to the `Repo.insert_all/3` function:
+We will now prepare and insert 1000 rows at a time.
+Each row will be the `base_settings` struct with injected symbol.
+Using `Enum.reduce/3` will enable us to sum each result of the `Repo.insert_all/3` function call:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
 ...
 Logger.info("Inserting default settings for symbols")
 
-maps = symbols
+total_count = symbols
   |> Enum.map(&(%{base_settings | symbol: &1["symbol"]}))
+  |> Enum.chunk_every(1000)
+  |> Enum.reduce(0, fn batch, acc ->
+    {count, nil} = Repo.insert_all(Settings, batch)
+    Logger.info("Inserted batch of #{count} symbols")
+    acc + count
+  end)
 
-{count, nil} = Repo.insert_all(Settings, maps)
-
-Logger.info("Inserted settings for #{count} symbols")
+Logger.info("Inserted settings for #{total_count} symbols")
 ```
 
 ## Update the `Naive.Leader` to fetch settings
@@ -438,7 +454,12 @@ The final step will be to update the `Naive.Leader` to fetch the settings from t
   ...
 ```
 
-Now we need to modify the `fetch_symbol_settings/1` to fetch settings from DB instead of the hardcoded map. We will use `Repo.get_by!/3` as we are unable to trade without settings. The second trick used here is `Map.from_struct/1` that is required here as otherwise result would become the `Naive.Schema.Settings` struct(this would cause problems further down the line as we are iterating on the returned map and would get the `protocol Enumerable not implemented for %Naive.Schema.Settings` error):
+Now we need to modify the `fetch_symbol_settings/1` to fetch settings from DB instead of the hardcoded map.
+We will use `Repo.get_by!/2` as we are unable to trade without settings.
+The second trick used here is `Map.from_struct/1` that is required here as otherwise
+result would become the `Naive.Schema.Settings` struct
+(this would cause problems further down the line as we are iterating on the returned map and
+would get the `protocol Enumerable not implemented for %Naive.Schema.Settings` error):
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -455,14 +476,18 @@ Now we need to modify the `fetch_symbol_settings/1` to fetch settings from DB in
   ...
 ```
 
+## Manual testing in IEx and psql
+
 We can now run the seeding script to fill our database with the default settings:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/naive
 $ mix run priv/seed_settings.exs
-18:52:29.341 [info]  Fetching exchange info from Binance to create trading settings
-18:52:31.571 [info]  Inserting default settings for symbols
-18:52:31.645 [info]  Inserted settings for 1276 symbols
+18:52:29.341 [info] Fetching exchange info from Binance to create trading settings
+18:52:31.571 [info] Inserting default settings for symbols
+18:52:31.614 [info] Inserted batch of 1000 symbols
+18:52:31.642 [info] Inserted batch of 276 symbols
+18:52:31.645 [info] Inserted settings for 1276 symbols
 ```
 
 We can verify that records were indeed inserted into the database by connecting to it using the `psql` application:
@@ -478,11 +503,11 @@ Expanded display is on.
 naive=# SELECT * FROM settings;
 -[ RECORD 1 ]-----+-------------------------------------
 id                | 159c8f32-d571-47b2-b9d7-38bb42868043
-symbol            | ETHUSDT
+symbol            | XRPUSDT
 chunks            | 5
 budget            | 1000
 buy_down_interval | 0.0001
-profit_interval   | -0.0012
+profit_target   | -0.0012
 rebuy_interval    | 0.001
 status            | off
 inserted_at       | 2021-02-02 18:52:31
@@ -502,14 +527,35 @@ That confirms that there are 1276 settings inside the database that will allow u
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> Naive.start_trading("NEOUSDT")
-19:20:02.936 [info]  Starting new supervision tree to trade on NEOUSDT
+iex(1)> Streamer.start_streaming("XRPUSDT")
+{:ok, #PID<0.313.0>}
+iex(2)> Naive.start_trading("XRPUSDT")
+19:20:02.936 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.378.0>}
-19:20:04.584 [info]  Initializing new trader(1612293637000) for NEOUSDT
+19:20:04.584 [info]  Initializing new trader(1612293637000) for XRPUSDT
 ```
 
 The above log messages confirm that the `Naive.Leader` was able to fetch settings from the database that were later put into the `Naive.Trader`'s state and passed to it.
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**Settings are now database-driven!** This opens up a lot of possibilities:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_10)
+- Each symbol can have its own unique trading parameters
+- We can adjust settings without redeploying code
+- We've added a `status` field that will let us enable/disable trading per symbol
+- The seeding script makes it easy to populate settings for all Binance pairs
+
+**So, What's Next?**
+
+We've made the `naive` trading app configurable, but the `streamer` app is still completely manual.
+Every time we restart the application, we have to call `Streamer.start_streaming/1` for each symbol we want to trade.
+
+In the next chapter, we'll give the streamer the same treatment:
+add supervision, database-backed settings, and autostart functionality.
+When we start our app, it will automatically resume streaming on all previously enabled symbols.
+We'll also add the ability to stop streaming - something we can't even do right now!
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_09](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_09)).

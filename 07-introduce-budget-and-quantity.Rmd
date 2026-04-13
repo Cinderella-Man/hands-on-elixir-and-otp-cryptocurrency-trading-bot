@@ -1,16 +1,33 @@
 # Introduce a trader budget and calculating the quantity
 
+In the previous chapter, we made our traders smarter about *when* to buy by introducing the `buy_down_interval`.
+But there's still a glaring problem: we've been hardcoding the quantity to 100 units every single trade.
+
+That's problematic for two reasons. First, 100 units of XRPUSDT (around $160) is very different from 100 units of BTCUSDT (around $9 million!).
+Second, when we start running multiple traders in parallel, we'll need to divide our budget between them -
+and we can't do that if the quantity is hardcoded.
+
+In this chapter, we'll introduce a proper `budget` for each symbol and calculate the `quantity` dynamically based on that budget and the current price.
+We'll also fetch the `step_size` from Binance, which tells us the minimum quantity increment for each symbol (just like `tick_size` does for prices).
+
+Let's make our traders budget-aware!
+
 ## Objectives
 
-- fetch step_size
-- append budget and step_size to the `Trader`'s state compiled by the `Leader`
-- append budget and step_size to the `Trader`'s state
-- calculate quantity
+- fetch `step_size`
+- append `budget` and `step_size` to the `Naive.Trader`'s state inside the `Naive.Leader`
+- add `budget` and `step_size` to the `Naive.Trader`'s `State` struct
+- calculate `quantity`
 
 ## Fetch `step_size`
 
-In the 2nd chapter we hardcoded `quantity` to 100, it's time to refactor that. We will need `step_size` information from the Binance which we are
-already retrieving together with `tick_size` in the `exchangeInfo` call(but not getting it out from the response). So we will rename the `fetch_tick_size/1` function to `fetch_symbol_filters/1` which will allow us to return multiple filters(`tick_size` and `step_size`) from that function.
+In the second chapter we hardcoded `quantity` to 100 - it's time to refactor that. Just like prices must be divisible by `tick_size`,
+quantities must be divisible by `step_size` - Binance will reject orders with invalid quantities.
+
+We're already retrieving this information in the `exchangeInfo` call alongside `tick_size`, but we're not extracting it from the response yet.
+
+So we will rename the `fetch_tick_size/1` function to `fetch_symbol_filters/1`
+which will allow us to return multiple filters(`tick_size` and `step_size`) from that function.
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -26,16 +43,17 @@ already retrieving together with `tick_size` in the `exchangeInfo` call(but not 
         # -0.01% for quick testing
         buy_down_interval: "0.0001",
         # -0.12% for quick testing
-        profit_interval: "-0.0012"
+        profit_target: "-0.0012"
       },
       symbol_filters
     )
   end
 
   defp fetch_symbol_filters(symbol) do  # <= updated fetch_tick_size
+    {:ok, exchange_info} = @binance_client.get_exchange_info()
+
     symbol_filters =
-      @binance_client.get_exchange_info()
-      |> elem(1)
+      exchange_info
       |> Map.get(:symbols)
       |> Enum.find(&(&1["symbol"] == symbol))
       |> Map.get("filters")
@@ -57,13 +75,15 @@ already retrieving together with `tick_size` in the `exchangeInfo` call(but not 
   end
 ```
 
-Instead of reassigning the filters one by one into the settings, we will merge them together(#1). Additionally, we will introduce a `budget`(#2) which will be shared across all traders of the symbol. Also, we don't need to assign `tick_size` here as it's part of the settings that are merged.
+Instead of reassigning the filters one by one into the settings, we merge them together using `Map.merge/2`.
+We also introduce a `budget` which will be shared across all traders of the symbol.
+Note that we don't need to explicitly assign `tick_size` anymore - it's included in `symbol_filters` and gets merged automatically.
 
-\newpage
+## Append `budget` and `step_size` to the `Naive.Trader`'s state inside the `Naive.Leader`
 
-## Append `budget` and `step_size` to the `Trader`'s state inside the `Leader` 
-
-The `budget` needs to be added to the `%State{}`(`step_size` will be automatically passed on by `struct/2`) of the trader inside `fresh_trader_state/1`(where we initialize the state of traders). Before we will assign it we need to divide it by the number of chunks as each trader gets only a chunk of the budget:
+The `budget` needs to be calculated and added to the trader's `%State{}` inside `fresh_trader_state/1`.
+Since each trader gets only a chunk of the total budget, we divide it by the number of chunks before assigning.
+The `step_size`, on the other hand, passes through automatically - `struct/2` copies any matching keys from the settings map into the struct:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -75,7 +95,7 @@ The `budget` needs to be added to the `%State{}`(`step_size` will be automatical
   end
 ```
 
-In the code above we are using the `Decimal` module(aliased as `D`) to calculate the budget - we need to alias it at the top of `Naive.Leader`'s file: 
+In the code above we are using the `Decimal` module(aliased as `D`) to calculate the budget - we need to alias it at the top of `Naive.Leader`'s file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -87,7 +107,7 @@ defmodule Naive.Leader do
   ...
 ```
 
-## Append `budget` and `step_size` to the `Trader`'s state
+## Add `budget` and `step_size` to the `Naive.Trader`'s `State` struct
 
 We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struct:
 
@@ -99,7 +119,7 @@ We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struc
       :symbol,
       :budget, # <= add this line
       :buy_down_interval,
-      :profit_interval,
+      :profit_target,
       :tick_size,
       :step_size # <= add this line and comma above
     ]
@@ -109,7 +129,7 @@ We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struc
       :buy_order,
       :sell_order,
       :buy_down_interval,
-      :profit_interval,
+      :profit_target,
       :tick_size,
       :step_size # <= add this line and comma above
     ]
@@ -119,7 +139,9 @@ We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struc
 
 ## Calculate quantity
 
-Jumping back to the `handle_info/2` where the `Naive.Trader` places a buy order, we need to pattern match on the `step_size` and `budget` then we will be able to swap hardcoded quantity with the result of calling the `calculate_quantity/3` function:
+Jumping back to the `handle_info/2` where the `Naive.Trader` places a buy order,
+we need to pattern match on the `step_size` and `budget`,
+then we will be able to swap the hardcoded quantity with the result of calling the `calculate_quantity/3` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -140,31 +162,34 @@ Jumping back to the `handle_info/2` where the `Naive.Trader` places a buy order,
     ...
 ```
 
-To calculate quantity we will just divide the `budget` by the `price` with a caveat that it's possible (as with calculating the price) that it's not a legal quantity value as it needs to be divisible by `step_size`:
+To calculate quantity, the formula is simple: `quantity = budget / price`. For example, with a $20 budget and a price of $0.30, we'd buy about 66.67 units.
+But there's a caveat: just like prices must align to `tick_size`, quantities must align to `step_size`.
+So we'll round down to the nearest valid quantity:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   # add below at the bottom of the file
   ...
   defp calculate_quantity(budget, price, step_size) do
-    # not necessarily legal quantity
-    exact_target_quantity = D.div(budget, price)
-
-    D.to_string(
-      D.mult(
-        D.div_int(exact_target_quantity, step_size),
-        step_size
-      ),
-      :normal
-    )
+    # Round down to nearest valid step_size
+    # Example:
+    #   target quantity = 67.86
+    #   step_size = 0.1
+    #   67.86 / 0.1 = 678.6 → truncate to 678 → 678 * 0.1 = 67.8
+    budget
+    |> D.div(D.from_float(price))
+    |> D.div_int(step_size)
+    |> D.mult(step_size)
+    |> D.to_string(:normal)
   end
 ```
 
-### IEx testing
+### Manual testing in IEx
 
 That finishes the `quantity`(and `budget`) implementation, we will jump into the IEx session to see how it works.
 
-First, start the streaming and trading on the same symbol and a moment later you should see a variable amount of quantity that more or less uses the full allowed budget:
+First, start the streaming and trading on the same symbol.
+A moment later you should see the quantity being calculated from the budget rather than hardcoded:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -179,8 +204,27 @@ iex(2)> Naive.start_trading("XRPUSDT")
 quantity: 67.7
 ```
 
-As we can see our `Naive.Trader` process is now buying and selling based on passed budget.
+As we can see our `Naive.Trader` process is now buying and selling based on the passed budget.
+The quantity of 67.7 comes from dividing our $20 budget by the price of ~$0.295.
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**Great progress!** Our traders now:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07)
+- Calculate quantity dynamically based on an assigned budget
+- Respect Binance's `step_size` requirement for valid quantities
+- Are ready to share a total budget across multiple parallel traders (via the `chunks` setting)
+
+**So, What's Next?**
+
+We have all the pieces in place for something more ambitious. Right now, we start exactly one trader per symbol,
+and when it finishes a trade cycle, a new one starts. But what if the price keeps dropping after we buy?
+We're sitting there holding our position, watching opportunities pass by.
+
+In the next chapter, we'll implement a "rebuy" mechanism. When the price drops below our buy price by a certain interval,
+we'll spin up another trader to buy more at the lower price. This lets us scale into positions as the price falls
+and potentially profit more when it recovers. We'll finally put that `chunks` setting to work!
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_07](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07)).

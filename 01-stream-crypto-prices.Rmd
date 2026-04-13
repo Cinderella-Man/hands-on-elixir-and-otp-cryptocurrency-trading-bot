@@ -1,53 +1,67 @@
-# Stream live cryptocurrency prices from the Binance WSS
+# Streaming Live Cryptocurrency Prices from Binance WebSocket
+
+In this chapter, we'll build an Elixir application to stream real-time cryptocurrency prices -
+a perfect starting point that introduces several core concepts in a practical way.
+You'll learn how to manage dependencies, connect to a live data feed, and process
+incoming information.
+These are all essential skills for building robust Elixir applications.
 
 ## Objectives
 
-- create a new umbrella app
-- create a supervised application inside an umbrella
-- connect to Binance's WebSocket Stream using the WebSockex module
-- define a TradeEvent struct that will hold incoming data
-- decode incoming events using the Jason module
+- Create a new umbrella project.
+- Create a supervised application.
+- Connect to the Binance WebSocket with the `WebSockex` library.
+- Define a `%Streamer.TradeEvent{}` struct to represent incoming data.
+- Decode incoming JSON events with the `Jason` library.
 
-## Create a new umbrella app
+## Create a New Umbrella Project
 
-As we are starting from scratch, we need to create a new umbrella project:
+Since we're starting from scratch, let's create a new umbrella project:
 
 ```{r, engine = 'bash', eval = FALSE}
 mix new hedgehog --umbrella
 ```
 
-## Create a supervised application inside an umbrella
+## Create a Supervised Application
 
-We can now proceed with creating a new supervised application called `streamer` inside our umbrella:
+Next, we'll create a new supervised application called `streamer` inside our umbrella:
 
 ```{r, engine = 'bash', eval = FALSE}
 cd hedgehog/apps
 mix new streamer --sup
 ```
 
-## Connect to Binance's WebSocket Stream using the WebSockex module
+Creating the `streamer` as a supervised application within an umbrella project allows us to enforce strict boundaries
+between different parts of our logic, such as data streaming and trading.
+While this isolation makes the system easier to reason about early on, it comes with an architectural tax:
+every boundary we draw now is one we must manage through explicit configuration and dependency rules.
+We're choosing this structure deliberately so you can observe how those costs grow as the system expands.
 
-To establish a connection to Binance API's stream, we will need to use a WebSocket client. The module that we will use is called [WebSockex](https://github.com/Azolo/websockex). Scrolling down to the `Installation` section inside the module's readme on Github, we are instructed what dependency we need to add to our project.
+## Connect to the Binance WebSocket with the WebSockex Library
 
-We will append `:websockex` to the `deps` function inside the `mix.exs` file of the `streamer` application:
+To connect to the Binance WebSocket stream, we'll use [`WebSockex`](https://github.com/dominicletz/websockex),
+a popular WebSocket client library that handles the low-level connection details for us.
+According to the library's README, the first step is to add `:websockex` to the `deps` function
+in the `streamer` application's `mix.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs
   defp deps do
     [
-      {:websockex, "~> 0.4"}
+      {:websockex, "~> 0.5"}
     ]
   end
 ```
 
-As we added a dependency to our project, we need to fetch it using `mix deps.get`.
+After adding a new dependency, we'll need to fetch it by running `mix deps.get` from the `apps/streamer` directory.
+This command downloads the library's source code (and any of its own dependencies) into our project's `deps` folder.
 
-We can now progress with creating a module that will be responsible for streaming. We will create a new file called `binance.ex` inside the `apps/streamer/lib/streamer` directory.
+Now let's create a module responsible for streaming. We'll create a new file called `binance.ex` inside the `apps/streamer/lib/streamer` directory.
 
-From the readme of [WebSockex](https://github.com/Azolo/websockex) module, we can see that to use it we need to create a module that will implement the `WebSockex` behavior:
+The [WebSockex](https://github.com/dominicletz/websockex) README provides a great starting point. To handle the WebSocket connection, we'll create a module that uses the `WebSockex` behavior, which looks like this:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# WebSockex's readme
+# From the WebSockex README
 defmodule WebSocketExample do
   use WebSockex
 
@@ -67,53 +81,62 @@ defmodule WebSocketExample do
 end
 ```
 
-We will copy the whole code above across to our new `binance.ex` file.
+We'll copy this code to our new `binance.ex` file.
 
-\newpage
-
-The first step will be to update the module name to match our file name:
+First, let's update the module name to `Streamer.Binance` to match our file name:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
 defmodule Streamer.Binance do
 ```
 
-In the spirit of keeping things tidy - we will now remove the `handle_cast/2` function (the last function in our module) as we won't be sending any messages back to Binance via WebSocket (to place orders etc - Binance provides a REST API which we will use in the next chapter).
+We can simplify this example right away.
+The `handle_cast/2` callback is for sending messages to the WebSocket server.
+Since our application will only be receiving data for
+now, we can remove it.
 
-Next, let's look up what URL should we use to connect to Binance's API. Binance has a separate WSS (Web Socket Streams) documentation at [Github](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md).
+Next, let's find the correct URL for the Binance API.
+Binance provides its WSS (Web Socket Streams) documentation on [GitHub](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md).
 
-Scrolling down we can see the `General WSS information` section where 3 important pieces of information are listed:
+The "General WSS information" section provides three key details:
 
-* The base endpoint is: `wss://stream.binance.com:9443`
+* The base endpoint is: `wss://stream.binance.com:9443` (use `wss://stream.binance.us:9443` if you're US-based)
 * Raw streams are accessed at `/ws/<streamName>`
 * All symbols for streams are *lowercase*
 
-We can see that the full endpoint for raw streams(we will be using a "raw" stream) will be `wss://stream.binance.com:9443/ws/` with stream name at the end (together with lowercased symbol).
+The full URL for the raw streams we'll use is `wss://stream.binance.com:9443/ws/` followed by the stream name (e.g., `<symbol>@trade`).
 
-Note: In the context of Binance API, "raw" means that no aggregation was performed before broadcasting the data on WebSocket.
+A quick note: Binance uses "raw" to indicate that no data aggregation occurs before broadcasting over WebSocket.
+This means you receive every single trade as it happens. In a high-volume market like BTC/USDT,
+this can mean dozens of messages per second. Elixir's lightweight processes are perfect for this:
+we can ingest thousands of messages without blocking the rest of our application logic.
 
-Let's introduce a module attribute that will hold the full raw stream endpoint which will be used across the module:
+Let's define a module attribute to hold the base stream endpoint:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
 @stream_endpoint "wss://stream.binance.com:9443/ws/"
 ```
 
-Now back in [Binance's WSS documentation](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md) we need to search for "Trade Streams". "trade" in the context of this documentation means an exchange of assets(coins/tokens) by two sides (buyer and seller). Our future trading strategy will be interested in the "latest price" which is simply the last trade event's price.
+Heading back to the [Binance](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md) documentation, let's search for 'Trade Streams'.
+In this context, a "trade" is a completed transaction - someone bought and someone sold at a specific price.
+For our purposes, the "latest price" is simply the price from the most recent trade.
 
-We can see that docs are pointing to the following stream name:
+The docs point to the following stream name:
 
 ```
 Stream Name: <symbol>@trade
 ```
 
-Together, our full URL looks like: "wss://stream.binance.com:9443/ws/<symbol>@trade".
-To give a concrete example: the raw trade events stream URL for symbol XRPUSDT is:
-"wss://stream.binance.com:9443/ws/xrpusdt@trade" (remember that symbols need to be lowercased, otherwise no trade events will get streamed - there's *no* error).
+Together, our full URL looks like: `wss://stream.binance.com:9443/ws/<symbol>@trade`.
+For example, the raw trade stream URL for the `XRPUSDT` symbol is:
+"wss://stream.binance.com:9443/ws/xrpusdt@trade"
 
-\newpage
+**Heads up:** Binance requires the symbol to be lowercase. If you provide an uppercase symbol like "XRPUSDT",
+the connection will succeed, but you **will not receive any data**, and no error will be returned.
+This can be tricky to debug, so always remember to downcase the symbol!
 
-Back to the IDE, we will now modify the `start_link/2` function to use Binance API's URL:
+Back in our editor, let's modify the `start_link/1` function to construct the correct URL:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -128,9 +151,11 @@ Back to the IDE, we will now modify the `start_link/2` function to use Binance A
   end
 ```
 
-Instead of passing an URL, we modified the function to accept a `symbol`, downcase it and use it together with the module's `@stream_endpoint` attribute to build a full URL.
+Our `start_link/1` function now accepts a `symbol` instead of a full URL.
+It ensures the `symbol` is lowercase before combining it with our `@stream_endpoint`
+to build the complete URL.
 
-At this moment streaming of trade events already works which we can test using `iex`:
+Our trade event streaming is now functional! Let's test it using `iex`:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -139,12 +164,16 @@ iex(1)> Streamer.Binance.start_link("xrpusdt")
 {:ok, #PID<0.335.0>}
 Received Message - Type: :text -- Message: "{\"e\":\"trade\", \"E\":1603226394741,
   \"s\":\"XRPUSDT\",\"t\":74608889,\"p\":\"0.24373000\",\"q\":\"200.00000000\",
-  \"b\":948244411,\"a\":948244502,\"T\":1603226394739,\"m\":true,\"M\":true}"
+  \"T\":1603226394739,\"m\":true,\"M\":true}"
 ```
 
-We can see the messages logged above because we copied the sample implementation from [WebSockex's readme](https://github.com/Azolo/websockex) where `handle_frame/2` function uses `IO.puts/1` to print out all incoming data. The lesson here is that every incoming message from Binance will cause the `handle_frame/2` callback to be called with the message and the process' state.
+These messages appear because the code we copied from the [WebSockex README](https://github.com/dominicletz/websockex)
+uses `IO.puts/1` to print all incoming data.
 
-Just for reference, our module should look currently as follows:
+The key takeaway is that `WebSockex` automatically calls our `handle_frame/2` function
+for each message it receives from the server. This makes it the perfect place to process incoming data.
+
+For reference, our module should currently look like this:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
@@ -170,58 +199,86 @@ defmodule Streamer.Binance do
 end
 ```
 
-## Decode incoming events using the Jason module
+## Decode Incoming JSON Events With the `Jason` Library
 
-Currently, all incoming data from WebSocket is encoded as a JSON. To decode JSON we will use the [jason](https://github.com/michalmuskala/jason) module.
+The incoming WebSocket data is a JSON string. To parse it into a usable Elixir map,
+we'll use the popular [Jason](https://github.com/michalmuskala/jason) library.
 
-Scrolling down to the `Installation` section inside the module's readme, we can see that we need to add it to the dependencies and we can start to use it right away.
+The library's README shows the standard installation procedure:
+add `:jason` to your dependencies, and you're ready to go.
 
-Let's open the `mix.exs` file of the `streamer` application and append the `:jason` dependency to the list inside `deps` function:
+Let's open the `mix.exs` file of the `streamer` application and append the `:jason`
+dependency to the list inside the `deps` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs
   defp deps do
     [
-      {:jason, "~> 1.2"},
-      {:websockex, "~> 0.4"}
+      {:jason, "~> 1.4"},
+      {:websockex, "~> 0.5"}
     ]
   end
 ```
 
-As previously, don't forget to run `mix deps.get` to fetch the new dependency.
+As before, don't forget to run `mix deps.get` to fetch the new dependency.
 
-Looking through the documentation of the Jason module we can see `encode!/2` and `decode!/2` functions, both of them have exclamation marks which indicate that they will throw an error whenever they will be unable to successfully encode or decode the passed value.
+In the Jason documentation, you'll find functions like `encode!/2` and `decode!/2`.
+In Elixir, a trailing exclamation mark (`!`) is a convention indicating that a function will raise an error on failure.
+While this is useful, it's better to handle potential errors gracefully when working with external data.
+Instead of using `try/rescue`,
+we'll look for a function that returns a tagged tuple like `{:ok, result}` or `{:error, reason}`.
+This pattern is more idiomatic in Elixir.
 
-This is less than perfect for our use case as we would like to handle those errors in our own way(technically we could just use try/rescue but as we will find out both `encode/2` and `decode/2` are available).
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
 
-We will go a little bit off-topic but I would highly recommend those sorts of journeys around somebody's code. Let's look inside the [Jason](https://github.com/michalmuskala/jason/blob/master/lib/jason.ex) module. Scrolling down in search of `decode/2` (without the exclamation mark) we can see it about line 54:
+**Pro Tip: Don't Be Afraid to Read the Source!**
+
+I highly recommend this kind of code exploration.
+Let's look inside the `Jason` module's source code, which we can find in our project's
+`deps/jason/lib/jason.ex` file.
+
+If we scroll down in search of `decode/2` (without the exclamation mark),
+we find it defined like this:
 
 ```{r, engine = 'elixir', eval = FALSE}
-  # /lib/jason.ex
+  # /deps/jason/lib/jason.ex
   def decode(input, opts \\ []) do
     input = IO.iodata_to_binary(input)
     Decoder.parse(input, format_decode_opts(opts))
   end
 ```
 
-\newpage
-
-It looks like it uses the `parse/2` function of a `Decoder` module, let's scroll back up and check where it's coming from. At line 6:
+This function uses `parse/2` from a `Decoder` module. Let's scroll back up to see where
+that module is defined:
 
 ```{r, engine = 'elixir', eval = FALSE}
-# /lib/jason.ex
+# /deps/jason/lib/jason.ex
 alias Jason.{Encode, Decoder, DecodeError, EncodeError, Formatter}
 ```
 
-we can see that `Decoder` is an alias of the [`Jason.Decoder`](https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex). Scrolling down to the `Jason.Decoder` module we will find a `parse/2` function about line 43:
+We can see `Decoder` is an alias for
+the [`Jason.Decoder`](https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex) module.
+
+Scrolling down to the `Jason.Decoder` module we'll find a `parse/2` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
-  # /lib/decoder.ex
+  # /deps/jason/lib/decoder.ex
   def parse(data, opts) when is_binary(data) do
     key_decode = key_decode_function(opts)
     string_decode = string_decode_function(opts)
+    float_decode = float_decode_function(opts)
+    object_decode = object_decode_function(opts)
+    decode = decode(
+      keys: key_decode, strings: string_decode,
+      objects: object_decode, floats: float_decode
+    )
     try do
-      value(data, data, 0, [@terminate], key_decode, string_decode)
+      value(data, data, 0, [@terminate], decode)
     catch
       {:position, position} ->
         {:error, %DecodeError{position: position, data: data}}
@@ -234,11 +291,36 @@ we can see that `Decoder` is an alias of the [`Jason.Decoder`](https://github.co
   end
 ```
 
-Based on the result of decoding it will either return `{:ok, value}` or `{:error, %Decode.Error{...}}` we can confirm that by digging through documentation of the module on the [hexdocs](https://hexdocs.pm/jason/Jason.html#decode/2).
+As you can see, the function returns either `{:ok, value}` on success or
+`{:error, %DecodeError{...}}` on failure.
 
-Once again, the point of this lengthy investigation was to show that Elixir code is readable and easy to understand so don't be thrown off when documentation is a little bit light, quite opposite, contribute to docs and code as you gain a better understanding of the codebase.
+This side quest shows that Elixir code is often quite readable.
+Don't be afraid to dive into the source code when you're curious about the
+implementation details. It's the best way to learn!
+Better yet, if you spot an opportunity for improvement,
+consider it a chance to contribute back to the project's documentation or code!
 
-We can now get back to our `Streamer.Binance` module and modify the `handle_frame/2` function to decode the incoming JSON message. Based on the result of `Jason.decode/2` we will either call the `process_event/2` function or log an error. Here's the new version of the `handle_frame/2` function:
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+Now let's modify the `handle_frame/2` function in our `Streamer.Binance` module to decode incoming JSON messages.
+
+We'll use Elixir's built-in `Logger` to report any parsing failures. To use `Logger` macros like `Logger.error/1`,
+we need to `require` the module at the top of our file. Let's add that now:
+
+```{r, engine = 'elixir', eval = FALSE}
+  # /apps/streamer/lib/streamer/binance.ex
+  require Logger
+```
+
+We'll use a `case` statement to handle the result from `Jason.decode/2`:
+if it's successful, we'll process the event; otherwise, we'll log the error.
+
+Here's the new version of the `handle_frame/2` function:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -252,20 +334,17 @@ We can now get back to our `Streamer.Binance` module and modify the `handle_fram
   end
 ```
 
-Please make note that `type` is now prefixed with an underscore as we aren't using it at the moment.
+Note that we prefixed `type` with an underscore (`_type`).
+This is an Elixir convention to signal an intentionally unused variable, which prevents a compiler warning.
 
-The second important thing to note is that we are using `Logger` so it needs to be `require`d at the beginning of the module:
+Before implementing `process_event/1`, we need a struct to hold the data from
+the incoming trade events.
 
-```{r, engine = 'elixir', eval = FALSE}
-  # /apps/streamer/lib/streamer/binance.ex
-  require Logger
-```
+Let's create a new directory called `binance` in `apps/streamer/lib/streamer/` and add a file called `trade_event.ex`.
 
-Before implementing the `process_event/2` function we need to create a structure that will hold the incoming trade event's data.
-
-Let's create a new directory called `binance` inside the `apps/streamer/lib/streamer/` and a new file called `trade_event.ex` inside it.
-
-Our new module will hold all the trade event's information but we will also use readable field names(you will see the incoming data below). We can start by writing a skeleton module code:
+This new module will define a struct to hold our trade event data.
+We'll use more descriptive field names instead of the abbreviated ones from the JSON payload.
+We can start by creating a skeleton module:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance/trade_event.ex
@@ -274,29 +353,40 @@ defmodule Streamer.Binance.TradeEvent do
 end
 ```
 
-We can refer to [Binance's docs](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#trade-streams) to get a list of fields:
+[Binance's documentation](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#trade-streams) lists these fields:
 
 ```
 {
   "e": "trade",     // Event type
   "E": 123456789,   // Event time
-  "s": "BNBUSDT",   // Symbol
+  "s": "XRPUSDT",   // Symbol
   "t": 12345,       // Trade ID
   "p": "0.001",     // Price
   "q": "100",       // Quantity
-  "b": 88,          // Buyer order ID
-  "a": 50,          // Seller order ID
   "T": 123456785,   // Trade time
   "m": true,        // Is the buyer the market maker?
   "M": true         // Ignore
 }
 ```
 
-Let's copy them across and convert the comments to update the `defstruct` inside the    
-`Streamer.Binance.TradeEvent` module's struct to following:
+Now, let's define our struct, translating the abbreviated keys from the JSON payload
+into more descriptive field names.
+
+Update the `defstruct` in the `Streamer.Binance.TradeEvent` module as follows:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance/trade_event.ex
+  @type t :: %__MODULE__{
+          event_type: String.t(),
+          event_time: integer(),
+          symbol: String.t(),
+          trade_id: integer(),
+          price: float(),
+          quantity: String.t(),
+          trade_time: integer(),
+          buyer_market_maker: boolean()
+        }
+
   defstruct [
     :event_type,
     :event_time,
@@ -304,28 +394,59 @@ Let's copy them across and convert the comments to update the `defstruct` inside
     :trade_id,
     :price,
     :quantity,
-    :buyer_order_id,
-    :seller_order_id,
     :trade_time,
     :buyer_market_maker
   ]
 ```
 
-That's all for this struct, we can now get back to implementing the `process_event/2` function inside the `Streamer.Binance` module. We will map every field of the response map to the `%Streamer.Binance.TradeEvent` struct. A useful trick here would be to copy the list of fields once again from the struct and assign the incoming fields one by one.
-Inside the header of the function, we will pattern match on event type(a field called "e" in the message) to confirm that indeed we received a trade event). In the end, the `process_event/2` function should look as follows:
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+The `@type` definition describes what a `TradeEvent` struct is supposed to look like.
+Today, it's mainly used by tools like Dialyzer and by your editor  -  not by the compiler itself.
+
+This is an important detail to understand. Even though we say price is a `float()` and symbol is a `String.t()`,
+the compiler won't stop us from doing something silly like passing a string as the price.
+There are no warnings and no errors  -  Elixir is still very much dynamically typed here.
+
+So why bother with typespecs at all? Because they still pull their weight.
+They make the code easier to read, help static analysis tools catch some mistakes,
+and set us up nicely for future improvements to Elixir's gradual type system.
+
+When it comes to actual safety, we rely on more traditional Elixir tools:
+pattern matching (`%TradeEvent{}`) to make sure we're dealing with the right struct,
+and well-defined boundaries between parts of the system.
+The typespecs don't enforce correctness, but they do help us reason about the code as it grows.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+With our struct defined, let's return to the `Streamer.Binance` module to implement
+the `process_event/1` function.
+We'll use pattern matching in the function head to ensure we're only handling events where the "e" key is "trade".
+Inside the function, we'll map the raw event data into our clean `%Streamer.Binance.TradeEvent{}` struct.
+The `process_event/1` function should now look like this:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
   defp process_event(%{"e" => "trade"} = event) do
+    {trade_price, ""} = Float.parse(event["p"])
+
     trade_event = %Streamer.Binance.TradeEvent{
       :event_type => event["e"],
       :event_time => event["E"],
       :symbol => event["s"],
       :trade_id => event["t"],
-      :price => event["p"],
+      :price => trade_price,
       :quantity => event["q"],
-      :buyer_order_id => event["b"],
-      :seller_order_id => event["a"],
       :trade_time => event["T"],
       :buyer_market_maker => event["m"]
     }
@@ -337,11 +458,14 @@ Inside the header of the function, we will pattern match on event type(a field c
   end
 ```
 
-We added the `Logger.debug/2` function to be able to see logs of incoming trade events.
+Two details here are noteworthy:
 
-\newpage
+- **The Float Warning:** We use `Float.parse/1` here strictly for simplicity. **In production financial systems, never use floats** - rounding errors can lead to "dust" (tiny, untradeable amounts left in your wallet) or to failed orders due to insufficient funds. In a professional system, you'd use a library like `Decimal`. We'll stick with floats for now to keep our initial logic readable.
+- We added a `Logger.debug/1` message to see our formatted trade events in the console.
 
-Lastly, before testing our implementation, let's add a nice interface to our `streamer` application that allows starting streaming:
+Lastly, before testing our implementation, let's add a clean, public API to our `streamer` application.
+The `Streamer.start_streaming/1` function will serve as our public interface,
+hiding the `Streamer.Binance` implementation details from the rest of the project.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer.ex
@@ -356,9 +480,11 @@ defmodule Streamer do
 end
 ```
 
-The final version of the `Streamer.Binance` module should look like [this](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex).
+For reference, the final version of the `Streamer.Binance` module
+can be found [here](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex).
 
-The last step will be to add the `Logger` configuration into the main `config/config.exs` file. We will set the `Logger` level to `:debug` for a moment to be able to see incoming trade events:
+Now let's configure the Logger in our main `config/config.exs` file.
+We'll temporarily set the Logger level to `:debug` so we can see the incoming trade events:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -366,7 +492,13 @@ config :logger,
   level: :debug
 ```
 
-This finishes the implementation part of this chapter, we can now give our implementation a whirl using `iex`:
+**Architecture Note:** We are using the umbrella's root configuration file for simplicity.
+While this works perfectly for now, it's worth noting that as we add more applications to our umbrella,
+the root config can become a "junk drawer" where settings for different apps get tangled together.
+This shared configuration is one of the reasons we will eventually consolidate into a single Phoenix application,
+moving away from the overhead of managing multiple app-specific environments in favor of a simpler, unified deployment.
+
+With our implementation complete, it's time to see it in action in an `iex` session:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -379,9 +511,15 @@ iex(1)> Streamer.start_streaming("xrpusdt")
 23:14:36.386 [debug] Trade event received XRPUSDT@0.25606000
 ```
 
-As we can see, the streamer is establishing a WebSocket connection with Binance's API and its receiving trade events. It decodes them from JSON to `%Streamer.Binance.TradeEvent` struct and logs a compiled message. Also, our interface hides implementation details from the "user" of our application.
+Our application now establishes a WebSocket connection, receives trade events, decodes the JSON into `%Streamer.Binance.TradeEvent{}` structs, and logs a formatted message.
 
-We will now flip the `Logger` level back to `info` so the output won't every incoming trade event:
+Notice that we are starting this process manually. In Elixir, a process without a supervisor is an "orphan" -
+if the WebSocket connection drops or Binance rate-limits us,
+our streamer will simply die and stay dead,
+leaving our bot blind to the market.
+We'll address this vulnerability by implementing a proper supervision tree in Phase 2.
+
+Finally, let's reset the `Logger` level back to `:info` to avoid cluttering our console with debug messages.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -389,6 +527,12 @@ config :logger,
   level: :info
 ```
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+You've just built a real-time data pipeline in Elixir.
+Take a moment to appreciate what you've accomplished:
+you've connected to a live WebSocket stream, parsed incoming events, and structured the data cleanly.
+This isn't just a toy example; it's the core of a serious application, and you built it from scratch.
+As a final step, remember to run `mix format` to keep your code nice and tidy.
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_01)
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_01](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_01)).

@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot</title>
   <meta name="description" content="Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
-  <meta name="generator" content="bookdown 0.42 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.44 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 1 Stream live cryptocurrency prices from the Binance WSS | Hands-on Elixir &amp; OTP: Cryptocurrency trading bot" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,7 @@
   
 <link rel="prev" href="index.html"/>
 <link rel="next" href="create-a-naive-trading-strategy---a-single-trader-process-without-supervision.html"/>
-<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -614,7 +614,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Now back in <a href="https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md">Binance’s WSS documentation</a> we need to search for “Trade Streams”. “trade” in the context of this documentation means an exchange of assets(coins/tokens) by two sides (buyer and seller). Our future trading strategy will be interested in the “latest price” which is simply the last trade event’s price.</p>
 <p>We can see that docs are pointing to the following stream name:</p>
 <pre><code>Stream Name: &lt;symbol&gt;@trade</code></pre>
-<p>Together, our full URL looks like: “<a href="wss://stream.binance.com:9443/ws/" class="uri">wss://stream.binance.com:9443/ws/</a><symbol><span class="citation">@trade</span>”.
+<p>Together, our full URL looks like: <code>wss://stream.binance.com:9443/ws/&lt;symbol&gt;@trade</code>.
 To give a concrete example: the raw trade events stream URL for symbol XRPUSDT is:
 “<a href="wss://stream.binance.com:9443/ws/xrpusdt@trade" class="uri">wss://stream.binance.com:9443/ws/xrpusdt@trade</a>” (remember that symbols need to be lowercased, otherwise no trade events will get streamed - there’s <em>no</em> error).</p>
 <div style="page-break-after: always;"></div>
@@ -637,7 +637,7 @@ To give a concrete example: the raw trade events stream URL for symbol XRPUSDT i
 <span id="cb9-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-4" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.335.0&gt;}</span></span>
 <span id="cb9-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-5" tabindex="-1"></a><span class="ex">Received</span> Message <span class="at">-</span> Type: :text <span class="at">--</span> Message: <span class="st">&quot;{</span><span class="dt">\&quot;</span><span class="st">e</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">trade</span><span class="dt">\&quot;</span><span class="st">, </span><span class="dt">\&quot;</span><span class="st">E</span><span class="dt">\&quot;</span><span class="st">:1603226394741,</span></span>
 <span id="cb9-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-6" tabindex="-1"></a><span class="st">  </span><span class="dt">\&quot;</span><span class="st">s</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">XRPUSDT</span><span class="dt">\&quot;</span><span class="st">,</span><span class="dt">\&quot;</span><span class="st">t</span><span class="dt">\&quot;</span><span class="st">:74608889,</span><span class="dt">\&quot;</span><span class="st">p</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">0.24373000</span><span class="dt">\&quot;</span><span class="st">,</span><span class="dt">\&quot;</span><span class="st">q</span><span class="dt">\&quot;</span><span class="st">:</span><span class="dt">\&quot;</span><span class="st">200.00000000</span><span class="dt">\&quot;</span><span class="st">,</span></span>
-<span id="cb9-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-7" tabindex="-1"></a><span class="st">  </span><span class="dt">\&quot;</span><span class="st">b</span><span class="dt">\&quot;</span><span class="st">:948244411,</span><span class="dt">\&quot;</span><span class="st">a</span><span class="dt">\&quot;</span><span class="st">:948244502,</span><span class="dt">\&quot;</span><span class="st">T</span><span class="dt">\&quot;</span><span class="st">:1603226394739,</span><span class="dt">\&quot;</span><span class="st">m</span><span class="dt">\&quot;</span><span class="st">:true,</span><span class="dt">\&quot;</span><span class="st">M</span><span class="dt">\&quot;</span><span class="st">:true}&quot;</span></span></code></pre></div>
+<span id="cb9-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb9-7" tabindex="-1"></a><span class="st">  </span><span class="dt">\&quot;</span><span class="st">T</span><span class="dt">\&quot;</span><span class="st">:1603226394739,</span><span class="dt">\&quot;</span><span class="st">m</span><span class="dt">\&quot;</span><span class="st">:true,</span><span class="dt">\&quot;</span><span class="st">M</span><span class="dt">\&quot;</span><span class="st">:true}&quot;</span></span></code></pre></div>
 <p>We can see the messages logged above because we copied the sample implementation from <a href="https://github.com/Azolo/websockex">WebSockex’s readme</a> where <code>handle_frame/2</code> function uses <code>IO.puts/1</code> to print out all incoming data. The lesson here is that every incoming message from Binance will cause the <code>handle_frame/2</code> callback to be called with the message and the process’ state.</p>
 <p>Just for reference, our module should look currently as follows:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb10-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb10-1" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
@@ -664,20 +664,20 @@ To give a concrete example: the raw trade events stream URL for symbol XRPUSDT i
 </div>
 <div id="decode-incoming-events-using-the-jason-module" class="section level2 hasAnchor" number="1.5">
 <h2><span class="header-section-number">1.5</span> Decode incoming events using the Jason module<a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#decode-incoming-events-using-the-jason-module" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>Currently, all incoming data from WebSocket is encoded as a JSON. To decode JSON we will use the <a href="https://github.com/michalmuskala/jason">jason</a> module.</p>
-<p>Scrolling down to the <code>Installation</code> section inside the module’s readme, we can see that we need to add it to the dependencies and we can start to use it right away.</p>
-<p>Let’s open the <code>mix.exs</code> file of the <code>streamer</code> application and append the <code>:jason</code> dependency to the list inside <code>deps</code> function:</p>
+<p>Currently, all incoming data from WebSocket is encoded as JSON. To decode JSON we will use the <a href="https://github.com/michalmuskala/jason">jason</a> module.</p>
+<p>Scrolling down to the <code>Installation</code> section inside the module’s readme, we can see that we need to add it to the dependencies and we can start using it right away.</p>
+<p>Let’s open the <code>mix.exs</code> file of the <code>streamer</code> application and append the <code>:jason</code> dependency to the list inside the <code>deps</code> function:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb11-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-1" tabindex="-1"></a>  <span class="co"># /apps/streamer/mix.exs</span></span>
 <span id="cb11-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
 <span id="cb11-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-3" tabindex="-1"></a>    <span class="ot">[</span></span>
-<span id="cb11-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-4" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:jason</span>, <span class="st">&quot;~&gt; 1.2&quot;</span><span class="fu">}</span>,</span>
+<span id="cb11-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-4" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:jason</span>, <span class="st">&quot;~&gt; 1.4&quot;</span><span class="fu">}</span>,</span>
 <span id="cb11-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:websockex</span>, <span class="st">&quot;~&gt; 0.4&quot;</span><span class="fu">}</span></span>
 <span id="cb11-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-6" tabindex="-1"></a>    <span class="ot">]</span></span>
 <span id="cb11-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb11-7" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>As previously, don’t forget to run <code>mix deps.get</code> to fetch the new dependency.</p>
 <p>Looking through the documentation of the Jason module we can see <code>encode!/2</code> and <code>decode!/2</code> functions, both of them have exclamation marks which indicate that they will throw an error whenever they will be unable to successfully encode or decode the passed value.</p>
 <p>This is less than perfect for our use case as we would like to handle those errors in our own way(technically we could just use try/rescue but as we will find out both <code>encode/2</code> and <code>decode/2</code> are available).</p>
-<p>We will go a little bit off-topic but I would highly recommend those sorts of journeys around somebody’s code. Let’s look inside the <a href="https://github.com/michalmuskala/jason/blob/master/lib/jason.ex">Jason</a> module. Scrolling down in search of <code>decode/2</code> (without the exclamation mark) we can see it about line 54:</p>
+<p>We will go a little bit off-topic but I would highly recommend those sorts of journeys around somebody’s code. Let’s look inside the <a href="https://github.com/michalmuskala/jason/blob/master/lib/jason.ex">Jason</a> module. Scrolling down in search of <code>decode/2</code> (without the exclamation mark) we can see it about line 67:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb12-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-1" tabindex="-1"></a>  <span class="co"># /lib/jason.ex</span></span>
 <span id="cb12-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-2" tabindex="-1"></a>  <span class="kw">def</span> decode<span class="fu">(</span>input, opts \\ <span class="ot">[]</span><span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb12-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb12-3" tabindex="-1"></a>    input <span class="op">=</span> <span class="cn">IO</span><span class="op">.</span>iodata_to_binary<span class="fu">(</span>input<span class="fu">)</span></span>
@@ -687,23 +687,26 @@ To give a concrete example: the raw trade events stream URL for symbol XRPUSDT i
 <p>It looks like it uses the <code>parse/2</code> function of a <code>Decoder</code> module, let’s scroll back up and check where it’s coming from. At line 6:</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb13-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb13-1" tabindex="-1"></a><span class="co"># /lib/jason.ex</span></span>
 <span id="cb13-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb13-2" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Jason</span><span class="op">.</span><span class="fu">{</span><span class="cn">Encode</span>, <span class="cn">Decoder</span>, <span class="cn">DecodeError</span>, <span class="cn">EncodeError</span>, <span class="cn">Formatter</span><span class="fu">}</span></span></code></pre></div>
-<p>we can see that <code>Decoder</code> is an alias of the <a href="https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex"><code>Jason.Decoder</code></a>. Scrolling down to the <code>Jason.Decoder</code> module we will find a <code>parse/2</code> function about line 43:</p>
+<p>we can see that <code>Decoder</code> is an alias of the <a href="https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex"><code>Jason.Decoder</code></a>. Scrolling down to the <code>Jason.Decoder</code> module we will find a <code>parse/2</code> function about line 48:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb14-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-1" tabindex="-1"></a>  <span class="co"># /lib/decoder.ex</span></span>
 <span id="cb14-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-2" tabindex="-1"></a>  <span class="kw">def</span> parse<span class="fu">(</span>data, opts<span class="fu">)</span> <span class="kw">when</span> is_binary<span class="fu">(</span>data<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb14-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-3" tabindex="-1"></a>    key_decode <span class="op">=</span> key_decode_function<span class="fu">(</span>opts<span class="fu">)</span></span>
 <span id="cb14-4"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-4" tabindex="-1"></a>    string_decode <span class="op">=</span> string_decode_function<span class="fu">(</span>opts<span class="fu">)</span></span>
-<span id="cb14-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-5" tabindex="-1"></a>    <span class="cf">try</span> <span class="kw">do</span></span>
-<span id="cb14-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-6" tabindex="-1"></a>      value<span class="fu">(</span>data, data, <span class="dv">0</span>, <span class="ot">[@terminate]</span>, key_decode, string_decode<span class="fu">)</span></span>
-<span id="cb14-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-7" tabindex="-1"></a>    <span class="cf">catch</span></span>
-<span id="cb14-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-8" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:position</span>, position<span class="fu">}</span> <span class="op">-&gt;</span></span>
-<span id="cb14-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-9" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:error</span>, %<span class="cn">DecodeError</span><span class="fu">{</span><span class="va">position:</span> position, <span class="va">data:</span> data<span class="fu">}}</span></span>
-<span id="cb14-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-10" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:token</span>, token, position<span class="fu">}</span> <span class="op">-&gt;</span></span>
-<span id="cb14-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-11" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:error</span>, %<span class="cn">DecodeError</span><span class="fu">{</span><span class="va">token:</span> token, <span class="va">position:</span> position, <span class="va">data:</span> data<span class="fu">}}</span></span>
-<span id="cb14-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-12" tabindex="-1"></a>    <span class="cf">else</span></span>
-<span id="cb14-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-13" tabindex="-1"></a>      value <span class="op">-&gt;</span></span>
-<span id="cb14-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-14" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, value<span class="fu">}</span></span>
-<span id="cb14-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-15" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb14-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-16" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb14-5"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-5" tabindex="-1"></a>    float_decode <span class="op">=</span> float_decode_function<span class="fu">(</span>opts<span class="fu">)</span></span>
+<span id="cb14-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-6" tabindex="-1"></a>    object_decode <span class="op">=</span> object_decode_function<span class="fu">(</span>opts<span class="fu">)</span></span>
+<span id="cb14-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-7" tabindex="-1"></a>    decode <span class="op">=</span> decode<span class="fu">(</span><span class="va">keys:</span> key_decode, <span class="va">strings:</span> string_decode, <span class="va">objects:</span> object_decode, <span class="va">floats:</span> float_decode<span class="fu">)</span></span>
+<span id="cb14-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-8" tabindex="-1"></a>    <span class="cf">try</span> <span class="kw">do</span></span>
+<span id="cb14-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-9" tabindex="-1"></a>      value<span class="fu">(</span>data, data, <span class="dv">0</span>, <span class="ot">[@terminate]</span>, decode<span class="fu">)</span></span>
+<span id="cb14-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-10" tabindex="-1"></a>    <span class="cf">catch</span></span>
+<span id="cb14-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-11" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:position</span>, position<span class="fu">}</span> <span class="op">-&gt;</span></span>
+<span id="cb14-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-12" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:error</span>, %<span class="cn">DecodeError</span><span class="fu">{</span><span class="va">position:</span> position, <span class="va">data:</span> data<span class="fu">}}</span></span>
+<span id="cb14-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-13" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:token</span>, token, position<span class="fu">}</span> <span class="op">-&gt;</span></span>
+<span id="cb14-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-14" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:error</span>, %<span class="cn">DecodeError</span><span class="fu">{</span><span class="va">token:</span> token, <span class="va">position:</span> position, <span class="va">data:</span> data<span class="fu">}}</span></span>
+<span id="cb14-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-15" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb14-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-16" tabindex="-1"></a>      value <span class="op">-&gt;</span></span>
+<span id="cb14-17"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-17" tabindex="-1"></a>        <span class="fu">{</span><span class="va">:ok</span>, value<span class="fu">}</span></span>
+<span id="cb14-18"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-18" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb14-19"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb14-19" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>Based on the result of decoding it will either return <code>{:ok, value}</code> or <code>{:error, %Decode.Error{...}}</code> we can confirm that by digging through documentation of the module on the <a href="https://hexdocs.pm/jason/Jason.html#decode/2">hexdocs</a>.</p>
 <p>Once again, the point of this lengthy investigation was to show that Elixir code is readable and easy to understand so don’t be thrown off when documentation is a little bit light, quite opposite, contribute to docs and code as you gain a better understanding of the codebase.</p>
 <p>We can now get back to our <code>Streamer.Binance</code> module and modify the <code>handle_frame/2</code> function to decode the incoming JSON message. Based on the result of <code>Jason.decode/2</code> we will either call the <code>process_event/2</code> function or log an error. Here’s the new version of the <code>handle_frame/2</code> function:</p>
@@ -716,7 +719,7 @@ To give a concrete example: the raw trade events stream URL for symbol XRPUSDT i
 <span id="cb15-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-7" tabindex="-1"></a></span>
 <span id="cb15-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-8" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:ok</span>, state<span class="fu">}</span></span>
 <span id="cb15-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb15-9" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>Please make note that <code>type</code> is now prefixed with an underscore as we aren’t using it at the moment.</p>
+<p>Please make note that <code>type</code> argument is now prefixed with an underscore as we aren’t using it at the moment.</p>
 <p>The second important thing to note is that we are using <code>Logger</code> so it needs to be <code>require</code>d at the beginning of the module:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb16-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb16-1" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
 <span id="cb16-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb16-2" tabindex="-1"></a>  <span class="im">require</span> <span class="cn">Logger</span></span></code></pre></div>
@@ -731,12 +734,10 @@ To give a concrete example: the raw trade events stream URL for symbol XRPUSDT i
 <pre><code>{
   &quot;e&quot;: &quot;trade&quot;,     // Event type
   &quot;E&quot;: 123456789,   // Event time
-  &quot;s&quot;: &quot;BNBUSDT&quot;,   // Symbol
+  &quot;s&quot;: &quot;XRPUSDT&quot;,   // Symbol
   &quot;t&quot;: 12345,       // Trade ID
   &quot;p&quot;: &quot;0.001&quot;,     // Price
   &quot;q&quot;: &quot;100&quot;,       // Quantity
-  &quot;b&quot;: 88,          // Buyer order ID
-  &quot;a&quot;: 50,          // Seller order ID
   &quot;T&quot;: 123456785,   // Trade time
   &quot;m&quot;: true,        // Is the buyer the market maker?
   &quot;M&quot;: true         // Ignore
@@ -751,13 +752,11 @@ To give a concrete example: the raw trade events stream URL for symbol XRPUSDT i
 <span id="cb19-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-6" tabindex="-1"></a>    <span class="va">:trade_id</span>,</span>
 <span id="cb19-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-7" tabindex="-1"></a>    <span class="va">:price</span>,</span>
 <span id="cb19-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-8" tabindex="-1"></a>    <span class="va">:quantity</span>,</span>
-<span id="cb19-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-9" tabindex="-1"></a>    <span class="va">:buyer_order_id</span>,</span>
-<span id="cb19-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-10" tabindex="-1"></a>    <span class="va">:seller_order_id</span>,</span>
-<span id="cb19-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-11" tabindex="-1"></a>    <span class="va">:trade_time</span>,</span>
-<span id="cb19-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-12" tabindex="-1"></a>    <span class="va">:buyer_market_maker</span></span>
-<span id="cb19-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-13" tabindex="-1"></a>  <span class="ot">]</span></span></code></pre></div>
+<span id="cb19-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-9" tabindex="-1"></a>    <span class="va">:trade_time</span>,</span>
+<span id="cb19-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-10" tabindex="-1"></a>    <span class="va">:buyer_market_maker</span></span>
+<span id="cb19-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb19-11" tabindex="-1"></a>  <span class="ot">]</span></span></code></pre></div>
 <p>That’s all for this struct, we can now get back to implementing the <code>process_event/2</code> function inside the <code>Streamer.Binance</code> module. We will map every field of the response map to the <code>%Streamer.Binance.TradeEvent</code> struct. A useful trick here would be to copy the list of fields once again from the struct and assign the incoming fields one by one.
-Inside the header of the function, we will pattern match on event type(a field called “e” in the message) to confirm that indeed we received a trade event). In the end, the <code>process_event/2</code> function should look as follows:</p>
+Inside the header of the function, we will pattern match on event type(a field called “e” in the message) to confirm that indeed we received a trade event. In the end, the <code>process_event/2</code> function should look as follows:</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb20-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-1" tabindex="-1"></a>  <span class="co"># /apps/streamer/lib/streamer/binance.ex</span></span>
 <span id="cb20-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-2" tabindex="-1"></a>  <span class="kw">defp</span> process_event<span class="fu">(</span>%<span class="fu">{</span><span class="st">&quot;e&quot;</span> <span class="op">=&gt;</span> <span class="st">&quot;trade&quot;</span><span class="fu">}</span> <span class="op">=</span> event<span class="fu">)</span> <span class="kw">do</span></span>
 <span id="cb20-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-3" tabindex="-1"></a>    trade_event <span class="op">=</span> %<span class="cn">Streamer</span><span class="op">.</span><span class="cn">Binance</span><span class="op">.</span><span class="cn">TradeEvent</span><span class="fu">{</span></span>
@@ -767,20 +766,18 @@ Inside the header of the function, we will pattern match on event type(a field c
 <span id="cb20-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-7" tabindex="-1"></a>      <span class="va">:trade_id</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;t&quot;</span><span class="ot">]</span>,</span>
 <span id="cb20-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-8" tabindex="-1"></a>      <span class="va">:price</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;p&quot;</span><span class="ot">]</span>,</span>
 <span id="cb20-9"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-9" tabindex="-1"></a>      <span class="va">:quantity</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;q&quot;</span><span class="ot">]</span>,</span>
-<span id="cb20-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-10" tabindex="-1"></a>      <span class="va">:buyer_order_id</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;b&quot;</span><span class="ot">]</span>,</span>
-<span id="cb20-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-11" tabindex="-1"></a>      <span class="va">:seller_order_id</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;a&quot;</span><span class="ot">]</span>,</span>
-<span id="cb20-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-12" tabindex="-1"></a>      <span class="va">:trade_time</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;T&quot;</span><span class="ot">]</span>,</span>
-<span id="cb20-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-13" tabindex="-1"></a>      <span class="va">:buyer_market_maker</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;m&quot;</span><span class="ot">]</span></span>
-<span id="cb20-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-14" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb20-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-15" tabindex="-1"></a></span>
-<span id="cb20-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-16" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>debug<span class="fu">(</span></span>
-<span id="cb20-17"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-17" tabindex="-1"></a>      <span class="st">&quot;Trade event received &quot;</span> <span class="op">&lt;&gt;</span></span>
-<span id="cb20-18"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-18" tabindex="-1"></a>        <span class="st">&quot;</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">@</span><span class="ot">#{</span>trade_event<span class="op">.</span>price<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb20-19"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-19" tabindex="-1"></a>    <span class="fu">)</span></span>
-<span id="cb20-20"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-20" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<span id="cb20-10"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-10" tabindex="-1"></a>      <span class="va">:trade_time</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;T&quot;</span><span class="ot">]</span>,</span>
+<span id="cb20-11"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-11" tabindex="-1"></a>      <span class="va">:buyer_market_maker</span> <span class="op">=&gt;</span> event<span class="ot">[</span><span class="st">&quot;m&quot;</span><span class="ot">]</span></span>
+<span id="cb20-12"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-12" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb20-13"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-13" tabindex="-1"></a></span>
+<span id="cb20-14"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-14" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>debug<span class="fu">(</span></span>
+<span id="cb20-15"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-15" tabindex="-1"></a>      <span class="st">&quot;Trade event received &quot;</span> <span class="op">&lt;&gt;</span></span>
+<span id="cb20-16"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-16" tabindex="-1"></a>        <span class="st">&quot;</span><span class="ot">#{</span>trade_event<span class="op">.</span>symbol<span class="ot">}</span><span class="st">@</span><span class="ot">#{</span>trade_event<span class="op">.</span>price<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb20-17"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-17" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb20-18"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb20-18" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>We added the <code>Logger.debug/2</code> function to be able to see logs of incoming trade events.</p>
 <div style="page-break-after: always;"></div>
-<p>Lastly, before testing our implementation, let’s add a nice interface to our <code>streamer</code> application that allows starting streaming:</p>
+<p>Lastly, before testing our implementation, let’s add a nice interface to our <code>streamer</code> application that allows us to start streaming:</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb21-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-1" tabindex="-1"></a><span class="co"># /apps/streamer/lib/streamer.ex</span></span>
 <span id="cb21-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Streamer</span> <span class="kw">do</span></span>
 <span id="cb21-3"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb21-3" tabindex="-1"></a>  <span class="ot">@moduledoc &quot;&quot;&quot;</span></span>
@@ -805,7 +802,7 @@ Inside the header of the function, we will pattern match on event type(a field c
 <span id="cb23-6"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-6" tabindex="-1"></a><span class="ex">23:14:33.381</span> <span class="pp">[</span><span class="ss">debug</span><span class="pp">]</span> Trade event received XRPUSDT@0.25604000</span>
 <span id="cb23-7"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-7" tabindex="-1"></a><span class="ex">23:14:35.380</span> <span class="pp">[</span><span class="ss">debug</span><span class="pp">]</span> Trade event received XRPUSDT@0.25605000</span>
 <span id="cb23-8"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb23-8" tabindex="-1"></a><span class="ex">23:14:36.386</span> <span class="pp">[</span><span class="ss">debug</span><span class="pp">]</span> Trade event received XRPUSDT@0.25606000</span></code></pre></div>
-<p>As we can see, the streamer is establishing a WebSocket connection with Binance’s API and its receiving trade events. It decodes them from JSON to <code>%Streamer.Binance.TradeEvent</code> struct and logs a compiled message. Also, our interface hides implementation details from the “user” of our application.</p>
+<p>As we can see, the streamer is establishing a WebSocket connection with Binance’s API and its receiving trade events. It decodes them from JSON to <code>%Streamer.Binance.TradeEvent</code> struct and logs a compiled message. Also, our interface module hides implementation details from the “user” of our application.</p>
 <p>We will now flip the <code>Logger</code> level back to <code>info</code> so the output won’t every incoming trade event:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb24-1"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb24-1" tabindex="-1"></a><span class="co"># /config/config.exs</span></span>
 <span id="cb24-2"><a href="stream-live-cryptocurrency-prices-from-the-binance-wss.html#cb24-2" tabindex="-1"></a>config <span class="va">:logger</span>,</span>
@@ -835,42 +832,42 @@ Inside the header of the function, we will pattern match on event type(a field c
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/01-stream-crypto-prices.Rmd",
-"text": "Edit"
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": null,
-"text": null
-},
-"download": null,
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-}
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/01-stream-crypto-prices.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
 });
 });
 </script>

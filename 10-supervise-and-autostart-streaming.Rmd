@@ -1,11 +1,28 @@
 # Supervise and autostart streaming
 
+In the previous chapter, we moved our trading settings into a database,
+giving each symbol its own configurable parameters.
+But there's still a major pain point: every time we restart the application,
+we have to manually call `Streamer.start_streaming/1` for each symbol we want to stream.
+
+Even worse, there's no supervision around our streamer processes.
+If a `Streamer.Binance` process crashes due to a network hiccup or WebSocket disconnection,
+it's gone forever - no automatic restart, no recovery.
+
+In this chapter, we'll fix both problems.
+We'll add a `DynamicSupervisor` to manage our streamer processes,
+implement proper start/stop functionality with database-backed settings,
+and create an autostart mechanism that resumes streaming on all previously enabled symbols when the application boots.
+By the end, our streaming infrastructure will be robust and self-healing.
+
+Let's make our streamers supervised and persistent!
+
 ## Objectives
 
 - describe and design the required functionality
 - register the `Streamer.Binance` processes with names
-- set up `ecto` inside the `streamer` app
-- create and migrate the db
+- set up Ecto inside the `streamer` app
+- create and migrate the DB
 - seed default settings
 - implement the supervision tree and start streaming functionality
 - implement the stop functionality
@@ -14,7 +31,7 @@
 
 ## Describe and design the required functionality
 
-At this moment there's no supervision around the streamer processes, whenever an error would occur inside the `Streamer.Binance` process, it will die and never come back up.
+At this moment, there's no supervision around the streamer processes. If an error occurs inside a `Streamer.Binance` process, it will die and never come back up.
 
 That's less than perfect, but we can use supervisors to the rescue.
 
@@ -24,7 +41,7 @@ Next, we will consider a list of functionalities that we would like it to provid
 
 - start streaming. This will require a new `Streamer.Binance` process started under the                           
 `Streamer.DynamicStreamerSupervisor`. We will put logic responsible for starting that process inside the `Streamer.DynamicStreamerSupervisor` module.
-- stop streaming. To be able to stop the `Streamer.Binance` process streaming on a specific symbol, we will need to know that process' PID based only on symbol string(ie. "ETHUSDT"). To make that possible, we will need to register every `Streamer.Binance` process with a name that we will be able to "reverse-engineer" based only on symbol string for example: `:"#{__MODULE__}-#{symbol}"`
+- stop streaming. To be able to stop the `Streamer.Binance` process streaming on a specific symbol, we will need to know that process' PID based only on symbol string(ie. "XRPUSDT"). To make that possible, we will need to register every `Streamer.Binance` process with a name that we will be able to "reverse-engineer" based only on symbol string for example: `:"#{__MODULE__}-#{symbol}"`
 - autostart streaming. At the start of streaming on a symbol, we should persist that action as a symbol's streaming setting inside the database. We will need to generate a new Ecto.Repo, configure, create and migrate DB (just like in the last chapter for the `naive` app) to be able to retrieve that list. We will write a logic that will fetch settings of the symbols, autostart the ones that are enabled and place all that logic inside the `Streamer.DynamicStreamerSupervisor` module. We will introduce a [Task](https://hexdocs.pm/elixir/master/Task.html) child process that will utilize the logic from the `Streamer.DynamicStreamerSupervisor` to fetch those enabled symbols and start `Streamer.Binance` processes on startup - we will describe all of this separately in its section in this chapter.
 
 ## Register the `Streamer.Binance` processes with names
@@ -45,22 +62,25 @@ The first change that we need to apply will be to register `Streamer.Binance` pr
       "#{@stream_endpoint}#{String.downcase(symbol)}@trade", # <= lowercase symbol
       __MODULE__,
       nil,
-      name: :"#{__MODULE__}-#{symbol}" # <= uppercase symbol
+      name: :"#{__MODULE__}-#{String.upcase(symbol)}" # <= uppercase symbol
     )
   end
 ```
 
-Few things worth mention here:
+A few things worth mentioning here:
 
-- we are getting the uppercase symbol but inside the URL we need to use a lowercase symbol so we will introduce a new separate variable to be used in the URL
+- inside the URL we need to use a lowercase symbol
 - we are registering the process using the uppercase symbol so the name will remain consistent with the `naive` application's processes
-- to register process we are sending keyword list as the 4th argument to custom `start_link/4` function of `WebSockex` module ([link to source](https://github.com/Azolo/websockex/blob/master/lib/websockex.ex#L376) - again, no need to be afraid of reading the source code in Elixir, that's the beauty of it)
+- to register the process we are sending a keyword list as the 4th argument to the `start_link/4` function of the `WebSockex` module ([link to source](https://github.com/dominicletz/websockex/blob/master/lib/websockex.ex#L418) - again, no need to be afraid of reading the source code in Elixir, that's the beauty of it)
 
-## Set up `ecto` inside the `streamer` app
+## Set up Ecto inside the `streamer` app
 
 In the same fashion as in the last chapter, we will need to set up the database inside the `streamer` app. We will use the same Postgres server(docker container) that we've set up inside docker in the last chapter, just a separate database, so there's no need to update the `docker-compose.yml` file.
 
-As previously the first step will be to add the `ecto` modules and Postgres related packages into `deps` inside the `mix.exs` file of the `streamer` app. Additionally, we will add the `binance` module that we will use to fetch all symbols supported by the exchange(to generate default settings as we've done for the `naive` application. We are unable to use the `BinanceMock` as this will cause the circular dependency [Binance Mock depends on the streamer app]):
+As previously, the first step will be to add the Ecto modules and Postgres-related packages into `deps` inside the `mix.exs` file of the `streamer` app.
+Additionally, we will add the `binance` module that we will use to fetch all symbols supported by the exchange
+(to generate default settings as we've done for the `naive` application).
+We can't use `BinanceMock` here as it would cause a circular dependency - BinanceMock depends on the streamer app:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs
@@ -80,7 +100,7 @@ As previously the first step will be to add the `ecto` modules and Postgres rela
 
 Run `mix deps.get` to install new dependencies.
 
-We can now use `ecto` generator to add an `ecto` repository to the Streamer application:
+We can now use the Ecto generator to add a repository to the Streamer application:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/streamer
@@ -91,18 +111,20 @@ $ mix ecto.gen.repo -r Streamer.Repo
 ...
 ```
 
-Update the config to match access details to Postgres' docker instance:
+Update the config to match access details to the Postgres Docker instance:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
+config :streamer, Streamer.Repo,
+  database: "streamer",   # <= database updated 
+  username: "postgres",   # <= username updated
+  password: "postgres",   # <= password updated
+  hostname: "localhost"
+
+...
+
 config :streamer,             # <= added line 
   ecto_repos: [Streamer.Repo] # <= added line
-
-config :streamer, Streamer.Repo,
-  database: "streamer",               # <= database updated 
-  username: "postgres",               # <= username updated
-  password: "hedgehogSecretPassword", # <= password updated
-  hostname: "localhost"
 ```
 
 The last step will be to update the `children` list of the `Streamer.Application` module:
@@ -115,13 +137,13 @@ The last step will be to update the `children` list of the `Streamer.Application
       {Streamer.Repo, []}, # <= repo added
       {
         Phoenix.PubSub,
-        name: Streamer.PubSub, adapter_name: Phoenix.PubSub.PG2
+        name: Streamer.PubSub
       }
     ]
     ...
 ```
 
-## Create and migrate the db
+## Create and migrate the DB
 
 We can now create a new streamer database using the `mix` tool, after that we will be able to generate a migration file that will create the `settings` table:
 
@@ -159,7 +181,8 @@ defmodule Streamer.Repo.Migrations.CreateSettings do
 end
 ```
 
-That finishes our work on the migration file, we need to add the `StreamingStatusEnum` in the same way as in the last chapter (create a `schema` directory inside the `apps/streamer/lib/streamer` directory and a new  file called `streaming_status_enum.ex` and place below logic (defining the enum) in it:
+That finishes our work on the migration file. Now we need to add the `StreamingStatusEnum` in the same way as in the last chapter.
+Create a `schema` directory inside `/apps/streamer/lib/streamer/`, then create a new file called `streaming_status_enum.ex` with the enum definition:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/schema/streaming_status_enum.ex
@@ -232,12 +255,16 @@ base_settings = %{
 
 Logger.info("Inserting default settings for symbols")
 
-maps = symbols
+total_count = symbols
   |> Enum.map(&(%{base_settings | symbol: &1["symbol"]}))
+  |> Enum.chunk_every(1000)
+  |> Enum.reduce(0, fn batch, acc ->
+    {count, nil} = Repo.insert_all(Settings, batch)
+    Logger.info("Inserted batch of #{count} symbols")
+    acc + count
+  end)
 
-{count, nil} = Repo.insert_all(Settings, maps)
-
-Logger.info("Inserted settings for #{count} symbols")
+Logger.info("Inserted settings for #{total_count} symbols")
 ```
 
 Don't forget to run the seeding script before progressing forward:
@@ -245,9 +272,11 @@ Don't forget to run the seeding script before progressing forward:
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/streamer
 $ mix run priv/seed_settings.exs
-22:03:46.675 [info]  Fetching exchange info from Binance to create streaming settings
-22:03:51.386 [info]  Inserting default settings for symbols
-22:03:51.448 [info]  Inserted settings for 1277 symbols
+22:03:46.675 [info] Fetching exchange info from Binance to create streaming settings
+22:03:51.386 [info] Inserting default settings for symbols
+22:03:51.438 [info] Inserted batch of 1000 symbols
+22:03:51.448 [info] Inserted batch of 375 symbols
+22:03:51.462 [info] Inserted settings for 1375 symbols
 ```
 
 ## Implement the supervision tree and start streaming functionality
@@ -258,7 +287,11 @@ Let's start by creating a new file called `dynamic_streamer_supervisor.ex` insid
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
 defmodule Streamer.DynamicStreamerSupervisor do
-  use DynamicSupervisor
+  use DynamicSupervisor 
+  
+  alias Streamer.Repo
+  alias Streamer.Schema.Settings
+
 
   def start_link(init_arg) do
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -298,12 +331,12 @@ Inside the `start_streaming/1` function, we are using 3 helper functions that we
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
   defp get_pid(symbol) do
-    Process.whereis(:"Elixir.Streamer.Binance-#{symbol}")
+    Process.whereis(:"Elixir.Streamer.Binance-#{String.upcase(symbol)}")
   end
 
   defp update_streaming_status(symbol, status)
        when is_binary(symbol) and is_binary(status) do
-    Repo.get_by(Settings, symbol: symbol)
+    Repo.get_by(Settings, symbol: String.upcase(symbol))
     |> Ecto.Changeset.change(%{status: status})
     |> Repo.update()
   end
@@ -331,7 +364,7 @@ The last step to get the above function to work(and future ones in this module) 
   alias Streamer.Schema.Settings
 ```
 
-\newpage
+
 
 As we added a new `start_streaming/1` logic inside the `Streamer.DynamicStreamerSupervisor`, we need to replace the `start_streaming/1` implementation inside the `Streamer` module:
 
@@ -368,7 +401,7 @@ knitr::include_graphics("images/chapter_11_03_first_sup_tree.png")
 
 ## Implement the stop functionality
 
-As we can see, we are now registering the `Streamer.Binance` processes with names that contain their symbols. We will be able to retrieve PIDs of those registered processes just by simply passing the symbol string(ie. "ETHUSDT") into `get_pid/1`, which will allow us to then request termination of those processes by the `Streamer.DynamicStreamerSupervisor`.
+As we can see, we are now registering the `Streamer.Binance` processes with names that contain their symbols. We will be able to retrieve PIDs of those registered processes just by simply passing the symbol string(ie. "XRPUSDT") into `get_pid/1`, which will allow us to then request termination of those processes by the `Streamer.DynamicStreamerSupervisor`.
 
 Let's write a `stop_streaming/1` logic inside the `Streamer.DynamicStreamerSupervisor` module(put it above first private function):
 
@@ -413,11 +446,11 @@ We need to update the `Streamer` module to provide the interface to stop streami
 
 ## Implement the autostart streaming functionality
 
-Currently, whenever we will shutdown the elixir app, settings persist in the database but streamers are not started on the next init.
+Currently, when we shut down the Elixir app, settings persist in the database but streamers are not started on the next init.
 
 To fix this, we will add `autostart_streaming/0` inside the `Streamer.DynamicStreamerSupervisor`.
 
-Note: It very important to differentiate between module and process. We will put our autostarting logic inside the *module* but the `Streamer.DynamicStreamerSupervisor` *process* won't run it.
+Note: It's very important to differentiate between module and process. We will put our autostarting logic inside the *module* but the `Streamer.DynamicStreamerSupervisor` *process* won't run it.
 
 We will introduce a new [Task](https://hexdocs.pm/elixir/master/Task.html) process that will execute all the autostarting logic.
 
@@ -514,7 +547,7 @@ The final update in this chapter will be to replace the `Streamer.DynamicStreame
       {Streamer.Repo, []},
       {
         Phoenix.PubSub,
-        name: Streamer.PubSub, adapter_name: Phoenix.PubSub.PG2
+        name: Streamer.PubSub
       },
       {Streamer.Supervisor, []} # <= updated supervisor
     ]
@@ -525,18 +558,18 @@ The final update in this chapter will be to replace the `Streamer.DynamicStreame
 
 
 
-## Test the implementation
+## Manual testing in IEx
 
 Let's start an IEx session and call the `start_streaming/1` function twice for two different symbols and then exit using double Ctrl+c:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> Streamer.start_streaming("ethusdt")
-18:51:39.809 [info]  Starting streaming on ETHUSDT
+iex(1)> Streamer.start_streaming("XRPUSDT")
+18:51:39.809 [info]  Starting streaming on XRPUSDT
 {:ok, #PID<0.370.0>}
-iex(2)> Streamer.start_streaming("neousdt")
-18:51:47.288 [info]  Starting streaming on NEOUSDT
+iex(2)> Streamer.start_streaming("ETHUSDT")
+18:51:47.288 [info]  Starting streaming on ETHUSDT
 {:ok, #PID<0.377.0>}
 ```
 
@@ -546,26 +579,37 @@ Now, open a *new* IEx session and look at the output:
 $ iex -S mix
 ...
 iex(1)> 
-18:53:48.920 [info]  Starting streaming on ETHUSDT
-18:53:50.306 [info]  Starting streaming on NEOUSDT
+18:53:48.920 [info]  Starting streaming on XRPUSDT
+18:53:50.306 [info]  Starting streaming on ETHUSDT
 ```
 
 We can also confirm that streamer processes are there by using `:observer.start()`:
+
+```
+...
+iex(2)> Mix.ensure_application!(:wx)
+:ok
+iex(3)> Mix.ensure_application!(:runtime_tools)
+:ok
+iex(4)> Mix.ensure_application!(:observer)
+:ok
+iex(5)> :observer.start()
+```
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_11_05_finished_tree.png")
 ```
 
-Inside the same `iex` session run the following:
+Inside the same IEx session run the following:
 
 ```{r, engine = 'bash', eval = FALSE}
-iex(5)> Streamer.stop_streaming("neousdt") 
-18:57:37.205 [info]  Stopping streaming on NEOUSDT
+iex(6)> Streamer.stop_streaming("XRPUSDT") 
+18:57:37.205 [info]  Stopping streaming on XRPUSDT
 {:ok,
  %Streamer.Schema.Settings{
    ...
  }}
-iex(6)> Streamer.stop_streaming("ethusdt")
+iex(7)> Streamer.stop_streaming("ETHUSDT")
 18:57:51.553 [info]  Stopping streaming on ETHUSDT
 {:ok,
  %Streamer.Schema.Settings{
@@ -575,6 +619,27 @@ iex(6)> Streamer.stop_streaming("ethusdt")
 
 Stop the IEx session and start a new one - streamers shouldn't be autostarted anymore.
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**The streamer app is now production-ready!** We've added:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_11)
+- Proper supervision for all `Streamer.Binance` processes via `DynamicSupervisor`
+- Start/stop functionality with database-backed status persistence
+- Automatic streaming resumption on application restart
+- A `rest_for_one` supervision strategy that ensures autostart runs whenever the supervisor restarts
+
+The supervision tree we built ensures that if any streamer crashes, it gets restarted automatically.
+And if the entire `DynamicStreamerSupervisor` crashes, the autostart Task will run again to restore all enabled streamers.
+
+**So, What's Next?**
+
+We've given the `streamer` app proper supervision and autostart capabilities.
+Now it's time to do the same for the `naive` trading app - but with an important addition.
+
+In the next chapter, we'll implement start, stop, and autostart for trading, plus a new "shutdown" feature.
+Unlike an abrupt stop that kills traders mid-trade, shutdown will let traders finish their current trade cycles before gracefully terminating.
+This is crucial for a real trading system where you don't want to be left holding positions.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_10](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_10)).
