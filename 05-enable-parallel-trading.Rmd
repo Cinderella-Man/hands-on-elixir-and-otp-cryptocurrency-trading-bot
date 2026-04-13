@@ -1,10 +1,21 @@
 # Enable parallel trading on multiple symbols
 
+In the previous chapter, we built `BinanceMock` to decouple our trading logic from the live exchange.
+That was a crucial step - but our system still has a fundamental limitation:
+it can only trade one symbol at a time, and if anything goes wrong, everything stops.
+
+In this chapter, we'll fix both problems by building a proper OTP supervision tree.
+This is where Elixir really shines. Instead of writing defensive code to handle every possible failure,
+we'll embrace the "let it crash" philosophy and build a system that automatically recovers from errors.
+By the end, you'll have traders running in parallel across multiple symbols, each one resilient to crashes.
+
+Let's dive in!
+
 ## Objectives
 
 - design supervision tree that will allow trading using multiple traders in parallel per symbol
 - update application supervisor
-- implement `Naive.Server`
+- implement `Naive.Leader`
 - implement `Naive.SymbolSupervisor`
 
 ## Introduction - architectural design
@@ -15,11 +26,10 @@ In the second chapter, we implemented a basic trader which goes through the trad
 knitr::include_graphics("images/chapter_05_01_current_state.png")
 ```
 
-The `GenServer.start_link/3` creates a link between IEx's process and new `Naive.Trader` process. Whenever a trader process terminates(either finishes the trading cycle or there was an error), a new one won't get started as there's no supervision at all.
+The `GenServer.start_link/3` creates a link between IEx's process and new `Naive.Trader` process.
+Whenever a trader process terminates (either by finishing the trading cycle or due to an error), a new one won't start - there's no supervision at all.
 
 We can do much better than that with a little bit of help from Elixir and OTP.
-
-\newpage
 
 Let's introduce a supervisor above our trader process. It will start a new trader process whenever the previous one finished/crashed:
 
@@ -27,7 +37,13 @@ Let's introduce a supervisor above our trader process. It will start a new trade
 knitr::include_graphics("images/chapter_05_02_supervise_the_trader.png")
 ```
 
-This looks much better but there are few problems with it. So, when the trader will start to place orders it will be in *some* state(it will hold buy/sell orders) that the supervisor won't be aware of. In case of trader crashing, the supervisor will start a new trader *without* any knowledge of possibly placed orders or any other information from the state(it will be started with a "fresh" state).
+This looks much better, but there's a critical problem.
+When our trader places a buy order, that order exists in two places:
+on the Binance exchange (or our mock) *and* in the trader's internal state.
+If the trader crashes, the supervisor will dutifully restart it - but with a fresh, empty state.
+Meanwhile, our buy order is still sitting on the exchange, waiting to be filled. The new trader has no idea it exists.
+
+This is the fundamental challenge of stateful processes: **the supervisor can restart the process, but it can't restore the state.**
 
 To fix that we need to keep a copy of the trader's state outside of the trader process - that's why we will introduce a new server called `Naive.Leader` that will keep track of traders' data:
 
@@ -35,19 +51,23 @@ To fix that we need to keep a copy of the trader's state outside of the trader p
 knitr::include_graphics("images/chapter_05_03_leader_added.png")
 ```
 
-The `Naive.Leader` will become the interface to start new *traders*. It will call the `start_child/1` function of the Supervisor, then consequently `DynamicTraderSupervisor` will call the `start_link/1` function of our `Naive.Trader` module.
+The `Naive.Leader` will become the interface to start new traders.
+It will call `DynamicSupervisor.start_child/1`, which in turn calls `Naive.Trader.start_link/1`.
 
-We can also see that our `Naive.Trader`'s are now started with the `temporary restart` option. Setting this option will disallow the Supervisor from restarting the traders on its own. The responsibility of restarting traders will now be shifted to the leader. The leader will monitor the traders and restart them to a correct state when any crashes.
+Here's where we embrace Elixir's famous "let it crash" philosophy - but with a twist.
+Our traders are started with `restart: :temporary`, which tells the supervisor *not* to restart them automatically.
+Instead, the Leader takes responsibility for restarts. Why? Because the Leader holds the cached state.
+When a trader crashes, the Leader can restart it with its last known state, not a blank slate.
+
+This pattern - external state management combined with supervised restarts - gives us the best of both worlds: fault tolerance *and* state recovery.
 
 As trader state will get updated, it will notify the leader about its new state to be stored. This way whenever a trader process would crash, the leader will be able to start a new trader process with the last known state.
 
-This setup will also allow us to start and supervise multiple traders for a single symbol which our naive strategy will require in the future(next chapter).
+This setup will also allow us to start and supervise multiple traders for a single symbol - something our naive strategy will require in the next chapter.
 
-\newpage
+For each symbol that we will be trading on we need the above trio of processes(Leader + DynamicTraderSupervisor + Trader). To effectively initialize(and supervise) them we will add an `Naive.SymbolSupervisor` that will start both `Naive.Leader` and `Naive.DynamicTraderSupervisor`:
 
-For each symbol that we will be trading on we need the above trio of services(Leader + DynamicTraderSupervisor + Trader), to effectively initialize(and supervise) them we will add an `Naive.SymbolSupervisor` that will start both `Naive.Leader` and `Naive.Dynamic`:
-
-```{r, fig.align="center", out.width="40%", echo=FALSE}
+```{r, fig.align="center", out.width="70%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_04_symbol_sup.png")
 ```
 
@@ -58,7 +78,10 @@ We will need multiple symbol supervisors, one for each symbol that we would like
 knitr::include_graphics("images/chapter_05_05_full.png")
 ```
 
-You could ask yourself why we don't need some additional server to track which symbols are traded at the moment (in the same way as `Naive.Leader` tracks `Naive.Trader`s). The answer is that we don't need to track them as we register all `Naive.SymbolSupervisor`s with a name containing a symbol that they trade on. This way we will always be able to refer to them by registered name instead of PIDs/refs.
+You might wonder: don't we need another server to track which symbols are being traded?
+The answer is no - we can register each `Naive.SymbolSupervisor` with a name like `:"Naive.SymbolSupervisor-XRPUSDT"`.
+This lets us look up supervisors by name rather than tracking PIDs ourselves.
+Elixir's process registry handles the bookkeeping for us.
 
 Here's what happens starting from the top of the graph:
 
@@ -70,7 +93,7 @@ Here's what happens starting from the top of the graph:
 This can be a little bit confusing at the moment but it will get a lot easier
 as we will write the code. Let's get to it!
 
-### Update application supervisor
+## Update application supervisor
 
 Let's start by adding a `Naive.DynamicSymbolSupervisor` and a server to the children list of the `Naive.Application` supervisor:
 
@@ -89,7 +112,7 @@ Let's start by adding a `Naive.DynamicSymbolSupervisor` and a server to the chil
   end
 ```
 
-### Add interface method
+## Add interface method
 
 We will now add an interface method to the `Naive` module that will instruct                            
 `Naive.DynamicSymbolSupervisor` to start `Naive.SymbolSupervisor`(to be implemented next) as its child:
@@ -144,11 +167,33 @@ defmodule Naive.SymbolSupervisor do
 end
 ```
 
-It's advised to keep supervisor processes slim.
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Critical Architecture Note: The Atom Leak Risk**
+
+You might notice we are dynamically creating atoms here (e.g., `:"#{__MODULE__}-#{symbol}"`).
+In the Erlang VM, atoms are not garbage collected. If this system accepted arbitrary user input(like creating
+a trader for "User1", "User2"...), we would eventually crash the VM by exhausting the atom table (limit ~1 million by default).
+
+Since the list of Binance trading pairs is finite, we are safe for now.
+However, this is considered an anti-pattern. **In Chapter 13, we will refactor this to use the Registry**,
+which allows us to look up processes using strings, eliminating this risk entirely."
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+As a general rule, keep supervisor modules slim and focused purely on supervision. Business logic belongs in the child processes they manage.
 
 We registered the `Naive.SymbolSupervisor` processes with names, which will help us understand the supervision tree inside the observer GUI(it will also allow us to stop those supervisors in the future).
-
-\newpage
 
 As mentioned previously whenever either the `Naive.Leader` or `Naive.DynamicSymbolSupervisor-#{symbol}` would crash we would like to kill the other child process as we won't be able to recover the state - it's just easier to init both again.
 
@@ -175,16 +220,20 @@ defmodule Naive.Leader do
 end
 ```
 
-At this moment we have half of the supervision tree working so we can give it
-a spin in iex. Using the observer we will be able to see all processes created when the `start_trading/1` function gets called:
+At this moment we have half of the supervision tree working so we can give it a spin in iex.
+Using the observer we will be able to see all processes created when the `start_trading/1` function gets called:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> :observer.start()
+iex(1)> Mix.ensure_application!(:wx)
+:ok
+iex(2)> Mix.ensure_application!(:runtime_tools)
+:ok
+iex(3)> Mix.ensure_application!(:observer)
+:ok
+iex(4)> :observer.start()
 ```
-
-\newpage
 
 The above function will open a new window looking as follows:
 
@@ -249,8 +298,8 @@ We will introduce a leader's state that will consist of a symbol, setting, and a
   end
 ```
 
-We will use a `handle_continue` callback which was introduced in Erlang 21 to
-initialize the leader asynchronously. To do that we will return a tuple starting with a `:continue` atom from inside the init function:
+We'll apply the same `handle_continue` pattern we learned in Chapter 2 -
+this time to initialize the leader asynchronously and start our traders without blocking the supervisor:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -289,7 +338,7 @@ size from the `Naive.Trader` to the `Naive.Leader` and hardcode the rest of the 
       symbol: symbol,
       chunks: 1,
       # -0.12% for quick testing
-      profit_interval: "-0.0012",
+      profit_target: "-0.0012",
       tick_size: tick_size
     }
   end
@@ -304,8 +353,6 @@ size from the `Naive.Trader` to the `Naive.Leader` and hardcode the rest of the 
     |> Map.get("tickSize")
   end
 ```
-
-\newpage
 
 Additionally, we need to create a helper method that we used inside the `handle_continue/2` callback called `fresh_trader_state/1`:
 
@@ -345,7 +392,13 @@ defmodule Naive.Trader do
   ...
 ```
 
-Next, we will update the `start_link/1` and `init/1` functions to take the state instead of building it from args:
+With our new supervision structure in place, the `tick_size` is resolved **before** the `Trader` process even starts.
+This is a significant win for our system's design: our `Trader` no longer depends on the Binance API to boot up.
+
+Because we are now passing a fully populated `%State{}` struct into `start_link/1`,
+the initialization is instantaneous. We no longer need the `handle_continue/2` pattern to prevent blocking, so we can delete it.
+
+Let's refactor `start_link/1` and `init/1` to accept this injected state and remove the asynchronous fetching logic:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -365,9 +418,11 @@ Next, we will update the `start_link/1` and `init/1` functions to take the state
 
     {:ok, state}
   end
+
+  def handle_continue(...) do # <= remove this function
 ```
 
-Next, we need to update two `handle_info/2` callbacks that change the state of the `Naive.Trader` process(when placing buy order and when placing sell order). They will need to notify the `Naive.Leader` that the state is changed before returning it:
+Next, we need to update three `handle_info/2` callbacks that change the state of the `Naive.Trader` process(when placing buy order and when placing sell order). They will need to notify the `Naive.Leader` that the state is changed before returning it:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -375,8 +430,9 @@ Next, we need to update two `handle_info/2` callbacks that change the state of t
 
   def handle_info(
         ...
-      ) do
-    Logger.info("Placing buy order (#{symbol}@#{price})")
+  ) ... do
+    ...
+    Logger.info("Placing BUY order for #{symbol} @ #{price}, quantity: #{quantity}")
     ...
     new_state = %{state | buy_order: order}
     Naive.Leader.notify(:trader_state_updated, new_state)
@@ -385,14 +441,24 @@ Next, we need to update two `handle_info/2` callbacks that change the state of t
 
   def handle_info(
         ...
-      ) do
+  ) ... do
     ...
     Logger.info("Buy order filled, placing sell order ...")  
     ...
 
-    new_state = %{state | sell_order: order}
+    new_state = %{state | buy_order: buy_order_response, sell_order: order}
     Naive.Leader.notify(:trader_state_updated, new_state)
     {:noreply, new_state}
+  end
+
+  def handle_info(
+        ...
+  ) ... do
+    ...
+    Logger.info("Trade finished, trader will now exit")
+    new_state = %{state | sell_order: sell_order_response}
+    Naive.Leader.notify(:trader_state_updated, new_state)
+    {:stop, :normal, new_state}
   end
   ...
 ```
@@ -404,7 +470,6 @@ Now we need to get back to the `Naive.Leader` where we will implement the notify
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
   # below init
-
   def notify(:trader_state_updated, trader_state) do
     GenServer.call(
       :"#{__MODULE__}-#{trader_state.symbol}",
@@ -442,8 +507,6 @@ trader locally:
 ```
 
 Another callback functions that we will need to provide are two `handle_info/2` functions that will handle the trade finished scenario as well as crashed trader.
-
-\newpage
 
 First, trade finished scenario. As previously, we will try to find the trader data in the traders list. If that's successful, we will start a new trader with a fresh state. We will also overwrite existing trader data locally(as PID, ref, and state changed):
 
@@ -517,18 +580,46 @@ When our trader will start, you should be able to right-click and select "Kill p
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> :observer.start()             
+iex(1)> Mix.ensure_application!(:wx)
 :ok
-iex(2)> Naive.start_trading("xrpusdt")
-
+iex(2)> Mix.ensure_application!(:runtime_tools)
+:ok
+iex(3)> Mix.ensure_application!(:observer)
+:ok
+iex(4)> :observer.start()
+:ok
+iex(5)> Streamer.start_streaming("xrpusdt")
+{:ok, #PID<0.245.0>}
+iex(6)> Naive.start_trading("xrpusdt")
+...
 00:04:35.041 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.455.0>}
 00:04:37.697 [info]  Initializing new trader for XRPUSDT
-iex(3)>
-00:08:01.476 [error] XRPUSDT trader died - trying to restart
+iex(7)>
+00:08:01.476 [error] XRPUSDT trader died - reason killed - trying to restart
 00:08:01.476 [info]  Initializing new trader for XRPUSDT
 ```
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**Excellent work!** You've just built a production-grade supervision tree that can:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_05)
+- Trade multiple symbols in parallel, each with its own isolated failure domain
+- Automatically recover crashed traders with their last known state
+- Scale horizontally by simply calling `start_trading/1` for new symbols
+
+This is the heart of OTP in action. The `Naive.Leader` pattern we've built - caching state externally and controlling restarts -
+is a technique you'll use again and again in Elixir systems.
+
+**So, What's Next?**
+
+Our supervision tree is solid, but our trading strategy has a subtle flaw. When a trader finishes a sell and a new one starts,
+it immediately buys at the current market price - the same price we just sold at. We're paying fees twice for no gain!
+
+In the next chapter, we'll fix this by introducing a `buy_down_interval`. Instead of buying at the current price,
+our traders will place buy orders *below* the market price, ensuring we only re-enter a position when there's actually profit potential.
+It's a small change with a big impact on profitability.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_05](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_05)).

@@ -503,12 +503,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Next, let’s model the state of our server:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb27-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
 <span id="cb27-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defmodule</span> <span class="cn">State</span> <span class="kw">do</span></span>
-<span id="cb27-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [<span class="va">:symbol</span>, <span class="va">:profit_interval</span>, <span class="va">:tick_size</span>]</span>
+<span id="cb27-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@enforce_keys</span> [<span class="va">:symbol</span>, <span class="va">:profit_target</span>, <span class="va">:tick_size</span>]</span>
 <span id="cb27-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defstruct</span> [</span>
 <span id="cb27-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">:symbol</span>,</span>
 <span id="cb27-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">:buy_order</span>,</span>
 <span id="cb27-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">:sell_order</span>,</span>
-<span id="cb27-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_interval</span>,</span>
+<span id="cb27-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">:profit_target</span>,</span>
 <span id="cb27-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">:tick_size</span></span>
 <span id="cb27-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
 <span id="cb27-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
@@ -517,10 +517,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>what symbol does it need to trade (“symbol” here is a pair of assets for example “XRPUSDT”, which is XRP to/from USDT)</li>
 <li>placed buy order (if any)</li>
 <li>placed sell order (if any)</li>
-<li>profit interval (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)</li>
+<li>profit target (what net profit % we would like to achieve when buying and selling an asset - single trade cycle)</li>
 <li>tick_size (yes, I know, jargon warning. We can’t ignore it here as it needs to be fetched from Binance and it’s used to calculate a valid price. Tick size differs between symbols and it is the smallest acceptable price movement up or down. For example in the physical world tick size for USD is a single cent, you can’t sell something for $1.234, it’s either $1.23 or $1.24 (a single cent difference between those is the tick size) - more info <a href="https://www.investopedia.com/terms/t/tick.asp">here</a>.</li>
 </ul>
-<p>Our strategy won’t be able to work without symbol, profit_interval nor tick_size so we added them to the <code>@enforce_keys</code> attribute. This will ensure that we won’t create an invalid <code>%State{}</code> without those values.</p>
+<p>Our strategy won’t be able to work without symbol, profit_target nor tick_size so we added them to the <code>@enforce_keys</code> attribute. This will ensure that we won’t create an invalid <code>%State{}</code> without those values.</p>
 <div style="page-break-after: always;"></div>
 <p>As now we know that our GenServer will need to receive those details via args, we can update pattern matching in <code>start_link/1</code> and <code>init/1</code> functions to confirm that passed values are indeed maps:</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb28-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
@@ -528,12 +528,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb28-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb28-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
 <span id="cb28-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%{<span class="va">symbol:</span> symbol, <span class="va">profit_interval:</span> profit_interval}) <span class="kw">do</span></span>
+<span id="cb28-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%{<span class="va">symbol:</span> symbol, <span class="va">profit_target:</span> profit_target}) <span class="kw">do</span></span>
 <span id="cb28-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb28-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>As we are already in the <code>init/1</code> function we will need to modify it to fetch the <code>tick_size</code> for the passed symbol and initialize a fresh state:</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb29-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb29-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%{<span class="va">symbol:</span> symbol, <span class="va">profit_interval:</span> profit_interval}) <span class="kw">do</span></span>
+<span id="cb29-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> init(%{<span class="va">symbol:</span> symbol, <span class="va">profit_target:</span> profit_target}) <span class="kw">do</span></span>
 <span id="cb29-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-3" aria-hidden="true" tabindex="-1"></a>    symbol <span class="op">=</span> <span class="cn">String</span><span class="op">.</span>upcase(symbol)</span>
 <span id="cb29-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(<span class="st">&quot;Initializing new trader for </span><span class="ot">#{</span>symbol<span class="ot">}</span><span class="st">&quot;</span>)</span>
@@ -543,7 +543,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb29-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-9" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:ok</span>,</span>
 <span id="cb29-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-10" aria-hidden="true" tabindex="-1"></a>     %<span class="cn">State</span>{</span>
 <span id="cb29-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-11" aria-hidden="true" tabindex="-1"></a>       <span class="va">symbol:</span> symbol,</span>
-<span id="cb29-12"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-12" aria-hidden="true" tabindex="-1"></a>       <span class="va">profit_interval:</span> profit_interval,</span>
+<span id="cb29-12"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-12" aria-hidden="true" tabindex="-1"></a>       <span class="va">profit_target:</span> profit_target,</span>
 <span id="cb29-13"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-13" aria-hidden="true" tabindex="-1"></a>       <span class="va">tick_size:</span> tick_size</span>
 <span id="cb29-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-14" aria-hidden="true" tabindex="-1"></a>     }}</span>
 <span id="cb29-15"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb29-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
@@ -576,7 +576,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   ...
   symbols: [
     %{
-      &quot;symbol&quot;: &quot;ETHUSDT&quot;,
+      &quot;symbol&quot;: &quot;XRPUSDT&quot;,
       ...
       &quot;filters&quot;: [
         ...
@@ -651,11 +651,11 @@ get really long otherwise - don’t worry, we will refactor this in one of the n
 <span id="cb35-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-11" aria-hidden="true" tabindex="-1"></a>            <span class="va">order_id:</span> order_id,</span>
 <span id="cb35-12"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-12" aria-hidden="true" tabindex="-1"></a>            <span class="va">orig_qty:</span> quantity</span>
 <span id="cb35-13"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-13" aria-hidden="true" tabindex="-1"></a>          },</span>
-<span id="cb35-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-14" aria-hidden="true" tabindex="-1"></a>          <span class="va">profit_interval:</span> profit_interval,</span>
+<span id="cb35-14"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-14" aria-hidden="true" tabindex="-1"></a>          <span class="va">profit_target:</span> profit_target,</span>
 <span id="cb35-15"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-15" aria-hidden="true" tabindex="-1"></a>          <span class="va">tick_size:</span> tick_size</span>
 <span id="cb35-16"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-16" aria-hidden="true" tabindex="-1"></a>        } <span class="op">=</span> state</span>
 <span id="cb35-17"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-17" aria-hidden="true" tabindex="-1"></a>      ) <span class="kw">do</span></span>
-<span id="cb35-18"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-18" aria-hidden="true" tabindex="-1"></a>    sell_price <span class="op">=</span> calculate_sell_price(buy_price, profit_interval, tick_size)</span>
+<span id="cb35-18"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-18" aria-hidden="true" tabindex="-1"></a>    sell_price <span class="op">=</span> calculate_sell_price(buy_price, profit_target, tick_size)</span>
 <span id="cb35-19"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-20"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-20" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Logger</span><span class="op">.</span>info(</span>
 <span id="cb35-21"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-21" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;Buy order filled, placing SELL order for &quot;</span> <span class="op">&lt;&gt;</span></span>
@@ -667,7 +667,7 @@ get really long otherwise - don’t worry, we will refactor this in one of the n
 <span id="cb35-27"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-28"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-28" aria-hidden="true" tabindex="-1"></a>    {<span class="va">:noreply</span>, %{state <span class="op">|</span> <span class="va">sell_order:</span> order}}</span>
 <span id="cb35-29"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb35-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>We will implement calculating sell price in a separate function based on buy price, profit interval, and tick_size.</p>
+<p>We will implement calculating sell price in a separate function based on buy price, profit target, and tick_size.</p>
 <p>Our pattern match will confirm that indeed our buy order got filled(order_id and quantity matches) so we can now proceed with placing a sell order using calculated sell price and quantity retrieved from the buy order.
 Again, don’t forget to return the updated state as otherwise, the trader will keep on placing sell orders for every incoming event.</p>
 <p>To calculate the sell price we will need to use precise math and that will require a custom module. We will use the <a href="https://github.com/ericmj/decimal">Decimal</a> module, so first, let’s alias it at the top of the file:</p>
@@ -675,7 +675,7 @@ Again, don’t forget to return the updated state as otherwise, the trader will 
 <span id="cb36-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="im">alias</span> <span class="cn">Decimal</span>, <span class="va">as:</span> D</span></code></pre></div>
 <p>Now to calculate the correct sell price, we can use the following formula which gets me pretty close to expected value:</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb37-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># /apps/naive/lib/naive/trader.ex</span></span>
-<span id="cb37-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_sell_price(buy_price, profit_interval, tick_size) <span class="kw">do</span></span>
+<span id="cb37-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">defp</span> calculate_sell_price(buy_price, profit_target, tick_size) <span class="kw">do</span></span>
 <span id="cb37-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-3" aria-hidden="true" tabindex="-1"></a>    fee <span class="op">=</span> <span class="st">&quot;1.001&quot;</span></span>
 <span id="cb37-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb37-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-5" aria-hidden="true" tabindex="-1"></a>    original_price <span class="op">=</span> D<span class="op">.</span>mult(buy_price, fee)</span>
@@ -683,7 +683,7 @@ Again, don’t forget to return the updated state as otherwise, the trader will 
 <span id="cb37-7"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-7" aria-hidden="true" tabindex="-1"></a>    net_target_price <span class="op">=</span></span>
 <span id="cb37-8"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-8" aria-hidden="true" tabindex="-1"></a>      D<span class="op">.</span>mult(</span>
 <span id="cb37-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-9" aria-hidden="true" tabindex="-1"></a>        original_price,</span>
-<span id="cb37-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>add(<span class="st">&quot;1.0&quot;</span>, profit_interval)</span>
+<span id="cb37-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-10" aria-hidden="true" tabindex="-1"></a>        D<span class="op">.</span>add(<span class="st">&quot;1.0&quot;</span>, profit_target)</span>
 <span id="cb37-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-11" aria-hidden="true" tabindex="-1"></a>      )</span>
 <span id="cb37-12"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb37-13"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-13" aria-hidden="true" tabindex="-1"></a>    gross_target_price <span class="op">=</span> D<span class="op">.</span>mult(net_target_price, fee)</span>
@@ -698,7 +698,7 @@ Again, don’t forget to return the updated state as otherwise, the trader will 
 <span id="cb37-22"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb37-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
 <p>First, we will hardcode the fee to 0.1% which we will refactor in one of the future chapters.</p>
 <p>We started by calculating the <code>original_price</code> which is the buy price together with the fee that we paid on top of it.</p>
-<p>Next, we enlarge the originally paid price by profit interval to get <code>net_target_price</code>.</p>
+<p>Next, we enlarge the originally paid price by profit target to get <code>net_target_price</code>.</p>
 <p>As we will be charged a fee for selling, we need to add the fee again on top of the net target sell price(we will call this amount the <code>gross_target_price</code>).</p>
 <p>Next, we will use the tick size as Binance won’t accept any prices that aren’t divisible by the symbols’ tick sizes so we need to “normalize” them on our side.</p>
 </div>
@@ -786,7 +786,7 @@ incoming events as they were not matched by any of the previous pattern matches:
 <p>Now it’s time to give our implementation a run for its money. Once again, to be able to do that you will need to have at least 20 USDT tokens in your Binance’s wallet and you will lose just under 0.5% of your USDTs(as “expected profit” is below 0 to quickly showcase the full trade cycle) in the following test:</p>
 <div class="sourceCode" id="cb45"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iex <span class="at">-S</span> mix</span>
 <span id="cb45-2"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
-<span id="cb45-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_interval: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
+<span id="cb45-3"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Naive.Trader.start_link<span class="kw">(</span><span class="ex">%{symbol:</span> <span class="st">&quot;XRPUSDT&quot;</span>, profit_target: <span class="st">&quot;-0.01&quot;</span>}<span class="kw">)</span></span>
 <span id="cb45-4"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:30.648</span> [info] Initializing new trader for XRPUSDT</span>
 <span id="cb45-5"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{:ok,</span> <span class="co">#PID&lt;0.355.0&gt;}</span></span>
 <span id="cb45-6"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-6" aria-hidden="true" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Streamer.start_streaming<span class="kw">(</span><span class="st">&quot;xrpusdt&quot;</span><span class="kw">)</span></span>
@@ -795,7 +795,7 @@ incoming events as they were not matched by any of the previous pattern matches:
 <span id="cb45-9"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-9" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:32.561</span> [info] Placing BUY order for XRPUSDT @ 0.25979000, quantity: 100</span>
 <span id="cb45-10"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:32.831</span> [info] Buy order filled, placing SELL order for XRPUSDT @ 0.2577, quantity: 100</span>
 <span id="cb45-11"><a href="create-a-naive-trading-strategy-a-single-trader-process-without-supervision.html#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="ex">13:45:33.094</span> [info] Trade finished, trader will now exit</span></code></pre></div>
-<p>After starting the IEx session, start the trader process with a map containing the symbol and profit interval. To be able to quickly test the full trade cycle we will pass a sub-zero profit interval instead of waiting for the price increase.</p>
+<p>After starting the IEx session, start the trader process with a map containing the symbol and profit target. To be able to quickly test the full trade cycle we will pass a sub-zero profit target instead of waiting for the price increase.</p>
 <p>Next, we will start streaming on the same symbol, please be aware that this will cause an immediate reaction in the trader process.</p>
 <p>We can see that our trader placed a buy order at 25.979c per XRP, it was filled in under 300ms, so then the trader placed a sell order at ~25.77c
 which was also filled in under 300ms. This way the trader finished the trade

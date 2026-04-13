@@ -1,5 +1,25 @@
 # Abstract duplicated supervision code
 
+In the previous two chapters, we implemented start, stop, and autostart functionality for both the `streamer` and `naive` applications.
+If you look at the code in `Streamer.DynamicStreamerSupervisor` and `Naive.DynamicSymbolSupervisor`, you'll notice they're almost identical -
+we essentially copy-pasted the same patterns with minor tweaks.
+
+That's a code smell. When we need to fix a bug or add a feature, we'd have to make the same change in multiple places.
+And as we add more applications to our umbrella, the duplication would only grow.
+
+In this chapter, we'll fix this by creating a `Core.ServiceSupervisor` module that extracts the common supervision logic.
+We'll use Elixir's powerful macro system to generate the boilerplate code at compile time.
+By the end, our supervisor modules will be slim wrappers that simply declare their configuration,
+while all the heavy lifting happens in the shared `Core` module.
+
+If you've never worked with macros before, here's the key insight: regular functions operate on values at runtime,
+but macros operate on code itself at compile time. Think of macros as "code templates" that Elixir fills in
+and pastes into your modules before your application even starts.
+
+This is a great opportunity to explore Elixir metaprogramming.
+We'll use macros to solve our duplication problem, and along the way you'll learn how tools like Phoenix's router work under the hood.
+In the next chapter, we'll discover an even simpler approach - but understanding macros first will make that "aha moment" much more satisfying!
+
 ## Objectives
 - overview of requirements
 - pseudo generalize `Core.ServiceSupervisor` module
@@ -9,17 +29,24 @@
 
 ## Overview of requirements
 
-In the last few chapters, we went through adding and modifying the dynamic supervision tree around the `naive` and `streamer` applications' workers. Initially, we just copied the implementation from the `streamer` application to the `naive` application (with a few minor tweaks like log messages). That wasn't the most sophisticated solution and we will address this copy-paste pattern in this chapter.
+In the last few chapters, we went through adding and modifying the dynamic supervision tree around the `naive` and
+`streamer` applications' workers. Initially, we just copied the implementation from the `streamer` application to
+the `naive` application(with a few minor tweaks like log messages). That wasn't the most sophisticated solution and we will
+address this copy-paste pattern in this chapter.
 
-We will write an "extension" of the `DynamicSupervisor` that allows to start, stop and autostart workers. Just to keep things simple we will create a new application inside our umbrella project where we will place the logic. This will save us from creating a new repo for time being.
+We will write an "extension" of the `DynamicSupervisor` that allows us to start, stop and autostart workers.
+Just to keep things simple we will create a new application inside our umbrella project where we will place the logic.
+This will save us from creating a new repo for the time being.
 
-Our new `Core.ServiceSupervisor` module will hold all the logic responsible for starting, stopping, and autostarting worker processes. To limit the boilerplate inside the implementation modules (like `Naive.DynamicSymbolSupervisor` or `Streamer.DynamicStreamerSupervisor`) we will utilize the `use` macro that will dynamically generate low-level wiring for us.
-
-\newpage
+Our new `Core.ServiceSupervisor` module will hold all the logic responsible for starting, stopping, and autostarting worker processes.
+To limit the boilerplate inside the implementation modules(like `Naive.DynamicSymbolSupervisor` or `Streamer.DynamicStreamerSupervisor`)
+we will utilize the `use` macro that will dynamically generate low-level wiring for us.
 
 ## Pseudo generalize Core.ServiceSupervisor module
 
-Let's start by creating a new *non-supervised* application called `core` inside our umbrella project. At this moment our "abstraction code" will sit inside it just to keep things simple as otherwise, we would need to create a new repo and jump between codebases which we will avoid for time being:
+Let's start by creating a new *non-supervised* application called `core` inside our umbrella project.
+At this moment our "abstraction code" will sit inside it just to keep things simple as otherwise,
+we would need to create a new repo and jump between codebases which we will avoid for the time being:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
@@ -47,7 +74,8 @@ defmodule Core.ServiceSupervisor do
 end
 ```
 
-The first step in our refactoring process will be to move(cut) all of the functions from the `Naive.DynamicSymbolSupervisor` (excluding the `start_link/1`, `init/1` and `shutdown_trading/1`) and put them inside the `Core.ServiceSupervisor` module which should look as follows:
+The first step in our refactoring process will be to move(cut) all of the functions from the `Naive.DynamicSymbolSupervisor`
+(excluding the `start_link/1`, `init/1` and `shutdown_trading/1`) and put them inside the `Core.ServiceSupervisor` module which should look as follows:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/service_supervisor.ex
@@ -84,7 +112,7 @@ defmodule Core.ServiceSupervisor do
 end
 ```
 
-All of the above code is `trading` related - we need to rename functions/logs to be more generic.
+All of the above code is `trading`-related - we need to rename functions/logs to be more generic.
 
 Starting with `autostart_trading/0` we can rename it to `autostart_workers/0`:
 
@@ -101,7 +129,8 @@ Starting with `autostart_trading/0` we can rename it to `autostart_workers/0`:
 As we updated two functions inside the `autostart_workers/0` we need to update their implementations.
 
 The `start_trading/1` will become `start_worker/1`, internally we will inline the                      
-`start_symbol_supervisor/1` function(move it's contents inside the `start_worker/1` function and remove the `start_symbol_supervisor/1` function) as it's used just once inside this module as well as `update_trading_status/2` need to be renamed to `update_status/2`.
+`start_symbol_supervisor/1` function(move its contents inside the `start_worker/1` function and remove the `start_symbol_supervisor/1` function)
+as it's used just once inside this module. We also need to rename `update_trading_status/2` to `update_status/2`.
 
 The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
 
@@ -143,7 +172,8 @@ Inside the above code we updated the `update_trading_status/2` call to `update_s
   end
 ```
 
-Last function to rename in this module will be the `stop_trading/1` to `stop_worker/1`, we also need to update calls to `update_trading_status/2` to `update_status/2` as it was renamed:
+The last function to rename in this module will be `stop_trading/1` to `stop_worker/1`.
+We also need to update calls to `update_trading_status/2` to `update_status/2` as it was renamed:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -167,11 +197,14 @@ Last function to rename in this module will be the `stop_trading/1` to `stop_wor
   end
 ```
 
-At this moment we have a pseudo-generic implementation of `start_worker/1` and `stop_worker/1` inside the `Core.ServiceSupervisor` module. Function names are generic but they still refer to `Repo`, `Settings`, and other modules specific to the `naive` app's implementation. We are probably in a worse situation than we have been before starting this refactoring ;) but don't fear this was just the first step on the way to abstract away that starting, stopping, and autostarting code.
+At this moment we have a pseudo-generic implementation of `start_worker/1` and `stop_worker/1` inside the `Core.ServiceSupervisor` module.
+Function names are generic but they still refer to `Repo`, `Settings`, and other modules specific to the `naive` app's implementation.
+we're probably in a worse situation than before we started this refactoring ;)
+but don't fear this was just the first step on the way to abstract away that starting, stopping, and autostarting code.
 
 ## Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor
 
-Before we will jump back to the `naive`'s application modules we need to add the `core` application the dependencies of the `naive` application:
+Before we jump back to the `naive` application's modules, we need to add the `core` application to the dependencies of the `naive` application:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/mix.exs
@@ -268,7 +301,7 @@ The next step will be to add `ecto` to the deps of the `core` application as it 
   end
 ```
 
-As we modified the interface of the `Naive.DynamicSymbolSupervisor` (for example renamed `start_trading/1` to `start_worker/1` and others) we need to modify the `Naive.Supervisor`'s children list - more specifically the Task process:
+As we modified the interface of the `Naive.DynamicSymbolSupervisor`(for example renamed `start_trading/1` to `start_worker/1` and others) we need to modify the `Naive.Supervisor`'s children list - more specifically the Task process:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/supervisor.ex
@@ -305,19 +338,24 @@ The last step will be to update the interface of the `naive` application:
   end
 ```
 
-Believe it or not, but at this moment(ignoring all of the warnings because we created a circular dependency between the `core` and the `naive` applications - which we will fix in the next steps) our application *runs* just fine! We are able to start and stop trading, autostarting works as well.
+Believe it or not, but at this moment(ignoring all of the warnings because we created a circular dependency between the `core` and
+the `naive` applications - which we will fix in the next steps) our application *runs* just fine! We are able to start and stop trading,
+autostarting works as well.
 
 ## Implement a truly generic `Core.ServiceSupervisor`
 
-Ok. Why did we even do this? What we are aiming for is a separation between the interface of our `Naive.DynamicSymbolSupervisor` module (like `start_worker/1`, `autostart_workers/0` and `stop_worker/1`) and the implementation which is now placed inside the `Core.ServiceSupervisor` module.
+Ok. Why did we even do this? What we are aiming for is a separation between the interface of our `Naive.DynamicSymbolSupervisor` module
+(like `start_worker/1`, `autostart_workers/0` and `stop_worker/1`) and the implementation which is now placed inside the `Core.ServiceSupervisor` module.
 
-That's all nice and to-some-extent understandable but `Core.ServiceSupervisor` module is *not* a generic module. We can't use it inside the `streaming` application to supervise the `Streamer.Binance` processes.
+That's all nice and to-some-extent understandable but `Core.ServiceSupervisor` module is *not* a generic module.
+We can't use it inside the `streamer` application to supervise the `Streamer.Binance` processes.
 
 So, what's the point? Well, we can make it even more generic!
 
 ### First path starting with the `fetch_symbols_to_start/0` function
 
-Moving on to full generalization of the `Core.ServiceSupervisor` module. We will start with the helper functions first as they are the ones doing the work and they need to be truly generalized first:
+Moving on to full generalization of the `Core.ServiceSupervisor` module. We will start with the helper functions first as they are
+the ones doing the work and they need to be truly generalized first:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -360,7 +398,7 @@ So, the `fetch_symbols_to_start/0` is referenced by the `autostart_workers/0` - 
   end
 ```
 
-Going even further down the line, `autostart_workers/0` is referenced by the `autostart_workers/0` inside the `Naive.DynamicSymbolSupervisor` module. As this module is (`naive`) application-specific, it is a place where `repo` and `schema` are known from the context - for the `naive` application `repo` is the `Naive.Repo` module and `schema` is the `Naive.Schema.Settings` module:
+Going even further down the line, `autostart_workers/0` is referenced by the `autostart_workers/0` inside the `Naive.DynamicSymbolSupervisor` module. As this module is(`naive`) application-specific, it is a place where `repo` and `schema` are known from the context - for the `naive` application `repo` is the `Naive.Repo` module and `schema` is the `Naive.Schema.Settings` module:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -375,11 +413,12 @@ Going even further down the line, `autostart_workers/0` is referenced by the `au
 
 This finishes the first of multiple paths that we need to follow to fully refactor the `Core.ServiceSupervisor` module.
 
-\newpage
+
 
 ### Second path starting with the `update_status/2`
 
-Let's don't waste time and start from the other helper function inside the `Core.ServiceSupervisor` module. This time we will make the `update_status/2` function fully generic:
+Let's not waste time and start from the other helper function inside the `Core.ServiceSupervisor` module.
+This time we will make the `update_status/2` function fully generic:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -391,7 +430,8 @@ Let's don't waste time and start from the other helper function inside the `Core
   end
 ```
 
-As previously we added `repo` and `schema` as arguments and modified the body of the function to utilize them instead of hardcoded modules (aliased at the top of the `Core.ServiceSupervisor` module).
+As previously we added `repo` and `schema` as arguments and modified the body of the function to utilize them
+instead of hardcoded modules(aliased at the top of the `Core.ServiceSupervisor` module).
 
 In the same fashion as previously, we need to check "who" is using the `update_status/2` and update those calls to `update_status/4`.
 
@@ -421,9 +461,9 @@ The function is used inside the `start_worker/1` and the `stop_worker/1` inside 
 
 As we modified both `start_worker/1` and `stop_worker/1` by adding two additional arguments we need to update all references to them and here is where things branch out a bit.
 
-\newpage
 
-We will start with `start_worker/1` function (which is now `start_worker/3`) - it's used by the `autostart_workers/2` inside `Core.ServiceSupervisor` module. The `autostart_workers/2` function already has `repo` and `schema` so we can just pass them to the `start_worker/3`:
+
+We will start with `start_worker/1` function(which is now `start_worker/3`) - it's used by the `autostart_workers/2` inside `Core.ServiceSupervisor` module. The `autostart_workers/2` function already has `repo` and `schema` so we can just pass them to the `start_worker/3`:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -478,9 +518,14 @@ We can see that it has a hardcoded `Naive.SymbolSupervisor` worker module - we n
   end
 ```
 
+**Note about atoms usage:** As noted back in Chapter 5, this dynamic atom creation is safe for our finite set of trading symbols,
+but we'll replace it with a Registry-based approach in the next chapter.
+
 Moving up to functions that are referencing the `get_pid/1` function, those will be the `start_worker/3` and the `stop_worker/3` function. 
 
-As those are the two last functions to be updated, we will look into them more closely to finish our refactoring in this 3rd run. At this moment both need to add `worker_module` as both are calling the `get_pid/2` function. Looking at both function we can see two other hardcoded details:
+As those are the two last functions to be updated, we will look into them more closely to finish our refactoring in this 3rd run.
+At this moment both need to add `worker_module` as both are calling the `get_pid/2` function.
+Looking at both functions we can see two other hardcoded details:
 
 - inside log message there are words "trading" - we can replace them so we will utilize the `worker_module` and `symbol` arguments
 - there are two references to the `Naive.DynamicSymbolSupervisor` which we will replace with the `module` argument
@@ -544,7 +589,7 @@ Again, as we modified `start_worker/5` we need to make the last change inside th
   end
 ```
 
-Just for reference - the final function headers look as following:
+Just for reference - the final function headers look as follows:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -572,7 +617,7 @@ defmodule Core.ServiceSupervisor do
     ...
   end
 
-  def fetch_symbols_to_start(repo, schema) do
+  defp fetch_symbols_to_start(repo, schema) do
     ...
   end
 end
@@ -645,16 +690,20 @@ That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` modul
   end
 ```
 
-We needed to update referrences inside the `shutdown_trading/1` function as well, as it calls `get_pid/2` and `update_status/4` functions.
+We needed to update references inside the `shutdown_worker/1` function as well, as it calls `get_pid/2` and `update_status/4` functions.
 
 We are now done with refactoring the `Core.ServiceSupervisor` module, it's completely generic and can be used inside both `streamer` and the `naive` applications.
 
-At this moment to use the `Core.ServiceSupervisor` module we need to write interface functions in our supervisors and pass multiple arguments in each one - again, would need to use of copies those functions inside `streamer` and `naive` application. In the next section we will look into how could we leverage Elixir [macros](https://elixir-lang.org/getting-started/meta/macros.html) to remove that boilerplate.
-
+At this moment, to use the `Core.ServiceSupervisor` module we need to write interface functions in our supervisors
+and pass multiple arguments in each one - we'd essentially be copying those functions into both the `streamer` and `naive` applications again.
+In the next section we will look into how we could leverage Elixir [macros](https://elixir-lang.org/getting-started/meta/macros.html)
+to remove that boilerplate.
 
 ## Remove boilerplate using `use` macro
 
-Elixir provides a way to `use` other modules. Idea is that inside the `Naive.DynamicSymbolSupervisor` module we are `use`ing the `DynamicSupervisor` module currently but we could use `Core.ServiceSupervisor`:
+Elixir provides a way to `use` other modules.
+The idea is that inside the `Naive.DynamicSymbolSupervisor` module we are `use`ing the `DynamicSupervisor` module
+currently but we could use `Core.ServiceSupervisor`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -664,7 +713,8 @@ defmodule Naive.DynamicSymbolSupervisor do
 
 
 
-To be able to `use` the `Core.ServiceSupervisor` module it needs to provide the `__using__/1` macro. As the simplest content of that macro, we can use here would be just to use the `DynamicSupervisor` inside:
+To be able to `use` the `Core.ServiceSupervisor` module it needs to provide the `__using__/1` macro.
+The simplest content we can use for that macro would be to just use the `DynamicSupervisor` inside:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -676,15 +726,25 @@ To be able to `use` the `Core.ServiceSupervisor` module it needs to provide the 
   end
 ```
 
-How does this work? As an oversimplification, you can think about it as Elixir will look through the contents of `quote`'s body(everything between `quote ... do` and `end`) in search for the `unquote` function which can inject dynamic content. All of this will become much clearer as we will go through the first example but the important part is that after executing any potential `unquote`s inside the `quote`'s body, Elixir will grab that code as it would be just part of code and place it inside the `Naive.DynamicSymbolSupervisor` module at compile time(we will also see the result of `IO.inspect/1` at compilation).
+How does this work? Think of `quote` as a "code template" and `unquote` as the "fill in the blank" markers.
 
-At this moment(after swapping to `use Core.ServiceSupervisor`) our code still works and it's exactly as we would simply have `use DynamicSupervisor` inside the `Naive.DynamicSymbolSupervisor` module - as at compilation, it will be swapped to it either way(as per contents of the `__using__/1` macro).
+When Elixir compiles a module that `use`s ours, it:
+1. Takes everything inside the `quote ... do ... end` block as a template
+2. Looks for `unquote(...)` calls and replaces them with actual values
+3. Pastes the resulting code into the module that called `use`
 
-As the `autostart_workers/0` function is a part of the boilerplate, we will move it from the `Naive.DynamicSymbolSupervisor` module to the `Core.ServiceSupervisor` module inside the `__using__/1` macro. 
+It's similar to string interpolation (`"Hello #{name}"`), but instead of building strings, we're building code.
+The `IO.inspect(opts)` will print at compile time - not runtime - which lets us see what values are being passed in.
+This will become clearer as we work through our first example.
+
+At this moment(after swapping to `use Core.ServiceSupervisor`) our code still works and it's exactly as
+we would simply have `use DynamicSupervisor` inside the `Naive.DynamicSymbolSupervisor` module -
+as at compilation, it will be swapped to it either way(as per contents of the `__using__/1` macro).
+
+As the `autostart_workers/0` function is a part of the boilerplate, we will move it from the `Naive.DynamicSymbolSupervisor` module
+to the `Core.ServiceSupervisor` module inside the `__using__/1` macro. 
 
 Ok, but it has all of those other `naive` application-specific arguments - where will we get those?
-
-\newpage
 
 That's what that `opts` argument is for inside the `__using__/1` macro. When we call                            
 `use Core.ServiceSupervisor` we can pass an additional keyword list which will contain all `naive` application-specific details:
@@ -711,12 +771,16 @@ We can now update the `__using__/1` macro to assign all of those details to vari
     ...
 ```
 
-At this moment we can use those *dynamic* values to generate code that will be specific to the implementation module for example `autostart_workers/0` that we moved from the `Naive.DynamicSymbolSupervisor` module and will need to have different values passed to it(like `Streamer.Binance` as `worker_module`) for the `streamer` application. We can see that it requires inserting those dynamic values inside the `autstart_workers/0` but how to dynamically inject arguments - `unquote` to the rescue. When we will update the `autostart_workers/0` function from:
+At this moment we can use those *dynamic* values to generate code that will be specific to the implementation module
+for example `autostart_workers/0` that we moved from the `Naive.DynamicSymbolSupervisor` module and
+will need to have different values passed to it(like `Streamer.Binance` as `worker_module`) for the `streamer` application.
+We can see that it requires inserting those dynamic values inside the `autostart_workers/0` but how to dynamically inject arguments -
+`unquote` to the rescue. When we will update the `autostart_workers/0` function from:
 
 ```{r, engine = 'elixir', eval = FALSE}
       # sample moved code from the `Naive.DynamicSymbolSupervisor` module
       def autostart_workers do
-          Core.ServiceSupervisor.autostart_workers(
+        Core.ServiceSupervisor.autostart_workers(
           Naive.Repo,
           Naive.Schema.Settings,
           __MODULE__,
@@ -781,7 +845,10 @@ We can apply that to all of the passed variables inside the `autostart_workers/0
   end
 ```
 
-You can think about the above macro that it will substitute the `unquote(..)` parts with passed values and then it will grab the whole contents between `quote ... do` and `end` and it will paste it to the `Naive.DynamicSymbolSupervisor` module at compile-time - we can visualize generated/"pasted" code as:
+You can think of the macro as a sophisticated copy-paste machine.
+It takes the values you passed to `opts`, substitutes them wherever it sees `unquote(...)`,
+and then injects the resulting code block directly into the `Naive.DynamicSymbolSupervisor` at compile-time
+ - we can visualize generated/"pasted" code as:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # generated by the `__using__/1` macro injected into the `Naive.DynamicSymbolSupervisor`
@@ -826,12 +893,20 @@ We can now follow the same principle and move `start_worker/1` and `stop_worker/
       end
 ```
 
-Here we have an example of an execution time variable called `symbol` that we should *not* `unquote` as it will be different per function call (source code should have `symbol` variable there not for example `"NEOUSDT"`).
+Here we have a crucial distinction:
+`symbol` is a *runtime* variable that changes with each function call, while `repo`,
+`schema`, etc. are *compile-time* constants that stay fixed for the entire module.
+
+**Common Pitfall:** If you accidentally `unquote(symbol)`, the macro would try to evaluate `symbol` at compile time -
+when it doesn't exist yet - and you'd get a compilation error.
+The rule of thumb: `unquote` values you know at compile time (from `opts`), leave runtime variables alone.
 
 At this moment the `Naive.DynamicSymbolSupervisor` consists of only `start_link/1`, `init/1` and                          
-`shutdown_worker/1`, it's under 50 lines of code and works exactly as before refactoring. All of the boilerplate was moved to the `Core.ServiceSupervisor` module.
+`shutdown_worker/1`, it's under 50 lines of code and works exactly as before refactoring.
+All of the boilerplate was moved to the `Core.ServiceSupervisor` module.
 
-We left the `shutdown_worker/1` function as it's specific to the `naive` application, but inside it, we utilize both the `get_pid/2` and the `update_status/4` functions where we are passing the `naive` application-specific variables(like `Naive.Repo`).
+We left the `shutdown_worker/1` function as it's specific to the `naive` application, but inside it,
+we utilize both the `get_pid/2` and the `update_status/4` functions where we are passing the `naive` application-specific variables(like `Naive.Repo`).
 
 To make things even nicer we can create convenience wrappers for those two functions inside the `__using__/1` macro:
 
@@ -876,7 +951,9 @@ As those will get compiled and "pasted" into the `Naive.DynamicSymbolSupervisor`
   end
 ```
 
-And now, a very last change - I promise ;) Both the `start_link/1` and the `init/1` functions are still referencing the `DynamicSupervisor` module which could be a little bit confusing - let's swap those calls to use the `Core.ServiceSupervisor` module (both to not confuse people and be consistent with the `use` macro):
+And now, a very last change - I promise ;) Both the `start_link/1` and the `init/1` functions are still referencing the `DynamicSupervisor` module
+which could be a little bit confusing - let's swap those calls to use the `Core.ServiceSupervisor` module(both to not confuse people and
+be consistent with the `use` macro):
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -900,35 +977,37 @@ As we don't want/need to do anything different inside the `Core.ServiceSuperviso
 That finishes our refactoring of both the `Naive.DynamicSymbolSupervisor` and the                           
 `Core.ServiceSupervisor` modules.
 
+## Manual testing in IEx
+
 We can test to confirm that everything works as expected:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
-iex(1)> Naive.start_trading("NEOUSDT")    
-21:42:37.741 [info]  Starting Elixir.Naive.SymbolSupervisor worker for NEOUSDT
-21:42:37.768 [info]  Starting new supervision tree to trade on NEOUSDT
+iex(1)> Naive.start_trading("XRPUSDT")    
+21:42:37.741 [info]  Starting Elixir.Naive.SymbolSupervisor worker for XRPUSDT
+21:42:37.768 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.464.0>}
-21:42:39.455 [info]  Initializing new trader(1614462159452) for NEOUSDT
-iex(2)> Naive.stop_trading("NEOUSDT") 
-21:43:08.362 [info]  Stopping Elixir.Naive.SymbolSupervisor worker for NEOUSDT
+21:42:39.455 [info]  Initializing new trader(1614462159452) for XRPUSDT
+iex(2)> Naive.stop_trading("XRPUSDT") 
+21:43:08.362 [info]  Stopping Elixir.Naive.SymbolSupervisor worker for XRPUSDT
 {:ok,
  %Naive.Schema.Settings{
    ...
  }}
-iex(3)> Naive.start_trading("HNTUSDT")
-21:44:08.689 [info]  Starting Elixir.Naive.SymbolSupervisor worker for HNTUSDT
-21:44:08.723 [info]  Starting new supervision tree to trade on HNTUSDT
+iex(3)> Naive.start_trading("ETHUSDT")
+21:44:08.689 [info]  Starting Elixir.Naive.SymbolSupervisor worker for ETHUSDT
+21:44:08.723 [info]  Starting new supervision tree to trade on ETHUSDT
 {:ok, #PID<0.475.0>}
-21:44:11.182 [info]  Initializing new trader(1614462251182) for HNTUSDT
+21:44:11.182 [info]  Initializing new trader(1614462251182) for ETHUSDT
 BREAK: (a)bort (A)bort with dump (c)ontinue (p)roc info (i)nfo
        (l)oaded (v)ersion (k)ill (D)b-tables (d)istribution
 $ iex -S mix
-21:47:22.119 [info]  Starting Elixir.Naive.SymbolSupervisor worker for HNTUSDT
-21:47:22.161 [info]  Starting new supervision tree to trade on HNTUSDT
-21:47:24.213 [info]  Initializing new trader(1614462444212) for HNTUSDT
-iex(1)> Naive.shutdown_trading("HNTUSDT")
+21:47:22.119 [info]  Starting Elixir.Naive.SymbolSupervisor worker for ETHUSDT
+21:47:22.161 [info]  Starting new supervision tree to trade on ETHUSDT
+21:47:24.213 [info]  Initializing new trader(1614462444212) for ETHUSDT
+iex(1)> Naive.shutdown_trading("ETHUSDT")
 21:48:42.003 [info]  Initializing shutdown of Elixir.Naive.SymbolSupervisor worker for
-HNTUSDT
+ETHUSDT
 {:ok,
  %Naive.Schema.Settings{
    ...
@@ -952,9 +1031,7 @@ We need to start with adding the `core` application to the list of dependencies 
       ...
 ```
 
-\newpage
-
-We can now move on to the `Streamer.DynamicStreamerSupervisor` where we will remove everything (really everything including `import`s, `alias`es and even `require`) beside the `start_link/1` and the `init/1`. As with the `Naive.DynamicSymbolSupervisor` we will `use` the `Core.ServiceSupervisor` and pass all required options - *full* implementation of the `Streamer.DynamicStreamerSupervisor` module should look as follows:
+We can now move on to the `Streamer.DynamicStreamerSupervisor` where we will remove everything(really everything including `import`s, `alias`es and even `require`) beside the `start_link/1` and the `init/1`. As with the `Naive.DynamicSymbolSupervisor` we will `use` the `Core.ServiceSupervisor` and pass all required options - *full* implementation of the `Streamer.DynamicStreamerSupervisor` module should look as follows:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -975,9 +1052,11 @@ defmodule Streamer.DynamicStreamerSupervisor do
 end
 ```
 
-Not much to add here - we are `use`ing the `Core.ServiceSupervisor` module and passing options to it so it can macro generates `streamer` application-specific wrappers(like `start_worker/1` or `stop_worker/1` with required repo, schema, etc) around generic logic from the `Core.ServiceSupervisor` module.
+Not much to add here - we are `use`ing the `Core.ServiceSupervisor` module and
+passing options to it so the macro can generate `streamer` application-specific wrappers
+(like `start_worker/1` or `stop_worker/1` with required repo, schema, etc) around generic logic from the `Core.ServiceSupervisor` module.
 
-Using the `Core.Servicesupervisor` module will have an impact on the interface of the                         
+Using the `Core.ServiceSupervisor` module will have an impact on the interface of the                         
 `Streamer.DynamicStreamerSupervisor` as it will now provide functions like `start_worker/1` instead of `start_streaming/1` etc.
 
 As with the `naive` application, we need to update the Task function inside the `Streamer.Supervisor` module:
@@ -991,8 +1070,6 @@ As with the `naive` application, we need to update the Task function inside the 
        end}
       ...
 ```
-
-\newpage
 
 As well as main `Streamer` module needs to forward calls instead of delegating:
 
@@ -1017,18 +1094,18 @@ We can run a quick test to confirm that indeed everything works as expected:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
-iex(1)> Streamer.start_streaming("NEOUSDT")
-22:10:38.813 [info]  Starting Elixir.Streamer.Binance worker for NEOUSDT
+iex(1)> Streamer.start_streaming("XRPUSDT")
+22:10:38.813 [info]  Starting Elixir.Streamer.Binance worker for XRPUSDT
 {:ok, #PID<0.465.0>}
-iex(2)> Streamer.stop_streaming("NEOUSDT")
-22:10:48.212 [info]  Stopping Elixir.Streamer.Binance worker for NEOUSDT
+iex(2)> Streamer.stop_streaming("XRPUSDT")
+22:10:48.212 [info]  Stopping Elixir.Streamer.Binance worker for XRPUSDT
 {:ok,
  %Streamer.Schema.Settings{
    __meta__: #Ecto.Schema.Metadata<:loaded, "settings">,
    id: "db8c9429-2356-4243-a08f-0d0e89b74986",
    inserted_at: ~N[2021-02-25 22:15:16],
    status: "off",
-   symbol: "NEOUSDT",
+   symbol: "XRPUSDT",
    updated_at: ~N[2021-02-27 22:10:48]
  }}
 iex(3)> Streamer.start_streaming("LTCUSDT") 
@@ -1044,6 +1121,47 @@ $ iex -S mix
 
 This finishes the implementation for both the `streamer` and the `naive` application. We are generating dynamic functions(metaprogramming) using Elixir macros which is a cool exercise to go through and feels like superpowers ;)
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**We've successfully eliminated the duplication!** Here's what we achieved:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_13)
+- Created a generic `Core.ServiceSupervisor` module with fully parameterized functions
+- Used the `__using__/1` macro to generate application-specific wrapper functions at compile time
+- Reduced `Naive.DynamicSymbolSupervisor` to under 50 lines while keeping all functionality
+- Applied the same pattern to `Streamer.DynamicStreamerSupervisor` with just a few lines of configuration
+
+The key insight is that macros let us write code that writes code.
+Instead of copying the same functions into every supervisor,
+we define them once with `unquote` placeholders, and Elixir fills in the application-specific values at compile time.
+
+**A learning milestone, not the final destination:**
+
+Working through this macro implementation taught us how Elixir's metaprogramming works under the hood -
+and that knowledge will serve us well when reading Phoenix source code or other libraries that use macros heavily.
+However, as the Elixir documentation notes, "macros should only be used as a last resort" because they make debugging harder
+and can confuse developers unfamiliar with the codebase.
+
+Here's the good news: in the next chapter, we'll discover that the Registry module provides a simpler way to manage named processes -
+no macros required. We'll use it to build the `data_warehouse` application, and you'll see firsthand how it compares to our macro-based approach.
+By the end of chapter 13, we'll have a cleaner solution that supersedes the `Core.ServiceSupervisor` entirely.
+
+This is exactly how real-world development works: we try one approach, learn from it, and find something better.
+The macro exercise wasn't wasted - understanding `quote`, `unquote`, and `__using__/1` is valuable Elixir knowledge.
+We just won't need it for this particular problem.
+
+**So, What's Next?**
+
+Our trading bot can now start, stop, and autostart both streaming and trading.
+But we're missing something crucial for any serious trading system: data persistence.
+
+In the next chapter, we'll create a `data_warehouse` application that subscribes to trade events and orders,
+storing them in a database. Along the way, we'll discover a simpler pattern for managing dynamic workers using the Registry -
+one that's so clean it will make us question whether we needed macros at all.
+(Spoiler: we'll end up removing the `Core.ServiceSupervisor` module entirely as a challenge exercise!)
+
+This historical data will be essential for the chapter after that, where we'll implement backtesting -
+running our strategy against past market data to see how it would have performed.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_12](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_12)).

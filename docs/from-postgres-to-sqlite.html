@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 23 From Postgres to SQLite | Hands-on Elixir &amp; OTP: Cryptocurrency Trading Bot</title>
+  <meta name="description" content="Learn Elixir and OTP by building a cryptocurrency trading bot from scratch" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 23 From Postgres to SQLite | Hands-on Elixir &amp; OTP: Cryptocurrency Trading Bot" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:description" content="Learn Elixir and OTP by building a cryptocurrency trading bot from scratch" />
+  <meta name="github-repo" content="Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 23 From Postgres to SQLite | Hands-on Elixir &amp; OTP: Cryptocurrency Trading Bot" />
+  <meta name="twitter:site" content="@kamilskowron" />
+  <meta name="twitter:description" content="Learn Elixir and OTP by building a cryptocurrency trading bot from scratch" />
+  
+
+<meta name="author" content="Kamil Skowron" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="back-to-the-monolith.html"/>
+<link rel="next" href="clustering-on-the-open-internet.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-52FKGBX2B8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-52FKGBX2B8');
+</script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Hands-on Elixir & OTP: Cryptocurrency trading bot</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface: Your Journey into Elixir &amp; OTP</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#want-to-learn-elixir-otp-by-creating-a-real-world-project"><i class="fa fa-check"></i>Want to learn Elixir &amp; OTP by creating a real-world project?</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#why-this-project"><i class="fa fa-check"></i>Why This Project?</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#is-this-book-for-you"><i class="fa fa-check"></i>Is This Book for You?</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#important-disclaimers"><i class="fa fa-check"></i>Important Disclaimers</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#this-books-development-philosophy"><i class="fa fa-check"></i>This Book’s Development Philosophy</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#what-youll-learn"><i class="fa fa-check"></i>What You’ll Learn</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#how-to-get-the-most-from-this-book"><i class="fa fa-check"></i>How to Get the Most From This Book</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#source-code-and-repositories"><i class="fa fa-check"></i>Source Code and Repositories</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#community-and-contributing"><i class="fa fa-check"></i>Community and Contributing</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#book-formats-and-access"><i class="fa fa-check"></i>Book Formats and Access</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><a href="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><i class="fa fa-check"></i><b>1</b> Streaming Live Cryptocurrency Prices from Binance WebSocket</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><a href="streaming-live-cryptocurrency-prices-from-binance-websocket.html#objectives"><i class="fa fa-check"></i><b>1.1</b> Objectives</a></li>
+<li class="chapter" data-level="1.2" data-path="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><a href="streaming-live-cryptocurrency-prices-from-binance-websocket.html#create-a-new-umbrella-project"><i class="fa fa-check"></i><b>1.2</b> Create a New Umbrella Project</a></li>
+<li class="chapter" data-level="1.3" data-path="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><a href="streaming-live-cryptocurrency-prices-from-binance-websocket.html#create-a-supervised-application"><i class="fa fa-check"></i><b>1.3</b> Create a Supervised Application</a></li>
+<li class="chapter" data-level="1.4" data-path="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><a href="streaming-live-cryptocurrency-prices-from-binance-websocket.html#connect-to-the-binance-websocket-with-the-websockex-library"><i class="fa fa-check"></i><b>1.4</b> Connect to the Binance WebSocket with the WebSockex Library</a></li>
+<li class="chapter" data-level="1.5" data-path="streaming-live-cryptocurrency-prices-from-binance-websocket.html"><a href="streaming-live-cryptocurrency-prices-from-binance-websocket.html#decode-incoming-json-events-with-the-jason-library"><i class="fa fa-check"></i><b>1.5</b> Decode Incoming JSON Events With the <code>Jason</code> Library</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html"><i class="fa fa-check"></i><b>2</b> Creating a Naive Trading Strategy</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#objectives-1"><i class="fa fa-check"></i><b>2.1</b> Objectives</a></li>
+<li class="chapter" data-level="2.2" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#initialization"><i class="fa fa-check"></i><b>2.2</b> Initialization</a>
+<ul>
+<li class="chapter" data-level="2.2.1" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#non-blocking-initialization"><i class="fa fa-check"></i><b>2.2.1</b> Non-blocking Initialization</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#how-the-trading-strategy-will-work"><i class="fa fa-check"></i><b>2.3</b> How the Trading Strategy Will Work</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#state-1-ready-to-buy"><i class="fa fa-check"></i><b>2.3.1</b> State 1: Ready to buy</a></li>
+<li class="chapter" data-level="2.3.2" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#state-2-buy-order-placed"><i class="fa fa-check"></i><b>2.3.2</b> State 2: Buy order placed</a></li>
+<li class="chapter" data-level="2.3.3" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#state-3-sell-order-placed"><i class="fa fa-check"></i><b>2.3.3</b> State 3: Sell order placed</a></li>
+<li class="chapter" data-level="2.3.4" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#implementation-of-the-first-scenario"><i class="fa fa-check"></i><b>2.3.4</b> Implementation of the First Scenario</a></li>
+<li class="chapter" data-level="2.3.5" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#implementation-of-the-second-scenario"><i class="fa fa-check"></i><b>2.3.5</b> Implementation of the Second Scenario</a></li>
+<li class="chapter" data-level="2.3.6" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#implementation-of-the-third-scenario"><i class="fa fa-check"></i><b>2.3.6</b> Implementation of the Third Scenario</a></li>
+<li class="chapter" data-level="2.3.7" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#implementation-of-the-fallback-scenario"><i class="fa fa-check"></i><b>2.3.7</b> Implementation of the Fallback Scenario</a></li>
+<li class="chapter" data-level="2.3.8" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#updating-the-naive-interface"><i class="fa fa-check"></i><b>2.3.8</b> Updating the Naive interface</a></li>
+<li class="chapter" data-level="2.3.9" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#updating-streamer-app"><i class="fa fa-check"></i><b>2.3.9</b> Updating streamer app</a></li>
+<li class="chapter" data-level="2.3.10" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#configuring-binance-access"><i class="fa fa-check"></i><b>2.3.10</b> Configuring Binance Access</a></li>
+<li class="chapter" data-level="2.3.11" data-path="creating-a-naive-trading-strategy.html"><a href="creating-a-naive-trading-strategy.html#test-run"><i class="fa fa-check"></i><b>2.3.11</b> Test run</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html"><i class="fa fa-check"></i><b>3</b> Introduce PubSub as a communication method</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#objectives-2"><i class="fa fa-check"></i><b>3.1</b> Objectives</a></li>
+<li class="chapter" data-level="3.2" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#design"><i class="fa fa-check"></i><b>3.2</b> Design</a></li>
+<li class="chapter" data-level="3.3" data-path="introduce-pubsub-as-a-communication-method.html"><a href="introduce-pubsub-as-a-communication-method.html#implementation"><i class="fa fa-check"></i><b>3.3</b> Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html"><i class="fa fa-check"></i><b>4</b> Mock the Binance API</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#objectives-3"><i class="fa fa-check"></i><b>4.1</b> Objectives</a></li>
+<li class="chapter" data-level="4.2" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#design-1"><i class="fa fa-check"></i><b>4.2</b> Design</a></li>
+<li class="chapter" data-level="4.3" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#create-binancemock-app"><i class="fa fa-check"></i><b>4.3</b> Create “BinanceMock” app</a></li>
+<li class="chapter" data-level="4.4" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-getting-exchange-info"><i class="fa fa-check"></i><b>4.4</b> Implement getting exchange info</a></li>
+<li class="chapter" data-level="4.5" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-placing-buy-and-sell-orders"><i class="fa fa-check"></i><b>4.5</b> Implement placing buy and sell orders</a></li>
+<li class="chapter" data-level="4.6" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-order-retrieval"><i class="fa fa-check"></i><b>4.6</b> Implement Order Retrieval</a></li>
+<li class="chapter" data-level="4.7" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#implement-callback-for-incoming-trade-events"><i class="fa fa-check"></i><b>4.7</b> Implement callback for incoming trade events</a></li>
+<li class="chapter" data-level="4.8" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#update-the-trader-and-configuration"><i class="fa fa-check"></i><b>4.8</b> Update the Trader and Configuration</a></li>
+<li class="chapter" data-level="4.9" data-path="mock-the-binance-api.html"><a href="mock-the-binance-api.html#test-the-implementation"><i class="fa fa-check"></i><b>4.9</b> Test the implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html"><i class="fa fa-check"></i><b>5</b> Enable parallel trading on multiple symbols</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#objectives-4"><i class="fa fa-check"></i><b>5.1</b> Objectives</a></li>
+<li class="chapter" data-level="5.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#introduction---architectural-design"><i class="fa fa-check"></i><b>5.2</b> Introduction - architectural design</a></li>
+<li class="chapter" data-level="5.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#update-application-supervisor"><i class="fa fa-check"></i><b>5.3</b> Update application supervisor</a></li>
+<li class="chapter" data-level="5.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#add-interface-method"><i class="fa fa-check"></i><b>5.4</b> Add interface method</a></li>
+<li class="chapter" data-level="5.5" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.symbolsupervisor"><i class="fa fa-check"></i><b>5.5</b> Implement <code>Naive.SymbolSupervisor</code></a></li>
+<li class="chapter" data-level="5.6" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#implement-naive.leader"><i class="fa fa-check"></i><b>5.6</b> Implement <code>Naive.Leader</code></a>
+<ul>
+<li class="chapter" data-level="5.6.1" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-leader-module"><i class="fa fa-check"></i><b>5.6.1</b> Updating the <code>leader</code> module</a></li>
+<li class="chapter" data-level="5.6.2" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#updating-the-naive.trader-module"><i class="fa fa-check"></i><b>5.6.2</b> Updating the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="5.6.3" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#finalizing-naive.leader-implementation"><i class="fa fa-check"></i><b>5.6.3</b> Finalizing <code>Naive.Leader</code> implementation</a></li>
+<li class="chapter" data-level="5.6.4" data-path="enable-parallel-trading-on-multiple-symbols.html"><a href="enable-parallel-trading-on-multiple-symbols.html#iex-testing"><i class="fa fa-check"></i><b>5.6.4</b> IEx testing</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><i class="fa fa-check"></i><b>6</b> Introduce a <code>buy_down_interval</code> to make a single trader more profitable</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#objectives-5"><i class="fa fa-check"></i><b>6.1</b> Objectives</a></li>
+<li class="chapter" data-level="6.2" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#why-do-we-need-to-buy-below-the-current-price-feature-overview"><i class="fa fa-check"></i><b>6.2</b> Why do we need to buy below the current price? Feature overview</a></li>
+<li class="chapter" data-level="6.3" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#naive.trader-implementation"><i class="fa fa-check"></i><b>6.3</b> <code>Naive.Trader</code> implementation</a></li>
+<li class="chapter" data-level="6.4" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#naive.leader-implementation"><i class="fa fa-check"></i><b>6.4</b> <code>Naive.Leader</code> implementation</a>
+<ul>
+<li class="chapter" data-level="6.4.1" data-path="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html"><a href="introduce-a-buy_down_interval-to-make-a-single-trader-more-profitable.html#manual-testing-in-iex"><i class="fa fa-check"></i><b>6.4.1</b> Manual testing in IEx</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html"><i class="fa fa-check"></i><b>7</b> Introduce a trader budget and calculating the quantity</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#objectives-6"><i class="fa fa-check"></i><b>7.1</b> Objectives</a></li>
+<li class="chapter" data-level="7.2" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#fetch-step_size"><i class="fa fa-check"></i><b>7.2</b> Fetch <code>step_size</code></a></li>
+<li class="chapter" data-level="7.3" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#append-budget-and-step_size-to-the-naive.traders-state-inside-the-naive.leader"><i class="fa fa-check"></i><b>7.3</b> Append <code>budget</code> and <code>step_size</code> to the <code>Naive.Trader</code>’s state inside the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="7.4" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#add-budget-and-step_size-to-the-naive.traders-state-struct"><i class="fa fa-check"></i><b>7.4</b> Add <code>budget</code> and <code>step_size</code> to the <code>Naive.Trader</code>’s <code>State</code> struct</a></li>
+<li class="chapter" data-level="7.5" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#calculate-quantity"><i class="fa fa-check"></i><b>7.5</b> Calculate quantity</a>
+<ul>
+<li class="chapter" data-level="7.5.1" data-path="introduce-a-trader-budget-and-calculating-the-quantity.html"><a href="introduce-a-trader-budget-and-calculating-the-quantity.html#manual-testing-in-iex-1"><i class="fa fa-check"></i><b>7.5.1</b> Manual testing in IEx</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html"><i class="fa fa-check"></i><b>8</b> Run multiple traders in parallel</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#objectives-7"><i class="fa fa-check"></i><b>8.1</b> Objectives</a></li>
+<li class="chapter" data-level="8.2" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#describe-and-design-the-required-functionality"><i class="fa fa-check"></i><b>8.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="8.3" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-inside-naive.trader"><i class="fa fa-check"></i><b>8.3</b> Implement rebuy inside <code>Naive.Trader</code></a></li>
+<li class="chapter" data-level="8.4" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#implement-rebuy-in-the-naive.leader"><i class="fa fa-check"></i><b>8.4</b> Implement rebuy in the <code>Naive.Leader</code></a></li>
+<li class="chapter" data-level="8.5" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#improve-logs-by-assigning-ids-to-traders"><i class="fa fa-check"></i><b>8.5</b> Improve logs by assigning ids to traders</a></li>
+<li class="chapter" data-level="8.6" data-path="run-multiple-traders-in-parallel.html"><a href="run-multiple-traders-in-parallel.html#manual-testing-in-iex-2"><i class="fa fa-check"></i><b>8.6</b> Manual testing in IEx</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html"><i class="fa fa-check"></i><b>9</b> Fine-tune trading strategy per symbol</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#objectives-8"><i class="fa fa-check"></i><b>9.1</b> Objectives</a></li>
+<li class="chapter" data-level="9.2" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#describe-and-design-the-required-functionality-1"><i class="fa fa-check"></i><b>9.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="9.3" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#add-docker-to-project"><i class="fa fa-check"></i><b>9.3</b> Add docker to project</a></li>
+<li class="chapter" data-level="9.4" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#set-up-ecto-inside-the-naive-app"><i class="fa fa-check"></i><b>9.4</b> Set up Ecto inside the <code>naive</code> app</a></li>
+<li class="chapter" data-level="9.5" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#create-and-migrate-the-db"><i class="fa fa-check"></i><b>9.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="9.6" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#seed-symbols-settings"><i class="fa fa-check"></i><b>9.6</b> Seed symbols’ settings</a></li>
+<li class="chapter" data-level="9.7" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#update-the-naive.leader-to-fetch-settings"><i class="fa fa-check"></i><b>9.7</b> Update the <code>Naive.Leader</code> to fetch settings</a></li>
+<li class="chapter" data-level="9.8" data-path="fine-tune-trading-strategy-per-symbol.html"><a href="fine-tune-trading-strategy-per-symbol.html#manual-testing-in-iex-and-psql"><i class="fa fa-check"></i><b>9.8</b> Manual testing in IEx and psql</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html"><i class="fa fa-check"></i><b>10</b> Supervise and autostart streaming</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#objectives-9"><i class="fa fa-check"></i><b>10.1</b> Objectives</a></li>
+<li class="chapter" data-level="10.2" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#describe-and-design-the-required-functionality-2"><i class="fa fa-check"></i><b>10.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="10.3" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#register-the-streamer.binance-processes-with-names"><i class="fa fa-check"></i><b>10.3</b> Register the <code>Streamer.Binance</code> processes with names</a></li>
+<li class="chapter" data-level="10.4" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#set-up-ecto-inside-the-streamer-app"><i class="fa fa-check"></i><b>10.4</b> Set up Ecto inside the <code>streamer</code> app</a></li>
+<li class="chapter" data-level="10.5" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#create-and-migrate-the-db-1"><i class="fa fa-check"></i><b>10.5</b> Create and migrate the DB</a></li>
+<li class="chapter" data-level="10.6" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#seed-default-settings"><i class="fa fa-check"></i><b>10.6</b> Seed default settings</a></li>
+<li class="chapter" data-level="10.7" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-supervision-tree-and-start-streaming-functionality"><i class="fa fa-check"></i><b>10.7</b> Implement the supervision tree and start streaming functionality</a></li>
+<li class="chapter" data-level="10.8" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-stop-functionality"><i class="fa fa-check"></i><b>10.8</b> Implement the stop functionality</a></li>
+<li class="chapter" data-level="10.9" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#implement-the-autostart-streaming-functionality"><i class="fa fa-check"></i><b>10.9</b> Implement the autostart streaming functionality</a></li>
+<li class="chapter" data-level="10.10" data-path="supervise-and-autostart-streaming.html"><a href="supervise-and-autostart-streaming.html#manual-testing-in-iex-3"><i class="fa fa-check"></i><b>10.10</b> Manual testing in IEx</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html"><i class="fa fa-check"></i><b>11</b> Start, stop, shutdown and autostart trading</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#objectives-10"><i class="fa fa-check"></i><b>11.1</b> Objectives</a></li>
+<li class="chapter" data-level="11.2" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#describe-and-design-the-required-functionality-3"><i class="fa fa-check"></i><b>11.2</b> Describe and design the required functionality</a></li>
+<li class="chapter" data-level="11.3" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#re-implement-the-start-trading-functionality"><i class="fa fa-check"></i><b>11.3</b> (Re-)Implement the start trading functionality</a></li>
+<li class="chapter" data-level="11.4" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-stop-trading-functionality"><i class="fa fa-check"></i><b>11.4</b> Implement the stop trading functionality</a></li>
+<li class="chapter" data-level="11.5" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-autostart-trading-functionality"><i class="fa fa-check"></i><b>11.5</b> Implement the autostart trading functionality</a></li>
+<li class="chapter" data-level="11.6" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#implement-the-shutdown-trading-functionality"><i class="fa fa-check"></i><b>11.6</b> Implement the shutdown trading functionality</a></li>
+<li class="chapter" data-level="11.7" data-path="start-stop-shutdown-and-autostart-trading.html"><a href="start-stop-shutdown-and-autostart-trading.html#manual-testing-in-iex-4"><i class="fa fa-check"></i><b>11.7</b> Manual testing in IEx</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html"><i class="fa fa-check"></i><b>12</b> Abstract duplicated supervision code</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#objectives-11"><i class="fa fa-check"></i><b>12.1</b> Objectives</a></li>
+<li class="chapter" data-level="12.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#overview-of-requirements"><i class="fa fa-check"></i><b>12.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="12.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#pseudo-generalize-core.servicesupervisor-module"><i class="fa fa-check"></i><b>12.3</b> Pseudo generalize Core.ServiceSupervisor module</a></li>
+<li class="chapter" data-level="12.4" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#utilize-pseudo-generalized-code-inside-the-naive-dynamicsymbolsupervisor"><i class="fa fa-check"></i><b>12.4</b> Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor</a></li>
+<li class="chapter" data-level="12.5" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#implement-a-truly-generic-core.servicesupervisor"><i class="fa fa-check"></i><b>12.5</b> Implement a truly generic <code>Core.ServiceSupervisor</code></a>
+<ul>
+<li class="chapter" data-level="12.5.1" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#first-path-starting-with-the-fetch_symbols_to_start0-function"><i class="fa fa-check"></i><b>12.5.1</b> First path starting with the <code>fetch_symbols_to_start/0</code> function</a></li>
+<li class="chapter" data-level="12.5.2" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#second-path-starting-with-the-update_status2"><i class="fa fa-check"></i><b>12.5.2</b> Second path starting with the <code>update_status/2</code></a></li>
+<li class="chapter" data-level="12.5.3" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#third-path-starting-with-the-get_pid1-function"><i class="fa fa-check"></i><b>12.5.3</b> Third path starting with the <code>get_pid/1</code> function</a></li>
+</ul></li>
+<li class="chapter" data-level="12.6" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#remove-boilerplate-using-use-macro"><i class="fa fa-check"></i><b>12.6</b> Remove boilerplate using <code>use</code> macro</a></li>
+<li class="chapter" data-level="12.7" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#manual-testing-in-iex-5"><i class="fa fa-check"></i><b>12.7</b> Manual testing in IEx</a></li>
+<li class="chapter" data-level="12.8" data-path="abstract-duplicated-supervision-code.html"><a href="abstract-duplicated-supervision-code.html#use-the-core.servicesupervisor-module-inside-the-streamer-application"><i class="fa fa-check"></i><b>12.8</b> Use the <code>Core.ServiceSupervisor</code> module inside the <code>streamer</code> application</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html"><i class="fa fa-check"></i><b>13</b> Store trade events and orders inside the database</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#objectives-12"><i class="fa fa-check"></i><b>13.1</b> Objectives</a></li>
+<li class="chapter" data-level="13.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#overview-of-requirements-1"><i class="fa fa-check"></i><b>13.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="13.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-data_warehouse-application-in-the-umbrella"><i class="fa fa-check"></i><b>13.3</b> Create a new <code>data_warehouse</code> application in the umbrella</a></li>
+<li class="chapter" data-level="13.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#connect-to-the-database-using-ecto"><i class="fa fa-check"></i><b>13.4</b> Connect to the database using Ecto</a></li>
+<li class="chapter" data-level="13.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-trade-events-data"><i class="fa fa-check"></i><b>13.5</b> Store trade events’ data</a></li>
+<li class="chapter" data-level="13.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#store-orders-data"><i class="fa fa-check"></i><b>13.6</b> Store orders’ data</a></li>
+<li class="chapter" data-level="13.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#implement-supervision"><i class="fa fa-check"></i><b>13.7</b> Implement supervision</a>
+<ul>
+<li class="chapter" data-level="13.7.1" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-subscriber_settings-table"><i class="fa fa-check"></i><b>13.7.1</b> Create <code>subscriber_settings</code> table</a></li>
+<li class="chapter" data-level="13.7.2" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#redesign-supervision-using-registry"><i class="fa fa-check"></i><b>13.7.2</b> Redesign supervision using Registry</a></li>
+<li class="chapter" data-level="13.7.3" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-the-datawarehouse.subscriber.dynamicsupervisor-module"><i class="fa fa-check"></i><b>13.7.3</b> Create the <code>DataWarehouse.Subscriber.DynamicSupervisor</code> module</a></li>
+<li class="chapter" data-level="13.7.4" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#register-worker-processes-using-via"><i class="fa fa-check"></i><b>13.7.4</b> Register Worker processes using :via</a></li>
+<li class="chapter" data-level="13.7.5" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#create-a-new-supervision-level-for-registry-task-and-the-dynamicsupervisor"><i class="fa fa-check"></i><b>13.7.5</b> Create a new supervision level for Registry, Task and the DynamicSupervisor</a></li>
+<li class="chapter" data-level="13.7.6" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#link-the-subscribersupervisor-to-the-application"><i class="fa fa-check"></i><b>13.7.6</b> Link the <code>SubscriberSupervisor</code> to the <code>Application</code></a></li>
+<li class="chapter" data-level="13.7.7" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#add-interface"><i class="fa fa-check"></i><b>13.7.7</b> Add interface</a></li>
+<li class="chapter" data-level="13.7.8" data-path="store-trade-events-and-orders-inside-the-database.html"><a href="store-trade-events-and-orders-inside-the-database.html#test"><i class="fa fa-check"></i><b>13.7.8</b> Test</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html"><i class="fa fa-check"></i><b>14</b> Backtest trading strategy</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#objectives-13"><i class="fa fa-check"></i><b>14.1</b> Objectives</a></li>
+<li class="chapter" data-level="14.2" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#overview-of-requirements-2"><i class="fa fa-check"></i><b>14.2</b> Overview of requirements</a></li>
+<li class="chapter" data-level="14.3" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#implement-the-publisher-task"><i class="fa fa-check"></i><b>14.3</b> Implement the Publisher task</a></li>
+<li class="chapter" data-level="14.4" data-path="backtest-trading-strategy.html"><a href="backtest-trading-strategy.html#test-the-backtesting"><i class="fa fa-check"></i><b>14.4</b> Test the backtesting</a></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html"><i class="fa fa-check"></i><b>15</b> End-to-end testing</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#objectives-14"><i class="fa fa-check"></i><b>15.1</b> Objectives</a></li>
+<li class="chapter" data-level="15.2" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#decide-on-the-tested-functionality"><i class="fa fa-check"></i><b>15.2</b> Decide on the tested functionality</a></li>
+<li class="chapter" data-level="15.3" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#implement-basic-test"><i class="fa fa-check"></i><b>15.3</b> Implement basic test</a></li>
+<li class="chapter" data-level="15.4" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-environment-based-config-files"><i class="fa fa-check"></i><b>15.4</b> Introduce environment based config files</a></li>
+<li class="chapter" data-level="15.5" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#add-convenience-aliases"><i class="fa fa-check"></i><b>15.5</b> Add convenience aliases</a></li>
+<li class="chapter" data-level="15.6" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#cache-initial-seed-data-inside-a-file"><i class="fa fa-check"></i><b>15.6</b> Cache initial seed data inside a file</a></li>
+<li class="chapter" data-level="15.7" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#update-seeding-scripts-to-use-the-binancemock"><i class="fa fa-check"></i><b>15.7</b> Update seeding scripts to use the BinanceMock</a></li>
+<li class="chapter" data-level="15.8" data-path="end-to-end-testing.html"><a href="end-to-end-testing.html#introduce-the-core-application"><i class="fa fa-check"></i><b>15.8</b> Introduce the Core application</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="mox-rocks.html"><a href="mox-rocks.html"><i class="fa fa-check"></i><b>16</b> Mox rocks</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="mox-rocks.html"><a href="mox-rocks.html#objectives-15"><i class="fa fa-check"></i><b>16.1</b> Objectives</a></li>
+<li class="chapter" data-level="16.2" data-path="mox-rocks.html"><a href="mox-rocks.html#introduction-to-mock-based-tests"><i class="fa fa-check"></i><b>16.2</b> Introduction to mock-based tests</a></li>
+<li class="chapter" data-level="16.3" data-path="mox-rocks.html"><a href="mox-rocks.html#add-the-mox-package"><i class="fa fa-check"></i><b>16.3</b> Add the <code>mox</code> package</a></li>
+<li class="chapter" data-level="16.4" data-path="mox-rocks.html"><a href="mox-rocks.html#identify-the-naive.trader-dependencies"><i class="fa fa-check"></i><b>16.4</b> Identify the <code>Naive.Trader</code> dependencies</a>
+<ul>
+<li class="chapter" data-level="16.4.1" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-binance-module"><i class="fa fa-check"></i><b>16.4.1</b> Mock the <code>Binance</code> module</a></li>
+<li class="chapter" data-level="16.4.2" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-naiveleader-module"><i class="fa fa-check"></i><b>16.4.2</b> Mock the <code>NaiveLeader</code> module</a></li>
+<li class="chapter" data-level="16.4.3" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-phoenix.pubsub-module"><i class="fa fa-check"></i><b>16.4.3</b> Mock the <code>Phoenix.PubSub</code> module</a></li>
+<li class="chapter" data-level="16.4.4" data-path="mox-rocks.html"><a href="mox-rocks.html#mock-the-logger-module"><i class="fa fa-check"></i><b>16.4.4</b> Mock the <code>Logger</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="16.5" data-path="mox-rocks.html"><a href="mox-rocks.html#implement-a-test-of-the-naive.trader-module"><i class="fa fa-check"></i><b>16.5</b> Implement a test of the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="16.6" data-path="mox-rocks.html"><a href="mox-rocks.html#define-an-alias-to-run-unit-tests"><i class="fa fa-check"></i><b>16.6</b> Define an alias to run unit tests</a></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="functional-elixir.html"><a href="functional-elixir.html"><i class="fa fa-check"></i><b>17</b> Functional Elixir</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="functional-elixir.html"><a href="functional-elixir.html#objectives-16"><i class="fa fa-check"></i><b>17.1</b> Objectives</a></li>
+<li class="chapter" data-level="17.2" data-path="functional-elixir.html"><a href="functional-elixir.html#the-reasoning-behind-the-functional-approach"><i class="fa fa-check"></i><b>17.2</b> The reasoning behind the functional approach</a></li>
+<li class="chapter" data-level="17.3" data-path="functional-elixir.html"><a href="functional-elixir.html#simplifying-by-splitting"><i class="fa fa-check"></i><b>17.3</b> Simplifying by splitting</a></li>
+<li class="chapter" data-level="17.4" data-path="functional-elixir.html"><a href="functional-elixir.html#abstracting-the-pure-logic"><i class="fa fa-check"></i><b>17.4</b> Abstracting the “pure” logic</a>
+<ul>
+<li class="chapter" data-level="17.4.1" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-buy-order-rules"><i class="fa fa-check"></i><b>17.4.1</b> Place a buy order rules</a></li>
+<li class="chapter" data-level="17.4.2" data-path="functional-elixir.html"><a href="functional-elixir.html#place-a-sell-order-rules"><i class="fa fa-check"></i><b>17.4.2</b> Place a sell order rules</a></li>
+<li class="chapter" data-level="17.4.3" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-buy-order-rules"><i class="fa fa-check"></i><b>17.4.3</b> Fetch the buy order rules</a></li>
+<li class="chapter" data-level="17.4.4" data-path="functional-elixir.html"><a href="functional-elixir.html#terminate-trader-rules"><i class="fa fa-check"></i><b>17.4.4</b> Terminate trader rules</a></li>
+<li class="chapter" data-level="17.4.5" data-path="functional-elixir.html"><a href="functional-elixir.html#fetch-the-sell-order-rules"><i class="fa fa-check"></i><b>17.4.5</b> Fetch the sell order rules</a></li>
+<li class="chapter" data-level="17.4.6" data-path="functional-elixir.html"><a href="functional-elixir.html#trigger-rebuy-rules"><i class="fa fa-check"></i><b>17.4.6</b> Trigger rebuy rules</a></li>
+<li class="chapter" data-level="17.4.7" data-path="functional-elixir.html"><a href="functional-elixir.html#the-final-clause-rules"><i class="fa fa-check"></i><b>17.4.7</b> The final clause rules</a></li>
+<li class="chapter" data-level="17.4.8" data-path="functional-elixir.html"><a href="functional-elixir.html#changes-to-the-naive.trader-module"><i class="fa fa-check"></i><b>17.4.8</b> Changes to the <code>Naive.Trader</code> module</a></li>
+<li class="chapter" data-level="17.4.9" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---place-buy-order"><i class="fa fa-check"></i><b>17.4.9</b> <code>Naive.Trader</code> - place buy order</a></li>
+<li class="chapter" data-level="17.4.10" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---place-a-sell-order"><i class="fa fa-check"></i><b>17.4.10</b> <code>Naive.Trader</code> - Place a sell order</a></li>
+<li class="chapter" data-level="17.4.11" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---fetch-the-buy-order"><i class="fa fa-check"></i><b>17.4.11</b> <code>Naive.Trader</code> - Fetch the buy order</a></li>
+<li class="chapter" data-level="17.4.12" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---terminate-the-trader"><i class="fa fa-check"></i><b>17.4.12</b> <code>Naive.Trader</code> - Terminate the trader</a></li>
+<li class="chapter" data-level="17.4.13" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---fetch-the-sell-order"><i class="fa fa-check"></i><b>17.4.13</b> <code>Naive.Trader</code> - Fetch the sell order</a></li>
+<li class="chapter" data-level="17.4.14" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---triggering-rebuy"><i class="fa fa-check"></i><b>17.4.14</b> <code>Naive.Trader</code> - Triggering rebuy</a></li>
+<li class="chapter" data-level="17.4.15" data-path="functional-elixir.html"><a href="functional-elixir.html#naive.trader---the-final-ignore-clause"><i class="fa fa-check"></i><b>17.4.15</b> <code>Naive.Trader</code> - The final ignore clause</a></li>
+</ul></li>
+<li class="chapter" data-level="17.5" data-path="functional-elixir.html"><a href="functional-elixir.html#dealing-with-dirty-code"><i class="fa fa-check"></i><b>17.5</b> Dealing with dirty code</a></li>
+<li class="chapter" data-level="17.6" data-path="functional-elixir.html"><a href="functional-elixir.html#making-dirty-code-testable"><i class="fa fa-check"></i><b>17.6</b> Making dirty code testable</a>
+<ul>
+<li class="chapter" data-level="17.6.1" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-functions-arguments"><i class="fa fa-check"></i><b>17.6.1</b> Passing functions arguments</a></li>
+<li class="chapter" data-level="17.6.2" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-functions-as-a-context"><i class="fa fa-check"></i><b>17.6.2</b> Passing grouped functions as a context</a></li>
+<li class="chapter" data-level="17.6.3" data-path="functional-elixir.html"><a href="functional-elixir.html#passing-grouped-modules-as-a-context"><i class="fa fa-check"></i><b>17.6.3</b> Passing grouped modules as a context</a></li>
+<li class="chapter" data-level="17.6.4" data-path="functional-elixir.html"><a href="functional-elixir.html#injecting-modules-to-modules-attributes-based-on-the-configuration"><i class="fa fa-check"></i><b>17.6.4</b> Injecting modules to module’s attributes based on the configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="17.7" data-path="functional-elixir.html"><a href="functional-elixir.html#the-power-with-in"><i class="fa fa-check"></i><b>17.7</b> The power <code>with</code>-in</a>
+<ul>
+<li class="chapter" data-level="17.7.1" data-path="functional-elixir.html"><a href="functional-elixir.html#idiomatic-error-handling"><i class="fa fa-check"></i><b>17.7.1</b> Idiomatic error handling</a></li>
+</ul></li>
+<li class="chapter" data-level="17.8" data-path="functional-elixir.html"><a href="functional-elixir.html#do-or-not-to-do"><i class="fa fa-check"></i><b>17.8</b> Do or not to do</a></li>
+<li class="chapter" data-level="17.9" data-path="functional-elixir.html"><a href="functional-elixir.html#final-thoughts"><i class="fa fa-check"></i><b>17.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="18" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html"><i class="fa fa-check"></i><b>18</b> Idiomatic OTP</a>
+<ul>
+<li class="chapter" data-level="18.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#objectives-17"><i class="fa fa-check"></i><b>18.1</b> Objectives</a></li>
+<li class="chapter" data-level="18.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#the-concept"><i class="fa fa-check"></i><b>18.2</b> The concept</a></li>
+<li class="chapter" data-level="18.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#initial-implementation"><i class="fa fa-check"></i><b>18.3</b> Initial implementation</a>
+<ul>
+<li class="chapter" data-level="18.3.1" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#maybe-functions"><i class="fa fa-check"></i><b>18.3.1</b> Maybe functions</a></li>
+<li class="chapter" data-level="18.3.2" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#testing"><i class="fa fa-check"></i><b>18.3.2</b> Testing</a></li>
+<li class="chapter" data-level="18.3.3" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#supervision"><i class="fa fa-check"></i><b>18.3.3</b> Supervision</a></li>
+</ul></li>
+<li class="chapter" data-level="18.4" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#idiomatic-solution"><i class="fa fa-check"></i><b>18.4</b> Idiomatic solution</a></li>
+<li class="chapter" data-level="18.5" data-path="idiomatic-otp.html"><a href="idiomatic-otp.html#final-thoughts-1"><i class="fa fa-check"></i><b>18.5</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="19" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html"><i class="fa fa-check"></i><b>19</b> Idiomatic trading strategy</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#objectives-18"><i class="fa fa-check"></i><b>19.1</b> Objectives</a></li>
+<li class="chapter" data-level="19.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#following-the-ohlc-footsteps"><i class="fa fa-check"></i><b>19.2</b> Following the OHLC footsteps</a></li>
+<li class="chapter" data-level="19.3" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#simplifying-the-naive-supervision-tree"><i class="fa fa-check"></i><b>19.3</b> Simplifying the Naive supervision tree</a>
+<ul>
+<li class="chapter" data-level="19.3.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.dynamictradersupervisor-module"><i class="fa fa-check"></i><b>19.3.1</b> The <code>Naive.DynamicTraderSupervisor</code> module</a></li>
+<li class="chapter" data-level="19.3.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive-module"><i class="fa fa-check"></i><b>19.3.2</b> The <code>Naive</code> module</a></li>
+<li class="chapter" data-level="19.3.3" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.supervisor-module"><i class="fa fa-check"></i><b>19.3.3</b> The <code>Naive.Supervisor</code> module</a></li>
+<li class="chapter" data-level="19.3.4" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#the-naive.trader-module"><i class="fa fa-check"></i><b>19.3.4</b> The <code>Naive.Trader</code> module</a></li>
+</ul></li>
+<li class="chapter" data-level="19.4" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#supporting-multiple-positions"><i class="fa fa-check"></i><b>19.4</b> Supporting multiple positions</a>
+<ul>
+<li class="chapter" data-level="19.4.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#initialization-1"><i class="fa fa-check"></i><b>19.4.1</b> Initialization</a></li>
+<li class="chapter" data-level="19.4.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#parallelising-the-strategy"><i class="fa fa-check"></i><b>19.4.2</b> Parallelising the strategy</a></li>
+</ul></li>
+<li class="chapter" data-level="19.5" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#retrofitting-the-shutdown-functionality"><i class="fa fa-check"></i><b>19.5</b> Retrofitting the “shutdown” functionality</a>
+<ul>
+<li class="chapter" data-level="19.5.1" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#handling-updated-settings"><i class="fa fa-check"></i><b>19.5.1</b> Handling updated settings</a></li>
+<li class="chapter" data-level="19.5.2" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#updating-the-naive.strategy-to-honour-the-shutdown-state"><i class="fa fa-check"></i><b>19.5.2</b> Updating the <code>Naive.Strategy</code> to honour the “shutdown” state</a></li>
+</ul></li>
+<li class="chapter" data-level="19.6" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#updating-the-strategy-to-handle-rebuys"><i class="fa fa-check"></i><b>19.6</b> Updating the Strategy to handle rebuys</a></li>
+<li class="chapter" data-level="19.7" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#fetching-active-positions"><i class="fa fa-check"></i><b>19.7</b> Fetching active positions</a></li>
+<li class="chapter" data-level="19.8" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#tidying-up"><i class="fa fa-check"></i><b>19.8</b> Tidying up</a></li>
+<li class="chapter" data-level="19.9" data-path="idiomatic-trading-strategy.html"><a href="idiomatic-trading-strategy.html#final-thoughts-2"><i class="fa fa-check"></i><b>19.9</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="20" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html"><i class="fa fa-check"></i><b>20</b> Layers of abstraction</a>
+<ul>
+<li class="chapter" data-level="20.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#objectives-19"><i class="fa fa-check"></i><b>20.1</b> Objectives</a></li>
+<li class="chapter" data-level="20.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#admitting-the-mistake"><i class="fa fa-check"></i><b>20.2</b> Admitting the mistake</a></li>
+<li class="chapter" data-level="20.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#abstracting-the-exchange"><i class="fa fa-check"></i><b>20.3</b> Abstracting the exchange</a>
+<ul>
+<li class="chapter" data-level="20.3.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#defining-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>20.3.1</b> Defining the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="20.3.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#implementation-of-the-core.exchange.binance-module"><i class="fa fa-check"></i><b>20.3.2</b> Implementation of the <code>Core.Exchange.Binance</code> module</a></li>
+<li class="chapter" data-level="20.3.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-binancemock-module-to-implement-the-core.exchange-behaviour"><i class="fa fa-check"></i><b>20.3.3</b> Updating the <code>BinanceMock</code> module to implement the <code>Core.Exchange</code> behaviour</a></li>
+<li class="chapter" data-level="20.3.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy"><i class="fa fa-check"></i><b>20.3.4</b> Updating the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="20.3.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-seed-scripts"><i class="fa fa-check"></i><b>20.3.5</b> Updating the seed scripts</a></li>
+<li class="chapter" data-level="20.3.6" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#manual-testing-after-the-refactoring"><i class="fa fa-check"></i><b>20.3.6</b> Manual testing after the refactoring</a></li>
+<li class="chapter" data-level="20.3.7" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#storing-the-data"><i class="fa fa-check"></i><b>20.3.7</b> Storing the data</a></li>
+<li class="chapter" data-level="20.3.8" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#the-mox-approach-summary"><i class="fa fa-check"></i><b>20.3.8</b> The <code>Mox</code> approach summary</a></li>
+</ul></li>
+<li class="chapter" data-level="20.4" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#mimicking-the-reality"><i class="fa fa-check"></i><b>20.4</b> Mimicking the reality</a>
+<ul>
+<li class="chapter" data-level="20.4.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#updating-the-naive.strategy-1"><i class="fa fa-check"></i><b>20.4.1</b> Updating the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="20.4.2" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#testing-the-naive.strategy"><i class="fa fa-check"></i><b>20.4.2</b> Testing the <code>Naive.Strategy</code></a></li>
+<li class="chapter" data-level="20.4.3" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#logging-elephant-in-the-room"><i class="fa fa-check"></i><b>20.4.3</b> Logging elephant in the room</a></li>
+</ul></li>
+<li class="chapter" data-level="20.5" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#swapping-back-to-attributes"><i class="fa fa-check"></i><b>20.5</b> Swapping back to attributes</a>
+<ul>
+<li class="chapter" data-level="20.5.1" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#config-files"><i class="fa fa-check"></i><b>20.5.1</b> Config files</a></li>
+</ul></li>
+<li class="chapter" data-level="20.6" data-path="layers-of-abstraction.html"><a href="layers-of-abstraction.html#final-thoughts-3"><i class="fa fa-check"></i><b>20.6</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="21" data-path="win-with-pure-logic.html"><a href="win-with-pure-logic.html"><i class="fa fa-check"></i><b>21</b> 80/20 win with pure logic</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="win-with-pure-logic.html"><a href="win-with-pure-logic.html#objectives-20"><i class="fa fa-check"></i><b>21.1</b> Objectives</a></li>
+<li class="chapter" data-level="21.2" data-path="win-with-pure-logic.html"><a href="win-with-pure-logic.html#testing-the-pure-logic"><i class="fa fa-check"></i><b>21.2</b> Testing the pure logic</a></li>
+<li class="chapter" data-level="21.3" data-path="win-with-pure-logic.html"><a href="win-with-pure-logic.html#final-thoughts-4"><i class="fa fa-check"></i><b>21.3</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="22" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html"><i class="fa fa-check"></i><b>22</b> Back to the Monolith</a>
+<ul>
+<li class="chapter" data-level="22.1" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#objectives-21"><i class="fa fa-check"></i><b>22.1</b> Objectives</a></li>
+<li class="chapter" data-level="22.2" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reverting-the-course-to-the-monolith"><i class="fa fa-check"></i><b>22.2</b> Reverting the course to the monolith</a></li>
+<li class="chapter" data-level="22.3" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#creating-a-new-phoenix-app"><i class="fa fa-check"></i><b>22.3</b> Creating a new Phoenix app</a></li>
+<li class="chapter" data-level="22.4" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-the-core-app"><i class="fa fa-check"></i><b>22.4</b> Reintegrating the <code>core</code> app</a></li>
+<li class="chapter" data-level="22.5" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-the-binance_mock-app"><i class="fa fa-check"></i><b>22.5</b> Reintegrating the <code>binance_mock</code> app</a></li>
+<li class="chapter" data-level="22.6" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-the-streamer-app"><i class="fa fa-check"></i><b>22.6</b> Reintegrating the <code>streamer</code> app</a>
+<ul>
+<li class="chapter" data-level="22.6.1" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-supervisor"><i class="fa fa-check"></i><b>22.6.1</b> The supervisor</a></li>
+<li class="chapter" data-level="22.6.2" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-worker"><i class="fa fa-check"></i><b>22.6.2</b> The worker</a></li>
+<li class="chapter" data-level="22.6.3" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-dynamic-streamer-supervisor"><i class="fa fa-check"></i><b>22.6.3</b> The dynamic streamer supervisor</a></li>
+<li class="chapter" data-level="22.6.4" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#schemasettings.ex-and-schemastreaming_status_enum.ex"><i class="fa fa-check"></i><b>22.6.4</b> schema/settings.ex and schema/streaming_status_enum.ex</a></li>
+<li class="chapter" data-level="22.6.5" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#application"><i class="fa fa-check"></i><b>22.6.5</b> application</a></li>
+<li class="chapter" data-level="22.6.6" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#db-migrations-and-seeding"><i class="fa fa-check"></i><b>22.6.6</b> DB migrations and seeding</a></li>
+<li class="chapter" data-level="22.6.7" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#config"><i class="fa fa-check"></i><b>22.6.7</b> Config</a></li>
+<li class="chapter" data-level="22.6.8" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#deps"><i class="fa fa-check"></i><b>22.6.8</b> Deps</a></li>
+</ul></li>
+<li class="chapter" data-level="22.7" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-the-naive-app"><i class="fa fa-check"></i><b>22.7</b> Reintegrating the <code>naive</code> app</a>
+<ul>
+<li class="chapter" data-level="22.7.1" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-naive-module-1"><i class="fa fa-check"></i><b>22.7.1</b> the naive module</a></li>
+<li class="chapter" data-level="22.7.2" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#renaming-the-strategy-module-to-formula"><i class="fa fa-check"></i><b>22.7.2</b> renaming the strategy module to formula</a></li>
+<li class="chapter" data-level="22.7.3" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-trader-module"><i class="fa fa-check"></i><b>22.7.3</b> the trader module</a></li>
+<li class="chapter" data-level="22.7.4" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-supervisor-module"><i class="fa fa-check"></i><b>22.7.4</b> the supervisor module</a></li>
+<li class="chapter" data-level="22.7.5" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#the-dynamic-trader-supervisor-module"><i class="fa fa-check"></i><b>22.7.5</b> the dynamic trader supervisor module</a></li>
+<li class="chapter" data-level="22.7.6" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#repo-and-schema-files"><i class="fa fa-check"></i><b>22.7.6</b> Repo and <code>schema</code> files</a></li>
+<li class="chapter" data-level="22.7.7" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#application.ex"><i class="fa fa-check"></i><b>22.7.7</b> <code>application.ex</code></a></li>
+<li class="chapter" data-level="22.7.8" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#migration-and-seeding"><i class="fa fa-check"></i><b>22.7.8</b> Migration and seeding</a></li>
+<li class="chapter" data-level="22.7.9" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#configuration"><i class="fa fa-check"></i><b>22.7.9</b> Configuration</a></li>
+<li class="chapter" data-level="22.7.10" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#tests"><i class="fa fa-check"></i><b>22.7.10</b> Tests</a></li>
+<li class="chapter" data-level="22.7.11" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#dependencies"><i class="fa fa-check"></i><b>22.7.11</b> Dependencies</a></li>
+</ul></li>
+<li class="chapter" data-level="22.8" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-the-data_warehouse-app"><i class="fa fa-check"></i><b>22.8</b> Reintegrating the <code>data_warehouse</code> app</a>
+<ul>
+<li class="chapter" data-level="22.8.1" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#exchangeorder.ex"><i class="fa fa-check"></i><b>22.8.1</b> <code>exchange/order.ex</code></a></li>
+<li class="chapter" data-level="22.8.2" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#exchangetrade_event.ex"><i class="fa fa-check"></i><b>22.8.2</b> <code>exchange/trade_event.ex</code></a></li>
+<li class="chapter" data-level="22.8.3" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datapublisher.ex"><i class="fa fa-check"></i><b>22.8.3</b> <code>data/publisher.ex</code></a></li>
+<li class="chapter" data-level="22.8.4" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datacollector.ex"><i class="fa fa-check"></i><b>22.8.4</b> <code>data/collector.ex</code></a></li>
+<li class="chapter" data-level="22.8.5" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datacollectorcollector_supervisor.ex"><i class="fa fa-check"></i><b>22.8.5</b> <code>data/collector/collector_supervisor.ex</code></a></li>
+<li class="chapter" data-level="22.8.6" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datacollectordynamic_worker_supervisor.ex"><i class="fa fa-check"></i><b>22.8.6</b> <code>/data/collector/dynamic_worker_supervisor.ex</code></a></li>
+<li class="chapter" data-level="22.8.7" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datacollectorsettings_status_enum.ex"><i class="fa fa-check"></i><b>22.8.7</b> <code>/data/collector/settings_status_enum.ex</code></a></li>
+<li class="chapter" data-level="22.8.8" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datacollectorsettings.ex"><i class="fa fa-check"></i><b>22.8.8</b> <code>/data/collector/settings.ex</code></a></li>
+<li class="chapter" data-level="22.8.9" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#datacollectorworker.ex"><i class="fa fa-check"></i><b>22.8.9</b> <code>/data/collector/worker.ex</code></a></li>
+<li class="chapter" data-level="22.8.10" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#supervision-tree"><i class="fa fa-check"></i><b>22.8.10</b> Supervision tree</a></li>
+<li class="chapter" data-level="22.8.11" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#migrations"><i class="fa fa-check"></i><b>22.8.11</b> Migrations</a></li>
+</ul></li>
+<li class="chapter" data-level="22.9" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-the-indicator-app"><i class="fa fa-check"></i><b>22.9</b> Reintegrating the <code>indicator</code> app</a>
+<ul>
+<li class="chapter" data-level="22.9.1" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#dataaggregator.ex"><i class="fa fa-check"></i><b>22.9.1</b> /data/aggregator.ex</a></li>
+<li class="chapter" data-level="22.9.2" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#dataaggregatorohlc.ex"><i class="fa fa-check"></i><b>22.9.2</b> /data/aggregator/ohlc.ex</a></li>
+<li class="chapter" data-level="22.9.3" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#dataaggregatorohlcworker.ex"><i class="fa fa-check"></i><b>22.9.3</b> /data/aggregator/ohlc/worker.ex</a></li>
+<li class="chapter" data-level="22.9.4" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#supervision-tree-1"><i class="fa fa-check"></i><b>22.9.4</b> Supervision tree</a></li>
+</ul></li>
+<li class="chapter" data-level="22.10" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#reintegrating-aliases-and-configs"><i class="fa fa-check"></i><b>22.10</b> Reintegrating aliases and configs</a></li>
+<li class="chapter" data-level="22.11" data-path="back-to-the-monolith.html"><a href="back-to-the-monolith.html#final-thoughts-5"><i class="fa fa-check"></i><b>22.11</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="23" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html"><i class="fa fa-check"></i><b>23</b> From Postgres to SQLite</a>
+<ul>
+<li class="chapter" data-level="23.1" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#objectives-22"><i class="fa fa-check"></i><b>23.1</b> Objectives</a></li>
+<li class="chapter" data-level="23.2" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#removing-the-docker-dependency"><i class="fa fa-check"></i><b>23.2</b> Removing the Docker dependency</a></li>
+<li class="chapter" data-level="23.3" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#swapping-the-database-adapter"><i class="fa fa-check"></i><b>23.3</b> Swapping the database adapter</a>
+<ul>
+<li class="chapter" data-level="23.3.1" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#dependencies-1"><i class="fa fa-check"></i><b>23.3.1</b> Dependencies</a></li>
+<li class="chapter" data-level="23.3.2" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#repo-adapter"><i class="fa fa-check"></i><b>23.3.2</b> Repo adapter</a></li>
+<li class="chapter" data-level="23.3.3" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#configuration-1"><i class="fa fa-check"></i><b>23.3.3</b> Configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="23.4" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#replacing-ecto_enum-with-ecto.enum"><i class="fa fa-check"></i><b>23.4</b> Replacing <code>ecto_enum</code> with <code>Ecto.Enum</code></a>
+<ul>
+<li class="chapter" data-level="23.4.1" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#why-the-change-is-necessary"><i class="fa fa-check"></i><b>23.4.1</b> Why the change is necessary</a></li>
+<li class="chapter" data-level="23.4.2" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#removing-the-enum-modules"><i class="fa fa-check"></i><b>23.4.2</b> Removing the enum modules</a></li>
+<li class="chapter" data-level="23.4.3" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#updating-the-schema-files"><i class="fa fa-check"></i><b>23.4.3</b> Updating the schema files</a></li>
+<li class="chapter" data-level="23.4.4" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#important-strings-must-become-atoms"><i class="fa fa-check"></i><b>23.4.4</b> Important: strings must become atoms</a></li>
+<li class="chapter" data-level="23.4.5" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#autostart-queries"><i class="fa fa-check"></i><b>23.4.5</b> Autostart queries</a></li>
+<li class="chapter" data-level="23.4.6" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#status-update-functions"><i class="fa fa-check"></i><b>23.4.6</b> Status update functions</a></li>
+<li class="chapter" data-level="23.4.7" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#updating-the-seed-script"><i class="fa fa-check"></i><b>23.4.7</b> Updating the seed script</a></li>
+</ul></li>
+<li class="chapter" data-level="23.5" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#updating-migrations-for-sqlite-compatibility"><i class="fa fa-check"></i><b>23.5</b> Updating migrations for SQLite compatibility</a>
+<ul>
+<li class="chapter" data-level="23.5.1" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#streamer-settings-migration"><i class="fa fa-check"></i><b>23.5.1</b> Streamer settings migration</a></li>
+<li class="chapter" data-level="23.5.2" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#naive-strategy-settings-migration"><i class="fa fa-check"></i><b>23.5.2</b> Naive strategy settings migration</a></li>
+<li class="chapter" data-level="23.5.3" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#naive-strategy-status-update-migration"><i class="fa fa-check"></i><b>23.5.3</b> Naive strategy status update migration</a></li>
+<li class="chapter" data-level="23.5.4" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#collector-settings-migration"><i class="fa fa-check"></i><b>23.5.4</b> Collector settings migration</a></li>
+</ul></li>
+<li class="chapter" data-level="23.6" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#testing-1"><i class="fa fa-check"></i><b>23.6</b> Testing</a></li>
+<li class="chapter" data-level="23.7" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#backing-up-the-database"><i class="fa fa-check"></i><b>23.7</b> Backing up the database</a>
+<ul>
+<li class="chapter" data-level="23.7.1" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#adding-the-dependency"><i class="fa fa-check"></i><b>23.7.1</b> Adding the dependency</a></li>
+<li class="chapter" data-level="23.7.2" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#configuring-litestream"><i class="fa fa-check"></i><b>23.7.2</b> Configuring Litestream</a></li>
+<li class="chapter" data-level="23.7.3" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#adding-to-the-supervision-tree"><i class="fa fa-check"></i><b>23.7.3</b> Adding to the supervision tree</a></li>
+<li class="chapter" data-level="23.7.4" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#setting-up-the-storage-bucket"><i class="fa fa-check"></i><b>23.7.4</b> Setting up the storage bucket</a></li>
+<li class="chapter" data-level="23.7.5" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#restoring-from-a-backup"><i class="fa fa-check"></i><b>23.7.5</b> Restoring from a backup</a></li>
+<li class="chapter" data-level="23.7.6" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#verifying-replication-locally-optional"><i class="fa fa-check"></i><b>23.7.6</b> Verifying replication locally (optional)</a></li>
+<li class="chapter" data-level="23.7.7" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#checking-replication-status"><i class="fa fa-check"></i><b>23.7.7</b> Checking replication status</a></li>
+</ul></li>
+<li class="chapter" data-level="23.8" data-path="from-postgres-to-sqlite.html"><a href="from-postgres-to-sqlite.html#final-thoughts-6"><i class="fa fa-check"></i><b>23.8</b> Final thoughts</a></li>
+</ul></li>
+<li class="chapter" data-level="24" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html"><i class="fa fa-check"></i><b>24</b> Clustering on the Open Internet</a>
+<ul>
+<li class="chapter" data-level="24.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#objectives-23"><i class="fa fa-check"></i><b>24.1</b> Objectives</a></li>
+<li class="chapter" data-level="24.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#building-an-otp-release"><i class="fa fa-check"></i><b>24.2</b> Building an OTP release</a>
+<ul>
+<li class="chapter" data-level="24.2.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#configuring-the-release-in-mix.exs"><i class="fa fa-check"></i><b>24.2.1</b> Configuring the release in <code>mix.exs</code></a></li>
+<li class="chapter" data-level="24.2.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#generating-release-configuration-files"><i class="fa fa-check"></i><b>24.2.2</b> Generating release configuration files</a></li>
+<li class="chapter" data-level="24.2.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#configuring-the-node-name-and-cookie"><i class="fa fa-check"></i><b>24.2.3</b> Configuring the node name and cookie</a></li>
+<li class="chapter" data-level="24.2.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#constraining-the-distribution-port-range"><i class="fa fa-check"></i><b>24.2.4</b> Constraining the distribution port range</a></li>
+<li class="chapter" data-level="24.2.5" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#running-database-migrations-in-a-release"><i class="fa fa-check"></i><b>24.2.5</b> Running database migrations in a release</a></li>
+<li class="chapter" data-level="24.2.6" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#building-the-release"><i class="fa fa-check"></i><b>24.2.6</b> Building the release</a></li>
+</ul></li>
+<li class="chapter" data-level="24.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#deploying-to-a-virtual-machine"><i class="fa fa-check"></i><b>24.3</b> Deploying to a virtual machine</a>
+<ul>
+<li class="chapter" data-level="24.3.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#what-you-need-on-the-target-machine"><i class="fa fa-check"></i><b>24.3.1</b> What you need on the target machine</a></li>
+<li class="chapter" data-level="24.3.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#deploying-the-release"><i class="fa fa-check"></i><b>24.3.2</b> Deploying the release</a></li>
+<li class="chapter" data-level="24.3.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#environment-variables"><i class="fa fa-check"></i><b>24.3.3</b> Environment variables</a></li>
+<li class="chapter" data-level="24.3.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#creating-a-systemd-service"><i class="fa fa-check"></i><b>24.3.4</b> Creating a systemd service</a></li>
+<li class="chapter" data-level="24.3.5" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#connecting-to-a-running-node"><i class="fa fa-check"></i><b>24.3.5</b> Connecting to a running node</a></li>
+<li class="chapter" data-level="24.3.6" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#deploying-an-update"><i class="fa fa-check"></i><b>24.3.6</b> Deploying an update</a></li>
+</ul></li>
+<li class="chapter" data-level="24.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#understanding-erlang-distribution"><i class="fa fa-check"></i><b>24.4</b> Understanding Erlang distribution</a>
+<ul>
+<li class="chapter" data-level="24.4.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#node-names"><i class="fa fa-check"></i><b>24.4.1</b> Node names</a></li>
+<li class="chapter" data-level="24.4.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#the-cookie"><i class="fa fa-check"></i><b>24.4.2</b> The cookie</a></li>
+<li class="chapter" data-level="24.4.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#epmd"><i class="fa fa-check"></i><b>24.4.3</b> EPMD</a></li>
+</ul></li>
+<li class="chapter" data-level="24.5" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#securing-the-cluster"><i class="fa fa-check"></i><b>24.5</b> Securing the cluster</a>
+<ul>
+<li class="chapter" data-level="24.5.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#the-threat-model"><i class="fa fa-check"></i><b>24.5.1</b> The threat model</a></li>
+<li class="chapter" data-level="24.5.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#layer-1-firewall-rules"><i class="fa fa-check"></i><b>24.5.2</b> Layer 1: Firewall rules</a></li>
+<li class="chapter" data-level="24.5.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#layer-2-a-strong-cookie"><i class="fa fa-check"></i><b>24.5.3</b> Layer 2: A strong cookie</a></li>
+<li class="chapter" data-level="24.5.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#layer-3-vpn-or-wireguardrecommended-for-production"><i class="fa fa-check"></i><b>24.5.4</b> Layer 3: VPN or WireGuard(recommended for production)</a></li>
+<li class="chapter" data-level="24.5.5" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#summary-of-ports-to-open"><i class="fa fa-check"></i><b>24.5.5</b> Summary of ports to open</a></li>
+</ul></li>
+<li class="chapter" data-level="24.6" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#configuring-libcluster"><i class="fa fa-check"></i><b>24.6</b> Configuring <code>libcluster</code></a>
+<ul>
+<li class="chapter" data-level="24.6.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#adding-the-dependency-1"><i class="fa fa-check"></i><b>24.6.1</b> Adding the dependency</a></li>
+<li class="chapter" data-level="24.6.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#choosing-a-strategy"><i class="fa fa-check"></i><b>24.6.2</b> Choosing a strategy</a></li>
+<li class="chapter" data-level="24.6.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#configuration-per-environment"><i class="fa fa-check"></i><b>24.6.3</b> Configuration per environment</a></li>
+<li class="chapter" data-level="24.6.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#adding-to-the-supervision-tree-1"><i class="fa fa-check"></i><b>24.6.4</b> Adding to the supervision tree</a></li>
+</ul></li>
+<li class="chapter" data-level="24.7" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#testing-the-cluster-locally"><i class="fa fa-check"></i><b>24.7</b> Testing the cluster locally</a>
+<ul>
+<li class="chapter" data-level="24.7.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#starting-multiple-nodes"><i class="fa fa-check"></i><b>24.7.1</b> Starting multiple nodes</a></li>
+<li class="chapter" data-level="24.7.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#connecting-nodes-manually"><i class="fa fa-check"></i><b>24.7.2</b> Connecting nodes manually</a></li>
+<li class="chapter" data-level="24.7.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#testing-with-libcluster-locally"><i class="fa fa-check"></i><b>24.7.3</b> Testing with libcluster locally</a></li>
+</ul></li>
+<li class="chapter" data-level="24.8" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#querying-data-across-the-cluster"><i class="fa fa-check"></i><b>24.8</b> Querying data across the cluster</a>
+<ul>
+<li class="chapter" data-level="24.8.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#introducing-erpc"><i class="fa fa-check"></i><b>24.8.1</b> Introducing <code>:erpc</code></a></li>
+<li class="chapter" data-level="24.8.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#building-a-cluster-query-module"><i class="fa fa-check"></i><b>24.8.2</b> Building a cluster query module</a></li>
+<li class="chapter" data-level="24.8.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#querying-orders-across-the-cluster"><i class="fa fa-check"></i><b>24.8.3</b> Querying orders across the cluster</a></li>
+<li class="chapter" data-level="24.8.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#adding-a-cluster-status-summary"><i class="fa fa-check"></i><b>24.8.4</b> Adding a cluster status summary</a></li>
+</ul></li>
+<li class="chapter" data-level="24.9" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#deploying-a-second-node"><i class="fa fa-check"></i><b>24.9</b> Deploying a second node</a>
+<ul>
+<li class="chapter" data-level="24.9.1" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#provision-the-second-machine"><i class="fa fa-check"></i><b>24.9.1</b> Provision the second machine</a></li>
+<li class="chapter" data-level="24.9.2" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#deploy-the-release"><i class="fa fa-check"></i><b>24.9.2</b> Deploy the release</a></li>
+<li class="chapter" data-level="24.9.3" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#configure-the-environment"><i class="fa fa-check"></i><b>24.9.3</b> Configure the environment</a></li>
+<li class="chapter" data-level="24.9.4" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#open-firewall-ports"><i class="fa fa-check"></i><b>24.9.4</b> Open firewall ports</a></li>
+<li class="chapter" data-level="24.9.5" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#update-the-first-nodes-configuration"><i class="fa fa-check"></i><b>24.9.5</b> Update the first node’s configuration</a></li>
+<li class="chapter" data-level="24.9.6" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#start-the-second-node"><i class="fa fa-check"></i><b>24.9.6</b> Start the second node</a></li>
+<li class="chapter" data-level="24.9.7" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#verify-the-cluster"><i class="fa fa-check"></i><b>24.9.7</b> Verify the cluster</a></li>
+</ul></li>
+<li class="chapter" data-level="24.10" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#troubleshooting"><i class="fa fa-check"></i><b>24.10</b> Troubleshooting</a></li>
+<li class="chapter" data-level="24.11" data-path="clustering-on-the-open-internet.html"><a href="clustering-on-the-open-internet.html#final-thoughts-7"><i class="fa fa-check"></i><b>24.11</b> Final thoughts</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://www.bookdown.org/" target="blank">Created with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Hands-on Elixir &amp; OTP: Cryptocurrency Trading Bot</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="from-postgres-to-sqlite" class="section level1 hasAnchor" number="23">
+<h1><span class="header-section-number">Chapter 23</span> From Postgres to SQLite<a href="from-postgres-to-sqlite.html#from-postgres-to-sqlite" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>In the last chapter, we consolidated six umbrella apps into a single Phoenix
+application - one repo, one database, one config surface. The structure is clean.
+But if you look at how it runs, there’s still an external process standing between
+our application and its data: Postgres, managed via Docker.</p>
+<p>For development, that means running <code>docker compose up -d</code> before you can do
+anything. For deployment, it means each trading node needs a network path to
+a shared Postgres instance - and each write is a round-trip over that link.
+If the database goes down or the network hiccups, all nodes stop trading.</p>
+<p>For a system we intend to distribute across independent nodes, this is exactly
+the wrong architecture. We want each node to be self-contained: its own
+processes, its own state, its own persistence. SQLite gives us that. It’s an
+embedded database that lives as a single file
+alongside the application - no server process, no network dependency, no Docker
+container. If that sounds like a toy database, it isn’t - SQLite handles more
+read traffic than most Postgres deployments will ever see, and for a single-node
+writer like our trading bot, it’s more than enough.
+The <code>ecto_sqlite3</code> adapter makes the switch almost transparent to our application
+code; Ecto’s Repo API stays the same, migrations need only minor adjustments.</p>
+<p>In this chapter, we’ll swap Postgres for SQLite, remove the Docker dependency
+entirely, and replace the <code>ecto_enum</code> library(which relies on Postgres-specific
+<code>CREATE TYPE</code> statements) with Ecto’s built-in <code>Ecto.Enum</code>. We’ll also set up
+Litestream for continuous database backups to S3-compatible storage - because an
+embedded database without off-site replication is one disk failure away from total
+data loss. By the end, our trading bot will be a fully self-contained application
+that carries its database with it - which is exactly what we’ll need when we
+introduce clustering in the next chapter.</p>
+<div id="objectives-22" class="section level2 hasAnchor" number="23.1">
+<h2><span class="header-section-number">23.1</span> Objectives<a href="from-postgres-to-sqlite.html#objectives-22" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<ul>
+<li>removing the Docker/Postgres dependency</li>
+<li>swapping the database adapter to SQLite</li>
+<li>replacing <code>ecto_enum</code> with <code>Ecto.Enum</code></li>
+<li>updating status values from strings to atoms</li>
+<li>updating migrations for SQLite compatibility</li>
+<li>setting up continuous backups with Litestream and S3-compatible storage</li>
+</ul>
+</div>
+<div id="removing-the-docker-dependency" class="section level2 hasAnchor" number="23.2">
+<h2><span class="header-section-number">23.2</span> Removing the Docker dependency<a href="from-postgres-to-sqlite.html#removing-the-docker-dependency" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>The <code>docker-compose.yml</code> file at the root of our project exists solely to run
+Postgres. Since we’re moving to SQLite, we no longer need it:</p>
+<div class="sourceCode" id="cb604"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb604-1"><a href="from-postgres-to-sqlite.html#cb604-1" tabindex="-1"></a><span class="fu">rm</span> docker-compose.yml</span></code></pre></div>
+<p>We should also add SQLite’s database files to <code>.gitignore</code>. SQLite uses up to
+three files per database (the main <code>.db</code> file, a write-ahead log <code>-wal</code>, and a
+shared-memory file <code>-shm</code>):</p>
+<pre class="text"><code># /.gitignore
+# Database files
+*.db
+*.db-shm
+*.db-wal</code></pre>
+</div>
+<div id="swapping-the-database-adapter" class="section level2 hasAnchor" number="23.3">
+<h2><span class="header-section-number">23.3</span> Swapping the database adapter<a href="from-postgres-to-sqlite.html#swapping-the-database-adapter" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div id="dependencies-1" class="section level3 hasAnchor" number="23.3.1">
+<h3><span class="header-section-number">23.3.1</span> Dependencies<a href="from-postgres-to-sqlite.html#dependencies-1" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Inside <code>mix.exs</code>, we need to swap <code>postgrex</code> for <code>ecto_sqlite3</code> and remove
+<code>ecto_enum</code> (we’ll replace it with Ecto’s built-in <code>Ecto.Enum</code> in the next section):</p>
+<div class="sourceCode" id="cb606"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb606-1"><a href="from-postgres-to-sqlite.html#cb606-1" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
+<span id="cb606-2"><a href="from-postgres-to-sqlite.html#cb606-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb606-3"><a href="from-postgres-to-sqlite.html#cb606-3" tabindex="-1"></a>    <span class="ot">[</span></span>
+<span id="cb606-4"><a href="from-postgres-to-sqlite.html#cb606-4" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb606-5"><a href="from-postgres-to-sqlite.html#cb606-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_sqlite3</span>, <span class="st">&quot;~&gt; 0.22&quot;</span><span class="fu">}</span>, <span class="co"># &lt;= added (replaces postgrex)</span></span>
+<span id="cb606-6"><a href="from-postgres-to-sqlite.html#cb606-6" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb606-7"><a href="from-postgres-to-sqlite.html#cb606-7" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb606-8"><a href="from-postgres-to-sqlite.html#cb606-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Remove the following lines from <code>deps</code>:</p>
+<div class="sourceCode" id="cb607"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb607-1"><a href="from-postgres-to-sqlite.html#cb607-1" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
+<span id="cb607-2"><a href="from-postgres-to-sqlite.html#cb607-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb607-3"><a href="from-postgres-to-sqlite.html#cb607-3" tabindex="-1"></a>    <span class="ot">[</span></span>
+<span id="cb607-4"><a href="from-postgres-to-sqlite.html#cb607-4" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb607-5"><a href="from-postgres-to-sqlite.html#cb607-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:postgrex</span>, <span class="st">&quot;&gt;= 0.0.0&quot;</span><span class="fu">}</span>,  <span class="co"># &lt;= remove</span></span>
+<span id="cb607-6"><a href="from-postgres-to-sqlite.html#cb607-6" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb607-7"><a href="from-postgres-to-sqlite.html#cb607-7" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:ecto_enum</span>, <span class="st">&quot;~&gt; 1.4&quot;</span><span class="fu">}</span>,   <span class="co"># &lt;= remove</span></span>
+<span id="cb607-8"><a href="from-postgres-to-sqlite.html#cb607-8" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb607-9"><a href="from-postgres-to-sqlite.html#cb607-9" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb607-10"><a href="from-postgres-to-sqlite.html#cb607-10" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="repo-adapter" class="section level3 hasAnchor" number="23.3.2">
+<h3><span class="header-section-number">23.3.2</span> Repo adapter<a href="from-postgres-to-sqlite.html#repo-adapter" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Next, we need to update <code>Hedgehog.Repo</code> to use the SQLite3 adapter:</p>
+<div class="sourceCode" id="cb608"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb608-1"><a href="from-postgres-to-sqlite.html#cb608-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/repo.ex</span></span>
+<span id="cb608-2"><a href="from-postgres-to-sqlite.html#cb608-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span> <span class="kw">do</span></span>
+<span id="cb608-3"><a href="from-postgres-to-sqlite.html#cb608-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb608-4"><a href="from-postgres-to-sqlite.html#cb608-4" tabindex="-1"></a>    <span class="va">otp_app:</span> <span class="va">:hedgehog</span>,</span>
+<span id="cb608-5"><a href="from-postgres-to-sqlite.html#cb608-5" tabindex="-1"></a>    <span class="va">adapter:</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Adapters</span><span class="op">.</span><span class="cn">SQLite3</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb608-6"><a href="from-postgres-to-sqlite.html#cb608-6" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="configuration-1" class="section level3 hasAnchor" number="23.3.3">
+<h3><span class="header-section-number">23.3.3</span> Configuration<a href="from-postgres-to-sqlite.html#configuration-1" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The Postgres configuration used hostname, username, password, and a database name.
+SQLite only needs a file path. We need to update all environment config files.</p>
+<p>Starting with the development configuration:</p>
+<div class="sourceCode" id="cb609"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb609-1"><a href="from-postgres-to-sqlite.html#cb609-1" tabindex="-1"></a><span class="co"># /config/dev.exs</span></span>
+<span id="cb609-2"><a href="from-postgres-to-sqlite.html#cb609-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb609-3"><a href="from-postgres-to-sqlite.html#cb609-3" tabindex="-1"></a>  <span class="va">database:</span> <span class="cn">Path</span><span class="op">.</span>expand<span class="fu">(</span><span class="st">&quot;../hedgehog_dev.db&quot;</span>, <span class="cn">Path</span><span class="op">.</span>dirname<span class="fu">(</span><span class="cn">__ENV__</span><span class="op">.</span>file<span class="fu">))</span>,</span>
+<span id="cb609-4"><a href="from-postgres-to-sqlite.html#cb609-4" tabindex="-1"></a>  <span class="va">pool_size:</span> <span class="dv">5</span>,</span>
+<span id="cb609-5"><a href="from-postgres-to-sqlite.html#cb609-5" tabindex="-1"></a>  <span class="va">show_sensitive_data_on_connection_error:</span> <span class="cn">true</span></span></code></pre></div>
+<p>SQLite supports multiple concurrent readers in WAL mode, so a pool size of 5 is a
+reasonable default - enough to allow several read queries to overlap. Writes are
+serialized regardless of pool size; SQLite permits only one writer at a time. A
+larger pool won’t speed up writes, but it can help if you have many concurrent
+reads.</p>
+<p><strong>Note:</strong> <code>Path.expand("../hedgehog_dev.db", Path.dirname(__ENV__.file))</code> resolves
+to a file in the project root directory. This is the standard convention for
+Phoenix projects using SQLite.</p>
+<p>The test configuration follows the same pattern but uses a separate database file:</p>
+<div class="sourceCode" id="cb610"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb610-1"><a href="from-postgres-to-sqlite.html#cb610-1" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb610-2"><a href="from-postgres-to-sqlite.html#cb610-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb610-3"><a href="from-postgres-to-sqlite.html#cb610-3" tabindex="-1"></a>  <span class="va">database:</span> <span class="cn">Path</span><span class="op">.</span>expand<span class="fu">(</span><span class="st">&quot;../hedgehog_test.db&quot;</span>, <span class="cn">Path</span><span class="op">.</span>dirname<span class="fu">(</span><span class="cn">__ENV__</span><span class="op">.</span>file<span class="fu">))</span>,</span>
+<span id="cb610-4"><a href="from-postgres-to-sqlite.html#cb610-4" tabindex="-1"></a>  <span class="va">pool_size:</span> <span class="dv">5</span>,</span>
+<span id="cb610-5"><a href="from-postgres-to-sqlite.html#cb610-5" tabindex="-1"></a>  <span class="va">pool:</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Adapters</span><span class="op">.</span><span class="cn">SQL</span><span class="op">.</span><span class="cn">Sandbox</span></span></code></pre></div>
+<p>And the integration configuration:</p>
+<div class="sourceCode" id="cb611"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb611-1"><a href="from-postgres-to-sqlite.html#cb611-1" tabindex="-1"></a><span class="co"># /config/integration.exs</span></span>
+<span id="cb611-2"><a href="from-postgres-to-sqlite.html#cb611-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb611-3"><a href="from-postgres-to-sqlite.html#cb611-3" tabindex="-1"></a>  <span class="va">database:</span> <span class="cn">Path</span><span class="op">.</span>expand<span class="fu">(</span><span class="st">&quot;../hedgehog_integration.db&quot;</span>, <span class="cn">Path</span><span class="op">.</span>dirname<span class="fu">(</span><span class="cn">__ENV__</span><span class="op">.</span>file<span class="fu">))</span>,</span>
+<span id="cb611-4"><a href="from-postgres-to-sqlite.html#cb611-4" tabindex="-1"></a>  <span class="va">pool_size:</span> <span class="dv">5</span>,</span>
+<span id="cb611-5"><a href="from-postgres-to-sqlite.html#cb611-5" tabindex="-1"></a>  <span class="va">pool:</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Adapters</span><span class="op">.</span><span class="cn">SQL</span><span class="op">.</span><span class="cn">Sandbox</span></span></code></pre></div>
+<p>Finally, the runtime configuration for production. We replace the <code>DATABASE_URL</code>
+environment variable with <code>DATABASE_PATH</code>:</p>
+<div class="sourceCode" id="cb612"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb612-1"><a href="from-postgres-to-sqlite.html#cb612-1" tabindex="-1"></a><span class="co"># /config/runtime.exs</span></span>
+<span id="cb612-2"><a href="from-postgres-to-sqlite.html#cb612-2" tabindex="-1"></a><span class="cf">if</span> config_env<span class="fu">()</span> <span class="op">==</span> <span class="va">:prod</span> <span class="kw">do</span></span>
+<span id="cb612-3"><a href="from-postgres-to-sqlite.html#cb612-3" tabindex="-1"></a>  database_path <span class="op">=</span></span>
+<span id="cb612-4"><a href="from-postgres-to-sqlite.html#cb612-4" tabindex="-1"></a>    <span class="cn">System</span><span class="op">.</span>get_env<span class="fu">(</span><span class="st">&quot;DATABASE_PATH&quot;</span><span class="fu">)</span> <span class="op">||</span></span>
+<span id="cb612-5"><a href="from-postgres-to-sqlite.html#cb612-5" tabindex="-1"></a>      <span class="cf">raise</span> <span class="st">&quot;&quot;&quot;</span></span>
+<span id="cb612-6"><a href="from-postgres-to-sqlite.html#cb612-6" tabindex="-1"></a><span class="st">      environment variable DATABASE_PATH is missing.</span></span>
+<span id="cb612-7"><a href="from-postgres-to-sqlite.html#cb612-7" tabindex="-1"></a><span class="st">      For example: /data/hedgehog/hedgehog.db</span></span>
+<span id="cb612-8"><a href="from-postgres-to-sqlite.html#cb612-8" tabindex="-1"></a><span class="st">      &quot;&quot;&quot;</span></span>
+<span id="cb612-9"><a href="from-postgres-to-sqlite.html#cb612-9" tabindex="-1"></a>  <span class="co"># remove: maybe_ipv6 = ....</span></span>
+<span id="cb612-10"><a href="from-postgres-to-sqlite.html#cb612-10" tabindex="-1"></a></span>
+<span id="cb612-11"><a href="from-postgres-to-sqlite.html#cb612-11" tabindex="-1"></a>  config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb612-12"><a href="from-postgres-to-sqlite.html#cb612-12" tabindex="-1"></a>    <span class="va">database:</span> database_path,</span>
+<span id="cb612-13"><a href="from-postgres-to-sqlite.html#cb612-13" tabindex="-1"></a>    <span class="va">pool_size:</span> <span class="cn">String</span><span class="op">.</span>to_integer<span class="fu">(</span><span class="cn">System</span><span class="op">.</span>get_env<span class="fu">(</span><span class="st">&quot;POOL_SIZE&quot;</span><span class="fu">)</span> <span class="op">||</span> <span class="st">&quot;5&quot;</span><span class="fu">)</span></span>
+<span id="cb612-14"><a href="from-postgres-to-sqlite.html#cb612-14" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<div class="sidequest">
+<p><strong>Note regarding releases:</strong> In dev.exs, we used <code>Path.expand</code> relative to the current file.
+In <code>runtime.exs</code> (Production), we rely on the <code>DATABASE_PATH</code> environment variable.
+This is critical because when you build an OTP Release,
+the configuration files are evaluated, but the source code directories may not exist on the target server.
+Always use absolute paths or environment variables for database locations in production.</p>
+</div>
+<div class="sidequest">
+<p><strong>Note on concurrency:</strong> The <code>ecto_sqlite3</code> adapter defaults to WAL (Write-Ahead Logging)
+mode, which allows concurrent reads while a write is in progress. However, SQLite still
+permits only one writer at a time. If two processes attempt to write simultaneously, one
+will wait up to <code>busy_timeout</code> milliseconds (default: 2000ms) before raising an error.</p>
+<p>For a trading bot where multiple GenServers may write to the database, you might want to
+increase this value in your Repo configuration. The default 2000ms is fine for our current
+setup, but if you add more concurrent writers later, bumping it prevents spurious timeouts:</p>
+<div class="sourceCode" id="cb613"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb613-1"><a href="from-postgres-to-sqlite.html#cb613-1" tabindex="-1"></a><span class="co"># /config/*.exs</span></span>
+<span id="cb613-2"><a href="from-postgres-to-sqlite.html#cb613-2" tabindex="-1"></a>    config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb613-3"><a href="from-postgres-to-sqlite.html#cb613-3" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb613-4"><a href="from-postgres-to-sqlite.html#cb613-4" tabindex="-1"></a>      <span class="va">busy_timeout:</span> <span class="dv">5000</span></span></code></pre></div>
+<p>See the <code>ecto_sqlite3</code> adapter documentation for the full list of tuning options.</p>
+</div>
+<p>At this point, our adapter is configured but our migrations and schemas still
+reference <code>ecto_enum</code> types that only work with Postgres. Let’s fix that next.</p>
+</div>
+</div>
+<div id="replacing-ecto_enum-with-ecto.enum" class="section level2 hasAnchor" number="23.4">
+<h2><span class="header-section-number">23.4</span> Replacing <code>ecto_enum</code> with <code>Ecto.Enum</code><a href="from-postgres-to-sqlite.html#replacing-ecto_enum-with-ecto.enum" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>This is the most involved part of the migration - not because it’s difficult,
+but because the <code>ecto_enum</code> library is woven into three separate areas of our
+codebase: schema files, migration files, and dedicated enum modules.</p>
+<div id="why-the-change-is-necessary" class="section level3 hasAnchor" number="23.4.1">
+<h3><span class="header-section-number">23.4.1</span> Why the change is necessary<a href="from-postgres-to-sqlite.html#why-the-change-is-necessary" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The <code>ecto_enum</code> library uses Postgres-specific <code>CREATE TYPE</code> statements to define
+custom enum types at the database level. SQLite has no equivalent feature - it
+stores everything as one of five types: NULL, INTEGER, REAL, TEXT, or BLOB.</p>
+<p>Ecto’s built-in <code>Ecto.Enum</code> takes a different approach:
+it stores enum values as plain strings in the database and handles the atom
+conversion in the application layer. This works identically across all database
+backends.</p>
+</div>
+<div id="removing-the-enum-modules" class="section level3 hasAnchor" number="23.4.2">
+<h3><span class="header-section-number">23.4.2</span> Removing the enum modules<a href="from-postgres-to-sqlite.html#removing-the-enum-modules" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>We have three <code>*_status_enum.ex</code> files that use <code>defenum</code> from the <code>ecto_enum</code> library.
+Since <code>Ecto.Enum</code> is declared inline within schema definitions, these dedicated modules are
+no longer needed. We can delete all three:</p>
+<div class="sourceCode" id="cb614"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb614-1"><a href="from-postgres-to-sqlite.html#cb614-1" tabindex="-1"></a><span class="fu">rm</span> lib/hedgehog/streamer/settings_status_enum.ex</span>
+<span id="cb614-2"><a href="from-postgres-to-sqlite.html#cb614-2" tabindex="-1"></a><span class="fu">rm</span> lib/hedgehog/strategy/naive/settings_status_enum.ex</span>
+<span id="cb614-3"><a href="from-postgres-to-sqlite.html#cb614-3" tabindex="-1"></a><span class="fu">rm</span> lib/hedgehog/data/collector/settings_status_enum.ex</span></code></pre></div>
+</div>
+<div id="updating-the-schema-files" class="section level3 hasAnchor" number="23.4.3">
+<h3><span class="header-section-number">23.4.3</span> Updating the schema files<a href="from-postgres-to-sqlite.html#updating-the-schema-files" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Each settings schema currently references its companion enum module. We need to
+replace those references with <code>Ecto.Enum</code> field declarations.</p>
+<p>Starting with the streamer settings:</p>
+<div class="sourceCode" id="cb615"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb615-1"><a href="from-postgres-to-sqlite.html#cb615-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/streamer/settings.ex</span></span>
+<span id="cb615-2"><a href="from-postgres-to-sqlite.html#cb615-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Streamer</span><span class="op">.</span><span class="cn">Settings</span> <span class="kw">do</span></span>
+<span id="cb615-3"><a href="from-postgres-to-sqlite.html#cb615-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Schema</span></span>
+<span id="cb615-4"><a href="from-postgres-to-sqlite.html#cb615-4" tabindex="-1"></a></span>
+<span id="cb615-5"><a href="from-postgres-to-sqlite.html#cb615-5" tabindex="-1"></a>  <span class="co"># remove: alias Hedgehog.Streamer.SettingsStatusEnum</span></span>
+<span id="cb615-6"><a href="from-postgres-to-sqlite.html#cb615-6" tabindex="-1"></a></span>
+<span id="cb615-7"><a href="from-postgres-to-sqlite.html#cb615-7" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb615-8"><a href="from-postgres-to-sqlite.html#cb615-8" tabindex="-1"></a></span>
+<span id="cb615-9"><a href="from-postgres-to-sqlite.html#cb615-9" tabindex="-1"></a>  schema <span class="st">&quot;streamer_settings&quot;</span> <span class="kw">do</span></span>
+<span id="cb615-10"><a href="from-postgres-to-sqlite.html#cb615-10" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb615-11"><a href="from-postgres-to-sqlite.html#cb615-11" tabindex="-1"></a>    field<span class="fu">(</span><span class="va">:status</span>, <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Enum</span>, <span class="va">values:</span> <span class="ot">[</span><span class="va">:on</span>, <span class="va">:off</span><span class="ot">]</span><span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb615-12"><a href="from-postgres-to-sqlite.html#cb615-12" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb615-13"><a href="from-postgres-to-sqlite.html#cb615-13" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb615-14"><a href="from-postgres-to-sqlite.html#cb615-14" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>Next, the naive strategy settings - note that this enum has three values
+including <code>:shutdown</code>:</p>
+<div class="sourceCode" id="cb616"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb616-1"><a href="from-postgres-to-sqlite.html#cb616-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/strategy/naive/settings.ex</span></span>
+<span id="cb616-2"><a href="from-postgres-to-sqlite.html#cb616-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Strategy</span><span class="op">.</span><span class="cn">Naive</span><span class="op">.</span><span class="cn">Settings</span> <span class="kw">do</span></span>
+<span id="cb616-3"><a href="from-postgres-to-sqlite.html#cb616-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Schema</span></span>
+<span id="cb616-4"><a href="from-postgres-to-sqlite.html#cb616-4" tabindex="-1"></a></span>
+<span id="cb616-5"><a href="from-postgres-to-sqlite.html#cb616-5" tabindex="-1"></a>  <span class="co"># remove: alias Hedgehog.Strategy.Naive.SettingsStatusEnum</span></span>
+<span id="cb616-6"><a href="from-postgres-to-sqlite.html#cb616-6" tabindex="-1"></a></span>
+<span id="cb616-7"><a href="from-postgres-to-sqlite.html#cb616-7" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb616-8"><a href="from-postgres-to-sqlite.html#cb616-8" tabindex="-1"></a></span>
+<span id="cb616-9"><a href="from-postgres-to-sqlite.html#cb616-9" tabindex="-1"></a>  schema <span class="st">&quot;naive_strategy_settings&quot;</span> <span class="kw">do</span></span>
+<span id="cb616-10"><a href="from-postgres-to-sqlite.html#cb616-10" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb616-11"><a href="from-postgres-to-sqlite.html#cb616-11" tabindex="-1"></a>    field<span class="fu">(</span><span class="va">:status</span>, <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Enum</span>, <span class="va">values:</span> <span class="ot">[</span><span class="va">:on</span>, <span class="va">:off</span>, <span class="va">:shutdown</span><span class="ot">]</span><span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb616-12"><a href="from-postgres-to-sqlite.html#cb616-12" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb616-13"><a href="from-postgres-to-sqlite.html#cb616-13" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb616-14"><a href="from-postgres-to-sqlite.html#cb616-14" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>And finally, the collector settings:</p>
+<div class="sourceCode" id="cb617"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb617-1"><a href="from-postgres-to-sqlite.html#cb617-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/data/collector/settings.ex</span></span>
+<span id="cb617-2"><a href="from-postgres-to-sqlite.html#cb617-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Data</span><span class="op">.</span><span class="cn">Collector</span><span class="op">.</span><span class="cn">Settings</span> <span class="kw">do</span></span>
+<span id="cb617-3"><a href="from-postgres-to-sqlite.html#cb617-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Schema</span></span>
+<span id="cb617-4"><a href="from-postgres-to-sqlite.html#cb617-4" tabindex="-1"></a></span>
+<span id="cb617-5"><a href="from-postgres-to-sqlite.html#cb617-5" tabindex="-1"></a>  <span class="co"># remove: alias Hedgehog.Data.Collector.SettingsStatusEnum</span></span>
+<span id="cb617-6"><a href="from-postgres-to-sqlite.html#cb617-6" tabindex="-1"></a></span>
+<span id="cb617-7"><a href="from-postgres-to-sqlite.html#cb617-7" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb617-8"><a href="from-postgres-to-sqlite.html#cb617-8" tabindex="-1"></a></span>
+<span id="cb617-9"><a href="from-postgres-to-sqlite.html#cb617-9" tabindex="-1"></a>  schema <span class="st">&quot;collector_settings&quot;</span> <span class="kw">do</span></span>
+<span id="cb617-10"><a href="from-postgres-to-sqlite.html#cb617-10" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb617-11"><a href="from-postgres-to-sqlite.html#cb617-11" tabindex="-1"></a>    field<span class="fu">(</span><span class="va">:status</span>, <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Enum</span>, <span class="va">values:</span> <span class="ot">[</span><span class="va">:on</span>, <span class="va">:off</span><span class="ot">]</span><span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb617-12"><a href="from-postgres-to-sqlite.html#cb617-12" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb617-13"><a href="from-postgres-to-sqlite.html#cb617-13" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb617-14"><a href="from-postgres-to-sqlite.html#cb617-14" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="important-strings-must-become-atoms" class="section level3 hasAnchor" number="23.4.4">
+<h3><span class="header-section-number">23.4.4</span> Important: strings must become atoms<a href="from-postgres-to-sqlite.html#important-strings-must-become-atoms" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>There is one catch. The old <code>ecto_enum</code> library was lenient - it happily accepted
+both strings (<code>"on"</code>) and atoms (<code>:on</code>). <code>Ecto.Enum</code> is stricter: it only
+accepts atoms. Any place in our codebase that passes a string like <code>"on"</code> or
+<code>"off"</code> to an Ecto query or an <code>insert_all</code> call will now raise an <code>Ecto.ChangeError</code> at runtime.</p>
+<p>We need to find and update every occurrence. There are three areas to fix:
+autostart queries, status update functions, and the seed script.</p>
+</div>
+<div id="autostart-queries" class="section level3 hasAnchor" number="23.4.5">
+<h3><span class="header-section-number">23.4.5</span> Autostart queries<a href="from-postgres-to-sqlite.html#autostart-queries" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Three supervisor modules query for settings <code>where: s.status == "on"</code>.
+We need to change the string <code>"on"</code> to the atom <code>:on</code> in each:</p>
+<div class="sourceCode" id="cb618"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb618-1"><a href="from-postgres-to-sqlite.html#cb618-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/streamer/binance/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb618-2"><a href="from-postgres-to-sqlite.html#cb618-2" tabindex="-1"></a>  <span class="kw">def</span> autostart_workers <span class="kw">do</span></span>
+<span id="cb618-3"><a href="from-postgres-to-sqlite.html#cb618-3" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>all<span class="fu">(</span></span>
+<span id="cb618-4"><a href="from-postgres-to-sqlite.html#cb618-4" tabindex="-1"></a>      from<span class="fu">(</span>s <span class="kw">in</span> <span class="cn">Settings</span>,</span>
+<span id="cb618-5"><a href="from-postgres-to-sqlite.html#cb618-5" tabindex="-1"></a>        <span class="va">where:</span> s<span class="op">.</span>status <span class="op">==</span> <span class="va">:on</span>, <span class="co"># &lt;= updated from &quot;on&quot; to :on</span></span>
+<span id="cb618-6"><a href="from-postgres-to-sqlite.html#cb618-6" tabindex="-1"></a>        <span class="va">select:</span> s<span class="op">.</span>symbol</span>
+<span id="cb618-7"><a href="from-postgres-to-sqlite.html#cb618-7" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb618-8"><a href="from-postgres-to-sqlite.html#cb618-8" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb618-9"><a href="from-postgres-to-sqlite.html#cb618-9" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb619"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb619-1"><a href="from-postgres-to-sqlite.html#cb619-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/strategy/naive/dynamic_trader_supervisor.ex</span></span>
+<span id="cb619-2"><a href="from-postgres-to-sqlite.html#cb619-2" tabindex="-1"></a>  <span class="kw">def</span> autostart_workers <span class="kw">do</span></span>
+<span id="cb619-3"><a href="from-postgres-to-sqlite.html#cb619-3" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>all<span class="fu">(</span></span>
+<span id="cb619-4"><a href="from-postgres-to-sqlite.html#cb619-4" tabindex="-1"></a>      from<span class="fu">(</span>s <span class="kw">in</span> <span class="cn">Settings</span>,</span>
+<span id="cb619-5"><a href="from-postgres-to-sqlite.html#cb619-5" tabindex="-1"></a>        <span class="va">where:</span> s<span class="op">.</span>status <span class="op">==</span> <span class="va">:on</span>, <span class="co"># &lt;= updated from &quot;on&quot; to :on</span></span>
+<span id="cb619-6"><a href="from-postgres-to-sqlite.html#cb619-6" tabindex="-1"></a>        <span class="va">select:</span> s<span class="op">.</span>symbol</span>
+<span id="cb619-7"><a href="from-postgres-to-sqlite.html#cb619-7" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb619-8"><a href="from-postgres-to-sqlite.html#cb619-8" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb619-9"><a href="from-postgres-to-sqlite.html#cb619-9" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb620"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb620-1"><a href="from-postgres-to-sqlite.html#cb620-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/data/collector/dynamic_worker_supervisor.ex</span></span>
+<span id="cb620-2"><a href="from-postgres-to-sqlite.html#cb620-2" tabindex="-1"></a>  <span class="kw">def</span> autostart_workers <span class="kw">do</span></span>
+<span id="cb620-3"><a href="from-postgres-to-sqlite.html#cb620-3" tabindex="-1"></a>    <span class="cn">Repo</span><span class="op">.</span>all<span class="fu">(</span></span>
+<span id="cb620-4"><a href="from-postgres-to-sqlite.html#cb620-4" tabindex="-1"></a>      from<span class="fu">(</span>s <span class="kw">in</span> <span class="cn">Settings</span>,</span>
+<span id="cb620-5"><a href="from-postgres-to-sqlite.html#cb620-5" tabindex="-1"></a>        <span class="va">where:</span> s<span class="op">.</span>status <span class="op">==</span> <span class="va">:on</span>, <span class="co"># &lt;= updated from &quot;on&quot; to :on</span></span>
+<span id="cb620-6"><a href="from-postgres-to-sqlite.html#cb620-6" tabindex="-1"></a>        <span class="va">select:</span> s<span class="op">.</span>topic</span>
+<span id="cb620-7"><a href="from-postgres-to-sqlite.html#cb620-7" tabindex="-1"></a>      <span class="fu">)</span></span>
+<span id="cb620-8"><a href="from-postgres-to-sqlite.html#cb620-8" tabindex="-1"></a>    <span class="fu">)</span></span>
+<span id="cb620-9"><a href="from-postgres-to-sqlite.html#cb620-9" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+</div>
+<div id="status-update-functions" class="section level3 hasAnchor" number="23.4.6">
+<h3><span class="header-section-number">23.4.6</span> Status update functions<a href="from-postgres-to-sqlite.html#status-update-functions" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Several modules have <code>update_status/2</code> functions that pass string status values
+when building changesets or structs. We need to update these to atoms as well:</p>
+<div class="sourceCode" id="cb621"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb621-1"><a href="from-postgres-to-sqlite.html#cb621-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/streamer/binance/dynamic_streamer_supervisor.ex</span></span>
+<span id="cb621-2"><a href="from-postgres-to-sqlite.html#cb621-2" tabindex="-1"></a>  <span class="kw">defp</span> update_status<span class="fu">(</span>symbol, status<span class="fu">)</span></span>
+<span id="cb621-3"><a href="from-postgres-to-sqlite.html#cb621-3" tabindex="-1"></a>       <span class="kw">when</span> is_binary<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">and</span> status <span class="kw">in</span> <span class="ot">[</span><span class="va">:on</span>, <span class="va">:off</span><span class="ot">]</span> <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb621-4"><a href="from-postgres-to-sqlite.html#cb621-4" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb622"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb622-1"><a href="from-postgres-to-sqlite.html#cb622-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/data/collector/dynamic_worker_supervisor.ex</span></span>
+<span id="cb622-2"><a href="from-postgres-to-sqlite.html#cb622-2" tabindex="-1"></a>  <span class="kw">defp</span> update_status<span class="fu">(</span>topic, status<span class="fu">)</span></span>
+<span id="cb622-3"><a href="from-postgres-to-sqlite.html#cb622-3" tabindex="-1"></a>       <span class="kw">when</span> is_binary<span class="fu">(</span>topic<span class="fu">)</span> <span class="kw">and</span> status <span class="kw">in</span> <span class="ot">[</span><span class="va">:on</span>, <span class="va">:off</span><span class="ot">]</span> <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb622-4"><a href="from-postgres-to-sqlite.html#cb622-4" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<p>In the naive strategy, the Formula module also references status values:</p>
+<div class="sourceCode" id="cb623"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb623-1"><a href="from-postgres-to-sqlite.html#cb623-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/strategy/naive/formula.ex</span></span>
+<span id="cb623-2"><a href="from-postgres-to-sqlite.html#cb623-2" tabindex="-1"></a>  <span class="kw">def</span> update_status<span class="fu">(</span>symbol, status<span class="fu">)</span></span>
+<span id="cb623-3"><a href="from-postgres-to-sqlite.html#cb623-3" tabindex="-1"></a>      <span class="kw">when</span> is_binary<span class="fu">(</span>symbol<span class="fu">)</span> <span class="kw">and</span> status <span class="kw">in</span> <span class="ot">[</span><span class="va">:on</span>, <span class="va">:off</span>, <span class="va">:shutdown</span><span class="ot">]</span> <span class="kw">do</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb623-4"><a href="from-postgres-to-sqlite.html#cb623-4" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<p>We also need to update all the <em>callers</em> of these functions. Search for any
+call sites that pass string arguments like <code>update_status(symbol, "on")</code> and
+replace them with atoms:</p>
+<ul>
+<li><code>update_status(..., "on")</code> becomes <code>update_status(..., :on)</code></li>
+<li><code>update_status(..., "off")</code> becomes <code>update_status(..., :off)</code></li>
+<li><code>update_status(..., "shutdown")</code> becomes <code>update_status(..., :shutdown)</code></li>
+</ul>
+<p>These calls appear in <code>start_worker</code>/<code>stop_worker</code> and <code>start_child</code>/<code>stop_child</code>
+functions across the three dynamic supervisor modules and the formula module.</p>
+</div>
+<div id="updating-the-seed-script" class="section level3 hasAnchor" number="23.4.7">
+<h3><span class="header-section-number">23.4.7</span> Updating the seed script<a href="from-postgres-to-sqlite.html#updating-the-seed-script" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The seeding script in <code>/priv/repo/seeds.exs</code> also uses string values for status
+fields inside the maps passed to <code>Repo.insert_all</code>. Since <code>Ecto.Enum</code> requires
+atoms, we need to update both the streamer and naive settings sections:</p>
+<div class="sourceCode" id="cb624"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb624-1"><a href="from-postgres-to-sqlite.html#cb624-1" tabindex="-1"></a><span class="co"># /priv/repo/seeds.exs</span></span>
+<span id="cb624-2"><a href="from-postgres-to-sqlite.html#cb624-2" tabindex="-1"></a><span class="co"># In the streamer base_settings map:</span></span>
+<span id="cb624-3"><a href="from-postgres-to-sqlite.html#cb624-3" tabindex="-1"></a>base_settings <span class="op">=</span> %<span class="fu">{</span></span>
+<span id="cb624-4"><a href="from-postgres-to-sqlite.html#cb624-4" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb624-5"><a href="from-postgres-to-sqlite.html#cb624-5" tabindex="-1"></a>  <span class="va">status:</span> <span class="va">:off</span>, <span class="co"># &lt;= updated from &quot;off&quot; to :off</span></span>
+<span id="cb624-6"><a href="from-postgres-to-sqlite.html#cb624-6" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb624-7"><a href="from-postgres-to-sqlite.html#cb624-7" tabindex="-1"></a><span class="fu">}</span></span>
+<span id="cb624-8"><a href="from-postgres-to-sqlite.html#cb624-8" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb624-9"><a href="from-postgres-to-sqlite.html#cb624-9" tabindex="-1"></a><span class="co"># In the naive strategy base_settings map:</span></span>
+<span id="cb624-10"><a href="from-postgres-to-sqlite.html#cb624-10" tabindex="-1"></a>base_settings <span class="op">=</span> %<span class="fu">{</span></span>
+<span id="cb624-11"><a href="from-postgres-to-sqlite.html#cb624-11" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb624-12"><a href="from-postgres-to-sqlite.html#cb624-12" tabindex="-1"></a>  <span class="va">status:</span> <span class="va">:off</span>, <span class="co"># &lt;= updated from &quot;off&quot; to :off</span></span>
+<span id="cb624-13"><a href="from-postgres-to-sqlite.html#cb624-13" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb624-14"><a href="from-postgres-to-sqlite.html#cb624-14" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+</div>
+</div>
+<div id="updating-migrations-for-sqlite-compatibility" class="section level2 hasAnchor" number="23.5">
+<h2><span class="header-section-number">23.5</span> Updating migrations for SQLite compatibility<a href="from-postgres-to-sqlite.html#updating-migrations-for-sqlite-compatibility" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Our existing migrations use two Postgres-specific features that SQLite doesn’t
+support: custom enum types (via <code>create_type()</code>) and <code>ALTER TYPE</code> statements.
+We need to rewrite them to use plain <code>:string</code> columns instead.</p>
+<div id="streamer-settings-migration" class="section level3 hasAnchor" number="23.5.1">
+<h3><span class="header-section-number">23.5.1</span> Streamer settings migration<a href="from-postgres-to-sqlite.html#streamer-settings-migration" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The original migration calls <code>SettingsStatusEnum.create_type()</code> and references
+<code>SettingsStatusEnum.type()</code>. We’ll replace both with a simple <code>:string</code> column:</p>
+<div class="sourceCode" id="cb625"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb625-1"><a href="from-postgres-to-sqlite.html#cb625-1" tabindex="-1"></a><span class="co"># /priv/repo/migrations/20210203184805_create_streamer_settings.exs</span></span>
+<span id="cb625-2"><a href="from-postgres-to-sqlite.html#cb625-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span><span class="cn">Migrations</span><span class="op">.</span><span class="cn">CreateStreamerSettings</span> <span class="kw">do</span></span>
+<span id="cb625-3"><a href="from-postgres-to-sqlite.html#cb625-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Migration</span></span>
+<span id="cb625-4"><a href="from-postgres-to-sqlite.html#cb625-4" tabindex="-1"></a></span>
+<span id="cb625-5"><a href="from-postgres-to-sqlite.html#cb625-5" tabindex="-1"></a>  <span class="co"># remove: alias Hedgehog.Streamer.SettingsStatusEnum</span></span>
+<span id="cb625-6"><a href="from-postgres-to-sqlite.html#cb625-6" tabindex="-1"></a></span>
+<span id="cb625-7"><a href="from-postgres-to-sqlite.html#cb625-7" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
+<span id="cb625-8"><a href="from-postgres-to-sqlite.html#cb625-8" tabindex="-1"></a>    <span class="co"># remove: SettingsStatusEnum.create_type()</span></span>
+<span id="cb625-9"><a href="from-postgres-to-sqlite.html#cb625-9" tabindex="-1"></a></span>
+<span id="cb625-10"><a href="from-postgres-to-sqlite.html#cb625-10" tabindex="-1"></a>    create table<span class="fu">(</span><span class="va">:streamer_settings</span>, <span class="va">primary_key:</span> <span class="cn">false</span><span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb625-11"><a href="from-postgres-to-sqlite.html#cb625-11" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb625-12"><a href="from-postgres-to-sqlite.html#cb625-12" tabindex="-1"></a>      add<span class="fu">(</span><span class="va">:status</span>, <span class="va">:string</span>, <span class="va">default:</span> <span class="st">&quot;off&quot;</span>, <span class="va">null:</span> <span class="cn">false</span><span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb625-13"><a href="from-postgres-to-sqlite.html#cb625-13" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb625-14"><a href="from-postgres-to-sqlite.html#cb625-14" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb625-15"><a href="from-postgres-to-sqlite.html#cb625-15" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb625-16"><a href="from-postgres-to-sqlite.html#cb625-16" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb625-17"><a href="from-postgres-to-sqlite.html#cb625-17" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="naive-strategy-settings-migration" class="section level3 hasAnchor" number="23.5.2">
+<h3><span class="header-section-number">23.5.2</span> Naive strategy settings migration<a href="from-postgres-to-sqlite.html#naive-strategy-settings-migration" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Same pattern - remove the enum type creation and use <code>:string</code>:</p>
+<div class="sourceCode" id="cb626"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb626-1"><a href="from-postgres-to-sqlite.html#cb626-1" tabindex="-1"></a><span class="co"># /priv/repo/migrations/20210202223209_create_naive_strategy_settings.exs</span></span>
+<span id="cb626-2"><a href="from-postgres-to-sqlite.html#cb626-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span><span class="cn">Migrations</span><span class="op">.</span><span class="cn">CreateNaiveStrategySettings</span> <span class="kw">do</span></span>
+<span id="cb626-3"><a href="from-postgres-to-sqlite.html#cb626-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Migration</span></span>
+<span id="cb626-4"><a href="from-postgres-to-sqlite.html#cb626-4" tabindex="-1"></a></span>
+<span id="cb626-5"><a href="from-postgres-to-sqlite.html#cb626-5" tabindex="-1"></a>  <span class="co"># remove: alias Hedgehog.Strategy.Naive.SettingsStatusEnum</span></span>
+<span id="cb626-6"><a href="from-postgres-to-sqlite.html#cb626-6" tabindex="-1"></a></span>
+<span id="cb626-7"><a href="from-postgres-to-sqlite.html#cb626-7" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
+<span id="cb626-8"><a href="from-postgres-to-sqlite.html#cb626-8" tabindex="-1"></a>    <span class="co"># remove: SettingsStatusEnum.create_type()</span></span>
+<span id="cb626-9"><a href="from-postgres-to-sqlite.html#cb626-9" tabindex="-1"></a></span>
+<span id="cb626-10"><a href="from-postgres-to-sqlite.html#cb626-10" tabindex="-1"></a>    create table<span class="fu">(</span><span class="va">:naive_strategy_settings</span>, <span class="va">primary_key:</span> <span class="cn">false</span><span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb626-11"><a href="from-postgres-to-sqlite.html#cb626-11" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb626-12"><a href="from-postgres-to-sqlite.html#cb626-12" tabindex="-1"></a>      add<span class="fu">(</span><span class="va">:status</span>, <span class="va">:string</span>, <span class="va">default:</span> <span class="st">&quot;off&quot;</span>, <span class="va">null:</span> <span class="cn">false</span><span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb626-13"><a href="from-postgres-to-sqlite.html#cb626-13" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb626-14"><a href="from-postgres-to-sqlite.html#cb626-14" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb626-15"><a href="from-postgres-to-sqlite.html#cb626-15" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb626-16"><a href="from-postgres-to-sqlite.html#cb626-16" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb626-17"><a href="from-postgres-to-sqlite.html#cb626-17" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+</div>
+<div id="naive-strategy-status-update-migration" class="section level3 hasAnchor" number="23.5.3">
+<h3><span class="header-section-number">23.5.3</span> Naive strategy status update migration<a href="from-postgres-to-sqlite.html#naive-strategy-status-update-migration" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The second naive migration used <code>ALTER TYPE</code> to add the <code>:shutdown</code> value to the
+Postgres enum. Since we’re now storing statuses as plain strings, there’s no type
+to alter - the column already accepts any string value, and <code>Ecto.Enum</code> handles
+validation in the application layer.</p>
+<p>Since we’re working from a clean database(SQLite is brand new), we can safely
+remove this migration entirely:</p>
+<div class="sourceCode" id="cb627"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb627-1"><a href="from-postgres-to-sqlite.html#cb627-1" tabindex="-1"></a><span class="fu">rm</span> priv/repo/migrations/20210205232303_update_naive_strategy_settings_status.exs</span></code></pre></div>
+</div>
+<div id="collector-settings-migration" class="section level3 hasAnchor" number="23.5.4">
+<h3><span class="header-section-number">23.5.4</span> Collector settings migration<a href="from-postgres-to-sqlite.html#collector-settings-migration" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="sourceCode" id="cb628"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb628-1"><a href="from-postgres-to-sqlite.html#cb628-1" tabindex="-1"></a><span class="co"># /priv/repo/migrations/20210227230123_create_collector_settings.exs</span></span>
+<span id="cb628-2"><a href="from-postgres-to-sqlite.html#cb628-2" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span><span class="op">.</span><span class="cn">Migrations</span><span class="op">.</span><span class="cn">CreateCollectorSettings</span> <span class="kw">do</span></span>
+<span id="cb628-3"><a href="from-postgres-to-sqlite.html#cb628-3" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Ecto</span><span class="op">.</span><span class="cn">Migration</span></span>
+<span id="cb628-4"><a href="from-postgres-to-sqlite.html#cb628-4" tabindex="-1"></a></span>
+<span id="cb628-5"><a href="from-postgres-to-sqlite.html#cb628-5" tabindex="-1"></a>  <span class="co"># remove: alias Hedgehog.Data.Collector.SettingsStatusEnum</span></span>
+<span id="cb628-6"><a href="from-postgres-to-sqlite.html#cb628-6" tabindex="-1"></a></span>
+<span id="cb628-7"><a href="from-postgres-to-sqlite.html#cb628-7" tabindex="-1"></a>  <span class="kw">def</span> change <span class="kw">do</span></span>
+<span id="cb628-8"><a href="from-postgres-to-sqlite.html#cb628-8" tabindex="-1"></a>    <span class="co"># remove: SettingsStatusEnum.create_type()</span></span>
+<span id="cb628-9"><a href="from-postgres-to-sqlite.html#cb628-9" tabindex="-1"></a></span>
+<span id="cb628-10"><a href="from-postgres-to-sqlite.html#cb628-10" tabindex="-1"></a>    create table<span class="fu">(</span><span class="va">:collector_settings</span>, <span class="va">primary_key:</span> <span class="cn">false</span><span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb628-11"><a href="from-postgres-to-sqlite.html#cb628-11" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb628-12"><a href="from-postgres-to-sqlite.html#cb628-12" tabindex="-1"></a>      add<span class="fu">(</span><span class="va">:status</span>, <span class="va">:string</span>, <span class="va">default:</span> <span class="st">&quot;off&quot;</span>, <span class="va">null:</span> <span class="cn">false</span><span class="fu">)</span> <span class="co"># &lt;= updated</span></span>
+<span id="cb628-13"><a href="from-postgres-to-sqlite.html#cb628-13" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb628-14"><a href="from-postgres-to-sqlite.html#cb628-14" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb628-15"><a href="from-postgres-to-sqlite.html#cb628-15" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb628-16"><a href="from-postgres-to-sqlite.html#cb628-16" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb628-17"><a href="from-postgres-to-sqlite.html#cb628-17" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>Let’s verify the script works by running the full setup after fetching
+our new dependencies:</p>
+<div class="sourceCode" id="cb629"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb629-1"><a href="from-postgres-to-sqlite.html#cb629-1" tabindex="-1"></a><span class="ex">mix</span> deps.get</span>
+<span id="cb629-2"><a href="from-postgres-to-sqlite.html#cb629-2" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb629-3"><a href="from-postgres-to-sqlite.html#cb629-3" tabindex="-1"></a><span class="ex">mix</span> ecto.create</span>
+<span id="cb629-4"><a href="from-postgres-to-sqlite.html#cb629-4" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb629-5"><a href="from-postgres-to-sqlite.html#cb629-5" tabindex="-1"></a><span class="ex">mix</span> ecto.migrate</span>
+<span id="cb629-6"><a href="from-postgres-to-sqlite.html#cb629-6" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb629-7"><a href="from-postgres-to-sqlite.html#cb629-7" tabindex="-1"></a><span class="ex">mix</span> run priv/repo/seeds.exs</span>
+<span id="cb629-8"><a href="from-postgres-to-sqlite.html#cb629-8" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb629-9"><a href="from-postgres-to-sqlite.html#cb629-9" tabindex="-1"></a><span class="ex">[info]</span> Inserting default streamer settings for symbols</span>
+<span id="cb629-10"><a href="from-postgres-to-sqlite.html#cb629-10" tabindex="-1"></a><span class="ex">[info]</span> Inserted batch of 1000 streamer settings</span>
+<span id="cb629-11"><a href="from-postgres-to-sqlite.html#cb629-11" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb629-12"><a href="from-postgres-to-sqlite.html#cb629-12" tabindex="-1"></a><span class="ex">[info]</span> Inserting default naive strategy settings for symbols</span>
+<span id="cb629-13"><a href="from-postgres-to-sqlite.html#cb629-13" tabindex="-1"></a><span class="ex">[info]</span> Inserted batch of 1000 naive settings</span>
+<span id="cb629-14"><a href="from-postgres-to-sqlite.html#cb629-14" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
+<p>Note: If <code>mix ecto.create</code> complains about an existing database, that’s just because
+SQLite creates the file automatically. You can safely ignore this or run
+<code>mix ecto.drop</code> first to start fresh.</p>
+</div>
+</div>
+<div id="testing-1" class="section level2 hasAnchor" number="23.6">
+<h2><span class="header-section-number">23.6</span> Testing<a href="from-postgres-to-sqlite.html#testing-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Let’s run the full test suite to make sure the migration didn’t break anything:</p>
+<div class="sourceCode" id="cb630"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb630-1"><a href="from-postgres-to-sqlite.html#cb630-1" tabindex="-1"></a><span class="ex">mix</span> test.unit</span>
+<span id="cb630-2"><a href="from-postgres-to-sqlite.html#cb630-2" tabindex="-1"></a><span class="ex">..........</span></span>
+<span id="cb630-3"><a href="from-postgres-to-sqlite.html#cb630-3" tabindex="-1"></a><span class="ex">Finished</span> in 0.1 seconds <span class="er">(</span><span class="ex">0.1s</span> async, 0.00s sync<span class="kw">)</span></span>
+<span id="cb630-4"><a href="from-postgres-to-sqlite.html#cb630-4" tabindex="-1"></a><span class="ex">10</span> tests, 0 failures <span class="er">(</span><span class="ex">6</span> excluded<span class="kw">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb631"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb631-1"><a href="from-postgres-to-sqlite.html#cb631-1" tabindex="-1"></a><span class="va">MIX_ENV</span><span class="op">=</span>integration <span class="ex">mix</span> test.integration</span>
+<span id="cb631-2"><a href="from-postgres-to-sqlite.html#cb631-2" tabindex="-1"></a><span class="ex">..</span></span>
+<span id="cb631-3"><a href="from-postgres-to-sqlite.html#cb631-3" tabindex="-1"></a><span class="ex">Finished</span> in 7.0 seconds <span class="er">(</span><span class="ex">0.05s</span> async, 7.0s sync<span class="kw">)</span></span>
+<span id="cb631-4"><a href="from-postgres-to-sqlite.html#cb631-4" tabindex="-1"></a><span class="ex">1</span> test, 0 failures <span class="er">(</span><span class="ex">15</span> excluded<span class="kw">)</span></span></code></pre></div>
+<p>And a manual smoke test to verify the full trading cycle still works:</p>
+<div class="sourceCode" id="cb632"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb632-1"><a href="from-postgres-to-sqlite.html#cb632-1" tabindex="-1"></a><span class="ex">mix</span> ecto.drop</span>
+<span id="cb632-2"><a href="from-postgres-to-sqlite.html#cb632-2" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-3"><a href="from-postgres-to-sqlite.html#cb632-3" tabindex="-1"></a><span class="ex">mix</span> setup</span>
+<span id="cb632-4"><a href="from-postgres-to-sqlite.html#cb632-4" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-5"><a href="from-postgres-to-sqlite.html#cb632-5" tabindex="-1"></a><span class="ex">iex</span> <span class="at">-S</span> mix phx.server</span>
+<span id="cb632-6"><a href="from-postgres-to-sqlite.html#cb632-6" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-7"><a href="from-postgres-to-sqlite.html#cb632-7" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> alias <span class="ex">Hedgehog.Streamer.Binance</span></span>
+<span id="cb632-8"><a href="from-postgres-to-sqlite.html#cb632-8" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-9"><a href="from-postgres-to-sqlite.html#cb632-9" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> alias <span class="ex">Hedgehog.Strategy.Naive</span></span>
+<span id="cb632-10"><a href="from-postgres-to-sqlite.html#cb632-10" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-11"><a href="from-postgres-to-sqlite.html#cb632-11" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> alias <span class="ex">Hedgehog.Data.Collector</span></span>
+<span id="cb632-12"><a href="from-postgres-to-sqlite.html#cb632-12" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-13"><a href="from-postgres-to-sqlite.html#cb632-13" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">4</span><span class="kw">)</span><span class="op">&gt;</span> Collector.start_storing<span class="kw">(</span><span class="st">&quot;TRADE_EVENTS&quot;</span><span class="ex">,</span> <span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb632-14"><a href="from-postgres-to-sqlite.html#cb632-14" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-15"><a href="from-postgres-to-sqlite.html#cb632-15" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">5</span><span class="kw">)</span><span class="op">&gt;</span> Collector.start_storing<span class="kw">(</span><span class="st">&quot;ORDERS&quot;</span><span class="ex">,</span> <span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb632-16"><a href="from-postgres-to-sqlite.html#cb632-16" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-17"><a href="from-postgres-to-sqlite.html#cb632-17" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">6</span><span class="kw">)</span><span class="op">&gt;</span> Binance.start_streaming<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb632-18"><a href="from-postgres-to-sqlite.html#cb632-18" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-19"><a href="from-postgres-to-sqlite.html#cb632-19" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">7</span><span class="kw">)</span><span class="op">&gt;</span> Naive.start_trading<span class="kw">(</span><span class="st">&quot;XRPUSDT&quot;</span><span class="kw">)</span></span>
+<span id="cb632-20"><a href="from-postgres-to-sqlite.html#cb632-20" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-21"><a href="from-postgres-to-sqlite.html#cb632-21" tabindex="-1"></a><span class="ex">[info]</span> Position <span class="er">(</span><span class="ex">XRPUSDT/1770670753113</span><span class="kw">)</span><span class="bu">:</span> Placing a BUY order @ 1.455, quantity: 137.40000000</span>
+<span id="cb632-22"><a href="from-postgres-to-sqlite.html#cb632-22" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-23"><a href="from-postgres-to-sqlite.html#cb632-23" tabindex="-1"></a><span class="ex">[info]</span> Position <span class="er">(</span><span class="ex">XRPUSDT/1770670753113</span><span class="kw">)</span><span class="bu">:</span> The BUY order is now filled</span>
+<span id="cb632-24"><a href="from-postgres-to-sqlite.html#cb632-24" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-25"><a href="from-postgres-to-sqlite.html#cb632-25" tabindex="-1"></a><span class="ex">[info]</span> Position <span class="er">(</span><span class="ex">XRPUSDT/1770670753113</span><span class="kw">)</span><span class="bu">:</span> Placing a SELL order @ 1.4561, quantity: 137.40000000</span>
+<span id="cb632-26"><a href="from-postgres-to-sqlite.html#cb632-26" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb632-27"><a href="from-postgres-to-sqlite.html#cb632-27" tabindex="-1"></a><span class="ex">[info]</span> Position <span class="er">(</span><span class="ex">XRPUSDT/1770670753113</span><span class="kw">)</span><span class="bu">:</span> The SELL order is now filled</span></code></pre></div>
+<p>Everything works exactly as before - streaming, trading, collecting - but now
+there’s no Docker container running in the background. The database is just a
+file sitting in our project root:</p>
+<div class="sourceCode" id="cb633"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb633-1"><a href="from-postgres-to-sqlite.html#cb633-1" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> hedgehog_dev.db<span class="pp">*</span></span>
+<span id="cb633-2"><a href="from-postgres-to-sqlite.html#cb633-2" tabindex="-1"></a><span class="ex">-rw-r--r--</span> 1 user user 442368 Feb 11 14:23 hedgehog_dev.db</span>
+<span id="cb633-3"><a href="from-postgres-to-sqlite.html#cb633-3" tabindex="-1"></a><span class="ex">-rw-r--r--</span> 1 user user  32768 Feb 11 14:23 hedgehog_dev.db-shm</span>
+<span id="cb633-4"><a href="from-postgres-to-sqlite.html#cb633-4" tabindex="-1"></a><span class="ex">-rw-r--r--</span> 1 user user 524288 Feb 11 14:23 hedgehog_dev.db-wal</span></code></pre></div>
+</div>
+<div id="backing-up-the-database" class="section level2 hasAnchor" number="23.7">
+<h2><span class="header-section-number">23.7</span> Backing up the database<a href="from-postgres-to-sqlite.html#backing-up-the-database" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>With Postgres, backups were someone else’s problem - your hosting provider, a cron job
+running <code>pg_dump</code>, or Docker volume snapshots. With SQLite, the database is a file sitting
+in our project root. That simplicity is the whole point - but it also means backups are
+entirely our responsibility.</p>
+<p>You might think <code>cp hedgehog_dev.db hedgehog_backup.db</code> would do the trick, but it
+won’t. If the application is running and a write is in progress, a raw file copy can
+produce a corrupted backup. SQLite’s WAL mode makes this even trickier: the database
+state is split across the main <code>.db</code> file and the <code>-wal</code> file, and copying them at
+different moments can produce an inconsistent snapshot. Even if you could copy them
+atomically, a local backup on the same disk isn’t really a backup - if the disk fails,
+you lose both.</p>
+<p>SQLite does provide safe one-shot backup mechanisms(<code>VACUUM INTO</code> or the <code>.backup</code>
+command), but those produce point-in-time snapshots. For a trading bot where every
+executed trade matters, losing hours of data to a periodic snapshot is not acceptable.
+What we need is continuous replication to remote storage.</p>
+<p>Litestream does exactly this. It monitors the SQLite WAL file and streams every change
+to S3-compatible storage in near-real-time - replication lag is measured in seconds.</p>
+<p>The <code>litestream</code> Hex package wraps the Litestream binary in a supervised GenServer. It
+downloads the binary automatically on first start, manages it as an Erlang port, and
+integrates cleanly with our supervision tree. Let’s set it up.</p>
+<div id="adding-the-dependency" class="section level3 hasAnchor" number="23.7.1">
+<h3><span class="header-section-number">23.7.1</span> Adding the dependency<a href="from-postgres-to-sqlite.html#adding-the-dependency" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="sourceCode" id="cb634"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb634-1"><a href="from-postgres-to-sqlite.html#cb634-1" tabindex="-1"></a><span class="co"># /mix.exs</span></span>
+<span id="cb634-2"><a href="from-postgres-to-sqlite.html#cb634-2" tabindex="-1"></a>  <span class="kw">defp</span> deps <span class="kw">do</span></span>
+<span id="cb634-3"><a href="from-postgres-to-sqlite.html#cb634-3" tabindex="-1"></a>    <span class="ot">[</span></span>
+<span id="cb634-4"><a href="from-postgres-to-sqlite.html#cb634-4" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb634-5"><a href="from-postgres-to-sqlite.html#cb634-5" tabindex="-1"></a>      <span class="fu">{</span><span class="va">:litestream</span>, <span class="st">&quot;~&gt; 0.4&quot;</span><span class="fu">}</span>, <span class="co"># &lt;= added</span></span>
+<span id="cb634-6"><a href="from-postgres-to-sqlite.html#cb634-6" tabindex="-1"></a>      <span class="op">...</span></span>
+<span id="cb634-7"><a href="from-postgres-to-sqlite.html#cb634-7" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb634-8"><a href="from-postgres-to-sqlite.html#cb634-8" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>Fetch the new dependency:</p>
+<div class="sourceCode" id="cb635"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb635-1"><a href="from-postgres-to-sqlite.html#cb635-1" tabindex="-1"></a><span class="ex">mix</span> deps.get</span>
+<span id="cb635-2"><a href="from-postgres-to-sqlite.html#cb635-2" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
+</div>
+<div id="configuring-litestream" class="section level3 hasAnchor" number="23.7.2">
+<h3><span class="header-section-number">23.7.2</span> Configuring Litestream<a href="from-postgres-to-sqlite.html#configuring-litestream" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Litestream needs to know which Repo to back up, where to replicate it, and how to
+authenticate. We’ll configure these per environment.</p>
+<p>For development and test, we disable Litestream entirely - there’s no reason to
+replicate a throwaway dev database to remote storage:</p>
+<div class="sourceCode" id="cb636"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb636-1"><a href="from-postgres-to-sqlite.html#cb636-1" tabindex="-1"></a><span class="co"># /config/dev.exs</span></span>
+<span id="cb636-2"><a href="from-postgres-to-sqlite.html#cb636-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Litestream</span>, <span class="va">enabled:</span> <span class="cn">false</span></span></code></pre></div>
+<div class="sourceCode" id="cb637"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb637-1"><a href="from-postgres-to-sqlite.html#cb637-1" tabindex="-1"></a><span class="co"># /config/test.exs</span></span>
+<span id="cb637-2"><a href="from-postgres-to-sqlite.html#cb637-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Litestream</span>, <span class="va">enabled:</span> <span class="cn">false</span></span></code></pre></div>
+<div class="sourceCode" id="cb638"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb638-1"><a href="from-postgres-to-sqlite.html#cb638-1" tabindex="-1"></a><span class="co"># /config/integration.exs</span></span>
+<span id="cb638-2"><a href="from-postgres-to-sqlite.html#cb638-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Litestream</span>, <span class="va">enabled:</span> <span class="cn">false</span></span></code></pre></div>
+<p>For production, the credentials come from environment variables. Add the following
+inside the existing <code>if config_env() == :prod do</code> block in <code>runtime.exs</code>:</p>
+<div class="sourceCode" id="cb639"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb639-1"><a href="from-postgres-to-sqlite.html#cb639-1" tabindex="-1"></a><span class="co"># /config/runtime.exs (inside the :prod block)</span></span>
+<span id="cb639-2"><a href="from-postgres-to-sqlite.html#cb639-2" tabindex="-1"></a>  replica_url <span class="op">=</span></span>
+<span id="cb639-3"><a href="from-postgres-to-sqlite.html#cb639-3" tabindex="-1"></a>    <span class="cn">System</span><span class="op">.</span>get_env<span class="fu">(</span><span class="st">&quot;LITESTREAM_REPLICA_URL&quot;</span><span class="fu">)</span> <span class="op">||</span></span>
+<span id="cb639-4"><a href="from-postgres-to-sqlite.html#cb639-4" tabindex="-1"></a>      <span class="cf">raise</span> <span class="st">&quot;&quot;&quot;</span></span>
+<span id="cb639-5"><a href="from-postgres-to-sqlite.html#cb639-5" tabindex="-1"></a><span class="st">      environment variable LITESTREAM_REPLICA_URL is missing.</span></span>
+<span id="cb639-6"><a href="from-postgres-to-sqlite.html#cb639-6" tabindex="-1"></a><span class="st">      For example: s3://hedgehog/db?endpoint=&lt;account-id&gt;.r2.cloudflarestorage.com</span></span>
+<span id="cb639-7"><a href="from-postgres-to-sqlite.html#cb639-7" tabindex="-1"></a><span class="st">      &quot;&quot;&quot;</span></span>
+<span id="cb639-8"><a href="from-postgres-to-sqlite.html#cb639-8" tabindex="-1"></a></span>
+<span id="cb639-9"><a href="from-postgres-to-sqlite.html#cb639-9" tabindex="-1"></a>  config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Litestream</span>,</span>
+<span id="cb639-10"><a href="from-postgres-to-sqlite.html#cb639-10" tabindex="-1"></a>    <span class="va">enabled:</span> <span class="cn">true</span>,</span>
+<span id="cb639-11"><a href="from-postgres-to-sqlite.html#cb639-11" tabindex="-1"></a>    <span class="va">repo:</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb639-12"><a href="from-postgres-to-sqlite.html#cb639-12" tabindex="-1"></a>    <span class="va">replica_url:</span> replica_url,</span>
+<span id="cb639-13"><a href="from-postgres-to-sqlite.html#cb639-13" tabindex="-1"></a>    <span class="va">access_key_id:</span> <span class="cn">System</span><span class="op">.</span>fetch_env!<span class="fu">(</span><span class="st">&quot;LITESTREAM_ACCESS_KEY_ID&quot;</span><span class="fu">)</span>,</span>
+<span id="cb639-14"><a href="from-postgres-to-sqlite.html#cb639-14" tabindex="-1"></a>    <span class="va">secret_access_key:</span> <span class="cn">System</span><span class="op">.</span>fetch_env!<span class="fu">(</span><span class="st">&quot;LITESTREAM_SECRET_ACCESS_KEY&quot;</span><span class="fu">)</span></span></code></pre></div>
+<p><strong>Note:</strong> We use Cloudflare R2 in this chapter, but Litestream works with any S3-compatible
+storage. Backblaze B2, DigitalOcean Spaces, MinIO, and AWS S3 all work - just adjust the
+<code>LITESTREAM_REPLICA_URL</code> endpoint accordingly.</p>
+</div>
+<div id="adding-to-the-supervision-tree" class="section level3 hasAnchor" number="23.7.3">
+<h3><span class="header-section-number">23.7.3</span> Adding to the supervision tree<a href="from-postgres-to-sqlite.html#adding-to-the-supervision-tree" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>We want Litestream to start automatically in production and stay out of the way in
+development. Update <code>application.ex</code> to conditionally include it:</p>
+<div class="sourceCode" id="cb640"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb640-1"><a href="from-postgres-to-sqlite.html#cb640-1" tabindex="-1"></a><span class="co"># /lib/hedgehog/application.ex</span></span>
+<span id="cb640-2"><a href="from-postgres-to-sqlite.html#cb640-2" tabindex="-1"></a>  <span class="kw">def</span> start<span class="fu">(</span>_type, _args<span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb640-3"><a href="from-postgres-to-sqlite.html#cb640-3" tabindex="-1"></a>    children <span class="op">=</span></span>
+<span id="cb640-4"><a href="from-postgres-to-sqlite.html#cb640-4" tabindex="-1"></a>      <span class="ot">[</span></span>
+<span id="cb640-5"><a href="from-postgres-to-sqlite.html#cb640-5" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb640-6"><a href="from-postgres-to-sqlite.html#cb640-6" tabindex="-1"></a>      <span class="ot">]</span> <span class="op">++</span> litestream_children<span class="fu">()</span></span>
+<span id="cb640-7"><a href="from-postgres-to-sqlite.html#cb640-7" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb640-8"><a href="from-postgres-to-sqlite.html#cb640-8" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb640-9"><a href="from-postgres-to-sqlite.html#cb640-9" tabindex="-1"></a></span>
+<span id="cb640-10"><a href="from-postgres-to-sqlite.html#cb640-10" tabindex="-1"></a>  <span class="kw">defp</span> litestream_children <span class="kw">do</span></span>
+<span id="cb640-11"><a href="from-postgres-to-sqlite.html#cb640-11" tabindex="-1"></a>    config <span class="op">=</span> <span class="cn">Application</span><span class="op">.</span>get_env<span class="fu">(</span><span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Litestream</span>, <span class="ot">[]</span><span class="fu">)</span></span>
+<span id="cb640-12"><a href="from-postgres-to-sqlite.html#cb640-12" tabindex="-1"></a></span>
+<span id="cb640-13"><a href="from-postgres-to-sqlite.html#cb640-13" tabindex="-1"></a>    <span class="cf">if</span> <span class="cn">Keyword</span><span class="op">.</span>get<span class="fu">(</span>config, <span class="va">:enabled</span>, <span class="cn">false</span><span class="fu">)</span> <span class="kw">do</span></span>
+<span id="cb640-14"><a href="from-postgres-to-sqlite.html#cb640-14" tabindex="-1"></a>      opts <span class="op">=</span> <span class="cn">Keyword</span><span class="op">.</span>drop<span class="fu">(</span>config, <span class="ot">[</span><span class="va">:enabled</span><span class="ot">]</span><span class="fu">)</span></span>
+<span id="cb640-15"><a href="from-postgres-to-sqlite.html#cb640-15" tabindex="-1"></a>      <span class="ot">[</span><span class="fu">{</span><span class="cn">Litestream</span>, opts<span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb640-16"><a href="from-postgres-to-sqlite.html#cb640-16" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb640-17"><a href="from-postgres-to-sqlite.html#cb640-17" tabindex="-1"></a>      <span class="ot">[]</span></span>
+<span id="cb640-18"><a href="from-postgres-to-sqlite.html#cb640-18" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb640-19"><a href="from-postgres-to-sqlite.html#cb640-19" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
+<p>The <code>litestream_children/0</code> function returns an empty list when backups are disabled,
+so the Litestream GenServer simply isn’t started in dev or test. In production, it starts
+right after the Repo and begins replicating immediately.</p>
+<p>When the GenServer starts for the first time, it downloads the Litestream binary
+appropriate for your platform. Subsequent starts use the cached binary. Once running,
+Litestream watches the WAL file and continuously pushes changes to your S3 bucket.
+You don’t need to think about it again - it just runs in the background as a supervised
+process, and the BEAM restarts it if it crashes.</p>
+</div>
+<div id="setting-up-the-storage-bucket" class="section level3 hasAnchor" number="23.7.4">
+<h3><span class="header-section-number">23.7.4</span> Setting up the storage bucket<a href="from-postgres-to-sqlite.html#setting-up-the-storage-bucket" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Before deploying, you’ll need an S3-compatible storage bucket. We’ll use Cloudflare R2
+because the setup is minimal and the free tier is generous(10 GB storage, zero egress
+fees). Any S3-compatible service works - Backblaze B2, DigitalOcean Spaces, MinIO - but
+R2 requires the least ceremony to get started.</p>
+<p>Litestream speaks the S3 protocol, so it needs three things from your storage provider:
+an <strong>endpoint</strong>(where to connect), an <strong>Access Key ID</strong> and a <strong>Secret Access Key</strong>(how
+to authenticate). For Cloudflare R2, you’ll need to:</p>
+<ol style="list-style-type: decimal">
+<li>Create a storage bucket - this is the container for your backup data. Pick a name
+that identifies the project(e.g. <code>hedgehog-backups</code>).</li>
+<li>Create an API token with read and write permissions scoped to that bucket. This
+generates an <strong>Access Key ID</strong> and <strong>Secret Access Key</strong> pair - save both immediately,
+as the secret is only displayed once.</li>
+<li>Find your <strong>Account ID</strong> - a unique identifier for your Cloudflare account, visible
+on the R2 overview page. This becomes part of the endpoint URL.</li>
+</ol>
+<p>The replica URL combines the bucket name, a path prefix inside the bucket, and the
+endpoint. The format is:</p>
+<pre><code>https://&lt;account-id&gt;.r2.cloudflarestorage.com/&lt;bucket-name&gt;/&lt;path&gt;</code></pre>
+<p>Note that the endpoint uses the bare hostname - no <code>https://</code> prefix. The <code>&lt;path&gt;</code>
+(we use <code>db</code>) is just a key prefix inside the bucket; you can name it whatever makes
+sense for your project.</p>
+<p>Set all three environment variables before starting your application:</p>
+<div class="sourceCode" id="cb642"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb642-1"><a href="from-postgres-to-sqlite.html#cb642-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">LITESTREAM_REPLICA_URL</span><span class="op">=</span><span class="st">&quot;s3://hedgehog/db?endpoint=&lt;your-account-id&gt;.r2.cloudflarestorage.com&quot;</span></span>
+<span id="cb642-2"><a href="from-postgres-to-sqlite.html#cb642-2" tabindex="-1"></a><span class="bu">export</span> <span class="va">LITESTREAM_ACCESS_KEY_ID</span><span class="op">=&lt;</span>your-r2-access-key-id<span class="op">&gt;</span></span>
+<span id="cb642-3"><a href="from-postgres-to-sqlite.html#cb642-3" tabindex="-1"></a><span class="bu">export</span> <span class="va">LITESTREAM_SECRET_ACCESS_KEY</span><span class="op">=&lt;</span>your-r2-secret-access-key<span class="op">&gt;</span></span></code></pre></div>
+</div>
+<div id="restoring-from-a-backup" class="section level3 hasAnchor" number="23.7.5">
+<h3><span class="header-section-number">23.7.5</span> Restoring from a backup<a href="from-postgres-to-sqlite.html#restoring-from-a-backup" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>If your node’s database is lost (disk failure, corrupted file, fresh deployment), you
+can restore the latest replica using the Litestream CLI.</p>
+<p>Install the Litestream binary that matches the version bundled by the Hex package(run
+<code>mix deps</code> and look at the <code>litestream</code> entry to confirm the binary version):</p>
+<div class="sourceCode" id="cb643"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb643-1"><a href="from-postgres-to-sqlite.html#cb643-1" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fsSL</span> https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.tar.gz <span class="dt">\</span></span>
+<span id="cb643-2"><a href="from-postgres-to-sqlite.html#cb643-2" tabindex="-1"></a>  <span class="kw">|</span> <span class="fu">tar</span> <span class="at">-xz</span> <span class="at">-C</span> /usr/local/bin</span></code></pre></div>
+<p>Then restore:</p>
+<div class="sourceCode" id="cb644"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb644-1"><a href="from-postgres-to-sqlite.html#cb644-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">LITESTREAM_ACCESS_KEY_ID</span><span class="op">=&lt;</span>your-r2-access-key-id<span class="op">&gt;</span></span>
+<span id="cb644-2"><a href="from-postgres-to-sqlite.html#cb644-2" tabindex="-1"></a><span class="bu">export</span> <span class="va">LITESTREAM_SECRET_ACCESS_KEY</span><span class="op">=&lt;</span>your-r2-secret-access-key<span class="op">&gt;</span></span>
+<span id="cb644-3"><a href="from-postgres-to-sqlite.html#cb644-3" tabindex="-1"></a><span class="ex">litestream</span> restore <span class="at">-o</span> /data/hedgehog/hedgehog.db <span class="dt">\</span></span>
+<span id="cb644-4"><a href="from-postgres-to-sqlite.html#cb644-4" tabindex="-1"></a>  <span class="st">&quot;s3://hedgehog-backups/db?endpoint=&lt;your-account-id&gt;.r2.cloudflarestorage.com&quot;</span></span></code></pre></div>
+<p>Start your application normally after the restore. Litestream will pick up where it
+left off and resume replication.</p>
+<p><strong>Note:</strong> For automated deployments, you’ll typically add a restore step to your startup
+script that runs before the application boots. This ensures a fresh node always
+recovers the latest database state from S3 before accepting traffic.</p>
+</div>
+<div id="verifying-replication-locally-optional" class="section level3 hasAnchor" number="23.7.6">
+<h3><span class="header-section-number">23.7.6</span> Verifying replication locally (optional)<a href="from-postgres-to-sqlite.html#verifying-replication-locally-optional" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>If you want to verify the setup works before deploying to production, Litestream also
+supports replicating to a local file path. Temporarily update your <code>dev.exs</code>:</p>
+<div class="sourceCode" id="cb645"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb645-1"><a href="from-postgres-to-sqlite.html#cb645-1" tabindex="-1"></a><span class="co"># /config/dev.exs (temporary - for testing only)</span></span>
+<span id="cb645-2"><a href="from-postgres-to-sqlite.html#cb645-2" tabindex="-1"></a>config <span class="va">:hedgehog</span>, <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Litestream</span>,</span>
+<span id="cb645-3"><a href="from-postgres-to-sqlite.html#cb645-3" tabindex="-1"></a>  <span class="va">enabled:</span> <span class="cn">true</span>,</span>
+<span id="cb645-4"><a href="from-postgres-to-sqlite.html#cb645-4" tabindex="-1"></a>  <span class="va">repo:</span> <span class="cn">Hedgehog</span><span class="op">.</span><span class="cn">Repo</span>,</span>
+<span id="cb645-5"><a href="from-postgres-to-sqlite.html#cb645-5" tabindex="-1"></a>  <span class="va">replica_url:</span> <span class="st">&quot;file://</span><span class="ot">#{</span><span class="cn">Path</span><span class="op">.</span>expand<span class="fu">(</span><span class="st">&quot;../backups&quot;</span>, <span class="cn">Path</span><span class="op">.</span>dirname<span class="fu">(</span><span class="cn">__ENV__</span><span class="op">.</span>file<span class="fu">))</span><span class="ot">}</span><span class="st">&quot;</span>,</span>
+<span id="cb645-6"><a href="from-postgres-to-sqlite.html#cb645-6" tabindex="-1"></a>  <span class="va">access_key_id:</span> <span class="st">&quot;unused&quot;</span>,</span>
+<span id="cb645-7"><a href="from-postgres-to-sqlite.html#cb645-7" tabindex="-1"></a>  <span class="va">secret_access_key:</span> <span class="st">&quot;unused&quot;</span></span></code></pre></div>
+<p>Start the application and check that a <code>backups/</code> directory appears with replication
+data inside. Once you’ve confirmed it works, set <code>enabled: false</code> back in <code>dev.exs</code>
+and remove the <code>backups/</code> directory.</p>
+</div>
+<div id="checking-replication-status" class="section level3 hasAnchor" number="23.7.7">
+<h3><span class="header-section-number">23.7.7</span> Checking replication status<a href="from-postgres-to-sqlite.html#checking-replication-status" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>You can check whether Litestream is running from an IEx session:</p>
+<div class="sourceCode" id="cb646"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb646-1"><a href="from-postgres-to-sqlite.html#cb646-1" tabindex="-1"></a><span class="ex">iex</span> <span class="at">-S</span> mix phx.server</span>
+<span id="cb646-2"><a href="from-postgres-to-sqlite.html#cb646-2" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb646-3"><a href="from-postgres-to-sqlite.html#cb646-3" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">1</span><span class="kw">)</span><span class="op">&gt;</span> Litestream.status<span class="kw">()</span></span>
+<span id="cb646-4"><a href="from-postgres-to-sqlite.html#cb646-4" tabindex="-1"></a><span class="ex">:running</span></span></code></pre></div>
+<p>If you need to temporarily stop replication (for example, during a maintenance window):</p>
+<div class="sourceCode" id="cb647"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb647-1"><a href="from-postgres-to-sqlite.html#cb647-1" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">2</span><span class="kw">)</span><span class="op">&gt;</span> Litestream.stop_litestream<span class="kw">()</span></span>
+<span id="cb647-2"><a href="from-postgres-to-sqlite.html#cb647-2" tabindex="-1"></a><span class="ex">:ok</span></span>
+<span id="cb647-3"><a href="from-postgres-to-sqlite.html#cb647-3" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">3</span><span class="kw">)</span><span class="op">&gt;</span> Litestream.status<span class="kw">()</span></span>
+<span id="cb647-4"><a href="from-postgres-to-sqlite.html#cb647-4" tabindex="-1"></a><span class="ex">:down</span></span>
+<span id="cb647-5"><a href="from-postgres-to-sqlite.html#cb647-5" tabindex="-1"></a><span class="ex">iex</span><span class="er">(</span><span class="ex">4</span><span class="kw">)</span><span class="op">&gt;</span> Litestream.start_litestream<span class="kw">()</span></span>
+<span id="cb647-6"><a href="from-postgres-to-sqlite.html#cb647-6" tabindex="-1"></a><span class="ex">:ok</span></span></code></pre></div>
+</div>
+</div>
+<div id="final-thoughts-6" class="section level2 hasAnchor" number="23.8">
+<h2><span class="header-section-number">23.8</span> Final thoughts<a href="from-postgres-to-sqlite.html#final-thoughts-6" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p><strong>This was a short chapter, but the operational impact is significant.</strong> We replaced
+Postgres with SQLite, eliminating the Docker dependency entirely. We swapped
+<code>ecto_enum</code>(Postgres-specific) for <code>Ecto.Enum</code>(database-agnostic) and updated status
+values from strings to atoms across queries, update functions, and seeds. We rewrote all
+migrations to use plain string columns instead of custom Postgres types - and preserved
+all existing tests and trading functionality without touching the business logic.</p>
+<p>Notice what didn’t change: the Repo API usage, the supervision tree, the trading logic.
+What did change were the status value literals - <code>"on"</code> to <code>:on</code>, <code>"off"</code> to <code>:off</code> -
+because <code>Ecto.Enum</code> is stricter than the old <code>ecto_enum</code> library about types.
+That strictness is a feature: it catches type mismatches at query time instead of silently
+inserting bad data.</p>
+<p>The trade-off is real, though. SQLite doesn’t support concurrent writes from multiple processes
+as gracefully as Postgres does. For our use case - a trading bot running as a single node writing
+its own local data - that’s perfectly fine. We’re not building a multi-tenant web app; we’re
+building independent trading nodes.</p>
+<p>And that’s exactly where we’re headed.</p>
+<p><strong>What’s next?</strong></p>
+<p>We now have an application with no external infrastructure dependencies - no database
+server to manage, no Docker container to run, just our Elixir app and a local
+database file. This is the perfect building block for distribution. In the next
+chapter, we’ll configure <code>libcluster</code> for automatic cluster formation and start
+running multiple trading nodes side by side. Each node will carry its own SQLite
+database, stream its own symbols, and execute its own trades - while remaining
+connected via Erlang’s distribution protocol for coordination and monitoring.</p>
+<p>[Note] Please remember to run <code>mix format</code> to keep things nice and tidy.</p>
+<p>The source code for this chapter can be found in the book’s source code repository
+(branch:
+<a href="https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_23">chapter_23</a>).</p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="back-to-the-monolith.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="clustering-on-the-open-internet.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/edit/main/23-from-postgres-to-sqlite.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

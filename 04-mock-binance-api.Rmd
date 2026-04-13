@@ -1,86 +1,123 @@
 # Mock the Binance API
 
+So far, our `Trader` has been talking directly to the real Binance exchange.
+If you ran the example from the previous chapter, you may have noticed the tension:
+every test run uses real API calls, burns through rate limits, and - if you're not careful - real money.
+Developing against a live API can feel a bit like walking a tightrope without a safety net.
+
+In this chapter, we'll overcome these hurdles by creating a new `BinanceMock` module that will act
+as a drop-in replacement for the real `Binance` module. This mock, built as a `GenServer`,
+will maintain an in-memory order book and leverage our existing PubSub system to simulate order updates.
+This approach will allow us to develop and test our trading logic safely and efficiently.
+
+Let's dive in!
+
 ## Objectives
 
-- design the binance mock application
-- create a new app
-- implement getting exchange info
-- implement placing buy and sell orders
-- implement callback for incoming trade events
-- upgrade trader and config
-- test the implementation
+- Design the `BinanceMock` application
+- Create a new app
+- Implement getting exchange info
+- Implement placing buy and sell orders
+- Implement callback for incoming trade events
+- Update the Trader and Configuration
+- Test the implementation
 
 ## Design
 
-First, let's start with the current state:
+Let's start by reviewing the current state of our application:
 
 ```{r, fig.align="center", out.width="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_01_current_state.png")
 ```
 
-Currently, our trader is using the `Binance` module to place buy/sell
+Currently, our `Trader` uses the `Binance` module to place buy/sell
 orders and get exchange info.
-The `get_exchange_info/0` function doesn't require a Binance account as it's publicly available information so we can call the `Binance` lib directly from our module.
-The remaining ones(buying/selling) require a `Binance` account and some coins/tokens inside its wallet. We need to mock those inside our module.
 
-\newpage
+Since `Binance.get_exchange_info/0` retrieves public data and doesn't require authentication,
+our mock can simply pass this request through to the real `Binance` library.
 
-We will update the trader to fetch the Binance's module name from the config:
+Other functions, such as placing buy and sell orders, require a funded Binance account.
+To avoid this dependency during development, we'll create a mock that simulates these
+functions.
 
-```{r, fig.align="center", out.width="80%", echo=FALSE}
+We will update the `Trader` to fetch the module's name from the configuration:
+
+```{r, fig.align="center", out.width="80%", out.height="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_02_proposal.png")
 ```
 
-We will set up a config so it points to the Binance client to be used - either Binance or BinanceMock. Regards the BinanceMock itself it will have the same interface as the Binance module.
-It will need to store both buy and sell orders and it will allow us to retrieve them. That will cover the REST functions but Binance also streams back trade events for those orders as they get filled, that's why BinanceMock will also need to broadcast fake events to the "TRADE_EVENTS:#{symbol}" PubSub topic so the trader will pick them up:
+By fetching the module name from our configuration, we give our `Trader` 'pluggable' behavior.
+This means we can swap the real `Binance` client for our mock one with a single line of config -
+all without touching a single line of our core trading logic. It's a clean, powerful way to keep our system flexible.
 
+The `BinanceMock` module itself will implement the same contract
+(or public API) as the real `Binance` module.
 
-```{r, fig.align="center", out.width="80%", echo=FALSE}
+It will need to store buy and sell orders and provide a way to retrieve them,
+covering the functionality of the REST API endpoints we use.
+
+However, the real Binance API also tracks when orders are filled.
+In the real world, Binance tells us when an order is filled.
+In our mock world, *we* are the exchange - and that's a fundamental shift in perspective.
+We're no longer just a client waiting for notifications; we're the system that must watch the incoming price stream and decide:
+'Has the price hit our target? If so, let's fill that order!'
+This is where our mock really comes to life.
+
+To mimic this, `BinanceMock` will subscribe to the `"TRADE_EVENTS:#{symbol}"`
+PubSub topic. These trade events will provide the data needed to
+update the statuses of our fake orders.
+
+```{r, fig.align="center", out.width="80%", out.height="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_03_proposal_pubsub.png")
 ```
 
-\newpage
+So, how will our mock know when to fill an order?
+The `BinanceMock` process will subscribe to the trade events stream and
+mark an order as filled once a market trade occurs at a price that would execute it.
 
-When exactly should we broadcast those fake trade events? Well, the best thing
-that we can do is make the `BinanceMock` process subscribe to the trade events stream and try to broadcast fake trade events whenever the price of orders would be matched:
-
-
-```{r, fig.align="center", out.width="70%", echo=FALSE}
-knitr::include_graphics("images/chapter_04_04_explenation.png")
+```{r, fig.align="center", out.width="90%", echo=FALSE}
+knitr::include_graphics("images/chapter_04_04_explanation.png")
 ```
 
-Starting from the arrow on the left, our naive strategy will place an order at the current price.
-In this hypotetical scenario, the price raised for a moment after placing the buy order, so BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with a price *below* the buy order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
-The trader will get that event and assume that it came from the Binance and that the buy order got filled so it will place a sell order.
-Similar to the buy order, BinanceMock will keep on waiting until a trade event will get broadcasted from the PubSub with the price *above* the sell order's price. At that moment BinanceMock will generate a fake trade event and broadcast it to the same PubSub topic.
+As the diagram shows, our naive strategy places an order at the current market price.
+
+In this scenario, the market price briefly **rises** after our order is placed.
+The `BinanceMock` will then wait for a trade event from PubSub where the
+**trade price is at or below our buy order's price**.
+When this condition is met, `BinanceMock` marks our buy order as `"FILLED"`.
+
+Upon detecting the filled order, the `Trader` will proceed to place a sell order.
+Similar to the buy order, `BinanceMock` will wait for a trade event from PubSub
+where the **trade price is at or above the sell order's price**.
+When this condition is met, `BinanceMock` marks our sell order as `"FILLED"`.
 
 Enough theory for now, let's get our hands dirty with some coding.
 
 ## Create "BinanceMock" app
 
-We will start by creating a new supervised app called `BinanceMock`:
+Let's start by creating a new supervised app called `BinanceMock`:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
 $ mix new binance_mock --sup
 ```
 
-The next step will be to update the `BinanceMock` module to be a GenServer. 
+Next, we'll set up the `BinanceMock` module itself.
+We'll make it a `GenServer` to manage its state, which will include the
+in-memory order books.
 
-We will utilize:
+We'll use the `Decimal` module for accurate price comparisons and the
+`Logger` module for logging.
 
-* the `Decimal` module for comparing the prices
-* the `Logger` module to log
+The `GenServer` will manage its state using an internal `%State{}` struct, which contains:
 
-\newpage
+* an `order_books` map, which will store the order book for each trading `symbol`.
+* a list of `subscriptions` to track the PubSub topics the mock is listening to.
+* the `next_order_id`, ensuring we can create unique and predictable IDs for our fake orders.
 
-As well as we will define internal `%State{}` struct that will hold:
-
-* map called `order_books` for each traded symbol
-* list of symbols that mock subscribed to
-* last generated id - for consistent generating of unique ids for fake trade events
-
-`order_books` map will consist of `:"#{symbol}` => `%OrderBook{}`. We will define the `%OrderBook{}` struct as 3 lists `buy_side`, `sell_side` and `historical`:
+The `order_books` map will hold an `%OrderBook{}` struct for each trading `symbol`.
+Each `%OrderBook{}` will, in turn, contain three lists:
+`buy_side`, `sell_side`, and `historical`.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -93,7 +130,7 @@ defmodule BinanceMock do
   require Logger
 
   defmodule State do
-    defstruct order_books: %{}, subscriptions: [], fake_order_id: 1
+    defstruct order_books: %{}, subscriptions: [], next_order_id: 1
   end
 
   defmodule OrderBook do
@@ -112,7 +149,8 @@ end
 
 ## Implement getting exchange info
 
-As it was mentioned before, to retrieve exchange info we can just call Binance's function directly as its publicly available information:
+As mentioned, we can retrieve the exchange info by calling the `Binance` module's
+function directly, since it provides public data:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -121,12 +159,10 @@ As it was mentioned before, to retrieve exchange info we can just call Binance's
   end
 ```
 
-\newpage
-
 ## Implement placing buy and sell orders
 
-For buy and sell limit orders we will write a helper function as the logic is
-the same for both order sides:
+Since the logic for placing buy and sell limit orders is nearly identical,
+we'll create a private helper function, `order_limit/4`, to handle both.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -139,11 +175,11 @@ the same for both order sides:
   end
 ```
 
-The "order_limit" helper function will:
+In the `order_limit/4` helper function, we will:
 
-* generate a fake order based on symbol, quantity, price, and side
-* cast a message to the BinanceMock process to add the fake order
-* return with a tuple with `%OrderResponse{}` struct to be consistent with the Binance module:
+* Generate a fake order based on the provided `symbol`, `quantity`, `price`, and `side`.
+* Send a `cast` message to the `BinanceMock` `GenServer` to add the fake order to the order book.
+* Return an `{:ok, %OrderResponse{}}` tuple to maintain API compatibility with the real `Binance` module.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -166,10 +202,11 @@ The "order_limit" helper function will:
   end
 ```
 
-\newpage
 
-We can now move on to implementing the `handle_cast/2` callback to `:add_order` to the order book for the symbol from the order.
-It needs to subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from the order and add the order to the correct order book:
+Next, let's implement the `handle_cast/2` callback for the `:add_order` message.
+This function will first subscribe to the appropriate `TRADE_EVENTS:#{symbol}` topic
+(if it hasn't already) and then add the incoming order to the correct order book
+for its symbol:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -194,8 +231,13 @@ It needs to subscribe to the `TRADE_EVENTS:#{symbol}` topic for the symbol from 
   end
 ```
 
-We will start with the implementation of the `subscribe_to_topic/2` function. We need to make sure that the symbol is uppercased as well as check have we already subscribed to that topic. Otherwise, we can safely use the PubSub module to subscribe to the `TRADE_EVENTS:#{symbol}` topic for this symbol.
-We need to remember to append the symbol to the list of subscription and return the updated list:
+Let's start by implementing `subscribe_to_topic/2`.
+This function ensures the `symbol` is uppercased and checks
+if we've already subscribed to that symbol's topic.
+If not, it subscribes the process to the `TRADE_EVENTS:#{symbol}` topic
+using the `Phoenix.PubSub` module.
+
+Finally, we'll prepend the symbol to our list of subscriptions and return the updated list:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -220,7 +262,36 @@ We need to remember to append the symbol to the list of subscription and return 
   end
 ```
 
-Next, time for implementation of the `add_order` function. First, we need to get the order book for the symbol of the order. Depends on the side of the order we will update either the `buy_side` or `sell_side` list remembering that both sides are sorted. We are sorting them so we can easily grab all orders that should be filled whenever trade event arrived, this will become clearer as we will write a handle callback for incoming trade events:
+Next, let's implement the `add_order/2` function. First, we need to get the order book
+for the order's symbol.
+
+Depending on the order's side, we will update either the `buy_side` or `sell_side` list.
+
+**A Note on Performance: Going the Extra Mile**
+
+Before we dive into the code for adding orders,
+let's talk about performance. When adding a new order to our `buy_side` or `sell_side` lists,
+we have a crucial requirement: **the list must remain sorted by price**.
+
+A simple approach would be to add the new order and then re-sort the
+entire list with `Enum.sort/1`. While this works, it introduces a hidden performance
+bottleneck.
+
+Sorting the entire list on every insertion is
+an expensive operation with a time complexity of $O(n \log n)$. As the number of open orders
+grows, this seemingly innocent function could slow down our entire mock server.
+
+This is where we can **go the extra mile**. Instead of the easy add-then-sort method,
+we will write a custom `insert_sorted/3` helper. This function will find the correct
+position for the new order in the already-sorted list and insert it there directly.
+This approach is far more efficient ($O(n)$) and ensures our mock remains fast
+and responsive, no matter how many orders we're handling.
+
+While it might seem like over-engineering for a mock server,
+this is a **perfect exercise** in writing professional, scalable code.
+A word of caution, though: in real-world projects, you should *measure before you optimize*.
+Here, the exercise is valuable because (a) the fix is simple, and (b) it teaches a pattern you'll use elsewhere.
+Learning to identify *when* a potential bottleneck is worth addressing - and when it isn't - is just as important as knowing *how* to fix it.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -228,45 +299,72 @@ Next, time for implementation of the `add_order` function. First, we need to get
          %Binance.Order{symbol: symbol} = order,
          order_books
        ) do
-    order_book =
-      Map.get(
-        order_books,
-        :"#{symbol}",
-        %OrderBook{}
-      )
+    order_book = Map.get(order_books, symbol, %OrderBook{})
 
     order_book =
       if order.side == "SELL" do
-        Map.replace!(
-          order_book,
-          :sell_side,
-          [order | order_book.sell_side]
-          |> Enum.sort(&D.lt?(&1.price, &2.price))
-        )
+        # Sell orders are sorted ascending (lowest price first)
+        updated_sell_side = insert_sorted(order, order_book.sell_side, &D.lt?/2)
+        %{order_book | sell_side: updated_sell_side}
       else
-        Map.replace!(
-          order_book,
-          :buy_side,
-          [order | order_book.buy_side]
-          |> Enum.sort(&D.gt?(&1.price, &2.price))
-        )
+        # Buy orders are sorted descending (highest price first)  
+        updated_buy_side = insert_sorted(order, order_book.buy_side, &D.gt?/2)
+        %{order_book | buy_side: updated_buy_side}
       end
 
-    Map.put(order_books, :"#{symbol}", order_book)
+    Map.put(order_books, symbol, order_book)
+  end
+
+  defp insert_sorted(order, orders, sorter) do
+    {left, right} =
+      Enum.split_while(
+        orders,
+        &sorter.(
+          D.from_float(&1.price),
+          D.from_float(order.price)
+        )
+      )
+
+    left ++ [order | right]
   end
 ```
 
-Now we need to follow up and implement the functions that we referred to
-previously - those are `generate_fake_order` and `convert_order_to_order_response`.
+The magic of our new approach lies in the `insert_sorted/3` helper function.
+Instead of appending an order and then re-sorting the entire list,
+this function finds the correct position and reconstructs the list in a single,
+efficient pass. Let's break down how it works.
 
-Starting with the `generate_fake_orders`, it's a function that takes a symbol, quantity, price, and side and based on those values returns a `Binance.Order` struct. To return the struct we will need to generate a unique id for each faked order - this is where `fake_order_id` will be used(callback implemented later). This way we will be able to run tests multiple times using the BinanceMock and always get the same ids:
+The function uses `Enum.split_while/2` to divide the existing list into two parts:
+a `left` list containing all orders that should come *before* our new one,
+and a `right` list with everything that should come *after*.
+
+Once the split point is found, the expression `left ++ [order | right]` efficiently
+reconstructs the list. The `[order | right]` part prepends the new order to the
+right list (a very fast operation in Elixir), and then the `++` operator concatenates
+the left list with that result. This builds a new, sorted list in a single pass
+without a costly re-sort.
+
+Notice how we pass a sorter function (`&D.lt?/2` or `&D.gt?/2`) as the third argument.
+This makes our helper flexible, allowing us to sort in either ascending or descending order.
+
+Now, let's implement the helper functions we referred to previously:
+`generate_fake_order/4` and `convert_order_to_order_response/1`.
+
+Starting with `generate_fake_order/4`, this function takes a `symbol`, `quantity`, `price`,
+and `side` and returns a `%Binance.Order{}` struct populated with fake data.
+
+
+To ensure our tests are predictable, we need a way to generate unique
+and consistent IDs for these fake orders. We'll achieve this by using
+the `next_order_id` from our `GenServer`'s state, which guarantees that
+tests produce the same order IDs every time they run.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   defp generate_fake_order(symbol, quantity, price, side)
       when is_binary(symbol) and
              is_binary(quantity) and
-             is_binary(price) and
+             is_number(price) and
              (side == "BUY" or side == "SELL") do
     current_timestamp = :os.system_time(:millisecond)
     order_id = GenServer.call(__MODULE__, :generate_id)
@@ -293,39 +391,47 @@ Starting with the `generate_fake_orders`, it's a function that takes a symbol, q
   end
 ```
 
-\newpage
+To convert a `%Binance.Order{}` into a `%Binance.OrderResponse{}`,
+we can reuse the same logic we implemented in the `Naive.Trader` module.
 
-We can now focus on converting the `Binance.Order` to the `Binance.OrderResponse` struct. As `Binance.Order` struct contains almost all of the same fields that the `Binance.OrderResponse` struct, we can use `struct` function without exclamation mark to ignore all additional fields. The only field that has a different name is `transact_time` field which is called `time` in the `Binance.Order` struct - we can fix that separately:
+Since this conversion logic is needed in both our `Trader` and `BinanceMock`,
+the best practice would be to move this function into a shared application
+within our umbrella project.
+For now, however, we'll simply copy the implementation to avoid refactoring too early.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   defp convert_order_to_order_response(%Binance.Order{} = order) do
-    %{
-      struct(
-        Binance.OrderResponse,
-        order |> Map.to_list()
-      )
-      | transact_time: order.time
-    }
+    response = struct(Binance.OrderResponse, Map.from_struct(order))
+    %{response | transact_time: order.time}
   end
 ```
 
-The last function to finish support for placing buy and sell orders is to add a callback that will iterate the fake order id and return it:
+**Note**: You might be tempted to stop everything and build a shared Core application right now -
+after all, this duplication violates the DRY (Don't Repeat Yourself) principle.
+In real-world projects, we often accept a little 'technical debt' like this to keep momentum.
+The key is to *acknowledge* it and *plan* to address it. Don't worry - we'll pay this debt back in Chapter 15
+when we extract shared utilities into a proper Core application!
+
+To complete the order placement logic, we need the `handle_call/3` callback
+for `:generate_id`. This function replies to the caller with the current `next_order_id`
+and updates the `state` by incrementing the ID for the next request.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
   def handle_call(
         :generate_id,
         _from,
-        %State{fake_order_id: id} = state
+        %State{next_order_id: id} = state
       ) do
-    {:reply, id + 1, %{state | fake_order_id: id + 1}}
+    {:reply, id, %{state | next_order_id: id + 1}}
   end
 ```
 
-## Implement order retrival
+## Implement Order Retrieval
 
-We can now move on to retrieving the orders. First, we need to add an interface function that will call our BinanceMock GenServer:
+We can now move on to retrieving the orders.
+First, we need to add an interface function that will call our `BinanceMock` `GenServer`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -337,10 +443,12 @@ We can now move on to retrieving the orders. First, we need to add an interface 
   end
 ```
 
-\newpage
+The `handle_call/3` callback is straightforward.
+First, it retrieves the order book for the given `symbol`.
 
-The callback itself is pretty straightforward. We will need to get an order book for the passed symbol. As we don't know the order's side, we will concat all 3 lists(buy_side, sell_side, and historical) and try to find an order that will
-match passed symbol, time, and order_id:
+A retrieval request doesn't specify whether the order is a buy or a sell, or if it's open or filled.
+Therefore, we must search all three lists - `buy_side`, `sell_side`,
+and `historical` - to find the matching order.
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -352,36 +460,37 @@ match passed symbol, time, and order_id:
     order_book =
       Map.get(
         order_books,
-        :"#{symbol}",
+        symbol,
         %OrderBook{}
       )
 
-    result =
-      (order_book.buy_side ++
-         order_book.sell_side ++
-         order_book.historical)
-      |> Enum.find(
-        &(&1.symbol == symbol and
-            &1.time == time and
-            &1.order_id == order_id)
-      )
-
-    {:reply, {:ok, result}, state}
+    (order_book.buy_side ++
+       order_book.sell_side ++
+       order_book.historical)
+    |> Enum.find(
+      &(&1.symbol == symbol and
+          &1.time == time and
+          &1.order_id == order_id)
+    )
+    |> case do
+      %Binance.Order{} = order -> {:reply, {:ok, order}, state}
+      _ -> {:reply, {:error, :not_found}, state}
+    end
   end
 ```
 
 ## Implement callback for incoming trade events
 
-Finally, we need to handle incoming trade events(streamed from the PubSub topic). We need to implement a callback that will:
+Finally, we need to handle incoming trade events received from the PubSub topic.
+We'll implement a `handle_info/2` callback that performs the following steps:
 
-* get the order book for the symbol from the trade event
-* use the `take_while/2` function on the buy orders with prices that are *greater* than the current price - we can update their status to filled.
-* use the `take_while/2` function again, this time to sell orders with prices *less* than the current price, we will also update their statuses to filled.
-* concat both lists of filled orders, convert them to trade events, and broadcast them to the PubSub's TRADE_EVENTS topic.
-* remove the filled orders from buy and sell lists and put them into the historical list.
+* Gets the order book for the `symbol` from the trade event.
+* Finds all `buy_side` orders that can be filled. A buy order is considered filled if its price is **greater than or equal** to the trade's price. For example, a buy order at $50.00 will be filled by a trade at $50.00 or below.
+* Finds all `sell_side` orders that can be filled. A sell order is considered filled if its price is **less than or equal** to the trade's price. For example, a sell order at $50.00 will be filled by a trade at $50.00 or above.
+* Moves the filled orders from the active `buy_side` and `sell_side` lists into a `historical` list for future lookups.
 
-Here we can clearly see the benefit of sorting the lists, we can use functions like `take_while/2` and `drop/2` instead of `filter/2`
-and `reject/2`(later ones will go through whole lists which could become a bottleneck when multiple open orders would be active):
+**Here we see the payoff from our earlier decision to keep the order lists sorted.**
+We can efficiently filter out filled orders using `Enum.split_while/2`:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -392,43 +501,32 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
     order_book =
       Map.get(
         order_books,
-        :"#{trade_event.symbol}",
+        trade_event.symbol,
         %OrderBook{}
       )
 
-    filled_buy_orders =
+    trade_price = D.from_float(trade_event.price)
+
+    {to_fill_buy_orders, remaining_buy_orders} =
       order_book.buy_side
-      |> Enum.take_while(&D.lt?(trade_event.price, &1.price))
-      |> Enum.map(&Map.replace!(&1, :status, "FILLED"))
+      |> Enum.split_while(&D.lte?(trade_price, D.from_float(&1.price)))
 
-    filled_sell_orders =
+    {to_fill_sell_orders, remaining_sell_orders} =
       order_book.sell_side
-      |> Enum.take_while(&D.gt?(trade_event.price, &1.price))
+      |> Enum.split_while(&D.gte?(trade_price, D.from_float(&1.price)))
+
+    filled_orders = 
+      (to_fill_buy_orders ++ to_fill_sell_orders)
       |> Enum.map(&Map.replace!(&1, :status, "FILLED"))
-
-    (filled_buy_orders ++ filled_sell_orders)
-    |> Enum.map(&convert_order_to_event(&1, trade_event.event_time))
-    |> Enum.each(&broadcast_trade_event/1)
-
-    remaining_buy_orders =
-      order_book.buy_side
-      |> Enum.drop(length(filled_buy_orders))
-
-    remaining_sell_orders =
-      order_book.sell_side
-      |> Enum.drop(length(filled_sell_orders))
 
     order_books =
-      Map.replace!(
+      Map.put(
         order_books,
-        :"#{trade_event.symbol}",
+        trade_event.symbol,
         %{
           buy_side: remaining_buy_orders,
           sell_side: remaining_sell_orders,
-          historical:
-            filled_buy_orders ++
-              filled_sell_orders ++
-              order_book.historical
+          historical: filled_orders ++ order_book.historical
         }
       )
 
@@ -436,45 +534,14 @@ and `reject/2`(later ones will go through whole lists which could become a bottl
   end
 ```
 
-Inside the callback we referred to two new functions that we will implement now(`convert_order_to_event` and `broadcast_trade_event`).
+**Note:** We're letting that `historical` list grow forever. In a high-frequency environment,
+this is a silent "time bomb" that will eventually exhaust your RAM and crash the node -
+potentially hours or days after deployment, making it notoriously hard to debug.
+We'll leave it as-is since it's just a mock, but to make this production-grade,
+you'd want to either truncate the list (e.g., keep only the last 1,000 orders) or offload the data to persistent storage.
 
-Starting with the `convert_order_to_event` function, it will simply return a new `Streamer.Binance.TradeEvent` struct filled with data. An interesting thing to observe here is that again all values are predictable and function will return the same values for the same input - this will become beneficial for backtesting over and over again and comparing the behavior between runs:
-
-```{r, engine = 'elixir', eval = FALSE}
-# /apps/binance_mock/lib/binance_mock.ex
-  defp convert_order_to_event(%Binance.Order{} = order, time) do
-    %TradeEvent{
-      event_type: order.type,
-      event_time: time - 1,
-      symbol: order.symbol,
-      trade_id: Integer.floor_div(time, 1000),
-      price: order.price,
-      quantity: order.orig_qty,
-      buyer_order_id: order.order_id,
-      seller_order_id: order.order_id,
-      trade_time: time - 1,
-      buyer_market_maker: false
-    }
-  end
-```
-
-Broadcasting trade events to PubSub will be the last function that will finish
-the implementation of `BinanceMock` for now. It's safe to assume that the incoming
-symbol will be uppercased as it comes from the exchange (the symbol is part of the topic name which is case-sensitive):
-
-```{r, engine = 'elixir', eval = FALSE}
-# /apps/binance_mock/lib/binance_mock.ex
-  defp broadcast_trade_event(%Streamer.Binance.TradeEvent{} = trade_event) do
-    Phoenix.PubSub.broadcast(
-      Streamer.PubSub,
-      "TRADE_EVENTS:#{trade_event.symbol}",
-      trade_event
-    )
-  end
-```
-
-That finishes the `BinanceMock` implementation. Now, we need to add it to
-the children list of the application so it starts automatically:
+And that's it for the `BinanceMock` implementation. Now, we need to add it to
+the application's supervision tree so it starts automatically:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock/application.ex
@@ -488,16 +555,19 @@ the children list of the application so it starts automatically:
 end
 ```
 
-## Upgrade trader and config
+## Update the Trader and Configuration
 
-We can move on to the `Naive.Trader` module where we will add an attribute that will point to the Binance client dictated by config:
+Next, let's update the `Naive.Trader` module.
+We'll use a module attribute to read the Binance client from
+the application's configuration:
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   @binance_client Application.compile_env(:naive, :binance_client)
 ```
 
-We need to replace all direct calls to the `Binance` module for calls to the `@binance_client` attribute inside the `Naive.Trader`:
+Inside the `Naive.Trader` module, we'll replace all direct calls to `Binance` with
+our new `@binance_client` module attribute:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -505,15 +575,18 @@ We need to replace all direct calls to the `Binance` module for calls to the `@b
 ...
   @binance_client.order_limit_buy(
 ...
-  @binance_client.order_limit_sell
+  @binance_client.get_order(
+...
+  @binance_client.order_limit_sell(
+...
+  @binance_client.get_order(
 ...
   @binance_client.get_exchange_info()
 ...
 ```
 
-\newpage
-
-As the `Naive.Trader` is now relying on the config to specify which Binance client should they use, we need to add it to the config:
+Since `Naive.Trader` now relies on the application configuration to determine
+which client to use, we need to add this setting to our `/config/config.exs` file:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -522,7 +595,9 @@ config :naive,
   binance_client: BinanceMock
 ```
 
-The last modification to our system will be to modify the `mix.exs` of the `binance_mock` app to list all deps required for it to work:
+The final step is to configure our dependencies.
+We'll start by modifying the `mix.exs` of the `binance_mock` app to list the
+packages it requires:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/mix.exs
@@ -538,7 +613,8 @@ The last modification to our system will be to modify the `mix.exs` of the `bina
 ...
 ```
 
-We also add `:binance_mock` to the list of deps of the `naive` app(as the Naive app will use either `Binance` or `BinanceMock` to "trade"):
+We'll also add `:binance_mock` to the dependency list for the `naive` app,
+since it will use either `Binance` or `BinanceMock` to trade:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/mix.exs
@@ -546,18 +622,19 @@ We also add `:binance_mock` to the list of deps of the `naive` app(as the Naive 
   defp deps do
     [
       ...
-      {:binance_mock, in_umbrella: true}
+      {:binance_mock, in_umbrella: true},
       ...
     ]
   end
 ...
 ```
 
-\newpage
-
 ## Test the implementation
 
-We can now see the BinanceMock in action. First, we will start an iex session and double-check that the BinanceMock process is alive.
+We can now see the `BinanceMock` in action.
+First, let's start an `iex` session and verify that the `BinanceMock` process is running.
+Since our configuration already points to `BinanceMock`, we can start streaming and
+trading on a `symbol` just as we did in the previous chapter:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -566,19 +643,41 @@ iex(1)> Process.whereis(BinanceMock)
 #PID<0.320.0> # <- confirms that BinanceMock process is alive
 iex(2)> Streamer.start_streaming("xrpusdt")
 {:ok, #PID<0.332.0>}
-iex(3)> Naive.Trader.start_link(
-%{symbol: "XRPUSDT", profit_interval: "-0.001"}
-)
+iex(3)> Naive.Trader.start_link(%{symbol: "xrpusdt", profit_target: "-0.001"})
 00:19:39.232 [info]  Initializing new trader for XRPUSDT
 {:ok, #PID<0.318.0>}
 00:19:40.826 [info]  Placing BUY order for XRPUSDT @ 0.29520000, quantity: 100
-00:19:44.569 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549),
+00:19:44.569 [info]  Buy order filled, placing SELL order for XRPUSDT @ 0.29549,
 quantity: 100.0
 00:20:09.391 [info]  Trade finished, trader will now exit
 ```
 
-As config already points to it so we can continue as previously by starting the streaming and trading on the symbol. The trader is using the `BinanceMock` and it looks like everything works as it would be dealing with a real exchange.
+**Well done!** You've just built one of the most critical components for any serious application:
+a mock for an external service. By creating `BinanceMock`, you've successfully *decoupled* your trading logic from the live Binance exchange -
+and decoupling is the secret weapon of maintainable software.
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+This is a massive milestone. It means you can now test your trading strategies safely without risking real money,
+develop new features without needing an active internet connection,
+and run automated tests reliably without worrying about network latency or API rate limits.
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)
+More importantly, you've learned a pattern that applies far beyond this project:
+whenever you depend on an external system, consider how you'd swap it out. That mindset will serve you well.
+
+**So, What's Next?**
+
+Now that we have a safe and reliable testing environment, we can confidently tackle
+a much bigger challenge. Our current trader can only handle one symbol at a time.
+To build a truly effective bot, we need it to trade on many different symbols in parallel.
+
+In the next chapter, we'll dive deep into the heart of OTP by building a
+supervision tree. This will allow us to dynamically launch, monitor, and even
+automatically restart traders for multiple symbols, creating a truly fault-tolerant
+and concurrent trading system. The `BinanceMock` we've just built will be an essential
+safety net, allowing us to engineer this complex architecture with confidence.
+Let's get started!
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_04](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)).

@@ -1,5 +1,24 @@
 # Start, stop, shutdown and autostart trading
 
+In the previous chapter, we gave the `streamer` app proper supervision, start/stop functionality,
+and autostart capabilities. Now it's time to do the same for the `naive` trading app - but with an important twist.
+
+Trading is different from streaming.
+When we stop a streamer, we just close a WebSocket connection - no big deal.
+But when we stop a trader, it might be in the middle of a trade cycle:
+it bought some asset and is waiting for the price to rise before selling.
+If we abruptly terminate it, we're left holding a position we didn't intend to keep.
+
+That's why we'll implement four operations in this chapter:
+
+- **start** - begin trading on a symbol (same pattern as streaming)
+- **stop** - immediately terminate trading (useful for emergencies)  
+- **shutdown** - gracefully stop trading by letting all active traders complete their current trade cycles before terminating
+- **autostart** - resume trading on previously enabled symbols when the app restarts
+
+The shutdown feature is the key addition here.
+It gives us a controlled way to wind down trading without getting stuck with unwanted positions. Let's build it!
+
 ## Objectives
 - describe and design the required functionality
 - (re-)implement the start trading functionality
@@ -10,18 +29,19 @@
 
 ## Describe and design the required functionality
 
-In the 10th chapter, we've introduced the Postgres database inside the `naive` application together with the settings per symbol.
+In the 9th chapter, we've introduced the Postgres database inside the `naive` application together with the settings per symbol.
 
-In this chapter, we will progress forward to provide additional trading functionality that will be similar to the functionality implemented in the last chapter for the `streaming` application:
+In this chapter, we will progress forward to provide additional trading functionality that will be similar to
+the functionality implemented in the last chapter for the `streamer` application:
 
-* **stop trading** - as the `Naive.SymbolSupervisor` processes are registered with names that can be easily reverse engineered, we should be able to utilize the `Process.where_is/1` function to retrieve the PIDs and instruct the `Naive.DynamicSymbolSupervisor` to terminate those child processes. Again, we need to put that logic somewhere so we will implement the `Naive.DynamicSymbolSupervisor` as a full module using the `DynamicSupervisor` behavior.
-* **start_trading** - as our `Naive.DynamicSymbolSupervisor` will now be a module we will be able to remove the `start_trading/1` implementation from the `Naive` module and reimplement it inside the `Naive.DynamicSymbolSupervisor` module. It will follow the same pattern of checking for PID, starting the `Naive.SymbolSupervisor` process and flipping the `status` flag inside the `settings` table's row for that symbol.
+* **stop trading** - as the `Naive.SymbolSupervisor` processes are registered with names that can be easily reverse engineered, we should be able to utilize the `Process.whereis/1` function to retrieve the PIDs and instruct the `Naive.DynamicSymbolSupervisor` to terminate those child processes. Again, we need to put that logic somewhere so we will implement the `Naive.DynamicSymbolSupervisor` as a full module using the `DynamicSupervisor` behavior.
+* **start trading** - as our `Naive.DynamicSymbolSupervisor` will now be a module we will be able to remove the `start_trading/1` implementation from the `Naive` module and reimplement it inside the `Naive.DynamicSymbolSupervisor` module. It will follow the same pattern of checking for PID, starting the `Naive.SymbolSupervisor` process and flipping the `status` flag inside the `settings` table's row for that symbol.
 * **shutdown trading** - sometimes abruptly stopping trading won't be the best solution, it would be better to allow the `Naive.Trader` processes to finish their ongoing trades. To be able to do that we will need to inform the `Naive.Leader` process assigned to the symbol that the settings for that symbol have been updated and that should cause the `Naive.Leader` process to withhold starting new `Naive.Trader` processes and terminate the whole tree when the last trader will finish.
 * **autostart trading** - this will be a very similar implementation to the one from the last chapter. It will require introducing a new supervisor(we will follow the same naming convention: rename `Naive.Application`'s registered process name to `Naive.Application`, create a new supervisor called `Naive.Supervisor`) and utilize the `Task` process to execute the autostarting logic.
 
 
 ```{r, fig.align="center", out.height="50%", out.width="100%", echo=FALSE}
-knitr::include_graphics("images/chapter_12_02_sup_diagram.png")
+knitr::include_graphics("images/chapter_12_02_sup_diagram.jpg")
 ```
 
 ## (Re-)Implement the start trading functionality
@@ -60,8 +80,6 @@ Our `start_trading/1` implementation is almost the same as one for the `streamer
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
   def start_trading(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-    
     case get_pid(symbol) do
       nil ->
         Logger.info("Starting trading of #{symbol}")
@@ -77,19 +95,17 @@ Our `start_trading/1` implementation is almost the same as one for the `streamer
   ...
 ```
 
-\newpage
-
 together with additional helper functions:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   defp get_pid(symbol) do
-    Process.whereis(:"Elixir.Naive.SymbolSupervisor-#{symbol}")
+    Process.whereis(:"Elixir.Naive.SymbolSupervisor-#{String.upcase(symbol)}")
   end
 
   defp update_trading_status(symbol, status)
        when is_binary(symbol) and is_binary(status) do
-    Repo.get_by(Settings, symbol: symbol)
+    Repo.get_by(Settings, symbol: String.upcase(symbol))
     |> Ecto.Changeset.change(%{status: status})
     |> Repo.update()
   end
@@ -102,7 +118,7 @@ together with additional helper functions:
   end
 ```
 
-Both implementation and helper functions are almost the same as the ones inside the `naive` application. It could be tempting to abstract some of the logic away but remember that we should treat all applications in our umbrella project as standalone services that should not share any code if possible(we broke that rule for the `TradeEvent` struct from the `streamer` app but we could easily just make a lib with that struct that would be shared between two applications). I would shy away from sharing any business logic between applications in the umbrella project.
+Both implementation and helper functions are almost the same as the ones inside the `streamer` application. It could be tempting to abstract some of the logic away but remember that we should treat all applications in our umbrella project as standalone services that should not share any code if possible(we broke that rule for the `TradeEvent` struct from the `streamer` app but we could easily just make a lib with that struct that would be shared between two applications). I would shy away from sharing any business logic between applications in the umbrella project.
 
 There are two additional places where we need to make updates to get our `start_trading/1` to work again:
 
@@ -138,8 +154,6 @@ Stop trading will require a change in two places, first inside the `Naive.Dynami
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
   def stop_trading(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case get_pid(symbol) do
       nil ->
         Logger.warning("Trading on #{symbol} already stopped")
@@ -214,7 +228,7 @@ Now we need to swap the `Naive.DynamicSymbolSupervisor` to `Naive.Supervisor` in
     opts = [strategy: :one_for_one, name: Naive.Application] # <= name updated
 ```
 
-\newpage
+
 
 Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSymbolSupervisor` module as our new `Task` refers to it:
 
@@ -256,17 +270,32 @@ At this moment we are able to test the current implementation inside the IEx:
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> Naive.start_trading("ethusdt")
-21:35:30.207 [info]  Starting trading of ETHUSDT
-21:35:30.261 [info]  Starting new supervision tree to trade on ETHUSDT
+iex(1)> Mix.ensure_application!(:wx)
+:ok
+iex(2)> Mix.ensure_application!(:runtime_tools)
+:ok
+iex(3)> Mix.ensure_application!(:observer)
+:ok
+iex(4)> :observer.start()
+...
+iex(5)> Streamer.start_streaming("XRPUSDT")
+21:35:30.107 [info]  Starting streaming on XRPUSDT
+{:ok, #PID<0.370.0>}
+iex(6)> Naive.start_trading("XRPUSDT")
+21:35:30.207 [info]  Starting trading of XRPUSDT
+21:35:30.261 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.372.0>}
-21:35:33.344 [info]  Initializing new trader(1612647333342) for ETHUSDT
-iex(3)> Naive.start_trading("neousdt")    
-21:35:54.128 [info]  Starting trading of NEOUSDT
-21:35:54.169 [info]  Starting new supervision tree to trade on NEOUSDT
+21:35:33.344 [info]  Initializing new trader(1612647333342) for XRPUSDT
+iex(7)> Streamer.start_streaming("ETHUSDT")
+21:35:33.507 [info]  Starting streaming on ETHUSDT
+{:ok, #PID<0.370.0>}
+iex(8)> Naive.start_trading("ETHUSDT")
+21:35:54.128 [info]  Starting trading of ETHUSDT
+21:35:54.169 [info]  Starting new supervision tree to trade on ETHUSDT
 {:ok, #PID<0.383.0>}
-21:35:56.007 [info]  Initializing new trader(1612647356007) for NEOUSDT
-21:38:07.699 [info]  Stopping trading of NEOUSDT
+21:35:56.007 [info]  Initializing new trader(1612647356007) for ETHUSDT
+iex(9)> Naive.stop_trading("ETHUSDT")
+21:38:07.699 [info]  Stopping trading of ETHUSDT
 {:ok,
  %Naive.Schema.Settings{
      ...
@@ -278,9 +307,9 @@ We can now exit the IEx and start a new one:
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-21:39:16.894 [info]  Starting trading of ETHUSDT
-21:39:16.938 [info]  Starting new supervision tree to trade on ETHUSDT
-21:39:18.786 [info]  Initializing new trader(1612647558784) for ETHUSDT
+21:39:16.894 [info]  Starting trading of XRPUSDT
+21:39:16.938 [info]  Starting new supervision tree to trade on XRPUSDT
+21:39:18.786 [info]  Initializing new trader(1612647558784) for XRPUSDT
 iex(1)>
 ```
 
@@ -297,16 +326,14 @@ Last but not least, we will move on to the `shutdown_trading/1` functionality. L
   ...
 ```
 
-
-
-Next, we will create a `shutdown_trading/1` function inside the `Naive.DynamicSymbolSupervisor` module where we will check is there any trading going on for that symbol(the same as for start/stop), and in case of trading happening we will inform the `Naive.Leader` process handling that symbol that settings have been updated:
+Next, we will create a `shutdown_trading/1` function inside the `Naive.DynamicSymbolSupervisor` module
+where we will check if there is any trading going on for that symbol(the same as for start/stop),
+and in case of trading happening we will inform the `Naive.Leader` process handling that symbol that settings have been updated:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
   def shutdown_trading(symbol) when is_binary(symbol) do
-    symbol = String.upcase(symbol)
-
     case get_pid(symbol) do
       nil ->
         Logger.warning("Trading on #{symbol} already stopped")
@@ -351,7 +378,7 @@ Ok, we have a way to update the settings of the `Naive.Leader` process "on the g
 
 There are two places that require modification:
 
-* whenever the `Naive.Trader` process will finish the trade cycle, `Naive.Leader` process should *not* start a new one, as well as check, was that the last trader process and if that was the case it needs to call the `Naive.stop_trading/1` function with its symbol to terminate whole supervision tree for that symbol
+* whenever the `Naive.Trader` process will finish the trade cycle, `Naive.Leader` process should *not* start a new one, as well as check if that was the last trader process - if so, it needs to call the `Naive.stop_trading/1` function with its symbol to terminate the whole supervision tree for that symbol
 * whenever the `Naive.Leader` process will receive a `rebuy` notification, it should just ignore it when the symbol is in the `shutdown` state.
 
 Let's look at the updated implementation of the "end of trade" handler:
@@ -402,7 +429,11 @@ Let's look at the updated implementation of the "end of trade" handler:
   ...
 ```
 
-As visible in the above code, whenever the `Naive.Trader` process will finish the trade cycle, the `Naive.Leader` process will check can it find a record of that trader in its state (no changes here). We will modify the callback so the leader process will check the `settings.status`. In the `shutdown` status it checks wheater it was the last trader in the `traders` list, to terminate the whole tree at that time(using the `Naive.stop_trading/1` function).
+As visible in the above code, whenever the `Naive.Trader` process will finish the trade cycle,
+the `Naive.Leader` process will check if it can find a record of that trader in its state (no changes here).
+We will modify the callback so the leader process will check the `settings.status`.
+In the `shutdown` status it checks whether it was the last trader in the `traders` list,
+to terminate the whole tree at that time(using the `Naive.stop_trading/1` function).
 
 The second callback that we need to modify is the `rebuy` triggered:
 
@@ -458,9 +489,7 @@ $ mix ecto.gen.migration update_trading_status
 * creating priv/repo/migrations/20210205232303_update_trading_status.exs
 ```
 
-
-
-Inside the generated migration file we need to excute a raw SQL command:
+Inside the generated migration file we need to execute a raw SQL command:
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210205232303_update_trading_status.exs
@@ -486,64 +515,89 @@ defenum(Naive.Schema.TradingStatusEnum, :trading_status, [:on, :off, :shutdown])
 
 Don't forget to run `mix ecto.migrate` to run the new migration.
 
-We can now test the `shutdown_trading/1` functionality inside the IEx:
+## Manual testing in IEx
+
+We can now test the `shutdown_trading/1` functionality:
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
 ...
-iex(1)> Streamer.start_streaming("ethusdt")
-21:46:26.651 [info]  Starting streaming on ETHUSDT
+iex(1)> Streamer.start_streaming("XRPUSDT")
+21:46:26.651 [info]  Starting streaming on XRPUSDT
 {:ok, #PID<0.372.0>}
-iex(2)> Naive.start_trading("ethusdt")     
-21:46:42.830 [info]  Starting trading of ETHUSDT
-21:46:42.867 [info]  Starting new supervision tree to trade on ETHUSDT
+iex(2)> Naive.start_trading("XRPUSDT")     
+21:46:42.830 [info]  Starting trading of XRPUSDT
+21:46:42.867 [info]  Starting new supervision tree to trade on XRPUSDT
 {:ok, #PID<0.379.0>}
-21:46:44.816 [info]  Initializing new trader(1612648004814) for ETHUSDT
+21:46:44.816 [info]  Initializing new trader(1612648004814) for XRPUSDT
 ...
-21:47:52.448 [info]  Rebuy triggered for ETHUSDT by the trader(1612648004814)
+21:47:52.448 [info]  Rebuy triggered for XRPUSDT by the trader(1612648004814)
 ...
-21:49:58.900 [info]  Rebuy triggered for ETHUSDT by the trader(1612648089409)
+21:49:58.900 [info]  Rebuy triggered for XRPUSDT by the trader(1612648089409)
 ...
-21:50:58.927 [info]  Rebuy triggered for ETHUSDT by the trader(1612648198900)
+21:50:58.927 [info]  Rebuy triggered for XRPUSDT by the trader(1612648198900)
 ...
-21:53:27.202 [info]  Rebuy triggered for ETHUSDT by the trader(1612648326215)
-21:53:27.250 [info]  Rebuy triggered for ETHUSDT by the trader(1612648325512)
-21:53:27.250 [info]  All traders already started for ETHUSDT
+21:53:27.202 [info]  Rebuy triggered for XRPUSDT by the trader(1612648326215)
+21:53:27.250 [info]  Rebuy triggered for XRPUSDT by the trader(1612648325512)
+21:53:27.250 [info]  All traders already started for XRPUSDT
 
 # at this moment we have 5 `Naive.Trader` processes trading in parallel
 
-iex(4)> Naive.shutdown_trading("ethusdt")
-21:55:01.556 [info]  Shutdown of trading on ETHUSDT initialized
+iex(4)> Naive.shutdown_trading("XRPUSDT")
+21:55:01.556 [info]  Shutdown of trading on XRPUSDT initialized
 {:ok,
  %Naive.Schema.Settings{
      ...
  }}
 ...
-22:06:58.855 [info]  Trader(1612648407202) finished trade cycle for ETHUSDT
-22:06:58.855 [info]  ETHUSDT trader finished trade - restarting
-22:06:58.855 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+22:06:58.855 [info]  Trader(1612648407202) finished trade cycle for XRPUSDT
+22:06:58.855 [info]  XRPUSDT trader finished trade - restarting
+22:06:58.855 [warn]  The leader won't start a new trader on XRPUSDT as symbol is in
 shutdown state
-22:07:50.768 [info]  Trader(1612648325512) finished trade cycle for ETHUSDT
-22:07:50.768 [info]  ETHUSDT trader finished trade - restarting
-22:07:50.768 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+22:07:50.768 [info]  Trader(1612648325512) finished trade cycle for XRPUSDT
+22:07:50.768 [info]  XRPUSDT trader finished trade - restarting
+22:07:50.768 [warn]  The leader won't start a new trader on XRPUSDT as symbol is in
 shutdown state
-22:07:50.857 [info]  Trader(1612648326215) finished trade cycle for ETHUSDT
-22:07:50.857 [info]  ETHUSDT trader finished trade - restarting
-22:07:50.857 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+22:07:50.857 [info]  Trader(1612648326215) finished trade cycle for XRPUSDT
+22:07:50.857 [info]  XRPUSDT trader finished trade - restarting
+22:07:50.857 [warn]  The leader won't start a new trader on XRPUSDT as symbol is in
 shutdown state
-22:07:51.079 [info]  Trader(1612648089409) finished trade cycle for ETHUSDT
-22:07:51.079 [info]  ETHUSDT trader finished trade - restarting
-22:07:51.079 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+22:07:51.079 [info]  Trader(1612648089409) finished trade cycle for XRPUSDT
+22:07:51.079 [info]  XRPUSDT trader finished trade - restarting
+22:07:51.079 [warn]  The leader won't start a new trader on XRPUSDT as symbol is in
 shutdown state
-22:08:05.401 [info]  Trader(1612648004814) finished trade cycle for ETHUSDT
-22:08:05.401 [info]  ETHUSDT trader finished trade - restarting
-22:08:05.401 [warn]  The leader won't start a new trader on ETHUSDTas symbol is in
+22:08:05.401 [info]  Trader(1612648004814) finished trade cycle for XRPUSDT
+22:08:05.401 [info]  XRPUSDT trader finished trade - restarting
+22:08:05.401 [warn]  The leader won't start a new trader on XRPUSDT as symbol is in
 shutdown state
-22:08:05.401 [info]  Stopping trading of ETHUSDT
+22:08:05.401 [info]  Stopping trading of XRPUSDT
 ```
 
-As we can see from the logs above, our `naive` strategy grown from 1 to 5 `Naive.Trader` processes running in parallel, then we called the `shutdown_trading/1` function. In the `shutdown` status, the `Naive.Leader` process ignored `rebuy` notifications and wasn't starting any new `Naive.Trader` processes as the old ones were finishing. At the moment when the last `Naive.Trader` process finished the trade cycle, the `Naive.Leader` called `stop_trading/1` on "it's" symbol, terminating the whole supervision tree for that symbol.
+As we can see from the logs above, our `naive` strategy grew from 1 to 5 `Naive.Trader` processes running in parallel,
+then we called the `shutdown_trading/1` function.
+In the `shutdown` status, the `Naive.Leader` process ignored `rebuy` notifications and
+wasn't starting any new `Naive.Trader` processes as the old ones were finishing.
+At the moment when the last `Naive.Trader` process finished the trade cycle,
+the `Naive.Leader` called `stop_trading/1` on its symbol, terminating the whole supervision tree for that symbol.
 
-[Note] Please remember to run the `mix format` to keep things nice and tidy.
+**The naive trading app now has full lifecycle control!** We've implemented:
 
-The source code for this chapter can be found on [GitHub](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_12)
+- Start/stop trading with database-backed status persistence
+- Graceful shutdown that lets traders complete their cycles
+- Autostart functionality that resumes trading after app restart
+- A `rest_for_one` supervision strategy ensuring autostart runs when needed
+
+The shutdown feature is particularly important for a real trading system. It means we can safely wind down trading without being left with open positions or incomplete trades.
+
+**So, What's Next?**
+
+If you've been following along, you've probably noticed that the `Naive.DynamicSymbolSupervisor` and `Streamer.DynamicStreamerSupervisor` modules look remarkably similar. We've essentially copy-pasted the same supervision patterns between them.
+
+In the next chapter, we'll address this duplication by creating a `Core.ServiceSupervisor` module that abstracts the common logic. We'll use Elixir macros to generate the boilerplate code, letting us define supervisors with minimal repetition while keeping each application independent.
+
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_11](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_11)).
