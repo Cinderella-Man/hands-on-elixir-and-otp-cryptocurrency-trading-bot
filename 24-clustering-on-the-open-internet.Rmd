@@ -1,0 +1,1332 @@
+# Clustering on the Open Internet
+
+In the last chapter, we replaced Postgres with SQLite - each trading node now
+carries its own database as a single file. We set up Litestream for continuous
+backups and removed every external infrastructure dependency. The application
+is fully self-contained.
+
+But self-contained nodes sitting in isolation aren't very useful. We want to run
+multiple trading nodes - potentially on different machines, in different data
+centres, maybe even different continents - and still have a unified view of
+what's happening across the fleet. Which symbols are being traded? How many
+open positions exist? What's the total order volume? Right now, answering any
+of these questions means SSH-ing into each machine and running queries by hand.
+
+Erlang was built for exactly this problem. The BEAM has native support for
+connecting nodes into a cluster, where any process on any node can communicate
+with any process on any other node as if they were local. This is not an
+add-on or a library feature - it's baked into the runtime. Two Erlang nodes
+that know each other's names and share a secret cookie can form a cluster with
+a single function call.
+
+In this chapter, we'll build an OTP release, deploy it to plain virtual
+machines(no containers), configure Erlang distribution for secure communication
+over the open internet, wire up `libcluster` for automatic cluster formation,
+and build a module that queries data across all connected nodes. By the end,
+we'll have a fleet of independent trading bots that can see each other.
+
+## Objectives
+- building an OTP release for deployment
+- deploying to virtual machines without containers
+- understanding Erlang distribution: node names, cookies, and EPMD
+- securing inter-node communication on the open internet
+- configuring `libcluster` for automatic cluster formation
+- querying data across a dynamic set of nodes
+
+## Building an OTP release
+
+An OTP release is a self-contained package of your application, its
+dependencies, the Elixir runtime, and the Erlang VM - everything needed to
+run without installing Elixir or Erlang on the target machine.
+Since Elixir 1.9, the built-in `mix release` handles this
+for us(older guides may reference a third-party tool called Distillery, which is no longer needed).
+
+### Configuring the release in `mix.exs`
+
+Before generating any files, let's configure the release itself. Every release
+is tied to a version - this is the version in your `mix.exs`, and it matters
+more than you might think. OTP uses this version to track what's running on
+each node, and later(when we add hot code upgrades) to compute the
+differences between the old and new code.
+
+Make sure your `mix.exs` has an explicit version:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+defmodule Hedgehog.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :hedgehog,
+      version: "0.1.0", # <= this version drives the release
+      ...
+      releases: releases()
+    ]
+  end
+
+  ...
+
+  defp releases do
+    [
+      hedgehog: [
+        include_executables_for: [:unix],
+        strip_beams: false, # <= added - keep debug info for upgrades
+        steps: [:assemble, :tar] # <= added - produce a tarball
+      ]
+    ]
+  end
+end
+```
+
+Two things to note about this configuration. `strip_beams: false` preserves
+debug information and module metadata in the compiled `.beam` files. Without
+this, OTP cannot generate the instructions it needs when upgrading code on
+a running node - we'll use this in the next chapter when we introduce hot code
+reloading. The cost is slightly larger beam files(typically 20-40% bigger), but
+for a trading bot this is negligible.
+
+`steps: [:assemble, :tar]` tells `mix release` to produce a compressed tarball
+alongside the normal release directory. This tarball is what we'll ship to
+production servers. Deploying a tarball rather than syncing a directory is
+important: it gives us a clean, versioned artifact that we can unpack on the
+server without destroying the previous version's files. That matters for
+rollbacks, and it matters even more when we add hot code upgrades.
+
+### Generating release configuration files
+
+Generate the template files that control how the release behaves:
+
+```{r, engine = 'bash', eval = FALSE}
+mix release.init
+* creating rel/vm.args.eex
+* creating rel/remote.vm.args.eex
+* creating rel/env.sh.eex
+* creating rel/env.bat.eex
+```
+
+This creates four files in the `rel/` directory. We care about two of them:
+`env.sh.eex`(sets environment variables before the VM starts) and
+`vm.args.eex`(passes flags directly to the Erlang VM).
+
+### Configuring the node name and cookie
+
+We'll configure the node name and cookie now to get the release built,
+then explain the full mechanics of Erlang distribution after the deploy.
+If you want the theory first, skip ahead to the "Understanding Erlang distribution"
+section and come back here after.
+
+For nodes to find and trust each other, every node needs two things: a unique
+name and a shared secret called a cookie. We'll set both through environment
+variables in `rel/env.sh.eex`:
+
+```{r, engine = 'bash', eval = FALSE}
+# /rel/env.sh.eex
+export RELEASE_DISTRIBUTION=name
+export RELEASE_NODE=${NODE_NAME:-hedgehog@127.0.0.1}
+export RELEASE_COOKIE=${RELEASE_COOKIE:-$(cat /home/hedgehog/.erlang.cookie)}
+```
+
+A few things to note here. `RELEASE_DISTRIBUTION=name` tells the VM to use
+fully qualified names(also called "long names") - this is required when nodes
+run on different machines. The alternative, `sname`(short names), only works
+within a single hostname or local network and cannot cross network boundaries.
+
+`RELEASE_NODE` sets the node's identity. The format is `name@host`, where
+`host` must be an IP address or a DNS name that other nodes can resolve. We
+default to `hedgehog@127.0.0.1` for local development, but in production
+you'll set `NODE_NAME` to something like `hedgehog@203.0.113.10`.
+
+`RELEASE_COOKIE` is the shared secret. We read it from a file by default, but
+you can also set it directly as an environment variable. The cookie must be
+identical on every node that should form a cluster.
+
+### Constraining the distribution port range
+
+Erlang uses a daemon called EPMD(Erlang Port Mapper Daemon) to map node names
+to ports. EPMD itself listens on port 4369, and each node picks a random high
+port for its actual inter-node traffic. This is a problem for firewalls - you
+can't whitelist a random port.
+
+We fix this by telling the VM to use a specific port range. Add the following
+to `rel/vm.args.eex`:
+
+```{r, engine = 'text', eval = FALSE}
+# /rel/vm.args.eex
+-kernel inet_dist_listen_min 9100
+-kernel inet_dist_listen_max 9155
+```
+
+This constrains the distribution port to a known range. For a single node per
+machine, a range of one port(e.g. 9100-9100) is sufficient. A wider range
+accommodates multiple nodes on the same machine during development or testing.
+
+### Running database migrations in a release
+
+In development, we run `mix ecto.migrate`. But a release doesn't have Mix -
+it's a compiled artifact. Phoenix projects include a release module that
+provides migration support. If your project doesn't have one, create it:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/release.ex
+defmodule Hedgehog.Release do
+  @app :hedgehog
+
+  def migrate do
+    load_app()
+
+    for repo <- repos() do
+      {:ok, _, _} =
+        Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
+    end
+  end
+
+  def rollback(repo, version) do
+    load_app()
+    {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))
+  end
+
+  defp repos do
+    Application.fetch_env!(@app, :ecto_repos)
+  end
+
+  defp load_app do
+    Application.load(@app)
+  end
+end
+```
+
+Notice that `load_app/0` uses `Application.load/1` - not
+`Application.ensure_all_started/1`. The difference is critical. `load/1` reads
+the application's configuration without starting any processes.
+`ensure_all_started/1` would boot the entire supervision tree - the Repo,
+Litestream, Phoenix endpoint, trading processes - all before the migration
+has run. That means Litestream would try to connect to S3, the Repo would try
+to open a database that might not have the right schema yet, and you'd need
+every production environment variable set just to run a migration.
+`Ecto.Migrator.with_repo/2` handles starting just the Repo for us, which is
+all a migration needs.
+
+After deploying, run migrations with:
+
+```{r, engine = 'bash', eval = FALSE}
+bin/hedgehog eval "Hedgehog.Release.migrate()"
+```
+
+### Building the release
+
+Build the release for production:
+
+```{r, engine = 'bash', eval = FALSE}
+MIX_ENV=prod mix release
+...
+* assembling hedgehog-0.1.0 on MIX_ENV=prod
+* using config/runtime.exs to configure the release at runtime
+* building hedgehog-0.1.0.tar.gz
+...
+Release created at _build/prod/rel/hedgehog
+```
+
+Because we configured `steps: [:assemble, :tar]`, the build produces both the
+release directory *and* a tarball at
+`_build/prod/rel/hedgehog/hedgehog-0.1.0.tar.gz`. The tarball is what we'll
+ship to production. It contains everything - the ERTS runtime, your compiled
+code, all dependencies - in a single file named after your application version.
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on cross-compilation:** The release must be built on the same OS and
+architecture as the target machine. If you develop on macOS but deploy to
+Linux, you need to build the release on a Linux machine(or in a Linux VM/CI pipeline).
+You cannot build on `x86_64-apple-darwin` and deploy to `x86_64-unknown-linux-gnu` -
+the ERTS binary and any native code(including the SQLite NIF used by `ecto_sqlite3`) won't run.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+## Deploying to a virtual machine
+
+We're deploying to plain VMs - no Docker, no Kubernetes, no orchestrator.
+Just Linux machines with an SSH connection. This is the simplest production
+setup and it maps directly to our architecture: one machine, one node, one
+database.
+
+### What you need on the target machine
+
+The target machine needs surprisingly little:
+
+- A Linux distribution(Ubuntu, Debian, etc.)
+- A user account to run the application(don't run as root)
+- The `libncurses` and `libssl` libraries(required by ERTS)
+- Directories for the application and database
+
+Set up the target machine:
+
+```{r, engine = 'bash', eval = FALSE}
+# On the target machine
+sudo apt-get update && sudo apt-get install -y libncurses5 libssl-dev
+sudo useradd -m -s /bin/bash hedgehog
+sudo mkdir -p /opt/hedgehog /data/hedgehog
+sudo chown hedgehog:hedgehog /opt/hedgehog /data/hedgehog
+```
+
+### Deploying the release
+
+Copy the tarball to the target machine and unpack it:
+
+```{r, engine = 'bash', eval = FALSE}
+# From the build machine
+scp _build/prod/rel/hedgehog/hedgehog-0.1.0.tar.gz \
+  hedgehog@your-server:/opt/hedgehog/
+```
+
+```{r, engine = 'bash', eval = FALSE}
+# On the target machine, as the hedgehog user
+cd /opt/hedgehog
+tar -xzf hedgehog-0.1.0.tar.gz
+rm hedgehog-0.1.0.tar.gz
+```
+
+After unpacking, `/opt/hedgehog` contains the standard OTP release layout:
+
+```
+/opt/hedgehog/
+├── bin/
+│   └── hedgehog          # CLI entry point
+├── erts-<version>/       # Erlang runtime
+├── lib/
+│   ├── hedgehog-0.1.0/   # your compiled code (versioned!)
+│   ├── ecto-3.x.x/       # dependencies (versioned)
+│   └── ...
+└── releases/
+    ├── 0.1.0/            # release metadata for this version
+    │   ├── sys.config
+    │   └── vm.args
+    ├── RELEASES          # tracks installed versions
+    └── start_erl.data
+```
+
+Notice how everything is versioned - `lib/hedgehog-0.1.0/`,
+`releases/0.1.0/`. This is the OTP convention and it matters. When we deploy
+version `0.2.0` later, the new directories sit alongside the old ones rather
+than replacing them. The running node can serve the old code while the new
+code is being installed - which is exactly what makes hot code upgrades
+possible.
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Why not rsync?** You might be tempted to use `rsync -avz` to push the
+release directory directly. This works for a first deploy but creates problems
+later: rsync overwrites existing files, which means the old version's beam
+files are destroyed. If you ever need to rollback, or if you want to upgrade
+code on a running node without restarting it, you need both the old and new
+versions on disk simultaneously. Deploying via tarball preserves this property
+naturally - each version is a clean, self-contained snapshot.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+### Environment variables
+
+Create an environment file with all the variables our application needs.
+This includes the database path from chapter 23, the Litestream credentials,
+and the new distribution settings:
+
+```{r, engine = 'bash', eval = FALSE}
+# /etc/hedgehog/env
+DATABASE_PATH=/data/hedgehog/hedgehog.db
+NODE_NAME=hedgehog@203.0.113.10
+RELEASE_COOKIE=a_very_long_random_string_that_all_nodes_share
+
+# Phoenix
+SECRET_KEY_BASE=a_very_long_random_string_for_phoenix
+PORT=4000
+
+# Litestream (from chapter 23)
+LITESTREAM_REPLICA_URL=s3://hedgehog-backups/node1-db?endpoint=<account-id>.r2.cloudflarestorage.com
+LITESTREAM_ACCESS_KEY_ID=<your-access-key-id>
+LITESTREAM_SECRET_ACCESS_KEY=<your-secret-access-key>
+
+# Binance API
+BINANCE_API_KEY=<your-api-key>
+BINANCE_API_SECRET=<your-api-secret>
+```
+
+Set the file permissions so only the `hedgehog` user can read it:
+
+```{r, engine = 'bash', eval = FALSE}
+sudo chmod 600 /etc/hedgehog/env
+sudo chown hedgehog:hedgehog /etc/hedgehog/env
+```
+
+### Creating a systemd service
+
+We want the application to start automatically on boot, restart on crashes,
+and log to the system journal. A systemd service handles all of this:
+
+```{r, engine = 'text', eval = FALSE}
+# /etc/systemd/system/hedgehog.service
+[Unit]
+Description=Hedgehog Trading Bot
+After=network.target
+
+[Service]
+Type=exec
+User=hedgehog
+Group=hedgehog
+EnvironmentFile=/etc/hedgehog/env
+WorkingDirectory=/opt/hedgehog
+ExecStartPre=/opt/hedgehog/bin/hedgehog eval "Hedgehog.Release.migrate()"
+ExecStart=/opt/hedgehog/bin/hedgehog start
+ExecStop=/opt/hedgehog/bin/hedgehog stop
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The `ExecStartPre` line runs migrations before the application starts -
+this ensures the database schema is up to date on every deploy. Enable and
+start the service:
+
+```{r, engine = 'bash', eval = FALSE}
+sudo systemctl daemon-reload
+sudo systemctl enable hedgehog
+sudo systemctl start hedgehog
+```
+
+Check that it's running:
+
+```{r, engine = 'bash', eval = FALSE}
+sudo systemctl status hedgehog
+● hedgehog.service - Hedgehog Trading Bot
+     Active: active (running)
+...
+sudo journalctl -u hedgehog -f
+...
+```
+
+### Connecting to a running node
+
+One of the best things about OTP releases is remote shell access. You can
+attach to a running production node and inspect it interactively:
+
+```{r, engine = 'bash', eval = FALSE}
+# On the target machine, as the hedgehog user
+/opt/hedgehog/bin/hedgehog remote
+Erlang/OTP ...
+Interactive Elixir ...
+iex(hedgehog@203.0.113.10)1> Node.self()
+:"hedgehog@203.0.113.10"
+iex(hedgehog@203.0.113.10)2> Node.get_cookie()
+:a_very_long_random_string_that_all_nodes_share
+```
+
+You're now inside the running VM. You can inspect processes, query the
+database, check Litestream status - anything you could do in a local IEx
+session. Press `Ctrl+C` twice to disconnect without stopping the node.
+
+### Deploying an update
+
+When you're ready to deploy a new version, bump the version in `mix.exs`,
+rebuild, and ship the new tarball:
+
+```{r, engine = 'bash', eval = FALSE}
+# After updating mix.exs to version "0.2.0" and rebuilding:
+scp _build/prod/rel/hedgehog/hedgehog-0.2.0.tar.gz \
+  hedgehog@your-server:/opt/hedgehog/
+```
+
+```{r, engine = 'bash', eval = FALSE}
+# On the server - stop, unpack, start
+sudo systemctl stop hedgehog
+cd /opt/hedgehog
+tar -xzf hedgehog-0.2.0.tar.gz
+rm hedgehog-0.2.0.tar.gz
+sudo systemctl start hedgehog
+```
+
+After unpacking, `lib/` contains both `hedgehog-0.1.0/` and
+`hedgehog-0.2.0/`, and `releases/` contains both `0.1.0/` and `0.2.0/`. The
+node starts with the latest version. The old version's files remain on disk -
+this is intentional and will become essential in the next chapter when we
+upgrade without stopping.
+
+For now, this stop-unpack-start cycle is our deployment workflow. It's simple,
+predictable, and the brief downtime(typically under 5 seconds) is acceptable
+for an initial deployment. In the next chapter, we'll eliminate that downtime
+entirely.
+
+## Understanding Erlang distribution
+
+Before we configure automatic clustering, it's worth understanding what
+happens under the hood when two Erlang nodes connect. This knowledge will
+save you hours of debugging when things don't work.
+
+### Node names
+
+Every distributed Erlang node has a name in the format `name@host`. The `name`
+part is arbitrary - we use `hedgehog`. The `host` part must be something the
+other nodes can resolve: an IP address(`hedgehog@203.0.113.10`) or a DNS
+name(`hedgehog@node1.example.com`).
+
+There are two naming modes:
+
+- **Short names**(`-sname`): The host part is just a hostname without a domain.
+  Nodes using short names can only connect to other nodes on the same machine
+  or the same local network. Fine for development, not for production across
+  the internet.
+
+- **Long names**(`-name`): The host part is a fully qualified domain name or
+  IP address. Required for nodes that need to connect across networks. This
+  is what we configured with `RELEASE_DISTRIBUTION=name`.
+
+A node using short names cannot connect to a node using long names - they must
+all agree on the naming mode.
+
+### The cookie
+
+The cookie is a shared secret that acts as a first line of authentication.
+When node A tries to connect to node B, both nodes compare cookies. If they
+don't match, the connection is refused. That's it - there's no encryption,
+no challenge-response, no certificate exchange. Just a string comparison.
+
+This has an important security implication: anyone who knows your cookie and
+can reach your node's distribution port has full access to your VM. They can
+execute arbitrary code, read your data, and shut down your application. We'll
+address this in the security section.
+
+Generate a strong cookie:
+
+```{r, engine = 'bash', eval = FALSE}
+elixir -e "IO.puts(Base.encode32(:crypto.strong_rand_bytes(40)))"
+W3VFHXQW2Q3EZBSGK7GWCPDCW36LVWBXD2NOYF54DXQLQYVW7YVA====
+```
+
+Use this value as `RELEASE_COOKIE` on every node. Don't use short, guessable
+strings like `hedgehog` or `secret` - treat the cookie like a password.
+
+### EPMD
+
+EPMD(Erlang Port Mapper Daemon) is a small service that runs on every machine
+hosting Erlang nodes. It listens on TCP port 4369 and maintains a registry of
+node names to distribution ports. When node A wants to connect to
+`hedgehog@203.0.113.10`, it first contacts EPMD on `203.0.113.10:4369` and
+asks "what port is `hedgehog` listening on?". EPMD responds with the port
+number, and node A connects directly.
+
+EPMD starts automatically when you start a distributed Erlang node. You don't
+need to manage it separately, but you need to know it exists because:
+
+- Port 4369 must be reachable between nodes(or at least between the connecting
+  node and the target's EPMD)
+- The distribution port(which we constrained to 9100-9155) must also be
+  reachable
+- EPMD itself has no authentication - anyone can query it to discover which
+  nodes are running on a machine
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on EPMD alternatives:** Erlang supports running without EPMD by using a custom discovery module.
+The `-epmd_module` VM flag has supported this for years, though it was deprecated in OTP 27.
+The replacement is the `epmd_module` kernel application parameter, available since OTP 27.2.
+For our setup with `libcluster` handling discovery, EPMD is still the simplest path,
+but eliminating it reduces your attack surface by one open port.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+## Securing the cluster
+
+Here's the uncomfortable truth about Erlang distribution: it was designed for
+trusted networks. The cookie provides only a minimal gate - once past it, a
+connected node can execute arbitrary Erlang code on any other node in the
+cluster. There is no granular permission model. A connected node has the same
+power as a local IEx session.
+
+This means running an Erlang cluster on the open internet without additional
+protection is asking for trouble. Let's fix that.
+
+### The threat model
+
+For our trading bot, we need to protect against:
+
+- **Unauthorized connections:** Someone discovering our EPMD port and
+  brute-forcing(or sniffing) the cookie
+- **Eavesdropping:** Inter-node traffic(including database queries and trade
+  data) is sent in cleartext by default
+- **Port scanning:** Exposed EPMD and distribution ports advertising our
+  cluster's existence
+
+### Layer 1: Firewall rules
+
+The first and most important defence is a firewall. Only allow distribution
+traffic from known node IPs:
+
+```{r, engine = 'bash', eval = FALSE}
+# Allow EPMD and distribution ports only from known nodes
+sudo ufw allow from 203.0.113.11 to any port 4369
+sudo ufw allow from 203.0.113.11 to any port 9100:9155 proto tcp
+sudo ufw allow from 203.0.113.12 to any port 4369
+sudo ufw allow from 203.0.113.12 to any port 9100:9155 proto tcp
+# Deny everything else on these ports (default deny)
+sudo ufw enable
+```
+
+This is the single most effective measure. Even if someone obtains your cookie,
+they can't connect if the firewall blocks their IP.
+
+### Layer 2: A strong cookie
+
+Use the long, random cookie we generated earlier. Avoid anything guessable.
+The cookie is transmitted during the initial handshake but not used for ongoing
+encryption - it's more like a shared password than a session key.
+
+### Layer 3: VPN or WireGuard(recommended for production)
+
+For a production deployment, the gold standard is to run all inter-node traffic
+over a VPN. WireGuard is particularly well-suited for this: it's fast, simple
+to configure, and adds encryption with minimal overhead.
+
+With WireGuard, each node gets a private IP(e.g. `10.0.0.1`, `10.0.0.2`) and
+all distribution traffic flows through the encrypted tunnel. Your node names
+use the WireGuard IPs(`hedgehog@10.0.0.1`), the distribution ports are never
+exposed to the public internet, and the cookie becomes a secondary safeguard
+rather than your only protection.
+
+Setting up WireGuard is outside the scope of this chapter, but the
+configuration is straightforward - typically under 20 lines per node. The
+WireGuard documentation and the `wg-quick` tool make it approachable even if
+you haven't used a VPN before.
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on TLS distribution:** Erlang also supports encrypting the distribution
+protocol itself using TLS, via the `-proto_dist inet_tls` flag. This provides
+encryption and mutual certificate authentication without a VPN. However, it
+requires managing TLS certificates on every node, configuring a custom
+`ssl_dist_opt` file, and is considerably more complex to set up and maintain
+than a WireGuard tunnel. If you're already operating a PKI(Public Key
+Infrastructure) or are deploying in an environment where VPNs are not an
+option, TLS distribution is a solid choice. See the Erlang documentation on
+"Using TLS for Erlang Distribution" for the full setup procedure.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+### Summary of ports to open
+
+For quick reference, here are the ports each node needs:
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 4369 | TCP | EPMD(node discovery) |
+| 9100-9155 | TCP | Erlang distribution(inter-node traffic) |
+| 4000 | TCP | Phoenix web server(if using the web UI) |
+
+Open these ports only to known node IPs(for 4369 and 9100-9155) or to
+your management network. Port 4000 can be exposed more broadly if you want
+external access to the web interface.
+
+## Configuring `libcluster`
+
+We could connect nodes manually using `Node.connect/1`, but that's tedious
+and fragile. If a node restarts, all its connections are lost and someone
+(or something) has to reconnect it. `libcluster` automates this - it
+continuously attempts to form and heal a cluster based on a configured
+strategy.
+
+### Adding the dependency
+
+```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+  defp deps do
+    [
+      ...
+      {:libcluster, "~> 3.5"}, # <= added
+      ...
+    ]
+  end
+```
+
+```{r, engine = 'bash', eval = FALSE}
+mix deps.get
+...
+```
+
+### Choosing a strategy
+
+`libcluster` ships with several clustering strategies. For VMs with known
+IP addresses, `Cluster.Strategy.Epmd` is the right choice - you give it
+a list of node names and it connects to them on startup. Other strategies
+exist for dynamic environments(Kubernetes, multicast gossip, DNS), but for
+a fixed set of VMs, a simple list is the most reliable and debuggable option.
+
+### Configuration per environment
+
+In development, we disable clustering or use a local gossip strategy for
+testing. In production, we use the EPMD strategy with node names from
+environment variables.
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/dev.exs
+config :libcluster,
+  topologies: []
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/test.exs
+config :libcluster,
+  topologies: []
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/integration.exs
+config :libcluster,
+  topologies: []
+```
+
+For production, we read the list of peer nodes from an environment variable.
+Add the following inside the `if config_env() == :prod do` block in
+`runtime.exs`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/runtime.exs (inside the :prod block)
+  cluster_nodes =
+    case System.get_env("CLUSTER_NODES") do
+      nil ->
+        []
+
+      nodes_string ->
+        nodes_string
+        |> String.split(",", trim: true)
+        |> Enum.map(&String.trim/1)
+        |> Enum.map(&String.to_atom/1)
+    end
+
+  config :libcluster,
+    topologies: [
+      hedgehog: [
+        strategy: Cluster.Strategy.Epmd,
+        config: [
+          hosts: cluster_nodes
+        ]
+      ]
+    ]
+```
+
+The `CLUSTER_NODES` environment variable is a comma-separated list of node
+names. On each node, you list all the *other* nodes it should connect to:
+
+```{r, engine = 'bash', eval = FALSE}
+# On node 203.0.113.10
+export CLUSTER_NODES="hedgehog@203.0.113.11,hedgehog@203.0.113.12"
+
+# On node 203.0.113.11
+export CLUSTER_NODES="hedgehog@203.0.113.10,hedgehog@203.0.113.12"
+
+# On node 203.0.113.12
+export CLUSTER_NODES="hedgehog@203.0.113.10,hedgehog@203.0.113.11"
+```
+
+Add `CLUSTER_NODES` to each node's `/etc/hedgehog/env` file.
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on Erlang's mesh topology:** Erlang clusters are fully connected by
+default - every node connects to every other node. When node A connects to
+node B, and node B is already connected to node C, node A will automatically
+connect to node C as well. This means you technically only need to list *one*
+existing node in `CLUSTER_NODES` - once connected, the new node discovers and
+connects to all others. However, listing all nodes is more resilient: if the
+single listed node is down when you start, the new node won't join the cluster
+at all.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+### Adding to the supervision tree
+
+`libcluster` provides a `Cluster.Supervisor` that manages the connection
+strategy. Add it to your supervision tree in `application.ex`, before the
+trading supervisors but after the Repo:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/application.ex
+  def start(_type, _args) do
+    topologies = Application.get_env(:libcluster, :topologies, [])
+
+    children =
+      [
+        Hedgehog.Repo,
+        {Cluster.Supervisor, [topologies, [name: Hedgehog.ClusterSupervisor]]}, # <= added
+        ...
+      ] ++ litestream_children()
+    ...
+  end
+```
+
+The `Cluster.Supervisor` reads the topology configuration and immediately
+begins connecting to the listed nodes. If a connection fails, it retries
+automatically. If a connected node goes down, `libcluster` detects the
+disconnection(via Erlang's built-in node monitoring) and attempts to reconnect.
+
+## Testing the cluster locally
+
+Before deploying to production, let's verify that clustering works by running
+multiple nodes on our development machine.
+
+### Starting multiple nodes
+
+Open three terminal windows and start a node in each:
+
+```{r, engine = 'bash', eval = FALSE}
+# Terminal 1
+iex --name hedgehog1@127.0.0.1 --cookie dev_secret -S mix phx.server
+```
+
+```{r, engine = 'bash', eval = FALSE}
+# Terminal 2 (use a different port for Phoenix)
+PORT=4001 iex --name hedgehog2@127.0.0.1 --cookie dev_secret -S mix phx.server
+```
+
+```{r, engine = 'bash', eval = FALSE}
+# Terminal 3
+PORT=4002 iex --name hedgehog3@127.0.0.1 --cookie dev_secret -S mix phx.server
+```
+
+### Connecting nodes manually
+
+Since we disabled `libcluster` in dev, we can connect nodes manually to test
+the fundamentals:
+
+```{r, engine = 'bash', eval = FALSE}
+# In Terminal 1
+iex(hedgehog1@127.0.0.1)1> Node.connect(:"hedgehog2@127.0.0.1")
+true
+iex(hedgehog1@127.0.0.1)2> Node.connect(:"hedgehog3@127.0.0.1")
+true
+iex(hedgehog1@127.0.0.1)3> Node.list()
+[:"hedgehog2@127.0.0.1", :"hedgehog3@127.0.0.1"]
+```
+
+Check from Terminal 2 - it should see both other nodes thanks to Erlang's
+automatic mesh formation:
+
+```{r, engine = 'bash', eval = FALSE}
+# In Terminal 2
+iex(hedgehog2@127.0.0.1)1> Node.list()
+[:"hedgehog1@127.0.0.1", :"hedgehog3@127.0.0.1"]
+```
+
+The cluster is live. Every node can see every other node.
+
+### Testing with libcluster locally
+
+If you want to test `libcluster` itself, temporarily update `dev.exs`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/dev.exs (temporary - for testing only)
+config :libcluster,
+  topologies: [
+    hedgehog: [
+      strategy: Cluster.Strategy.Epmd,
+      config: [
+        hosts: [:"hedgehog1@127.0.0.1", :"hedgehog2@127.0.0.1", :"hedgehog3@127.0.0.1"]
+      ]
+    ]
+  ]
+```
+
+Start the three nodes as before. This time they should connect automatically
+without any manual `Node.connect/1` calls. Check the logs for messages from
+`libcluster` confirming the connections, then reset `dev.exs` back to
+`topologies: []` when you're done.
+
+## Querying data across the cluster
+
+Now for the payoff. We have multiple trading nodes, each with its own SQLite
+database, connected in a cluster. How do we get a unified view of what's
+happening across all of them?
+
+The key insight is that each node already has everything it needs to answer
+questions about itself - it has a `Hedgehog.Repo`, schemas, and query
+functions. All we need is a way to call those functions remotely and merge
+the results.
+
+### Introducing `:erpc`
+
+Erlang provides the `:erpc` module(introduced in OTP 23) for executing
+functions on remote nodes. It improves on the older `:rpc` module with better
+error handling and the ability to distinguish between returned values, raised
+exceptions, and communication failures.
+
+The function we care about is `:erpc.multicall/5` - it executes a function on
+multiple nodes in parallel and collects the results:
+
+```{r, engine = 'bash', eval = FALSE}
+iex(hedgehog1@127.0.0.1)1> :erpc.multicall(Node.list(), IO, :puts, ["hello from remote"])
+hello from remote
+hello from remote
+[{:ok, :ok}, {:ok, :ok}]
+```
+
+Each result is tagged with `{:ok, value}` on success or `{:error, reason}` on
+failure. This makes it easy to handle partial results when some nodes are
+unreachable.
+
+### Building a cluster query module
+
+Let's build a `Hedgehog.Cluster` module that provides a clean API for
+cross-node queries:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/cluster.ex
+defmodule Hedgehog.Cluster do
+  @moduledoc """
+  Query and aggregate data across all connected cluster nodes.
+  """
+
+  import Ecto.Query
+
+  alias Hedgehog.Repo
+  alias Hedgehog.Strategy.Naive.Settings, as: NaiveSettings
+
+  @default_timeout 5_000
+
+  @doc """
+  Returns a list of all connected nodes, including the current one.
+  """
+  def all_nodes do
+    [Node.self() | Node.list()]
+  end
+
+  @doc """
+  Executes a function on all nodes (including this one) and collects results.
+  Failed nodes are excluded from the result.
+  """
+  def multicall(module, function, args, timeout \\ @default_timeout) do
+    nodes = all_nodes()
+    results = :erpc.multicall(nodes, module, function, args, timeout)
+
+    nodes
+    |> Enum.zip(results)
+    |> Enum.flat_map(fn
+      {_node, {:ok, value}} when is_list(value) -> value
+      {_node, {:ok, value}} -> [value]
+      {node, {:error, reason}} ->
+        require Logger
+        Logger.warning("Cluster call to #{node} failed: #{inspect(reason)}")
+        []
+    end)
+  end
+
+  @doc """
+  Executes a function on all nodes and returns results tagged with the node name.
+  """
+  def multicall_tagged(module, function, args, timeout \\ @default_timeout) do
+    nodes = all_nodes()
+    results = :erpc.multicall(nodes, module, function, args, timeout)
+
+    nodes
+    |> Enum.zip(results)
+    |> Enum.map(fn
+      {node, {:ok, value}} -> {node, {:ok, value}}
+      {node, {:error, reason}} -> {node, {:error, reason}}
+    end)
+  end
+end
+```
+
+### Querying orders across the cluster
+
+Now we can build specific query functions. Let's add a function that returns
+the trading status of all symbols across every node:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/cluster.ex (add to the existing module)
+
+  @doc """
+  Returns all naive strategy settings with status :on across all nodes.
+  """
+  def active_trading_symbols do
+    multicall(__MODULE__, :local_active_symbols, [])
+  end
+
+  @doc false
+  def local_active_symbols do
+    Repo.all(
+      from(s in NaiveSettings,
+        where: s.status == :on,
+        select: %{symbol: s.symbol, node: ^to_string(Node.self())}
+      )
+    )
+  end
+```
+
+The pattern is simple: define a `local_*` function that queries the local
+database, then call it across all nodes via `multicall/4`. Each node executes
+the query against its own SQLite database and returns the result. The calling
+node merges everything into a single list.
+
+Try it from any node in the cluster:
+
+```{r, engine = 'bash', eval = FALSE}
+iex(hedgehog1@127.0.0.1)1> Hedgehog.Cluster.active_trading_symbols()
+[
+  %{symbol: "XRPUSDT", node: "hedgehog1@127.0.0.1"},
+  %{symbol: "BTCUSDT", node: "hedgehog2@127.0.0.1"},
+  %{symbol: "ETHUSDT", node: "hedgehog2@127.0.0.1"},
+  %{symbol: "DOGEUSDT", node: "hedgehog3@127.0.0.1"}
+]
+```
+
+One function call, one result, from every node in the cluster. Each node
+handles its own symbols but you can see the full picture from anywhere.
+
+### Adding a cluster status summary
+
+Let's add one more practical function - a high-level summary of the cluster
+state that's useful for monitoring:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/cluster.ex (add to the existing module)
+
+  @doc """
+  Returns a summary of each node's status: name, connected state,
+  and number of active trading symbols.
+  """
+  def status do
+    results = multicall_tagged(__MODULE__, :local_status, [])
+
+    Enum.map(results, fn
+      {node, {:ok, status}} ->
+        Map.put(status, :node, node)
+
+      {node, {:error, reason}} ->
+        %{node: node, status: :unreachable, reason: reason}
+    end)
+  end
+
+  @doc false
+  def local_status do
+    active_count =
+      Repo.aggregate(
+        from(s in NaiveSettings, where: s.status == :on),
+        :count
+      )
+
+    %{
+      status: :running,
+      version: Application.spec(:hedgehog, :vsn) |> to_string(),
+      active_symbols: active_count,
+      uptime_seconds: :erlang.statistics(:wall_clock) |> elem(0) |> div(1000)
+    }
+  end
+```
+
+```{r, engine = 'bash', eval = FALSE}
+iex(hedgehog1@127.0.0.1)1> Hedgehog.Cluster.status()
+[
+  %{node: :"hedgehog1@127.0.0.1", status: :running, version: "0.1.0", active_symbols: 1, uptime_seconds: 3842},
+  %{node: :"hedgehog2@127.0.0.1", status: :running, version: "0.1.0", active_symbols: 2, uptime_seconds: 7201},
+  %{node: :"hedgehog3@127.0.0.1", status: :running, version: "0.1.0", active_symbols: 1, uptime_seconds: 1923}
+]
+```
+
+Notice the `version` field - we pull it from `Application.spec/2`, which reads
+the version compiled into the release. This becomes particularly useful during
+rolling deploys: if you've updated some nodes but not others, `status/0` will
+show you exactly which version each node is running. In the next chapter, it
+will tell you whether a hot code upgrade has been applied.
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on `:erpc.multicall` and timeouts:** The timeout in `:erpc.multicall/5`
+is a *per-node* timeout, not a total timeout. If you set it to 5000ms and have
+three nodes, the worst case is still ~5 seconds(because calls run in parallel),
+not 15 seconds. However, if a node is unreachable and TCP hasn't timed out yet,
+the call to that node may block for the full timeout duration. Keep this in mind
+when choosing your timeout value - too short and you'll get false negatives on
+slow networks; too long and a single dead node will make your status check feel
+sluggish.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on code consistency:** When using `:erpc` to call functions on remote
+nodes, the code on the remote node must have the module and function you're
+calling. This is obvious when all nodes run the same release, but it becomes
+important during rolling deployments - if node A has been updated with a new
+version of `Hedgehog.Cluster` that adds a function, but node B is still
+running the old version, the `:erpc` call to node B will fail with an
+`UndefinedFunctionError`. Keep this in mind when deploying updates across a
+live cluster. We'll look at strategies for managing this in the next chapter
+when we discuss hot code reloading.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+## Deploying a second node
+
+Let's walk through adding a second node to the cluster. Assume the first node
+is already running on `203.0.113.10`.
+
+### Provision the second machine
+
+Repeat the target machine setup on `203.0.113.11`:
+
+```{r, engine = 'bash', eval = FALSE}
+# On 203.0.113.11
+sudo apt-get update && sudo apt-get install -y libncurses5 libssl-dev
+sudo useradd -m -s /bin/bash hedgehog
+sudo mkdir -p /opt/hedgehog /data/hedgehog
+sudo chown hedgehog:hedgehog /opt/hedgehog /data/hedgehog
+```
+
+### Deploy the release
+
+```{r, engine = 'bash', eval = FALSE}
+# From the build machine
+scp _build/prod/rel/hedgehog/hedgehog-0.1.0.tar.gz \
+  hedgehog@203.0.113.11:/opt/hedgehog/
+```
+
+```{r, engine = 'bash', eval = FALSE}
+# On 203.0.113.11, as the hedgehog user
+cd /opt/hedgehog
+tar -xzf hedgehog-0.1.0.tar.gz
+rm hedgehog-0.1.0.tar.gz
+```
+
+### Configure the environment
+
+Create `/etc/hedgehog/env` on the second machine. The `RELEASE_COOKIE` must
+match the first node. The `NODE_NAME` must be different. `CLUSTER_NODES` lists
+the first node:
+
+```{r, engine = 'bash', eval = FALSE}
+# /etc/hedgehog/env on 203.0.113.11
+DATABASE_PATH=/data/hedgehog/hedgehog.db
+NODE_NAME=hedgehog@203.0.113.11
+RELEASE_COOKIE=a_very_long_random_string_that_all_nodes_share
+CLUSTER_NODES=hedgehog@203.0.113.10
+
+SECRET_KEY_BASE=a_very_long_random_string_for_phoenix
+PORT=4000
+
+LITESTREAM_REPLICA_URL=s3://hedgehog-backups/node2-db?endpoint=<account-id>.r2.cloudflarestorage.com
+LITESTREAM_ACCESS_KEY_ID=<your-access-key-id>
+LITESTREAM_SECRET_ACCESS_KEY=<your-secret-access-key>
+
+BINANCE_API_KEY=<your-api-key>
+BINANCE_API_SECRET=<your-api-secret>
+```
+
+**Note:** Each node should use a different path prefix in `LITESTREAM_REPLICA_URL`
+(e.g. `node1-db`, `node2-db`) so their backups don't overwrite each other.
+Alternatively, use separate buckets per node.
+
+### Open firewall ports
+
+On both machines, allow distribution traffic from the other:
+
+```{r, engine = 'bash', eval = FALSE}
+# On 203.0.113.10
+sudo ufw allow from 203.0.113.11 to any port 4369
+sudo ufw allow from 203.0.113.11 to any port 9100:9155 proto tcp
+
+# On 203.0.113.11
+sudo ufw allow from 203.0.113.10 to any port 4369
+sudo ufw allow from 203.0.113.10 to any port 9100:9155 proto tcp
+```
+
+### Update the first node's configuration
+
+Add the new node to the first node's `CLUSTER_NODES`:
+
+```{r, engine = 'bash', eval = FALSE}
+# /etc/hedgehog/env on 203.0.113.10 - update this line:
+CLUSTER_NODES=hedgehog@203.0.113.11
+```
+
+Restart the first node to pick up the change:
+
+```{r, engine = 'bash', eval = FALSE}
+sudo systemctl restart hedgehog
+```
+
+### Start the second node
+
+```{r, engine = 'bash', eval = FALSE}
+# On 203.0.113.11
+sudo cp /etc/systemd/system/hedgehog.service /etc/systemd/system/hedgehog.service
+sudo systemctl daemon-reload
+sudo systemctl enable hedgehog
+sudo systemctl start hedgehog
+```
+
+### Verify the cluster
+
+Connect to either node and check:
+
+```{r, engine = 'bash', eval = FALSE}
+/opt/hedgehog/bin/hedgehog remote
+iex(hedgehog@203.0.113.10)1> Node.list()
+[:"hedgehog@203.0.113.11"]
+iex(hedgehog@203.0.113.10)2> Hedgehog.Cluster.status()
+[
+  %{node: :"hedgehog@203.0.113.10", status: :running, version: "0.1.0", active_symbols: 1, uptime_seconds: 42},
+  %{node: :"hedgehog@203.0.113.11", status: :running, version: "0.1.0", active_symbols: 0, uptime_seconds: 15}
+]
+```
+
+The cluster is live. Two independent trading nodes, each with its own database,
+connected and queryable from either side.
+
+## Troubleshooting
+
+Clustering problems are almost always one of four things. Here's how to
+diagnose each:
+
+**Nodes can't connect at all:**
+Check that EPMD is running on both machines(`epmd -names`), that port 4369 is
+reachable from the other node(`nc -zv 203.0.113.11 4369`), and that the
+distribution port range(9100-9155) is open. Also verify that both nodes use
+the same naming mode(`-name`, not `-sname`).
+
+**Cookie mismatch:**
+If the cookie doesn't match, you'll see a log message like
+`connection attempt from disallowed node`. Verify cookies match with
+`Node.get_cookie()` on each node.
+
+**DNS resolution failures:**
+If you use DNS names instead of IP addresses in your node names, every node
+must be able to resolve every other node's hostname. Test with `nslookup` or
+`dig` from each machine.
+
+**Nodes connect then immediately disconnect:**
+This usually means a network timeout or a firewall rule that allows the initial
+TCP handshake but drops the connection shortly after. Check for stateful firewall
+rules and ensure the distribution port(not just EPMD) is whitelisted.
+
+## Final thoughts
+
+**We now have a distributed trading system.** Multiple independent nodes, each
+running its own trading strategies against its own local SQLite database,
+connected via Erlang's native distribution protocol. Any node can query any
+other node's data with a single function call. Nodes can join and leave the
+cluster dynamically - `libcluster` handles reconnection automatically.
+
+The architecture is deliberately simple. There's no central coordinator, no
+message broker, no shared database. Each node is self-sufficient: it can trade
+on its own even if every other node in the cluster goes down. The cluster adds
+visibility and coordination, not dependency.
+
+Notice what we didn't do: we didn't build consensus protocols, distributed
+transactions, or shared state. Each node owns its own data. The `Hedgehog.Cluster`
+module is a read-only aggregation layer - it queries remote nodes but never
+writes to them. This keeps the system simple and avoids the hardest problems
+in distributed computing. If you need a node to change its behavior, you
+connect to it directly and tell it what to do.
+
+The security setup is layered: firewall rules block unauthorized access, a
+strong random cookie prevents accidental connections, and a VPN(WireGuard)
+encrypts everything in transit. You don't need all three layers, but each one
+reduces your attack surface.
+
+We also made several choices in this chapter that might have seemed like minor
+details but were actually laying groundwork. The `strip_beams: false` option
+preserves the metadata OTP needs to compute code differences. The tarball-based
+deployment keeps old version directories intact alongside new ones. The
+`version` field in `Cluster.status/0` tells you exactly what each node is
+running. These pieces all come together in the next chapter.
+
+One thing we don't handle is network partitions. If the network splits and
+half the nodes can't see the other half, both halves keep running independently.
+Since `Hedgehog.Cluster` is read-only, the worst case is an incomplete status view.
+If we were coordinating writes across nodes, we'd need a consensus protocol,
+but we deliberately avoided that complexity.
+
+**What's next?**
+
+We have a running cluster, but deploying updates currently means stopping each
+node, unpacking the new tarball, and starting it again. For a trading bot, even
+a few seconds of downtime means missed trades. In the next chapter, we'll use
+OTP's hot code reloading to upgrade a running node without stopping it - push
+new code, generate an appup describing how to transition each module's state,
+and install it on the live system while trades continue to execute. The release
+structure we built in this chapter is what makes that possible.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_24](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_24)).

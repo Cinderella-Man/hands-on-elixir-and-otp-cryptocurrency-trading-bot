@@ -1,0 +1,1179 @@
+# From Postgres to SQLite
+
+In the last chapter, we consolidated six umbrella apps into a single Phoenix
+application - one repo, one database, one config surface. The structure is clean.
+But if you look at how it runs, there's still an external process standing between
+our application and its data: Postgres, managed via Docker.
+
+For development, that means running `docker compose up -d` before you can do
+anything. For deployment, it means each trading node needs a network path to
+a shared Postgres instance - and each write is a round-trip over that link.
+If the database goes down or the network hiccups, all nodes stop trading.
+
+For a system we intend to distribute across independent nodes, this is exactly
+the wrong architecture. We want each node to be self-contained: its own
+processes, its own state, its own persistence.
+
+SQLite gives us that. It's an embedded database that lives as a single file
+alongside the application - no server process, no network dependency, no Docker container.
+If that sounds like a toy database, it isn't.
+
+Benchmarks routinely show SQLite handling over 100k SELECTs per second on modest hardware
+with proper tuning - WAL mode, memory-mapped I/O, and normal synchronous mode
+(see phiresky's "SQLite performance tuning" at phiresky.github.io for the full breakdown).
+
+For a single-node writer like our trading bot, it's more than enough.
+
+The `ecto_sqlite3` adapter makes the switch almost transparent to our application
+code; Ecto's Repo API stays the same, migrations need only minor adjustments.
+
+In this chapter, we'll swap Postgres for SQLite, remove the Docker dependency
+entirely, and replace the `ecto_enum` library(which relies on Postgres-specific
+`CREATE TYPE` statements) with Ecto's built-in `Ecto.Enum`. We'll also set up
+Litestream for continuous database backups to S3-compatible storage - because an
+embedded database without off-site replication is one disk failure away from total
+data loss - and wire up automatic restore so a fresh node recovers its database
+from backup before the first trade. By the end, our trading bot will be a fully
+self-contained, self-healing application that carries its database with it - which
+is exactly what we'll need when we introduce clustering in the next chapter.
+
+## Objectives
+- removing the Docker/Postgres dependency
+- swapping the database adapter to SQLite
+- replacing `ecto_enum` with `Ecto.Enum`
+- updating status values from strings to atoms
+- updating migrations for SQLite compatibility
+- setting up continuous backups with Litestream and S3-compatible storage
+- automating database recovery on startup
+
+## Removing the Docker dependency
+
+The `docker-compose.yml` file at the root of our project exists solely to run
+Postgres. Since we're moving to SQLite, we no longer need it:
+
+```{r, engine = 'bash', eval = FALSE}
+rm docker-compose.yml
+```
+
+We should also add SQLite's database files to `.gitignore`. SQLite uses up to
+three files per database (the main `.db` file, a write-ahead log `-wal`, and a
+shared-memory file `-shm`):
+
+```{r, engine = 'text', eval = FALSE}
+# /.gitignore
+# Database files
+*.db
+*.db-*
+backups/
+```
+
+## Swapping the database adapter
+
+### Dependencies
+
+Inside `mix.exs`, we need to swap `postgrex` for `ecto_sqlite3` and remove
+`ecto_enum`(we'll replace it with Ecto's built-in `Ecto.Enum` in the next section):
+
+```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+  defp deps do
+    [
+      ...
+      {:ecto_sqlite3, "~> 0.22"}, # <= added (replaces postgrex)
+      ...
+    ]
+  end
+```
+
+Remove the following lines from `deps`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+  defp deps do
+    [
+      ...
+      {:postgrex, ">= 0.0.0"},  # <= remove
+      ...
+      {:ecto_enum, "~> 1.4"},   # <= remove
+      ...
+    ]
+  end
+```
+
+### Repo adapter
+
+Next, we need to update `Hedgehog.Repo` to use the SQLite3 adapter:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/repo.ex
+defmodule Hedgehog.Repo do
+  use Ecto.Repo,
+    otp_app: :hedgehog,
+    adapter: Ecto.Adapters.SQLite3 # <= updated
+end
+```
+
+### Configuration
+
+The Postgres configuration used hostname, username, password, and a database name.
+SQLite only needs a file path. We need to update all environment config files.
+
+Starting with the development configuration:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/dev.exs
+config :hedgehog, Hedgehog.Repo,
+  database: Path.expand("../hedgehog_dev.db", Path.dirname(__ENV__.file)),
+  pool_size: 5,
+  show_sensitive_data_on_connection_error: true
+```
+
+SQLite supports multiple concurrent readers in WAL mode, so a pool size of 5 is a
+reasonable default - enough to allow several read queries to overlap.
+Writes are serialized regardless of pool size; SQLite permits only one writer at a time.
+
+The `ecto_sqlite3` adapter relies on SQLite's built-in busy-wait mechanism to handle write
+contention - if a connection attempts to write while another write is in progress, it will
+retry for up to `busy_timeout` milliseconds (default: 2000ms) before raising an error.
+
+A larger pool won't speed up writes, but it can help if you have many concurrent reads.
+
+**Note:** `Path.expand("../hedgehog_dev.db", Path.dirname(__ENV__.file))` resolves
+to a file in the project root directory. This is the standard convention for
+Phoenix projects using SQLite.
+
+The test configuration follows the same pattern but uses a separate database file:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/test.exs
+config :hedgehog, Hedgehog.Repo,
+  database: Path.expand("../hedgehog_test.db", Path.dirname(__ENV__.file)),
+  pool_size: 5,
+  pool: Ecto.Adapters.SQL.Sandbox
+```
+
+**Note:** The `ecto_sqlite3` adapter does not support async tests with
+`Ecto.Adapters.SQL.Sandbox`. If you have test modules marked with
+`async: true`, they'll need to run synchronously when using SQLite.
+This is a known limitation caused by SQLite's single-writer constraint -
+the Sandbox wraps each test in a transaction, and concurrent write
+transactions deadlock.
+
+And the integration configuration:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/integration.exs
+config :hedgehog, Hedgehog.Repo,
+  database: Path.expand("../hedgehog_integration.db", Path.dirname(__ENV__.file)),
+  pool_size: 5,
+  pool: Ecto.Adapters.SQL.Sandbox
+```
+
+Finally, the runtime configuration for production. We replace the `DATABASE_URL`
+environment variable with `DATABASE_PATH`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/runtime.exs
+if config_env() == :prod do
+  database_path =
+    System.get_env("DATABASE_PATH") ||
+      raise """
+      environment variable DATABASE_PATH is missing.
+      For example: /data/hedgehog/hedgehog.db
+      """
+  # remove: maybe_ipv6 = ....
+
+  config :hedgehog, Hedgehog.Repo,
+    database: database_path,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
+  ...
+```
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note regarding releases:** In dev.exs, we used `Path.expand` relative to the current file.
+In `runtime.exs` (Production), we rely on the `DATABASE_PATH` environment variable.
+This is critical because when you build an OTP Release,
+the configuration files are evaluated, but the source code directories may not exist on the target server.
+Always use absolute paths or environment variables for database locations in production.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+```{=latex}
+\begin{sidequest}
+```
+```{=html}
+<div class="sidequest">
+```
+
+**Note on concurrency:** As described above, SQLite serializes writes and any blocked
+writer waits up to `busy_timeout` milliseconds before raising an error.
+
+For a trading bot where multiple GenServers may write to the database, you might want to
+increase this value beyond the default 2000ms. Our current setup is fine with the default,
+but if you add more concurrent writers later, bumping it prevents spurious timeouts:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/*.exs
+    config :hedgehog, Hedgehog.Repo,
+      ...
+      busy_timeout: 5000
+```
+
+See the `ecto_sqlite3` adapter documentation for the full list of tuning options.
+
+```{=html}
+</div>
+```
+```{=latex}
+\end{sidequest}
+```
+
+At this point, our adapter is configured but our migrations and schemas still
+reference `ecto_enum` types that only work with Postgres. Let's fix that next.
+
+## Replacing `ecto_enum` with `Ecto.Enum`
+
+This is the most involved part of the migration - not because it's difficult,
+but because the `ecto_enum` library is woven into three separate areas of our
+codebase: schema files, migration files, and dedicated enum modules.
+
+### Why the change is necessary
+
+The `ecto_enum` library uses Postgres-specific `CREATE TYPE` statements to define
+custom enum types at the database level. SQLite has no equivalent feature - it
+stores everything as one of five types: NULL, INTEGER, REAL, TEXT, or BLOB.
+
+Ecto's built-in `Ecto.Enum` takes a different approach:
+it stores enum values as plain strings in the database and handles the atom
+conversion in the application layer. This works identically across all database
+backends.
+
+### Removing the enum modules
+
+We have three `*_status_enum.ex` files that use `defenum` from the `ecto_enum` library.
+Since `Ecto.Enum` is declared inline within schema definitions, these dedicated modules are
+no longer needed. We can delete all three:
+
+```{r, engine = 'bash', eval = FALSE}
+rm lib/hedgehog/streamer/settings_status_enum.ex
+rm lib/hedgehog/strategy/naive/settings_status_enum.ex
+rm lib/hedgehog/data/collector/settings_status_enum.ex
+```
+
+### Updating the schema files
+
+Each settings schema currently references its companion enum module. We need to
+replace those references with `Ecto.Enum` field declarations.
+
+Starting with the streamer settings:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/streamer/settings.ex
+defmodule Hedgehog.Streamer.Settings do
+  use Ecto.Schema
+
+  # remove: alias Hedgehog.Streamer.SettingsStatusEnum
+
+  ...
+
+  schema "streamer_settings" do
+    ...
+    field(:status, Ecto.Enum, values: [:on, :off]) # <= updated
+    ...
+  end
+end
+```
+
+Next, the naive strategy settings - note that this enum has three values
+including `:shutdown`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/settings.ex
+defmodule Hedgehog.Strategy.Naive.Settings do
+  use Ecto.Schema
+
+  # remove: alias Hedgehog.Strategy.Naive.SettingsStatusEnum
+
+  ...
+
+  schema "naive_strategy_settings" do
+    ...
+    field(:status, Ecto.Enum, values: [:on, :off, :shutdown]) # <= updated
+    ...
+  end
+end
+```
+
+And finally, the collector settings:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/settings.ex
+defmodule Hedgehog.Data.Collector.Settings do
+  use Ecto.Schema
+
+  # remove: alias Hedgehog.Data.Collector.SettingsStatusEnum
+
+  ...
+
+  schema "collector_settings" do
+    ...
+    field(:status, Ecto.Enum, values: [:on, :off]) # <= updated
+    ...
+  end
+end
+```
+
+### Important: strings must become atoms
+
+There is one catch. The old `ecto_enum` library was lenient - it happily accepted
+both strings (`"on"`) and atoms (`:on`). `Ecto.Enum` is stricter: it only
+accepts atoms. Any place in our codebase that passes a string like `"on"` or
+`"off"` to an Ecto query or an `insert_all` call will now raise an `Ecto.ChangeError` at runtime.
+
+We need to find and update every occurrence. There are three areas to fix:
+autostart queries, status update functions, and the seed script.
+
+### Autostart queries
+
+Three supervisor modules query for settings `where: s.status == "on"`.
+We need to change the string `"on"` to the atom `:on` in each:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/streamer/binance/dynamic_streamer_supervisor.ex
+  def autostart_workers do
+    Repo.all(
+      from(s in Settings,
+        where: s.status == :on, # <= updated from "on" to :on
+        select: s.symbol
+      )
+    )
+    ...
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/dynamic_trader_supervisor.ex
+  def autostart_workers do
+    Repo.all(
+      from(s in Settings,
+        where: s.status == :on, # <= updated from "on" to :on
+        select: s.symbol
+      )
+    )
+    ...
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/dynamic_worker_supervisor.ex
+  def autostart_workers do
+    Repo.all(
+      from(s in Settings,
+        where: s.status == :on, # <= updated from "on" to :on
+        select: s.topic
+      )
+    )
+    ...
+```
+
+### Status update functions
+
+Several modules have `update_status/2` functions that pass string status values
+when building changesets or structs. We need to update these to atoms as well:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/streamer/binance/dynamic_streamer_supervisor.ex
+  defp update_status(symbol, status)
+       when is_binary(symbol) and status in [:on, :off] do # <= updated
+    ...
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/data/collector/dynamic_worker_supervisor.ex
+  defp update_status(topic, status)
+       when is_binary(topic) and status in [:on, :off] do # <= updated
+    ...
+```
+
+In the naive strategy, the Formula module also references status values:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/strategy/naive/formula.ex
+  def update_status(symbol, status)
+      when is_binary(symbol) and status in [:on, :off, :shutdown] do # <= updated
+    ...
+```
+
+We also need to update all the *callers* of these functions. Search for any
+call sites that pass string arguments like `update_status(symbol, "on")` and
+replace them with atoms:
+
+- `update_status(..., "on")` becomes `update_status(..., :on)`
+- `update_status(..., "off")` becomes `update_status(..., :off)`
+- `update_status(..., "shutdown")` becomes `update_status(..., :shutdown)`
+
+These calls appear in `start_worker`/`stop_worker` and `start_child`/`stop_child`
+functions across the three dynamic supervisor modules and the formula module.
+
+### Updating the seed script
+
+The seeding script in `/priv/repo/seeds.exs` also uses string values for status
+fields inside the maps passed to `Repo.insert_all`. Since `Ecto.Enum` requires
+atoms, we need to update both the streamer and naive settings sections:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/seeds.exs
+# In the streamer base_settings map:
+base_settings = %{
+  ...
+  status: :off, # <= updated from "off" to :off
+  ...
+}
+...
+# In the naive strategy base_settings map:
+base_settings = %{
+  ...
+  status: :off, # <= updated from "off" to :off
+  ...
+}
+```
+
+## Updating migrations for SQLite compatibility
+
+Our existing migrations use two Postgres-specific features that SQLite doesn't
+support: custom enum types (via `create_type()`) and `ALTER TYPE` statements.
+We need to rewrite them to use plain `:string` columns instead.
+
+### Streamer settings migration
+
+The original migration calls `SettingsStatusEnum.create_type()` and references
+`SettingsStatusEnum.type()`. We'll replace both with a simple `:string` column:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210203184805_create_streamer_settings.exs
+defmodule Hedgehog.Repo.Migrations.CreateStreamerSettings do
+  use Ecto.Migration
+
+  # remove: alias Hedgehog.Streamer.SettingsStatusEnum
+
+  def change do
+    # remove: SettingsStatusEnum.create_type()
+
+    create table(:streamer_settings, primary_key: false) do
+      ...
+      add(:status, :string, default: "off", null: false) # <= updated
+      ...
+    end
+    ...
+  end
+end
+```
+
+### Naive strategy settings migration
+
+Same pattern - remove the enum type creation and use `:string`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210202223209_create_naive_strategy_settings.exs
+defmodule Hedgehog.Repo.Migrations.CreateNaiveStrategySettings do
+  use Ecto.Migration
+
+  # remove: alias Hedgehog.Strategy.Naive.SettingsStatusEnum
+
+  def change do
+    # remove: SettingsStatusEnum.create_type()
+
+    create table(:naive_strategy_settings, primary_key: false) do
+      ...
+      add(:status, :string, default: "off", null: false) # <= updated
+      ...
+    end
+    ...
+  end
+end
+```
+
+### Naive strategy status update migration
+
+The second naive migration used `ALTER TYPE` to add the `:shutdown` value to the
+Postgres enum. Since we're now storing statuses as plain strings, there's no type
+to alter - the column already accepts any string value, and `Ecto.Enum` handles
+validation in the application layer.
+
+Since we're working from a clean database(SQLite is brand new), we can safely
+remove this migration entirely:
+
+```{r, engine = 'bash', eval = FALSE}
+rm priv/repo/migrations/20210205232303_update_naive_strategy_settings_status.exs
+```
+
+### Collector settings migration
+
+```{r, engine = 'elixir', eval = FALSE}
+# /priv/repo/migrations/20210227230123_create_collector_settings.exs
+defmodule Hedgehog.Repo.Migrations.CreateCollectorSettings do
+  use Ecto.Migration
+
+  # remove: alias Hedgehog.Data.Collector.SettingsStatusEnum
+
+  def change do
+    # remove: SettingsStatusEnum.create_type()
+
+    create table(:collector_settings, primary_key: false) do
+      ...
+      add(:status, :string, default: "off", null: false) # <= updated
+      ...
+    end
+    ...
+  end
+end
+```
+
+Let's verify the script works by running the full setup after fetching
+our new dependencies:
+
+```{r, engine = 'bash', eval = FALSE}
+mix deps.get
+...
+mix ecto.create
+...
+mix ecto.migrate
+...
+mix run priv/repo/seeds.exs
+...
+[info] Inserting default streamer settings for symbols
+[info] Inserted batch of 1000 streamer settings
+...
+[info] Inserting default naive strategy settings for symbols
+[info] Inserted batch of 1000 naive settings
+...
+```
+
+Note: Unlike Postgres, SQLite creates the database file automatically the first time anything opens it -
+including `mix ecto.migrate`. This means `mix ecto.create` is effectively optional with SQLite.
+If it complains about an existing database, you can safely ignore the warning or run `mix ecto.drop` first to start fresh.
+
+## Testing
+
+Let's run the full test suite to make sure the migration didn't break anything:
+
+```{r, engine = 'bash', eval = FALSE}
+mix test.unit
+..........
+Finished in 0.1 seconds (0.1s async, 0.00s sync)
+10 tests, 0 failures (6 excluded)
+```
+
+```{r, engine = 'bash', eval = FALSE}
+MIX_ENV=integration mix test.integration
+..
+Finished in 7.0 seconds (0.05s async, 7.0s sync)
+1 test, 0 failures (15 excluded)
+```
+
+**Note:** ExUnit always reports `async` and `sync` timing even when no tests are marked `async: true`.
+The label reflects ExUnit's internal scheduling, not SQLite concurrency.
+
+And a manual smoke test to verify the full trading cycle still works:
+
+```{r, engine = 'bash', eval = FALSE}
+mix ecto.drop
+...
+mix setup
+...
+iex -S mix phx.server
+...
+iex(1)> alias Hedgehog.Streamer.Binance
+...
+iex(2)> alias Hedgehog.Strategy.Naive
+...
+iex(3)> alias Hedgehog.Data.Collector
+...
+iex(4)> Collector.start_storing("TRADE_EVENTS", "XRPUSDT")
+...
+iex(5)> Collector.start_storing("ORDERS", "XRPUSDT")
+...
+iex(6)> Binance.start_streaming("XRPUSDT")
+...
+iex(7)> Naive.start_trading("XRPUSDT")
+...
+[info] Position (XRPUSDT/1770670753113): Placing a BUY order @ 1.455, quantity: 137.40000000
+...
+[info] Position (XRPUSDT/1770670753113): The BUY order is now filled
+...
+[info] Position (XRPUSDT/1770670753113): Placing a SELL order @ 1.4561, quantity: 137.40000000
+...
+[info] Position (XRPUSDT/1770670753113): The SELL order is now filled
+```
+
+Everything works exactly as before - streaming, trading, collecting - but now
+there's no Docker container running in the background. The database is just a
+file sitting in our project root:
+
+```{r, engine = 'bash', eval = FALSE}
+ls -la hedgehog_dev.db*
+-rw-r--r-- 1 user user 442368 Feb 11 14:23 hedgehog_dev.db
+-rw-r--r-- 1 user user  32768 Feb 11 14:23 hedgehog_dev.db-shm
+-rw-r--r-- 1 user user 524288 Feb 11 14:23 hedgehog_dev.db-wal
+```
+
+## Backing up the database
+
+With Postgres, backups are a well-trodden path - `pg_dump`, WAL archiving,
+managed hosting that handles it for you.
+With SQLite, the database is a file sitting in our project root.
+That simplicity is the whole point - but it also means backups are
+entirely our responsibility.
+
+You might think `cp hedgehog_dev.db hedgehog_backup.db` would do the trick, but it won't.
+If the application is running, a raw file copy is unreliable. In WAL mode the database state
+is split across the main `.db` file and the `-wal` file. Copying just the `.db` file gives you
+a valid but stale snapshot(missing any changes still in the WAL).
+Copying both files at different moments can produce an inconsistent backup.
+Even if you could copy them atomically, a local backup on the same disk isn't really a backup - if the disk fails, you lose both.
+
+SQLite does provide safe one-shot backup mechanisms(`VACUUM INTO` or the `.backup`
+command), but those produce point-in-time snapshots. For a trading bot where every
+executed trade matters, losing hours of data to a periodic snapshot is not acceptable.
+What we need is continuous replication to remote storage.
+
+Litestream does exactly this. It monitors the SQLite database and streams every
+committed transaction to S3-compatible storage using the LTX file format - a
+transaction-aware format that supports compaction, making restores significantly
+faster than replaying individual WAL segments. By default, Litestream syncs new
+changes every 1 second, giving you an RPO(Recovery Point Objective) of roughly
+one second. This is comparable to the replication lag you'd see with Postgres
+asynchronous streaming replication, which is the mode most production Postgres
+setups actually run.
+
+The trade-off is recovery time. With a Postgres hot standby, failover takes seconds -
+the replica is already running and can be promoted immediately. With SQLite + Litestream,
+recovering from a dead node means provisioning a new server and starting the application -
+we'll wire up automatic restore later in this chapter so the app pulls the database from
+S3 before the Repo boots. For a database under a few hundred megabytes like ours, that's
+a couple of minutes at most.
+It's worth knowing that you're trading faster failover for simpler operations.
+
+The `litestream` Hex package wraps the Litestream binary in a supervised GenServer. It
+downloads the binary automatically on first start, manages it as an Erlang port, and
+integrates cleanly with our supervision tree. Let's set it up.
+
+### Adding the dependency
+
+```{r, engine = 'elixir', eval = FALSE}
+# /mix.exs
+  defp deps do
+    [
+      ...
+      {:litestream, "~> 1.0"}, # <= added
+      ...
+    ]
+  end
+```
+
+Fetch the new dependency:
+
+```{r, engine = 'bash', eval = FALSE}
+mix deps.get
+...
+```
+
+### Configuring Litestream
+
+Litestream needs to know which Repo to back up, where to replicate it, and how to
+authenticate. We'll configure these per environment.
+
+For development and test, we disable Litestream entirely - there's no reason to
+replicate a throwaway dev database to remote storage:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/dev.exs
+config :hedgehog, Hedgehog.Litestream, enabled: false
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/test.exs
+config :hedgehog, Hedgehog.Litestream, enabled: false
+```
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/integration.exs
+config :hedgehog, Hedgehog.Litestream, enabled: false
+```
+
+For production, the credentials and storage details come from environment variables.
+Add the following inside the existing `if config_env() == :prod do` block in `runtime.exs`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/runtime.exs (inside the :prod block)
+  replica_url =
+    System.get_env("LITESTREAM_REPLICA_URL") ||
+      raise """
+      environment variable LITESTREAM_REPLICA_URL is missing.
+      For example: https://<account-id>.r2.cloudflarestorage.com
+      """
+
+  node_name =
+    System.get_env("HEDGEHOG_NODE_NAME") ||
+      System.get_env("RELEASE_NODE") ||
+      raise """
+      environment variable HEDGEHOG_NODE_NAME or RELEASE_NODE is missing.
+      This identifies the node for backup isolation.
+      For example: hedgehog_us_east_1
+      """
+
+  config :hedgehog, Hedgehog.Litestream,
+    enabled: true,
+    repo: Hedgehog.Repo,
+    endpoint: replica_url,
+    bucket: "hedgehog",
+    replica_path: "backups/#{node_name}",
+    region: "auto",
+    override_architecture: :x86_64,
+    access_key_id: System.fetch_env!("LITESTREAM_ACCESS_KEY_ID"),
+    secret_access_key: System.fetch_env!("LITESTREAM_SECRET_ACCESS_KEY")
+```
+
+There are a few more configuration options here than you might expect. The Litestream
+binary's CLI only accepts a subset of replica settings as command-line arguments -
+options like `region` and replica `type` can only be specified through a YAML config file.
+The `litestream` package handles this transparently by generating an ad-hoc YAML
+configuration file at runtime from these Elixir options, then passing it to the binary.
+This is what enables S3-compatible services like Cloudflare R2 that require specific
+region and type settings to work correctly.
+
+Notice the `replica_path` uses the node name as a prefix. This is critical for
+multi-node deployments: each trading node writes to its own path inside the shared
+bucket (e.g. `backups/hedgehog_us_east_1/`, `backups/hedgehog_eu_west_1/`). Without
+this, two nodes replicating to the same path would overwrite each other's backup
+state - and restoring would give you a Frankenstein database mixing data from
+different nodes.
+
+We use `HEDGEHOG_NODE_NAME` when set explicitly, falling back to
+`RELEASE_NODE` which Elixir's release system provides automatically. Prefer setting
+`HEDGEHOG_NODE_NAME` to a stable identifier - `RELEASE_NODE` often includes the
+hostname(e.g. `hedgehog@10.0.1.5`), which can change across container restarts and
+would make restore paths unpredictable.
+
+Let's go through the options:
+
+- **`repo`** - the Ecto Repo whose database path Litestream should watch
+- **`endpoint`** - the S3-compatible endpoint URL (just the bare endpoint, not an S3 URI)
+- **`bucket`** - the name of the storage bucket
+- **`replica_path`** - a key prefix inside the bucket, scoped per node to prevent backup collisions when running multiple autonomous trading nodes
+- **`region`** - the storage region; Cloudflare R2 requires `"auto"`
+- **`override_architecture`** - forces a specific binary architecture (`:x86_64`);
+  useful when the autodetected architecture label doesn't match the download URL
+- **`access_key_id`** / **`secret_access_key`** - S3 credentials
+
+**Note:** We use Cloudflare R2 in this chapter, but Litestream works with any S3-compatible
+storage. Backblaze B2, DigitalOcean Spaces, MinIO, and AWS S3 all work - adjust the
+endpoint, bucket, and region accordingly. For AWS S3, you'd set `region` to your actual
+region (e.g. `"us-east-1"`) instead of `"auto"`.
+
+### Automatic restore on startup
+
+Manual restores work, but they don't help when a server crashes at 3am and your
+deployment pipeline spins up a fresh node. We want the application to heal itself:
+if the database file is missing when the app boots, it should attempt a restore from
+R2 automatically - before the Repo or any trading processes start.
+
+We'll create a module that reads the same Litestream configuration we just defined,
+checks if the database file exists, and if not, downloads the Litestream binary and
+runs `restore -if-replica-exists`. The `-if-replica-exists` flag is important: on a
+brand-new deployment where no backup has ever been made, it exits cleanly instead of
+crashing - letting the app proceed to create a fresh database via migrations.
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/litestream/auto_restore.ex
+defmodule Hedgehog.Litestream.AutoRestore do
+  @moduledoc """
+  Automatically restores the SQLite database from a Litestream backup
+  if the database file is missing at startup.
+
+  Called from application.ex before the supervision tree starts.
+  """
+
+  require Logger
+
+  def maybe_restore do
+    litestream_config = Application.get_env(:hedgehog, Hedgehog.Litestream, [])
+    repo_config = Application.get_env(:hedgehog, Hedgehog.Repo, [])
+    db_path = Keyword.get(repo_config, :database)
+
+    cond do
+      !Keyword.get(litestream_config, :enabled, false) ->
+        :ok
+
+      is_nil(db_path) ->
+        Logger.warning("AutoRestore: no database path configured, skipping")
+        :ok
+
+      File.exists?(db_path) ->
+        Logger.info("AutoRestore: database exists at #{db_path}, skipping restore")
+        :ok
+
+      true ->
+        restore_from_backup(db_path, litestream_config)
+    end
+  end
+
+  defp restore_from_backup(db_path, config) do
+    Logger.info("AutoRestore: no database at #{db_path}, attempting restore from backup...")
+
+    db_path |> Path.dirname() |> File.mkdir_p!()
+
+    yaml_path =
+      Path.join(System.tmp_dir!(), "litestream-restore-#{System.system_time(:millisecond)}.yml")
+
+    bucket = Keyword.fetch!(config, :bucket)
+    replica_path = Keyword.fetch!(config, :replica_path)
+    endpoint = Keyword.fetch!(config, :endpoint)
+    region = Keyword.get(config, :region, "auto")
+    access_key_id = Keyword.fetch!(config, :access_key_id)
+    secret_access_key = Keyword.fetch!(config, :secret_access_key)
+
+    yaml_content = """
+    access-key-id: "#{access_key_id}"
+    secret-access-key: "#{secret_access_key}"
+
+    dbs:
+      - path: #{db_path}
+        replica:
+          url: s3://#{bucket}/#{replica_path}
+          endpoint: #{endpoint}
+          region: #{region}
+    """
+
+    File.write!(yaml_path, yaml_content)
+
+    try do
+      bin_path = ensure_binary(config)
+
+      case System.cmd(bin_path, ["restore", "-config", yaml_path, "-if-replica-exists"],
+             stderr_to_stdout: true
+           ) do
+        {output, 0} ->
+          if File.exists?(db_path) do
+            Logger.info("AutoRestore: database restored to #{db_path}")
+          else
+            Logger.info("AutoRestore: no replica found, starting with fresh database")
+          end
+
+          Logger.debug("Litestream output: #{output}")
+          :ok
+
+        {output, exit_code} ->
+          Logger.warning(
+            "AutoRestore: litestream exited with code #{exit_code}, " <>
+              "starting with fresh database. Output: #{output}"
+          )
+
+          :ok
+      end
+    after
+      File.rm(yaml_path)
+    end
+  end
+
+  defp ensure_binary(config) do
+    case Keyword.get(config, :bin_path) do
+      nil ->
+        download_dir = Path.join(System.tmp_dir!(), "litestream_downloads")
+        bin_dir = Path.join(System.tmp_dir!(), "litestream_bin")
+        File.mkdir_p!(download_dir)
+        File.mkdir_p!(bin_dir)
+
+        {:ok, path} =
+          Litestream.Downloader.download_litestream(
+            Litestream.Downloader.latest_version(),
+            download_dir,
+            bin_dir
+          )
+
+        path
+
+      path ->
+        path
+    end
+  end
+end
+```
+
+A few things to note about this module. It never crashes the application - if the
+restore fails for any reason(network issues, bad credentials, corrupt replica), it
+logs a warning and returns `:ok`. The app will then start normally, create a fresh
+database via migrations, and begin a new Litestream backup. You lose historical data,
+but the node stays alive. The `-if-replica-exists` flag makes this safe for first-time
+deployments: no replica in the bucket means Litestream exits cleanly and we get a
+fresh database. The YAML config is written to a temp file and cleaned up in an `after`
+block to avoid leaking credentials to the filesystem. And `ensure_binary/1` reuses the
+same download mechanism that the Litestream GenServer uses, so the binary is cached
+after the first download.
+
+### Adding to the supervision tree
+
+We want Litestream to start automatically in production and stay out of the way in
+development. Update `application.ex` to conditionally include it:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /lib/hedgehog/application.ex
+  def start(_type, _args) do
+    Hedgehog.Litestream.AutoRestore.maybe_restore()
+
+    children =
+      [
+        ...
+      ] ++ litestream_children()
+    ...
+  end
+
+  defp litestream_children do
+    config = Application.get_env(:hedgehog, Hedgehog.Litestream, [])
+
+    if Keyword.get(config, :enabled, false) do
+      opts = Keyword.drop(config, [:enabled])
+      [{Litestream, opts}]
+    else
+      []
+    end
+  end
+```
+
+The `litestream_children/0` function returns an empty list when backups are disabled,
+so the Litestream GenServer simply isn't started in dev or test. In production,
+`maybe_restore()` runs first - restoring the database from R2 if the file is missing -
+then the Repo starts against the restored(or freshly created) database, and the
+Litestream GenServer begins replicating immediately.
+
+When the GenServer starts for the first time, it downloads the Litestream binary
+appropriate for your platform. Subsequent starts use the cached binary. Once running,
+Litestream watches the database and continuously pushes changes to your S3 bucket.
+You don't need to think about it again - it just runs in the background as a supervised
+process, and the BEAM restarts it if it crashes.
+
+### Setting up the storage bucket
+
+Before deploying, you'll need an S3-compatible storage bucket. We'll use Cloudflare R2
+because the setup is minimal and the free tier is generous(10 GB storage, zero egress
+fees). Any S3-compatible service works - Backblaze B2, DigitalOcean Spaces, MinIO - but
+R2 requires the least ceremony to get started.
+
+Litestream speaks the S3 protocol, so it needs three things from your storage provider:
+an **endpoint**(where to connect), an **Access Key ID** and a **Secret Access Key**(how
+to authenticate). For Cloudflare R2, you'll need to:
+
+1. Create a storage bucket - this is the container for your backup data. Pick a name
+   that identifies the project(e.g. `hedgehog`).
+2. Create an API token with read and write permissions scoped to that bucket. This
+   generates an **Access Key ID** and **Secret Access Key** pair - save both immediately,
+   as the secret is only displayed once.
+3. Find your **Account ID** - a unique identifier for your Cloudflare account, visible
+   on the R2 overview page. This becomes part of the endpoint URL.
+
+The endpoint URL uses the format:
+
+```
+https://<account-id>.r2.cloudflarestorage.com
+```
+
+Set the three environment variables before starting your application:
+```{r, engine = 'bash', eval = FALSE}
+export LITESTREAM_REPLICA_URL="https://<your-account-id>.r2.cloudflarestorage.com"
+export LITESTREAM_ACCESS_KEY_ID=<your-r2-access-key-id>
+export LITESTREAM_SECRET_ACCESS_KEY=<your-r2-secret-access-key>
+```
+
+The bucket name(`hedgehog`) and backup path prefix are set in the Elixir
+configuration rather than encoded in the URL. This keeps the environment variables
+simple and makes it easy to change the backup path without touching production
+environment settings.
+
+### Restoring from a backup
+
+With the auto-restore module in place, recovery from a complete server failure is
+fully automated. Here's what happens when a fresh node boots with `DATABASE_PATH`
+pointing to a non-existent file:
+
+1. `application.ex` calls `AutoRestore.maybe_restore()` before starting the
+   supervision tree
+2. The module reads the Litestream config from `runtime.exs`, downloads the
+   Litestream binary(if not already cached), and generates a temporary YAML config
+3. It runs `litestream restore -if-replica-exists`, which pulls the latest snapshot
+   from your R2 bucket into the configured `DATABASE_PATH`
+4. The temp config(which contains S3 credentials) is cleaned up immediately
+5. The supervision tree starts: the Repo opens the restored database, and the
+   Litestream GenServer begins replicating new changes back to R2
+
+If no replica exists yet(first-ever deployment), the restore exits cleanly
+and the app creates a fresh database via migrations. If the restore fails for any
+other reason(network issue, bad credentials), it logs a warning and continues -
+you get a fresh database rather than a crashed node.
+
+You can verify this works by deleting the database file and restarting:
+
+```{r, engine = 'bash', eval = FALSE}
+# In production (or a local test with Litestream enabled):
+rm /data/hedgehog/hedgehog.db*
+# restart the application
+# watch the logs:
+[info] AutoRestore: no database at /data/hedgehog/hedgehog.db, attempting restore from backup...
+[info] AutoRestore: database restored to /data/hedgehog/hedgehog.db
+```
+
+#### Manual restore(fallback)
+
+If you need to restore outside the application(for example, to inspect a backup
+without starting the trading bot), you can use the Litestream CLI directly.
+
+Install the Litestream binary that matches the version bundled by the Hex package(run
+`mix deps` and look at the `litestream` entry to confirm the binary version). The
+example below is for Linux x86_64 - adjust the archive name for your platform(e.g.
+`litestream-0.5.8-darwin-amd64.tar.gz` for macOS, or `-linux-arm64` for ARM servers):
+
+````{r, engine = 'bash', eval = FALSE}
+curl -fsSL https://github.com/benbjohnson/litestream/releases/download/v0.5.8/litestream-0.5.8-linux-x86_64.tar.gz \
+  | tar -xz -C /usr/local/bin
+````
+
+Then create a minimal config file for the restore. The CLI needs the same region and
+endpoint settings that our Elixir config provides at runtime, and these can only be
+specified through a config file:
+
+```{r, engine = 'text', eval = FALSE}
+# /tmp/litestream-restore.yml
+access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+
+dbs:
+  - path: /data/hedgehog/hedgehog.db
+    replica:
+      url: s3://hedgehog/backups/${HEDGEHOG_NODE_NAME}
+      endpoint: ${LITESTREAM_REPLICA_URL}
+      region: auto
+```
+
+**Note:** The bucket name `hedgehog` in the S3 URL must match the `bucket` value in your
+`runtime.exs` Litestream configuration. If you changed the bucket name there, update
+this restore config to match.
+
+Litestream performs environment variable expansion in the config file, so the same
+variables we set for our Elixir application work here too(plus the node name for
+path isolation):
+
+```{r, engine = 'bash', eval = FALSE}
+export LITESTREAM_REPLICA_URL="https://<your-account-id>.r2.cloudflarestorage.com"
+export LITESTREAM_ACCESS_KEY_ID=<your-r2-access-key-id>
+export LITESTREAM_SECRET_ACCESS_KEY=<your-r2-secret-access-key>
+export HEDGEHOG_NODE_NAME=<your-node-name>
+litestream restore -config /tmp/litestream-restore.yml
+```
+
+Start your application normally after the restore. Litestream will pick up where it
+left off and resume replication.
+
+### Verifying replication locally (optional)
+
+If you want to verify the setup works before deploying to production, Litestream also
+supports replicating to a local file path. Temporarily update your `dev.exs`:
+
+```{r, engine = 'elixir', eval = FALSE}
+# /config/dev.exs (temporary - for testing only)
+config :hedgehog, Hedgehog.Litestream,
+  enabled: true,
+  repo: Hedgehog.Repo,
+  replica_url: "file://#{Path.expand("../backups/dev_node", Path.dirname(__ENV__.file))}",
+  access_key_id: "unused",
+  secret_access_key: "unused"
+```
+
+Start the application and check that a `backups/dev_node/` directory appears with replication
+data inside. Note that we're using `replica_url` here instead of the decomposed
+`endpoint`/`bucket`/`replica_path` from the production config - for `file://` destinations,
+a single URL is all Litestream needs. Once you've confirmed it works, set `enabled: false`
+back in `dev.exs` and remove the `backups/` directory.
+
+### Checking replication status
+
+You can check whether Litestream is running from an IEx session:
+
+```{r, engine = 'bash', eval = FALSE}
+iex -S mix phx.server
+...
+iex(1)> Litestream.status()
+:running
+```
+
+If you need to temporarily stop replication (for example, during a maintenance window):
+
+```{r, engine = 'bash', eval = FALSE}
+iex(2)> Litestream.stop_litestream()
+:ok
+iex(3)> Litestream.status()
+:down
+iex(4)> Litestream.start_litestream()
+:ok
+```
+
+## Final thoughts
+
+**This was a short chapter, but the operational impact is significant.** We replaced
+Postgres with SQLite, eliminating the Docker dependency entirely. We swapped
+`ecto_enum`(Postgres-specific) for `Ecto.Enum`(database-agnostic) and updated status
+values from strings to atoms across queries, update functions, and seeds. We rewrote all
+migrations to use plain string columns instead of custom Postgres types, added continuous
+backups via Litestream with per-node isolation, and wired up automatic restore so a
+crashed node recovers its database before the Repo starts - all while preserving existing
+tests and trading functionality without touching the business logic.
+
+Notice what didn't change: the Repo API usage, the supervision tree, the trading logic.
+What did change were the status value literals - `"on"` to `:on`, `"off"` to `:off` -
+because `Ecto.Enum` is stricter than the old `ecto_enum` library about types.
+That strictness is a feature: it catches type mismatches at query time instead of silently
+inserting bad data.
+
+The trade-off is real, though. SQLite doesn't support concurrent writes from multiple processes as
+gracefully as Postgres does. If two GenServers try to write at the same time, one waits(up to `busy_timeout`
+milliseconds) for the other to finish. For our use case - a trading bot running as a
+single node writing its own local data - that's perfectly fine.
+We're not building a multi-tenant web app; we're building independent trading nodes.
+
+Two other limitations worth knowing if you apply this pattern elsewhere:
+SQLite has no built-in access control - anyone with filesystem access to the `.db` file can read and write everything,
+so security lives entirely at the OS level.
+
+SQLite’s `ALTER TABLE` is more restrictive than Postgres -
+you can add and drop columns, but you generally cannot modify
+existing columns(such as changing types or adding constraints),
+and many schema changes require recreating the table.
+
+Future migrations may need to recreate tables rather than alter them.
+
+And that's exactly where we're headed.
+
+**What's next?**
+
+We now have an application with no external infrastructure dependencies - no database
+server to manage, no Docker container to run, just our Elixir app and a local
+database file. Each node's backups land in their own S3 prefix, so multiple instances
+can replicate simultaneously without stepping on each other. This is the perfect
+building block for distribution. In the next chapter, we'll configure `libcluster`
+for automatic cluster formation and start running multiple trading nodes side by side.
+Each node will carry its own SQLite database, stream its own symbols, and execute its
+own trades - while remaining connected via Erlang's distribution protocol for
+coordination and monitoring.
+
+[Note] Please remember to run `mix format` to keep things nice and tidy.
+
+The source code for this chapter can be found in the book's source code repository
+(branch:
+[chapter_23](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_23)).
