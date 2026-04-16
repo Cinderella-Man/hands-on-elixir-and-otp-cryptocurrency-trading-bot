@@ -1,5 +1,6 @@
 --- 
-title: "Hands-on Elixir & OTP: Cryptocurrency Trading Bot"
+title: "动手学 Elixir 与 OTP：加密货币交易机器人"
+en_title: "Hands-on Elixir & OTP: Cryptocurrency Trading Bot"
 author: "Kamil Skowron"
 date: "0.9"
 site: bookdown::bookdown_site
@@ -16,173 +17,170 @@ twitter-handle: kamilskowron
 monofont: Consolas.ttf
 ---
 
-# Preface: Your Journey into Elixir & OTP {-}
+# 前言：你的 Elixir 与 OTP 之旅 {-}
 
-### Want to learn Elixir & OTP by creating a real-world project? {-}
+### 想通过构建一个真实项目来学习 Elixir 与 OTP 吗？ {-}
 
-<img src="images/cover.png" width="250" height="324" alt="The book cover" align="right" style="margin: 0 1em 0 1em"/>
+<img src="images/cover.png" width="250" height="324" alt="书籍封面" align="right" style="margin: 0 1em 0 1em"/>
 
-What if you could master Elixir's most powerful features - concurrent processes, fault-tolerant systems, and real-time data streams - by building something genuinely exciting?
-A cryptocurrency trading bot connects to live markets, makes decisions in milliseconds, and keeps running while you sleep.
-It's an ideal project for learning Elixir because the problems it presents are exactly the problems Elixir was designed to solve.
+如果你能一边构建一个真正有趣的项目，一边掌握 Elixir 最强大的特性——并发进程、容错系统和实时数据流——那会怎么样？
+一个加密货币交易机器人会连接真实市场，在毫秒级内做出决策，并且在你睡觉时依然持续运行。
+它非常适合作为学习 Elixir 的项目，因为它提出的问题，正是 Elixir 诞生时要解决的问题。
 
-With "Hands-on Elixir & OTP: Cryptocurrency Trading Bot", you'll **gain practical experience by building a real-world software project from scratch.**
-We'll explore key abstractions and essential principles through iterative improvements to our implementation.
+在《动手学 Elixir 与 OTP：加密货币交易机器人》中，你将**从零开始，通过构建一个真实的软件项目获得实战经验。**
+我们会通过不断迭代改进实现，逐步理解关键抽象和核心原则。
 
-We'll start by creating a new umbrella application and subscribing to WebSocket streams. Then we'll implement a basic trading flow and progressively improve it by
-exploring topics like supervision trees, resiliency, refactoring with macros, the Registry, testing, and more.
+我们会先创建一个新的 umbrella 应用，并订阅 WebSocket 流。接着实现一个基础的交易流程，再逐步围绕监督树、弹性设计、使用宏重构、Registry、测试等主题持续完善它。
 
-### Why This Project? {-}
+### 为什么选择这个项目？ {-}
 
-A cryptocurrency trading bot relies on the exact capabilities Elixir was designed for, giving you natural exposure to advanced concepts as you solve real problems.
+加密货币交易机器人正好依赖于 Elixir 被设计出来所擅长的能力，因此你会在解决真实问题的过程中，自然接触到更高级的概念。
 
-**Work with real concurrency:**
-You'll manage multiple traders simultaneously - each monitoring different symbols, making independent decisions, and communicating via message passing.
-This gives you hands-on experience with the Actor model and Elixir's lightweight processes.
-More importantly, you'll learn about isolation: if one trader crashes due to a weird API response, all the other traders won't be impacted.
-The BEAM's preemptive scheduler provides soft real-time characteristics, ensuring a single "heavy" process - like a complex strategy calculation - cannot starve others, keeping your bot responsive during high volatility.
+**接触真实的并发：**
+你将同时管理多个交易者——每个交易者监控不同的交易对，独立做出决策，并通过消息传递进行通信。
+这会让你亲手体验 Actor 模型和 Elixir 的轻量进程。
+更重要的是，你会理解隔离性：如果某个交易者因为异常的 API 响应而崩溃，其他交易者不会受到影响。
+BEAM 的抢占式调度器提供软实时特性，确保单个“重”进程——例如复杂的策略计算——不会饿死其他进程，从而让你的机器人在高波动时仍保持响应。
 
-**Build fault-tolerant systems:** Markets run 24/7, so your bot must recover from failures automatically.
-You'll see how supervision trees and the "let it crash" philosophy create self-healing systems when individual components fail.
-This doesn't mean ignoring errors or writing sloppy code - it means designing your system so that when unexpected failures happen (and they will),
-recovery to a known good state is automatic. No more manually restarting services at 3 AM.
+**构建容错系统：** 市场是 24/7 运行的，所以你的机器人必须能自动从失败中恢复。
+你会看到监督树和“让它崩溃”哲学如何在组件失败时构建自愈系统。
+这并不意味着忽略错误或写出粗糙代码——而是要把系统设计成：当意外失败发生时（这一定会发生），
+能够自动恢复到已知良好状态。再也不用凌晨 3 点手动重启服务了。
 
-**Manage stateful processes:** Trading involves tracking positions, budgets, market conditions, and orders across multiple concurrent processes. You'll learn to design systems
-where state is isolated, predictable, and easy to reason about.
+**管理有状态进程：** 交易涉及跨多个并发进程跟踪持仓、预算、市场状态和订单。你会学习如何设计系统，
+让状态保持隔离、可预测，并且易于推理。
 
-**Integrate with external systems:** Real applications need to connect to WebSocket streams, make HTTP requests, store data in databases, and handle network failures gracefully.
-You'll work with all of these integration challenges.
+**集成外部系统：** 真实应用需要连接 WebSocket 流、发送 HTTP 请求、把数据存进数据库，并优雅地处理网络故障。
+你会面对这些真实的集成挑战。
 
-The beauty of this approach is that you'll encounter problems naturally as we build the system. Then you'll learn the Elixir/OTP concepts needed to solve them. By the time
-you finish, you'll understand not just how Elixir's features work, but when and why to use them. The patterns you'll learn apply far beyond trading - to IoT systems,
-web applications, and any concurrent, fault-tolerant software.
+这种方法最棒的地方在于：你会在构建系统的过程中自然遇到问题，然后再学习解决这些问题所需的 Elixir/OTP 概念。等你完成这本书时，
+你不仅会理解 Elixir 的这些特性“怎么工作”，还会知道“什么时候用、为什么用”。你学到的模式远不止适用于交易系统——也同样适用于 IoT 系统、
+Web 应用，以及任何并发、容错的软件。
 
-### Is This Book for You? {-}
+### 这本书适合你吗？ {-}
 
-This book bridges the gap between knowing Elixir's basics and building non-trivial systems with it.
-If you've learned Elixir and OTP but want hands-on experience with a real-world project to solidify your understanding, this book is for you.
+这本书帮助你跨越“会用 Elixir 基础”与“能用它构建非平凡系统”之间的鸿沟。
+如果你已经学过 Elixir 和 OTP，但希望通过一个真实项目获得动手经验，从而巩固理解，这本书就是为你准备的。
 
-**Prerequisites:** You should be able to write a GenServer from scratch, understand why `handle_call` vs `handle_cast` matters,
-and know what a supervision tree does (even if you haven't built complex ones).
-If terms like "process mailbox" or "linking vs monitoring" feel unfamiliar, consider reviewing those concepts first.
-Readers do not need deep knowledge about cryptocurrencies to follow along,
-as I'll avoid crypto/trading jargon and explain it when necessary.
+**前置要求：** 你应该能独立编写 GenServer，理解 `handle_call` 和 `handle_cast` 的区别，
+并知道监督树的作用（即使你还没构建过复杂的监督树也没关系）。
+如果你对“进程邮箱”或“link 与 monitor 的区别”不太熟悉，建议先回顾一下这些概念。
+读者不需要对加密货币有深入了解，也能跟上内容，
+因为我会尽量避免行业黑话，并在必要时进行解释。
 
-### Important Disclaimers {-}
+### 重要声明 {-}
 
-**THIS BOOK IS NOT FINANCIAL ADVICE**
+**本书不是投资建议。**
 
-**This is not a book focused on trading strategies, nor is it financial advice to trade at all.** The main focus of this book is to show how even complex problems can be solved in Elixir by simple processes working together in an orchestrated way.
+**这不是一本专注于交易策略的书，也不是任何交易层面的投资建议。** 本书的核心目标，是展示即使是复杂问题，也可以在 Elixir 中通过多个简单进程协作、以编排好的方式解决。
 
-**The strategy described in this book is naive and will most likely lose money**, but that's not the point of this book. **As we build the strategy, we'll encounter a wide range of real-world challenges that developers face at work. It's a great primer for getting your first substantial project under your belt**.
+**本书中描述的策略很朴素，大概率会亏钱**，但这不是本书的重点。**在构建这个策略的过程中，我们会遇到开发工作中常见的各种真实挑战。这会是一个很好的入门案例，帮助你完成第一个像样的项目。**
 
-### This Book's Development Philosophy {-}
+### 本书的开发理念 {-}
 
-This book follows a realistic development process - we'll make compromises to get features working quickly, then refactor them later as we learn better patterns. Some parts will be "perfect" the first time around, while others we'll deliberately improve in subsequent chapters. This mirrors how real-world software development actually works.
+本书遵循真实的软件开发过程——我们会先做出必要的妥协，让功能尽快跑起来，然后在学到更好的模式后再重构它们。某些部分第一次就会做得“很好”，而另一些部分则会在后续章节里刻意改进。这正符合真实世界的软件开发方式。
 
-We'll start from the ground up, progressing chapter by chapter. By the end, you'll have a fully-featured (though naive) trading strategy. We'll design process supervision trees, explaining why we made specific decisions and how they will impact the system going forward. When we encounter limitations or better approaches, we'll refactor our code to demonstrate how systems evolve.
+我们会从零开始，按章节逐步推进。到最后，你会拥有一个功能完整（但仍然朴素）的交易策略。我们会设计进程监督树，并解释为什么做出这些特定决策，以及它们会如何影响后续系统。当我们遇到限制或更优方案时，也会通过重构代码来展示系统如何演进。
 
-With this iterative approach, you'll see both quick, temporary solutions and refined implementations. You'll understand not only the final code but also the journey - dead ends, compromises, and gradual improvements that mirror real projects.
+通过这种迭代式方法，你会同时看到临时方案和精炼实现。你理解的不只是最终代码，还有整个过程——包括走过的弯路、做出的妥协，以及与真实项目一致的渐进式改进。
 
-Unlike many tutorials that start with a 'perfect' final architecture, we will intentionally begin with an umbrella application structure.
-This allows us to see how isolated components interact in Elixir, but also provides a front-row seat to the gradually increasing maintenance costs of managing multiple internal apps.
-By the time we consolidate into a Phoenix monolith in Phase 3, you won't just know how to do it - you'll understand the specific friction points (like configuration drift and dependency tangling) that make it necessary.
-We'll start with an umbrella not because it's the "right" way for every project, but because it forces you to confront the boundaries between your systems early on.
-You'll experience the "architectural tax" first-hand - the ongoing cost of coordinating configuration, dependencies, and releases across multiple apps -
-which makes the eventual move to a monolith feel like a strategic relief rather than a chore.
+不同于很多一开始就给出“完美”最终架构的教程，我们会刻意从 umbrella 应用结构开始。
+这样既能让你看到 Elixir 中隔离组件如何协作，也能让你亲眼看到管理多个内部应用时，维护成本是如何逐步增加的。
+等我们在第三阶段把系统收敛成 Phoenix 单体应用时，你不只是“知道怎么做”，还会理解为什么必须这么做——比如配置漂移、依赖缠绕等具体摩擦点。
+我们从 umbrella 开始，不是因为它对所有项目来说都是“正确做法”，而是因为它会迫使你尽早面对系统边界。
+你会亲身感受到这种“架构税”——协调多个应用的配置、依赖和发布所带来的持续成本——
+这会让最终转向单体架构像是一种战略上的解脱，而不是负担。
 
-The goal isn't to show you the "perfect" way to build a trading bot, but to give you experience with the decision-making process that guides Elixir development. By the end, you'll have intuition for when to choose processes over functions, how to structure supervision trees, and when complexity is worth the benefits.
+我们的目标不是告诉你构建交易机器人的“完美方式”，而是让你体验指导 Elixir 开发的决策过程。到最后，你会形成一种直觉：什么时候该选择进程而不是函数，如何组织监督树，以及什么时候复杂度的代价值得被接受。
 
-### What You'll Learn {-}
+### 你将学到什么 {-}
 
-This book guides you through four distinct phases of building a cryptocurrency trading bot in Elixir, each focusing on different aspects of system design and development:
+本书会带你分四个阶段，用 Elixir 构建一个加密货币交易机器人，每个阶段聚焦系统设计与开发的不同方面：
 
-**Phase 1: Building the Foundation** (Chapters 1-4)
+**阶段 1：构建基础**（第 1–4 章）
 
-Start by connecting to live cryptocurrency data streams and creating your first trading bot.
-You'll build an umbrella application, work with WebSocket connections, implement a basic GenServer-based trader,
-and learn to decouple components using PubSub.
-We'll also create a mock exchange to simulate realistic trading conditions without risking real money.
+从连接实时加密货币数据流开始，打造你的第一个交易机器人。
+你将构建一个 umbrella 应用，处理 WebSocket 连接，实现一个基于 GenServer 的基础交易者，
+并学习如何通过 PubSub 解耦组件。
+我们还会创建一个模拟交易所，在不冒真实资金风险的情况下模拟真实交易条件。
 
-**Phase 2: Scaling and Resilience** (Chapters 5-11)
+**阶段 2：扩展与弹性**（第 5–11 章）
 
-Transform your single trader into a robust, multi-symbol trading system.
-You'll master supervision trees, implement parallel trading across multiple cryptocurrencies,
-add budget management and dynamic quantity calculations, and build complete lifecycle management for starting, stopping, and restarting traders.
-This phase focuses on making your system fault-tolerant and production-ready.
+把你的单一交易者升级成一个稳健的、多交易对并行运行的交易系统。
+你会掌握监督树，实现多个加密货币的并行交易，
+加入预算管理和动态数量计算，并构建完整的生命周期管理，支持交易者的启动、停止和重启。
+这一阶段的重点是让系统具备容错性，并达到可投入生产的程度。
 
-**Phase 3: Testing and Architecture Refinement** (Chapters 12-22)
+**阶段 3：测试与架构优化**（第 12–22 章）
 
-Improve code quality and maintainability through advanced OTP patterns and comprehensive testing.
-You'll eliminate duplication using macros, build a data pipeline for storing trade events, implement backtesting capabilities,
-and master both end-to-end testing and focused unit testing with Mox and Mimic.
-This phase emphasizes clean architecture, functional programming patterns,
-and ultimately consolidating from umbrella apps to a Phoenix monolith when the overhead of maintaining complexity outweighs the architectural benefits.
-You'll learn to identify the signals that tell a developer their system structure is no longer serving the project's needs.
+通过更高级的 OTP 模式和全面测试提升代码质量与可维护性。
+你会使用宏消除重复，构建用于存储交易事件的数据管道，实现回测能力，
+并掌握端到端测试以及使用 Mox 和 Mimic 的定向单元测试。
+这一阶段强调清晰的架构与函数式编程模式，并在复杂度带来的维护成本超过架构收益时，逐步从 umbrella 应用收敛为 Phoenix 单体应用。
+你会学会识别那些提示“系统结构已经不再服务项目需求”的信号。
 
-**WIP: Phase 4: Production Deployment and Operations** (Chapters 23-25)
+**阶段 4（进行中）：生产部署与运维**（第 23–25 章）
 
-Transition to a production-ready system optimized for operational simplicity.
-You'll migrate from Postgres to SQLite and introduce clustering,
-where each node runs its own local database - eliminating the network as a point of failure for writes and keeping trading nodes self-contained.
-We'll configure cluster formation with `libcluster` and use Elixir's native distribution to aggregate data into a unified view.
-Then you'll build a Phoenix LiveView dashboard that queries each node's state via RPC and subscribes to PubSub for real-time trade events,
-giving you a complete picture of the entire system without a centralized database.
-Finally, you'll implement a backup strategy that's as simple as copying files.
+转向一个面向生产、并以运维简化为目标的系统。
+你会从 Postgres 迁移到 SQLite，并引入集群；每个节点运行自己的本地数据库——这样写入就不再依赖网络，交易节点也能保持自包含。
+我们会使用 `libcluster` 配置集群形成，并利用 Elixir 原生分布式能力把各节点数据汇聚成统一视图。
+然后你会构建一个 Phoenix LiveView 仪表板，通过 RPC 查询每个节点的状态，并订阅 PubSub 获取实时交易事件，
+在没有中心化数据库的情况下也能完整掌握整个系统的运行状况。
+最后，你还会实现一个极其简单的备份策略——只要复制文件即可。
 
-Each phase builds naturally on the previous one,
-taking you from basic concepts to production-ready systems while demonstrating how Elixir applications evolve over time.
+每个阶段都会自然承接前一个阶段，
+带你从基础概念一路走到可用于生产的系统，同时展示 Elixir 应用如何随着时间不断演进。
 
-### How to Get the Most From This Book {-}
+### 如何从本书获得最大收益 {-}
 
-**Follow along by coding:** This book is designed to be hands-on. You'll get the most value by actually writing and running the code as we build the trading bot together. Each chapter builds upon the previous one, so I recommend following them in order.
+**动手编码跟学：** 这本书的设计就是为了让你边做边学。只有真正跟着一起写代码、运行代码，你才能获得最大收益。每一章都建立在前一章的基础上，所以我建议按顺序阅读和实践。
 
-**Chapter structure:** Each chapter follows a consistent pattern.
-We start by identifying a problem or limitation in our current implementation,
-then discuss the Elixir/OTP concepts needed to solve it.
-From there, we implement the solution step by step and verify our changes with tests.
+**章节结构：** 每一章都遵循相似的模式。
+我们会先找出当前实现中的某个问题或限制，
+再讨论解决它所需的 Elixir/OTP 概念。
+然后我们一步一步实现解决方案，并用测试验证修改结果。
 
-**Code repositories:** Use the source code repository to check your progress. Each chapter has its own branch with the completed code, so you can compare your implementation or catch up if needed.
+**代码仓库：** 你可以通过源代码仓库来检查自己的进度。每一章都有对应的分支和完整代码，所以你可以对照实现，或者在需要时快速补进度。
 
-**Prerequisites check:** Before starting Chapter 1, make sure you have Elixir 1.18+ and Erlang/OTP 27+ installed
-to take advantage of improved compiler feedback and the latest developer tooling, along with a text editor configured for Elixir.
+**前置条件检查：** 在开始第 1 章之前，请确保你已经安装了 Elixir 1.18+ 和 Erlang/OTP 27+，
+以便使用更好的编译器反馈和最新的开发工具，同时还需要一个已为 Elixir 配置好的文本编辑器。
 
-**Getting help:** If you get stuck, check the GitHub Discussions in either the book repository or source code repository.
+**获取帮助：** 如果遇到卡住的地方，可以去本书仓库或源代码仓库的 GitHub Discussions 查看或提问。
 
-### Source Code and Repositories {-}
+### 源代码与仓库 {-}
 
-There are two repositories related to this book (both hosted on GitHub):
+这本书相关的仓库有两个（都托管在 GitHub 上）：
 
-* [the book itself](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
-* [code written across the book where the final code of each chapter has its own branch](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
+* [本书仓库](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot)
+* [贯穿全书的源代码仓库，每章最终代码都有自己的分支](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code)
 
-**To get notified about updates** to this book, simply watch the [book's repository](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot), and don't forget to leave a star:
+**想接收更新通知**，只要关注[本书仓库](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot)即可，别忘了顺手点个 star：
 
 ```{r, fig.align="center", out.width="60%", echo=FALSE}
 knitr::include_graphics("images/watch_book_howto.png")
 ```
 
-This book is based on the [Hands-on Elixir & OTP: Cryptocurrency Trading Bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) video course released on YouTube.
+本书改编自 YouTube 上发布的 [Hands-on Elixir & OTP: Cryptocurrency Trading Bot](https://www.youtube.com/watch?v=wVYIx7M6o28&list=PLxsE19GnjC5Nv1CbeKOiS5YqGqw35aZFJ) 视频课程。
 
-### Community and Contributing {-}
+### 社区与贡献 {-}
 
-The book is written using [R Markdown](http://rmarkdown.rstudio.com/) (it has very similar syntax to GitHub Markdown but supports many more features including code execution, etc.) and converted to final form (for example, PDF) using the [bookdown](https://www.bookdown.org/) app. This means that editing a chapter is as simple as editing the markdown source of that chapter.
+本书使用 [R Markdown](http://rmarkdown.rstudio.com/) 编写（它和 GitHub Markdown 的语法非常接近，但支持更多功能，包括代码执行等），并通过 [bookdown](https://www.bookdown.org/) 转换为最终形式（例如 PDF）。这意味着，编辑某一章就和编辑那一章的 markdown 源文件一样简单。
 
-For contributions, I'd love to follow the standard process: fork, make changes, open a PR, merge, and release a new version of the book. Please check if there's a branch for the next version and point your PR to it instead of `main`.
+如果你想贡献内容，我希望沿用标准流程：fork、修改、发起 PR、合并，然后发布新版书籍。请先确认是否有面向下一版本的分支，并把 PR 提交到那个分支，而不是 `main`。
 
-This book also has **GitHub Discussions** enabled for both the [book's repo](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions) and the [source code's repo](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions). Feel free to start any book-related discussions there.
+本书还为[书籍仓库](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot/discussions)和[源代码仓库](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/discussions)都开启了 **GitHub Discussions**。欢迎在那里发起任何与本书相关的讨论。
 
-### Book Formats and Access {-}
+### 书籍格式与获取方式 {-}
 
-To keep this book up to date and publicly available for people who can't afford to pay for it, I've released it in HTML format free online at [https://www.elixircryptobot.com](https://www.elixircryptobot.com).
+为了让本书保持更新，并免费提供给无法付费购买的人，我已将其以 HTML 形式免费发布在 [https://www.elixircryptobot.com](https://www.elixircryptobot.com)。
 
-The PDF & EPUB formats are available for purchase on [Gumroad](https://gum.co/cSGdY).
+PDF 和 EPUB 版本可在 [Gumroad](https://gum.co/cSGdY) 购买。
 
-This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+本作品采用 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议。
 
-#### Legal Disclaimer {-}
+#### 法律免责声明 {-}
 
-THE SOFTWARE/BOOK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE/BOOK OR THE USE OR OTHER DEALINGS IN THE SOFTWARE/BOOK.
+本软件/书籍按“原样”提供，不附带任何形式的明示或暗示担保，包括但不限于适销性、特定用途适用性以及非侵权性的保证。作者或版权所有者在任何情况下均不对因合同、侵权或其他原因，以及因本软件/书籍或其使用或其他交易行为而引起的任何索赔、损害或其他责任承担责任。
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages

@@ -1,22 +1,22 @@
-# Creating a Naive Trading Strategy
+# 构建一个朴素的交易策略
 
-In this chapter, we'll build our first automated trading strategy. We'll start with a naive version.
-It won't be smart, but it will serve as a great way to demonstrate valuable Elixir concepts,
-especially how processes can manage and use their internal state.
+在本章中，我们会构建第一个自动化交易策略，先从一个朴素版本开始。
+它不会很聪明，但它会非常适合用来演示有价值的 Elixir 概念，
+尤其是进程如何管理并使用自己的内部状态。
 
-**Important:** This example connects to Binance and places real trades with cryptocurrency.
-If you'd rather not use real funds, you're in luck. In Chapter 4, we'll build a mock of the
-`Binance` module that will let us run the code without an actual exchange account.
+**重要：** 这个示例会连接 Binance，并真实地执行加密货币交易。
+如果你不想动用真金白银，那也没关系。第 4 章我们会构建一个 `Binance` 模块的模拟版本，
+这样就能在没有真实交易所账户的情况下运行代码。
 
-## Objectives
+## 目标
 
-- Create another supervised application inside our umbrella for our trading strategy.
-- Implement functions (`GenServer` callbacks) that react to trade events based on the trader's state.
-- Connect the streamer and trader applications so events can flow between them.
+- 在 umbrella 中再创建一个用于交易策略的受监督应用。
+- 实现函数（`GenServer` 回调），根据交易者的状态响应交易事件。
+- 把 streamer 和 trader 应用连接起来，让事件在它们之间流动。
 
-## Initialization
+## 初始化
 
-To implement our *naive* strategy, we need to create a new supervised application inside our umbrella project:
+要实现我们的*朴素*策略，我们需要在 umbrella 项目里新建一个受监督应用：
 
 ```{r, engine = 'bash', eval = FALSE}
 # inside your terminal
@@ -46,17 +46,16 @@ defmodule Naive.Trader do
 end
 ```
 
-Why GenServer? Our trader needs to do three things: hold state (current orders), receive messages (trade events),
-and make decisions based on both. GenServer is the standard OTP building block for exactly this pattern.
+为什么要用 GenServer？我们的交易者需要做三件事：保存状态（当前订单）、接收消息（交易事件），
+并根据这两者做出决策。GenServer 正是处理这种模式的标准 OTP 组件。
 
-Our module uses the [GenServer](https://hexdocs.pm/elixir/master/GenServer.html#content) behavior.
-While `init/1` is the only required callback, implementing `start_link/1` is a strong convention
-for processes started by a supervisor.
-Note that we are using a hardcoded atom `name: :trader`.
-This is simple for a single bot, but it creates a global name conflict -
-you cannot start a second trader for a different symbol because the name is already taken.
-We'll learn how to use a `Registry` to handle multiple dynamic traders in Phase 2.
-Finally, we require `Logger` so we can log information from this module.
+我们的模块使用了 [GenServer](https://hexdocs.pm/elixir/master/GenServer.html#content) 行为。
+虽然 `init/1` 是唯一必需的回调，但为 supervisor 启动的进程实现 `start_link/1` 是一个很强的惯例。
+注意这里我们用了硬编码的原子 `name: :trader`。
+这对单个机器人来说很简单，但会带来全局命名冲突——
+如果你想为另一个交易对再启动一个 trader，就会因为名字已被占用而失败。
+我们会在第 2 阶段学习如何使用 `Registry` 来管理多个动态 trader。
+最后，我们 `require Logger`，这样就能在这个模块里记录日志信息。
 
 Next, let's define the state for our `GenServer` process:
 
@@ -74,27 +73,27 @@ Next, let's define the state for our `GenServer` process:
   end
 ```
 
-Our trader needs to know:
+我们的交易者需要知道：
 
-- which symbol to trade (a symbol represents a trading pair - for example, "XRPUSDT" means trading XRP against USDT)
-- the currently placed buy order, if any
-- the currently placed sell order, if any
-- profit target (the desired profit percentage for a single trade cycle - one buy and one sell)
-- tick_size (a bit of trading jargon that we'll demystify shortly)
+- 要交易哪个 symbol（symbol 代表一个交易对——例如 "XRPUSDT" 就表示用 XRP 交易 USDT）
+- 当前已经挂出的买单（如果有）
+- 当前已经挂出的卖单（如果有）
+- 目标利润率（一次交易循环——一次买入和一次卖出——希望达到的利润百分比）
+- tick_size（一个交易术语，马上就会解释清楚）
 
-Since our trader can't function without `:symbol`, `:profit_target`, or `:tick_size`,
-we use the `@enforce_keys` attribute. This prevents us from creating a `%State{}` struct without these essential
-values, ensuring our trader is always properly initialized.
+由于交易者离不开 `:symbol`、`:profit_target` 或 `:tick_size`，
+我们使用了 `@enforce_keys` 属性。这可以防止我们在缺少这些关键值时创建 `%State{}` 结构体，
+从而确保交易者总是以正确方式初始化。
 
-**Terminology: Tick size**
+**术语：Tick size**
 
-Each symbol has a different tick size, which represents the smallest acceptable price increment.
-Think of it like cents for dollars - you can't price something at $1.234; it must be $1.23 or $1.24.
-In crypto, BTCUSDT might have a tick size of 0.01, while XRPUSDT might be 0.0001.
-If you try to place an order at a price that isn't a multiple of the tick size, Binance will reject it.
+每个 symbol 都有自己的 tick size，它表示允许的最小价格增量。
+你可以把它理解成美元里的“分”——你不能把价格写成 $1.234；它必须是 $1.23 或 $1.24。
+在加密货币里，BTCUSDT 可能的 tick size 是 0.01，而 XRPUSDT 可能是 0.0001。
+如果你提交的价格不是 tick size 的整数倍，Binance 就会拒绝这个订单。
 
-You can find more information on Investopedia: https://www.investopedia.com/terms/t/tick.asp.
-We need to fetch this value from Binance to calculate valid order prices.
+你可以在 Investopedia 上找到更多信息：https://www.investopedia.com/terms/t/tick.asp。
+我们需要从 Binance 获取这个值，才能计算出合法的订单价格。
 
 Now that we know our `GenServer` needs these arguments, we can update our `start_link/1` and `init/1` functions
 to pattern match on a map:
@@ -110,19 +109,19 @@ to pattern match on a map:
   end
 ```
 
-### Non-blocking Initialization
+### 非阻塞初始化
 
-We could simply fetch the `tick_size` directly inside the `init/1` function. However, there is a catch.
+我们当然可以直接在 `init/1` 里获取 `tick_size`。不过这里有个问题。
 
-`GenServer.start_link/3` is synchronous. It waits for `init/1` to return before it gives the PID to the caller (which is often a `Supervisor`).
-If we perform a network request to Binance inside `init/1`, and that request takes 5 seconds (or fails!),
-our entire application startup is blocked for that duration. If we had 100 traders starting up, and each took a few seconds,
-our application would effectively hang or crash due to timeout.
+`GenServer.start_link/3` 是同步的。它会一直等到 `init/1` 返回，才把 PID 交给调用方（通常是 `Supervisor`）。
+如果我们在 `init/1` 里直接向 Binance 发网络请求，而这个请求花了 5 秒（或者失败了！），
+那么整个应用启动就会在这 5 秒内被阻塞。假如我们要启动 100 个 trader，而每个都要花几秒，
+应用就可能因为超时而卡住甚至崩掉。
 
-To solve this, we'll use `handle_continue/2`, a callback added in OTP 21 specifically for this scenario.
-It allows us to return immediately from `init/1` (unblocking the supervisor) and then perform further initialization work asynchronously.
+为了解决这个问题，我们会使用 `handle_continue/2`——这是 OTP 21 加入的回调，专门用来处理这种场景。
+它允许我们从 `init/1` 立即返回（从而不阻塞 supervisor），然后再异步执行后续初始化工作。
 
-Let's update our `init/1` to schedule this continuation:
+我们来更新 `init/1`，让它安排这个 continuation：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -140,10 +139,10 @@ Let's update our `init/1` to schedule this continuation:
   end
 ```
 
-Notice the return tuple: `{:ok, state, {:continue, :fetch_tick_size}}`.
-This tells the GenServer: "I'm successfully started, but before you process any messages, run the logic associated with `:fetch_tick_size`."
+注意这里返回的元组：`{:ok, state, {:continue, :fetch_tick_size}}`。
+它是在告诉 GenServer：“我已经成功启动了，不过在处理任何消息之前，请先执行和 `:fetch_tick_size` 相关的逻辑。”
 
-Now we need to implement the handle_continue/2 callback to do the actual work:
+现在我们需要实现 `handle_continue/2` 回调来完成真正的工作：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -154,9 +153,9 @@ Now we need to implement the handle_continue/2 callback to do the actual work:
   end
 ```
 
-A straightforward way to connect to the Binance REST API is by using the [binance](https://github.com/dvcrn/binance.ex) package.
+要连接 Binance REST API，一个直接的办法是使用 [binance](https://github.com/dvcrn/binance.ex) 包。
 
-Following the installation instructions in the library's documentation on GitHub, we'll start by adding `binance` to the deps in `/apps/naive/mix.exs`:
+按照该库在 GitHub 文档里的安装说明，我们先把 `binance` 加到 `/apps/naive/mix.exs` 的依赖里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/mix.exs
@@ -169,15 +168,14 @@ Following the installation instructions in the library's documentation on GitHub
   end
 ```
 
-Along with the `:binance` library, we're also adding `:decimal` and our own `:streamer` application.
-The [decimal](https://github.com/ericmj/decimal) library is essential for calculating prices,
-as using standard floats would lead to precision errors common in financial calculations.
-Lastly, we include our own `:streamer` application (from Chapter 1) because the `naive` application will
-need to handle the `%Streamer.Binance.TradeEvent{}` struct it produces.
+除了 `:binance` 库之外，我们还会加入 `:decimal` 和我们自己的 `:streamer` 应用。
+[decimal](https://github.com/ericmj/decimal) 库对于计算价格非常关键，
+因为使用普通 float 会引入金融计算里常见的精度误差。
+最后，我们加入自己在第 1 章创建的 `:streamer` 应用，因为 `naive` 应用需要处理它产生的 `%Streamer.Binance.TradeEvent{}` 结构体。
 
-We need to run `mix deps.get` to install our new dependencies.
+接下来需要运行 `mix deps.get` 来安装这些新依赖。
 
-Now, let's return to the `Naive.Trader` module and implement the logic for fetching the `tick_size` from Binance:
+现在回到 `Naive.Trader` 模块，开始实现从 Binance 获取 `tick_size` 的逻辑：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -193,13 +191,12 @@ Now, let's return to the `Naive.Trader` module and implement the logic for fetch
   end
 ```
 
-We use `get_exchange_info/0` to fetch all exchange information, then pipe the result through
-a series of functions. This pipeline drills down through a complex nested data structure
-to extract the exact `tickSize` value for our `symbol`.
+我们使用 `get_exchange_info/0` 来获取所有交易所信息，然后把结果通过一串函数管道传下去。
+这条管道会一路深入复杂的嵌套数据结构，最终提取出我们这个 `symbol` 对应的准确 `tickSize` 值。
 
-The complete data structure is available in the official Binance API documentation:
-https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information.
-To simplify, the part of the data structure we care about looks like this:
+完整的数据结构可以在官方 Binance API 文档中找到：
+https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information。
+为了简化，下面是我们真正关心的那部分数据结构：
 
 ```{r, engine = 'elixir', eval = FALSE}
 {:ok, %{
@@ -218,69 +215,67 @@ To simplify, the part of the data structure we care about looks like this:
 }}
 ```
 
-**A Note on Error Handling:** For this naive strategy, we'll assume the API call to Binance always succeeds.
-In a production application, you would need to handle potential errors, perhaps by using a `case` statement
-to pattern match on both `{:ok, data}` and `{:error, reason}` tuples.
+**关于错误处理的说明：** 对这个朴素策略来说，我们先假设调用 Binance API 总是成功。
+在生产应用里，你当然需要处理潜在错误，比如用 `case` 表达式同时匹配 `{:ok, data}` 和 `{:error, reason}` 元组。
 
-## How the Trading Strategy Will Work
+## 交易策略将如何工作
 
-Our trader maintains an internal state that tracks its progress through the trade cycle.
-Think of it as a simple state machine with three states:
+我们的交易者会维护一个内部状态，用来跟踪自己在交易循环中的进展。
+你可以把它想成一个只有三种状态的简单状态机：
 
 ```{r, fig.align="center", out.width="100%", out.height="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_02_01_trader_states.png")
 ```
 
-Take a moment to study this diagram. We'll refer back to it as we implement each state transition.
-If you ever get lost in the code, this visual map will help you find your bearings.
+花一点时间看看这张图。在实现每次状态迁移时，我们会不断回到它。
+如果你在代码里迷路了，这张图会帮助你重新找回方向。
 
-Our trader reacts to trade events,
-making decisions based on its current state and the event's data,
-operating in one of three states:
+我们的交易者会对交易事件做出反应，
+根据当前状态和事件数据来决定下一步，
+它会在以下三种状态中运行：
 
-### State 1: Ready to buy
+### 状态 1：准备买入
 
-Initially, the trader has no open orders. We can identify this state by pattern matching on `buy_order: nil`.
-When the trader receives its first trade event,
-it will use the event's price to place an initial buy order.
+一开始，交易者没有任何未完成订单。我们可以通过匹配 `buy_order: nil` 来识别这个状态。
+当交易者收到第一条交易事件时，
+它会根据事件里的价格下一个初始买单。
 
-### State 2: Buy order placed
+### 状态 2：买单已挂出
 
-After placing a buy order, the trader compares its price to the price from incoming trade events.
-When a trade event arrives with a price **at or below** our buy order's price,
-we'll assume our order has been filled (as long as a sell order hasn't already been placed).
-The trader is now ready to place a sell order.
+挂出买单后，交易者会把买单价格和新进来的交易事件价格进行比较。
+当某条交易事件的价格**低于或等于**我们的买单价格时，
+我们就假设这笔订单已经成交了（前提是还没有挂出卖单）。
+此时交易者就准备去挂卖单了。
 
-**A Note on Simplification:** For this naive strategy, we'll assume an order is filled as soon as the
-market price reaches our order's price. A production-ready system would need to handle complexities like
-partial fills, but this simplification keeps us focused on our current learning objectives.
+**关于简化的说明：** 在这个朴素策略里，我们假设只要市场价格到达我们的订单价格，订单就算成交。
+生产级系统还需要处理像部分成交这样的复杂情况，但这种简化能让我们更专注于当前的学习目标。
 
-### State 3: Sell order placed
+### 状态 3：卖单已挂出
 
-This state mirrors the previous one.
-The trader compares the price from incoming trade events to its sell order's price.
-When a trade event arrives with a price **at or above** our sell order's price,
-we assume the order is filled. This completes the trade cycle.
-With the trade cycle complete, the trader's job is done, and the process terminates.
+这个状态和上一个状态类似。
+交易者会把新进来的交易事件价格与卖单价格进行比较。
+当某条交易事件的价格**高于或等于**我们的卖单价格时，
+我们就认为订单已经成交。这就完成了整个交易循环。
+交易循环完成后，交易者的任务也就结束了，进程会随之终止。
 
-### Implementation of the First Scenario
+### 第一个场景的实现
 
-Enough theory! :) Back in the editor, we'll start with the first scenario.
-Since we'll be pattern matching on `%Streamer.Binance.TradeEvent{}` structs frequently,
-let's alias it first to keep our code clean.
+理论讲完了，开始动手吧！:) 回到编辑器里，我们先实现第一个场景。
+因为后面会频繁对 `%Streamer.Binance.TradeEvent{}` 结构体做模式匹配，
+先给它起个别名，让代码更简洁。
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   alias Streamer.Binance.TradeEvent
 ```
 
-**Architecture Note - Guard Convenience vs. Precision**: In the `handle_cast/2` clauses below,
-we use Elixir guards (like `when trade_price <= buy_price`) to keep our state machine logic concise.
-However, guards only work with basic types like floats. In production, you'd move these comparisons
-into the function body and use `Decimal.compare/2` instead - something like `Decimal.compare(trade_price, buy_price) != :gt`.
-This avoids floating-point drift, where `0.1` might be stored as `0.09999999999999999`.
+**架构说明：guard 的便利与精确之间的权衡**：在下面的 `handle_cast/2` 子句里，
+我们使用了 Elixir 的 guard（比如 `when trade_price <= buy_price`），这样状态机逻辑会更简洁。
+不过，guard 只适用于像 float 这样的基础类型。在生产环境里，你应该把这些比较
+放到函数体里，并改用 `Decimal.compare/2`，例如 `Decimal.compare(trade_price, buy_price) != :gt`。
+这样可以避免浮点漂移的问题，比如 `0.1` 可能被存成 `0.09999999999999999`。
 
-To handle a "new" trader that is ready to buy, we'll pattern match on a state where `buy_order` is `nil`:
+要处理一个“新”的、准备买入的 trader，我们可以把状态匹配成 `buy_order` 为 `nil` 的情况：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -299,19 +294,19 @@ To handle a "new" trader that is ready to buy, we'll pattern match on a state wh
   end
 ```
 
-For now, we'll hardcode the quantity.
-This keeps the chapter focused. Don't worry - we'll refactor this in a later chapter.
+现在我们先把 quantity 写死。
+这样可以让本章保持聚焦。别担心——后面章节我们会再把它重构掉。
 
-Pattern matching on `buy_order: nil` ensures this clause only runs for a trader
-that hasn't placed an order yet. It's crucial that we **return the updated state**.
-If we returned the original state, `buy_order` would remain `nil`, and our trader would go on a
-shopping spree - placing a new buy order for every trade event it receives!
+对 `buy_order: nil` 的模式匹配，能确保这个子句只会在 trader 还没下过单时执行。
+关键点是我们必须**返回更新后的 state**。
+如果返回原来的 state，`buy_order` 就会一直是 `nil`，于是 trader 会像“疯狂购物”一样——
+每收到一条交易事件就再下一个买单！
 
-### Implementation of the Second Scenario
+### 第二个场景的实现
 
-Now, let's implement the logic for when the buy order is filled.
-We'll add a `handle_cast/2` clause that matches when two conditions are met:
-the incoming trade price is **less than or equal** to our buy price, and a sell order hasn't been placed yet.
+现在我们来实现买单成交后的逻辑。
+我们会增加一个 `handle_cast/2` 子句，它会在两个条件同时满足时匹配：
+进入的交易价格**小于或等于**我们的买入价格，并且还没有挂出卖单。
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -355,25 +350,25 @@ the incoming trade price is **less than or equal** to our buy price, and a sell 
   end
 ```
 
-We'll implement the sell price calculation in a helper function that takes the
-buy price, profit target, and tick size as arguments.
+我们会把卖出价格的计算放到一个辅助函数里，它接收
+买入价格、目标利润率和 tick size 作为参数。
 
-When the market price meets our buy order's price, we assume the buy order has been filled.
-We can now place a sell order using the quantity from our original buy order and a newly calculated sell price.
-Again, it's crucial to **return the updated state.**
-Otherwise, the trader would place a new sell order for every subsequent trade event.
+当市场价格达到我们的买单价格时，我们假设买单已经成交。
+这时我们就可以用原始买单里的 quantity，再加上新计算出来的卖出价格，去挂卖单了。
+再次强调，必须**返回更新后的 state。**
+否则 trader 会在后续每一条交易事件到来时都再挂一次卖单。
 
-When the market price meets our buy price, we call `Binance.get_order/3`
-to fetch the latest order details from the exchange.
-While we optimistically assume the order is filled, this call ensures our local state
-is updated with the definitive information from Binance.
-Keeping our local state synchronized with the exchange is a critical practice that will
-become even more important in later chapters.
+当市场价格达到我们的买入价格时，我们会调用 `Binance.get_order/3`
+去从交易所获取最新的订单详情。
+虽然我们先乐观地假设订单已经成交，但这个调用能确保本地状态
+被 Binance 的最终信息更新。
+让本地状态与交易所保持同步，是一个非常关键的实践，
+在后面的章节里会变得更加重要。
 
-We need to convert the returned `%Binance.Order{}` struct back into a `%Binance.OrderResponse{}`.
-We do this because our other `handle_cast/2` clauses specifically pattern match on `%Binance.OrderResponse{}`.
-The structs are nearly identical - the main difference is the timestamp field's name (`time` vs. `transact_time`).
-We can easily convert from one to the other with this helper function at the bottom of the `Naive.Trader` module:
+我们需要把返回的 `%Binance.Order{}` 结构体再转换回 `%Binance.OrderResponse{}`。
+这样做是因为我们其他的 `handle_cast/2` 子句专门匹配的是 `%Binance.OrderResponse{}`。
+这两个结构体几乎一样——主要区别只是时间戳字段的名字（`time` 和 `transact_time`）。
+我们可以在 `Naive.Trader` 模块底部用这个辅助函数轻松完成转换：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -383,23 +378,23 @@ We can easily convert from one to the other with this helper function at the bot
   end
 ```
 
-Calculating the sell price requires precise math, so we'll use the excellent
-[Decimal](https://github.com/ericmj/decimal) library.
-Let's alias it at the top of the file:
+计算卖出价格需要精确的数学运算，所以我们会使用非常优秀的
+[Decimal](https://github.com/ericmj/decimal) 库。
+先在文件顶部给它起个别名：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
 alias Decimal, as: D
 ```
 
-**A Note on Precision:** Financial calculations require high precision.
-Standard floats can introduce tiny rounding errors that can compound over time.
-The `Decimal` library solves this.
-While we'll use `D.from_float/1` below, a production-ready system would handle prices
-as strings (e.g., `"123.45"`) and parse them with `Decimal.new/1`.
-This avoids any potential precision loss that can occur with floats.
+**关于精度的说明：** 金融计算需要非常高的精度。
+普通 float 会引入微小的舍入误差，而这些误差会随着时间累积。
+`Decimal` 库就是为了解决这个问题。
+虽然下面我们会使用 `D.from_float/1`，但在生产系统里，你应该把价格
+当作字符串来处理（比如 `"123.45"`），再用 `Decimal.new/1` 去解析。
+这样就能避免 float 可能带来的精度损失。
 
-To calculate the correct sell price, we can use the following formula:
+计算正确卖出价格时，我们可以使用下面这个公式：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -433,25 +428,25 @@ To calculate the correct sell price, we can use the following formula:
   end
 ```
 
-First, we account for the trading fee.
-Binance's standard trading fee is 0.1%. To find our break-even point, we multiply by 1.001 -
-that's 1 (the original price) plus 0.001 (the 0.1% fee).
-For example, if we bought at $100, we actually paid $100.10 after fees.
-We use this to calculate `original_price`, which is our true cost basis.
+首先，我们要把交易手续费算进去。
+Binance 的标准手续费是 0.1%。为了找到盈亏平衡点，我们要乘以 1.001——
+也就是 1（原始价格）加上 0.001（0.1% 的手续费）。
+比如如果我们以 100 美元买入，扣完手续费后实际成本是 100.10 美元。
+我们用这个结果来计算 `original_price`，它就是我们的真实成本基准。
 
-Next, we increase the original paid price by the profit target. This gives us the `net_target_price`.
+接下来，我们在这个已支付价格的基础上加上目标利润率，这就得到了 `net_target_price`。
 
-Since we'll also be charged a fee on the sell order, we must account for it again. We multiply our `net_target_price` by the `fee` to get the final `gross_target_price`.
+由于卖单也要收手续费，我们还得再把这部分算进去。把 `net_target_price` 再乘一次 `fee`，就得到了最终的 `gross_target_price`。
 
-Finally, we must align our price with the symbol's `tick_size`.
-Binance will reject an order if its price isn't a multiple of this value
-(e.g., you can't price something at $1.234 if the tick size is $0.01).
-This final step uses integer division to round the `gross_target_price` **down** to
-the nearest valid increment allowed by the `tick_size`.
+最后，我们必须让价格和 symbol 的 `tick_size` 对齐。
+如果价格不是这个值的整数倍，Binance 就会拒绝订单。
+比如 tick size 是 $0.01，你就不能把价格写成 $1.234。
+这一步会通过整数除法把 `gross_target_price` **向下**舍入到
+`tick_size` 允许的最近合法增量。
 
-### Implementation of the Third Scenario
+### 第三个场景的实现
 
-Now for the final state: handling a filled sell order.
+现在轮到最后一个状态：处理卖单成交。
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -482,18 +477,18 @@ Now for the final state: handling a filled sell order.
   end
 ```
 
-When a trade event's price is **greater than or equal to**
-the sell order's price, we consider the order filled.
-We fetch the final state of the sell order one last time (a step that will prove useful in a later chapter)
-and then return a `{:stop, ...}` tuple. This special tuple tells the `GenServer` to shut down gracefully,
-completing its lifecycle.
+当某条交易事件的价格**大于或等于**
+卖单价格时，我们就认为这笔订单已经成交。
+我们会最后再获取一次卖单的最终状态（这个步骤在后面的章节里会派上用场），
+然后返回一个 `{:stop, ...}` 元组。这个特殊元组会告诉 `GenServer` 优雅地关闭，
+完成它的生命周期。
 
-### Implementation of the Fallback Scenario
+### 回退场景的实现
 
-Finally, we need a **catch-all** `handle_cast/2` **clause**.
-This function will handle any `%TradeEvent{}` that doesn't match the specific conditions in the clauses above
-(for example, when the market price is moving between our buy and sell prices).
-By simply returning the state unchanged, we effectively **ignore these events:**
+最后，我们还需要一个 **兜底** 的 `handle_cast/2` **子句**。
+这个函数会处理所有不满足上面那些特定条件的 `%TradeEvent{}`
+（比如市场价格正好在我们的买卖价之间波动时）。
+只要直接返回不变的 state，我们就等于**忽略了这些事件：**
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -502,10 +497,10 @@ By simply returning the state unchanged, we effectively **ignore these events:**
   end
 ```
 
-### Updating the Naive interface
+### 更新 Naive 接口
 
-Next, we'll update the public interface of our `naive` application.
-By modifying the `Naive` module, we can create a helper function to send events directly to our trader process:
+接下来，我们来更新 `naive` 应用的公开接口。
+通过修改 `Naive` 模块，我们可以创建一个辅助函数，直接把事件发送给 trader 进程：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive.ex
@@ -521,12 +516,12 @@ defmodule Naive do
 end
 ```
 
-We can do this because we registered the trader process with the name `:trader` in its `start_link/1` function.
+之所以可以这样做，是因为我们在 trader 的 `start_link/1` 函数里把进程注册成了 `:trader`。
 This allows us to send messages using the name instead of having to know the process' PID.
 
-### Updating streamer app
+### 更新 streamer 应用
 
-To keep things simple, we'll connect our applications by having the `Streamer` call the `Naive` module directly.
+为了保持简单，我们会让 `Streamer` 直接调用 `Naive` 模块，来把两个应用连接起来。
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -536,14 +531,14 @@ To keep things simple, we'll connect our applications by having the `Streamer` c
   end
 ```
 
-This creates tight coupling between the `streamer` and `naive` applications.
-Don't worry - this is a temporary shortcut.
-We'll refactor this in the next chapter, as these applications ideally shouldn't have direct knowledge of each other.
+这会让 `streamer` 和 `naive` 两个应用之间产生紧耦合。
+不用担心——这只是一个临时的捷径。
+我们会在下一章重构这里，因为理想情况下，这两个应用不应该直接知道彼此的存在。
 
 ### Configuring Binance Access
 
-Inside the `config` directory of our umbrella project, we'll create a new file named `secrets.exs`.
-We will use this for our Binance account access details.
+在 umbrella 项目的 `config` 目录里，我们会创建一个名为 `secrets.exs` 的新文件。
+我们会用它保存 Binance 账户的访问细节。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/secrets.exs
@@ -554,14 +549,14 @@ config :binance,
   secret_key: "YOUR-SECRET-KEY-HERE"
 ```
 
-We don't want to commit this file to version control, so we add it to our `.gitignore`:
+我们不希望把这个文件提交到版本控制，所以要把它加进 `.gitignore`：
 
 ```{r, engine = 'bash', eval = FALSE}
 # .gitignore
 config/secrets.exs
 ```
 
-Finally, we update our main config file to include it using [import_config](https://hexdocs.pm/elixir/master/Config.html#import_config/1):
+最后，我们更新主配置文件，通过 [import_config](https://hexdocs.pm/elixir/master/Config.html#import_config/1) 把它包含进来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -572,15 +567,15 @@ if File.exists?("config/secrets.exs") do
 end
 ```
 
-**Reminder:** This test places real trades. You'll need at least 20 USDT in your Binance wallet.
-If you skipped setting up Binance credentials earlier, no problem - just read through this section
-and run it yourself after Chapter 4, when we'll have a mock that doesn't require real funds.
+**提醒：** 这个测试会真实下单。你的 Binance 钱包里至少需要有 20 USDT。
+如果你之前跳过了 Binance 凭证的配置，也没关系——先把这一节读完，
+等到第 4 章我们有了不需要真金白银的 mock 之后，再自己动手跑也可以。
 
-### Test run
+### 测试运行
 
-Now it's time to put our implementation to the test.
-We'll use a negative `profit_target` to ensure the trade cycle completes quickly.
-This will result in a small, controlled loss of around 1%:
+现在该把我们的实现拿来跑一跑了。
+我们会使用一个负的 `profit_target`，确保交易循环能快速完成。
+这样会带来大约 1% 的小幅、可控亏损：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -596,31 +591,30 @@ iex(3)>
 13:45:33.094 [info] Trade finished, trader will now exit
 ```
 
-Once the IEx session starts, we'll launch the trader process.
-We'll pass it a map containing our `symbol` and a negative `profit_target`.
-This forces the sell order to be placed at a lower price, ensuring a faster fill for our test
-(instead of waiting for the market price to actually rise).
+IEx 会话启动后，我们先启动 trader 进程。
+然后传给它一个包含 `symbol` 和负 `profit_target` 的 map。
+这样会把卖单价格压得更低，从而让测试更快成交
+（而不是去等市场价格真的上涨）。
 
-Next, start streaming for the same symbol.
-As soon as you do, the `streamer` will begin sending trade events to the `trader` process,
-triggering the trading logic immediately.
+接着，针对同一个 symbol 开始流式接收数据。
+一旦这么做，`streamer` 就会开始把交易事件发送给 `trader` 进程，
+交易逻辑也会立刻被触发。
 
-The log output shows our trader placing a buy order at 0.25979 USDT per XRP.
-Less than 300 milliseconds later, a trade event arrives with a price matching our buy order,
-causing our strategy to assume the order was filled.
-The trader then immediately places a sell order at approximately 0.2577 USDT, which is also filled quickly.
-With the sell order filled, the trader has finished its trade cycle, and the process terminates as designed.
+日志输出显示，trader 以每个 XRP 0.25979 USDT 的价格挂出了买单。
+不到 300 毫秒后，一条价格匹配买单的交易事件到达，
+我们的策略于是认为买单已经成交。
+接着 trader 立刻以大约 0.2577 USDT 的价格挂出卖单，而这笔单子也很快成交。
+卖单成交后，trader 完成了整个交易循环，进程也按设计终止。
 
-That's it. **Congratulations!** You just built and executed your first algorithmic trade.
-More importantly, you've internalized one of Elixir's most powerful patterns:
-a `GenServer` that holds state, receives messages, and makes decisions.
-This same pattern scales from a single trader to thousands - which is exactly where we're headed.
+就这样。**恭喜你！** 你刚刚构建并执行了你的第一笔算法交易。
+更重要的是，你已经内化了 Elixir 最强大的模式之一：
+一个持有状态、接收消息并做出决策的 `GenServer`。
+这个模式可以从单个 trader 扩展到成千上万个——这正是我们接下来要走的方向。
 
-In the next chapter, we'll decouple our applications using PubSub,
-removing the tight coupling between `streamer` and `naive` that's been nagging at us.
+在下一章，我们会使用 PubSub 把应用解耦，
+消除 `streamer` 和 `naive` 之间一直存在的紧耦合。
 
-As a final step, remember to run `mix format` to keep your code nice and tidy.
+最后别忘了运行 `mix format`，让代码保持整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_02](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_02)).
+本章的源代码可以在本书的源代码仓库中找到（分支：
+[chapter_02](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_02)）。

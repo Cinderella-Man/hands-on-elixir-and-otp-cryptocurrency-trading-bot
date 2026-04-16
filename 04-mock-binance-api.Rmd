@@ -1,123 +1,118 @@
-# Mock the Binance API
+# 模拟 Binance API
 
-So far, our `Trader` has been talking directly to the real Binance exchange.
-If you ran the example from the previous chapter, you may have noticed the tension:
-every test run uses real API calls, burns through rate limits, and - if you're not careful - real money.
-Developing against a live API can feel a bit like walking a tightrope without a safety net.
+到目前为止，我们的 `Trader` 一直在直接和真实的 Binance 交易所通信。
+如果你跑过上一章的例子，可能已经感受到了这种压力：
+每次测试都会调用真实 API、消耗限流额度，而且——如果不小心——还会动用真金白银。
+在真实 API 上开发，就像没有安全网地走钢丝。
 
-In this chapter, we'll overcome these hurdles by creating a new `BinanceMock` module that will act
-as a drop-in replacement for the real `Binance` module. This mock, built as a `GenServer`,
-will maintain an in-memory order book and leverage our existing PubSub system to simulate order updates.
-This approach will allow us to develop and test our trading logic safely and efficiently.
+在本章里，我们会通过创建一个新的 `BinanceMock` 模块来解决这些问题，
+让它作为真实 `Binance` 模块的直接替代品。这个 mock 会以 `GenServer` 的形式实现，
+维护一个内存中的订单簿，并利用我们已有的 PubSub 系统来模拟订单更新。
+这种方式能让我们更安全、更高效地开发和测试交易逻辑。
 
-Let's dive in!
+开始吧！
 
-## Objectives
+## 目标
 
-- Design the `BinanceMock` application
-- Create a new app
-- Implement getting exchange info
-- Implement placing buy and sell orders
-- Implement callback for incoming trade events
-- Update the Trader and Configuration
-- Test the implementation
+- 设计 `BinanceMock` 应用
+- 创建一个新应用
+- 实现获取交易所信息
+- 实现挂买单和卖单
+- 实现接收交易事件的回调
+- 更新 Trader 和配置
+- 测试实现
 
-## Design
+## 设计
 
-Let's start by reviewing the current state of our application:
+先来回顾一下当前应用的状态：
 
 ```{r, fig.align="center", out.width="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_01_current_state.png")
 ```
 
-Currently, our `Trader` uses the `Binance` module to place buy/sell
-orders and get exchange info.
+目前，我们的 `Trader` 使用 `Binance` 模块来挂买单/卖单并获取交易所信息。
 
-Since `Binance.get_exchange_info/0` retrieves public data and doesn't require authentication,
-our mock can simply pass this request through to the real `Binance` library.
+由于 `Binance.get_exchange_info/0` 获取的是公开数据，不需要认证，
+我们的 mock 可以直接把这个请求转发给真实的 `Binance` 库。
 
-Other functions, such as placing buy and sell orders, require a funded Binance account.
-To avoid this dependency during development, we'll create a mock that simulates these
-functions.
+而挂买单和卖单等函数则需要一个有资金的 Binance 账户。
+为了在开发期间避免依赖真实账户，我们会创建一个 mock 来模拟这些函数。
 
-We will update the `Trader` to fetch the module's name from the configuration:
+接下来，我们会让 `Trader` 从配置中读取模块名：
 
 ```{r, fig.align="center", out.width="80%", out.height="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_02_proposal.png")
 ```
 
-By fetching the module name from our configuration, we give our `Trader` 'pluggable' behavior.
-This means we can swap the real `Binance` client for our mock one with a single line of config -
-all without touching a single line of our core trading logic. It's a clean, powerful way to keep our system flexible.
+通过从配置里读取模块名，我们就让 `Trader` 具备了“可插拔”的行为。
+这意味着我们只需要改一行配置，就能把真实的 `Binance` 客户端换成 mock，
+而完全不用碰核心交易逻辑。这是一种干净又强大的方式，能让系统保持灵活。
 
-The `BinanceMock` module itself will implement the same contract
-(or public API) as the real `Binance` module.
+`BinanceMock` 模块本身会实现和真实 `Binance` 模块相同的契约
+（也就是公共 API）。
 
-It will need to store buy and sell orders and provide a way to retrieve them,
-covering the functionality of the REST API endpoints we use.
+它需要存储买单和卖单，并提供取回这些订单的方法，
+覆盖我们使用到的 REST API 端点功能。
 
-However, the real Binance API also tracks when orders are filled.
-In the real world, Binance tells us when an order is filled.
-In our mock world, *we* are the exchange - and that's a fundamental shift in perspective.
-We're no longer just a client waiting for notifications; we're the system that must watch the incoming price stream and decide:
-'Has the price hit our target? If so, let's fill that order!'
-This is where our mock really comes to life.
+不过，真实 Binance API 还会跟踪订单是否成交。
+在真实世界里，Binance 会告诉我们订单什么时候成交。
+但在 mock 世界里，*我们* 就是交易所——这会带来根本性的视角变化。
+我们不再只是等待通知的客户端；我们成了必须观察实时价格流、并主动判断的人：
+“价格到目标了吗？如果到了，那就把订单成交掉！”
+这正是 mock 真正开始发挥作用的地方。
 
-To mimic this, `BinanceMock` will subscribe to the `"TRADE_EVENTS:#{symbol}"`
-PubSub topic. These trade events will provide the data needed to
-update the statuses of our fake orders.
+为了模拟这一点，`BinanceMock` 会订阅 `"TRADE_EVENTS:#{symbol}"`
+这个 PubSub topic。这些交易事件会提供更新假订单状态所需的数据。
 
 ```{r, fig.align="center", out.width="80%", out.height="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_03_proposal_pubsub.png")
 ```
 
-So, how will our mock know when to fill an order?
-The `BinanceMock` process will subscribe to the trade events stream and
-mark an order as filled once a market trade occurs at a price that would execute it.
+那么，mock 怎么知道什么时候该把订单成交掉呢？
+`BinanceMock` 进程会订阅交易事件流，并在市场成交价达到能触发订单执行的价格时，
+把这笔订单标记为已成交。
 
 ```{r, fig.align="center", out.width="90%", echo=FALSE}
 knitr::include_graphics("images/chapter_04_04_explanation.png")
 ```
 
-As the diagram shows, our naive strategy places an order at the current market price.
+从图里可以看到，我们的朴素策略会在当前市场价格上下单。
 
-In this scenario, the market price briefly **rises** after our order is placed.
-The `BinanceMock` will then wait for a trade event from PubSub where the
-**trade price is at or below our buy order's price**.
-When this condition is met, `BinanceMock` marks our buy order as `"FILLED"`.
+在这个场景里，市场价格会在订单挂出后短暂**上涨**。
+这时 `BinanceMock` 会等待来自 PubSub 的交易事件，直到出现一条
+**交易价格低于或等于买单价格** 的事件。
+当这个条件满足时，`BinanceMock` 就会把买单标记为 `"FILLED"`。
 
-Upon detecting the filled order, the `Trader` will proceed to place a sell order.
-Similar to the buy order, `BinanceMock` will wait for a trade event from PubSub
-where the **trade price is at or above the sell order's price**.
-When this condition is met, `BinanceMock` marks our sell order as `"FILLED"`.
+一旦发现买单成交，`Trader` 就会继续挂卖单。
+和买单类似，`BinanceMock` 会继续等待来自 PubSub 的交易事件，
+直到出现一条**交易价格高于或等于卖单价格** 的事件。
+当这个条件满足时，`BinanceMock` 就会把卖单标记为 `"FILLED"`。
 
-Enough theory for now, let's get our hands dirty with some coding.
+理论先讲到这里，开始动手写代码吧。
 
-## Create "BinanceMock" app
+## 创建 `BinanceMock` 应用
 
-Let's start by creating a new supervised app called `BinanceMock`:
+我们先创建一个名为 `BinanceMock` 的新受监督应用：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
 $ mix new binance_mock --sup
 ```
 
-Next, we'll set up the `BinanceMock` module itself.
-We'll make it a `GenServer` to manage its state, which will include the
-in-memory order books.
+接下来，我们来搭建 `BinanceMock` 模块本身。
+我们会把它做成一个 `GenServer` 来管理状态，其中包括内存中的订单簿。
 
-We'll use the `Decimal` module for accurate price comparisons and the
-`Logger` module for logging.
+我们会使用 `Decimal` 模块来做精确的价格比较，并使用 `Logger` 模块记录日志。
 
-The `GenServer` will manage its state using an internal `%State{}` struct, which contains:
+这个 `GenServer` 会通过内部的 `%State{}` 结构体来管理状态，它包含：
 
-* an `order_books` map, which will store the order book for each trading `symbol`.
-* a list of `subscriptions` to track the PubSub topics the mock is listening to.
-* the `next_order_id`, ensuring we can create unique and predictable IDs for our fake orders.
+* 一个 `order_books` map，用来保存每个交易 `symbol` 对应的订单簿。
+* 一个 `subscriptions` 列表，用来跟踪 mock 正在监听哪些 PubSub topic。
+* `next_order_id`，用于确保我们能为假订单生成唯一且可预测的 ID。
 
-The `order_books` map will hold an `%OrderBook{}` struct for each trading `symbol`.
-Each `%OrderBook{}` will, in turn, contain three lists:
-`buy_side`, `sell_side`, and `historical`.
+`order_books` map 会为每个交易 `symbol` 保存一个 `%OrderBook{}` 结构体。
+而每个 `%OrderBook{}` 又会包含三个列表：
+`buy_side`、`sell_side` 和 `historical`。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -147,10 +142,10 @@ defmodule BinanceMock do
 end
 ```
 
-## Implement getting exchange info
+## 实现获取交易所信息
 
-As mentioned, we can retrieve the exchange info by calling the `Binance` module's
-function directly, since it provides public data:
+如前所述，我们可以直接调用 `Binance` 模块里的函数来获取交易所信息，
+因为这部分本来就是公开数据：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -159,10 +154,10 @@ function directly, since it provides public data:
   end
 ```
 
-## Implement placing buy and sell orders
+## 实现挂买单和卖单
 
-Since the logic for placing buy and sell limit orders is nearly identical,
-we'll create a private helper function, `order_limit/4`, to handle both.
+由于挂买入和卖出限价单的逻辑几乎一样，
+我们会创建一个私有辅助函数 `order_limit/4` 来统一处理。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -175,11 +170,11 @@ we'll create a private helper function, `order_limit/4`, to handle both.
   end
 ```
 
-In the `order_limit/4` helper function, we will:
+在 `order_limit/4` 辅助函数里，我们会：
 
-* Generate a fake order based on the provided `symbol`, `quantity`, `price`, and `side`.
-* Send a `cast` message to the `BinanceMock` `GenServer` to add the fake order to the order book.
-* Return an `{:ok, %OrderResponse{}}` tuple to maintain API compatibility with the real `Binance` module.
+* 根据传入的 `symbol`、`quantity`、`price` 和 `side` 生成一个假订单。
+* 向 `BinanceMock` 的 `GenServer` 发送一条 `cast` 消息，把假订单加入订单簿。
+* 返回一个 `{:ok, %OrderResponse{}}` 元组，以保持和真实 `Binance` 模块的 API 兼容。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -203,10 +198,9 @@ In the `order_limit/4` helper function, we will:
 ```
 
 
-Next, let's implement the `handle_cast/2` callback for the `:add_order` message.
-This function will first subscribe to the appropriate `TRADE_EVENTS:#{symbol}` topic
-(if it hasn't already) and then add the incoming order to the correct order book
-for its symbol:
+接下来，我们来实现 `:add_order` 消息对应的 `handle_cast/2` 回调。
+这个函数会先订阅对应的 `TRADE_EVENTS:#{symbol}` topic
+（如果还没订阅过的话），然后把传入的订单加入该 symbol 对应的订单簿：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -231,13 +225,11 @@ for its symbol:
   end
 ```
 
-Let's start by implementing `subscribe_to_topic/2`.
-This function ensures the `symbol` is uppercased and checks
-if we've already subscribed to that symbol's topic.
-If not, it subscribes the process to the `TRADE_EVENTS:#{symbol}` topic
-using the `Phoenix.PubSub` module.
+我们先从 `subscribe_to_topic/2` 开始实现。
+这个函数会确保 `symbol` 被转成大写，并检查我们是否已经订阅过这个 symbol 的 topic。
+如果没有，它就会使用 `Phoenix.PubSub` 模块把进程订阅到 `TRADE_EVENTS:#{symbol}` topic 上。
 
-Finally, we'll prepend the symbol to our list of subscriptions and return the updated list:
+最后，它会把这个 symbol 加到订阅列表里，并返回更新后的列表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -262,36 +254,30 @@ Finally, we'll prepend the symbol to our list of subscriptions and return the up
   end
 ```
 
-Next, let's implement the `add_order/2` function. First, we need to get the order book
-for the order's symbol.
+接下来，我们来实现 `add_order/2` 函数。首先，我们需要拿到该订单所属 symbol 的订单簿。
 
-Depending on the order's side, we will update either the `buy_side` or `sell_side` list.
+根据订单的 side，我们会更新 `buy_side` 或 `sell_side` 列表。
 
-**A Note on Performance: Going the Extra Mile**
+**性能说明：多走一步的价值**
 
-Before we dive into the code for adding orders,
-let's talk about performance. When adding a new order to our `buy_side` or `sell_side` lists,
-we have a crucial requirement: **the list must remain sorted by price**.
+在深入添加订单的代码之前，我们先聊聊性能。向 `buy_side` 或 `sell_side` 列表里添加新订单时，
+有一个关键要求：**列表必须始终按价格排序**。
 
-A simple approach would be to add the new order and then re-sort the
-entire list with `Enum.sort/1`. While this works, it introduces a hidden performance
-bottleneck.
+一个简单的做法是先把新订单加进去，然后用 `Enum.sort/1` 把整个列表重新排序。
+这个做法虽然可行，但会引入一个隐藏的性能瓶颈。
 
-Sorting the entire list on every insertion is
-an expensive operation with a time complexity of $O(n \log n)$. As the number of open orders
-grows, this seemingly innocent function could slow down our entire mock server.
+每次插入都对整个列表排序，是一个昂贵的操作，时间复杂度为 $O(n \log n)$。
+随着未完成订单数量增长，这个看起来无害的函数可能会拖慢整个 mock server。
 
-This is where we can **go the extra mile**. Instead of the easy add-then-sort method,
-we will write a custom `insert_sorted/3` helper. This function will find the correct
-position for the new order in the already-sorted list and insert it there directly.
-This approach is far more efficient ($O(n)$) and ensures our mock remains fast
-and responsive, no matter how many orders we're handling.
+这就是我们可以 **多走一步** 的地方。与其采用“先加再排”的简单方案，
+不如写一个自定义的 `insert_sorted/3` 辅助函数。它会在已经排好序的列表里找到新订单的正确位置，
+然后直接插入进去。这样做效率高得多（$O(n)$），并且能保证无论我们处理多少订单，mock 都保持快速、响应及时。
 
-While it might seem like over-engineering for a mock server,
-this is a **perfect exercise** in writing professional, scalable code.
-A word of caution, though: in real-world projects, you should *measure before you optimize*.
-Here, the exercise is valuable because (a) the fix is simple, and (b) it teaches a pattern you'll use elsewhere.
-Learning to identify *when* a potential bottleneck is worth addressing - and when it isn't - is just as important as knowing *how* to fix it.
+虽然这看起来像是在为一个 mock server 过度设计，
+但这其实是一个**非常好的练习**，能训练你写出专业、可扩展的代码。
+不过也要提醒一句：在真实项目里，你应该*先度量，再优化*。
+这里之所以值得做，是因为：（a）修复方式很简单；（b）它能教你一个以后还会反复用到的模式。
+学会识别*什么时候*一个潜在瓶颈值得处理——以及什么时候不值得——和知道*怎么*修复它一样重要。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -329,35 +315,32 @@ Learning to identify *when* a potential bottleneck is worth addressing - and whe
   end
 ```
 
-The magic of our new approach lies in the `insert_sorted/3` helper function.
-Instead of appending an order and then re-sorting the entire list,
-this function finds the correct position and reconstructs the list in a single,
-efficient pass. Let's break down how it works.
+我们新方法的关键，就在于 `insert_sorted/3` 辅助函数。
+它不会先追加订单再把整个列表重新排序，
+而是一次性找到正确位置，并在一次高效的遍历中重建列表。我们来拆开看它是怎么工作的。
 
-The function uses `Enum.split_while/2` to divide the existing list into two parts:
-a `left` list containing all orders that should come *before* our new one,
-and a `right` list with everything that should come *after*.
+这个函数使用 `Enum.split_while/2` 把现有列表分成两部分：
+`left` 列表包含所有应该排在新订单前面的订单，
+而 `right` 列表则包含应该排在后面的所有订单。
 
-Once the split point is found, the expression `left ++ [order | right]` efficiently
-reconstructs the list. The `[order | right]` part prepends the new order to the
-right list (a very fast operation in Elixir), and then the `++` operator concatenates
-the left list with that result. This builds a new, sorted list in a single pass
-without a costly re-sort.
+找到分割点之后，表达式 `left ++ [order | right]` 就能高效地重建列表。
+`[order | right]` 会把新订单直接插到右侧列表前面（这是 Elixir 里非常快的操作），
+然后 `++` 运算符再把左侧列表和这个结果连接起来。这样就能在一次遍历里构建出新的有序列表，
+而不用付出重新排序的高昂代价。
 
-Notice how we pass a sorter function (`&D.lt?/2` or `&D.gt?/2`) as the third argument.
-This makes our helper flexible, allowing us to sort in either ascending or descending order.
+注意我们把一个排序函数（`&D.lt?/2` 或 `&D.gt?/2`）作为第三个参数传进去。
+这让辅助函数变得更灵活，可以按升序或降序排序。
 
-Now, let's implement the helper functions we referred to previously:
-`generate_fake_order/4` and `convert_order_to_order_response/1`.
+现在，我们来实现前面提到的辅助函数：
+`generate_fake_order/4` 和 `convert_order_to_order_response/1`。
 
-Starting with `generate_fake_order/4`, this function takes a `symbol`, `quantity`, `price`,
-and `side` and returns a `%Binance.Order{}` struct populated with fake data.
+先说 `generate_fake_order/4`。这个函数接收 `symbol`、`quantity`、`price` 和 `side`，
+然后返回一个填充了假数据的 `%Binance.Order{}` 结构体。
 
 
-To ensure our tests are predictable, we need a way to generate unique
-and consistent IDs for these fake orders. We'll achieve this by using
-the `next_order_id` from our `GenServer`'s state, which guarantees that
-tests produce the same order IDs every time they run.
+为了让测试结果可预测，我们需要一种办法为这些假订单生成唯一且一致的 ID。
+我们会使用 `GenServer` 状态里的 `next_order_id` 来做到这一点，
+这样每次运行测试时都会得到相同的订单 ID。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -391,13 +374,12 @@ tests produce the same order IDs every time they run.
   end
 ```
 
-To convert a `%Binance.Order{}` into a `%Binance.OrderResponse{}`,
-we can reuse the same logic we implemented in the `Naive.Trader` module.
+要把 `%Binance.Order{}` 转成 `%Binance.OrderResponse{}`，
+我们可以复用在 `Naive.Trader` 模块里实现的同一套逻辑。
 
-Since this conversion logic is needed in both our `Trader` and `BinanceMock`,
-the best practice would be to move this function into a shared application
-within our umbrella project.
-For now, however, we'll simply copy the implementation to avoid refactoring too early.
+由于这段转换逻辑在 `Trader` 和 `BinanceMock` 两处都需要使用，
+按照最佳实践，应该把它提取到 umbrella 项目里的一个共享应用中。
+不过现在为了避免过早重构，我们先直接复制这段实现即可。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -407,15 +389,15 @@ For now, however, we'll simply copy the implementation to avoid refactoring too 
   end
 ```
 
-**Note**: You might be tempted to stop everything and build a shared Core application right now -
-after all, this duplication violates the DRY (Don't Repeat Yourself) principle.
-In real-world projects, we often accept a little 'technical debt' like this to keep momentum.
-The key is to *acknowledge* it and *plan* to address it. Don't worry - we'll pay this debt back in Chapter 15
-when we extract shared utilities into a proper Core application!
+**注意**：你可能会忍不住立刻停下来，去做一个共享的 Core 应用——
+毕竟这种重复违反了 DRY（Don't Repeat Yourself）原则。
+在真实项目里，我们常常会为了保持推进速度而暂时接受一点这样的“技术债”。
+关键是要*承认它*，并且*计划*在合适的时候处理它。别担心——我们会在第 15 章把共享工具抽出来，
+把这笔债还掉，做成一个正式的 Core 应用！
 
-To complete the order placement logic, we need the `handle_call/3` callback
-for `:generate_id`. This function replies to the caller with the current `next_order_id`
-and updates the `state` by incrementing the ID for the next request.
+为了完成订单挂单逻辑，我们还需要为 `:generate_id` 实现 `handle_call/3` 回调。
+这个函数会把当前的 `next_order_id` 返回给调用者，并把 `state` 里的 ID 加一，
+为下一次请求做准备。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -428,10 +410,10 @@ and updates the `state` by incrementing the ID for the next request.
   end
 ```
 
-## Implement Order Retrieval
+## 实现订单查询
 
-We can now move on to retrieving the orders.
-First, we need to add an interface function that will call our `BinanceMock` `GenServer`:
+现在我们可以继续处理订单查询了。
+首先，我们需要加一个接口函数，用来调用 `BinanceMock` 这个 `GenServer`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -443,12 +425,12 @@ First, we need to add an interface function that will call our `BinanceMock` `Ge
   end
 ```
 
-The `handle_call/3` callback is straightforward.
-First, it retrieves the order book for the given `symbol`.
+`handle_call/3` 回调本身很直接。
+它首先会取出给定 `symbol` 对应的订单簿。
 
-A retrieval request doesn't specify whether the order is a buy or a sell, or if it's open or filled.
-Therefore, we must search all three lists - `buy_side`, `sell_side`,
-and `historical` - to find the matching order.
+查询请求并不会说明这个订单是买单还是卖单，也不会说明它当前是未成交还是已成交。
+因此，我们必须在三份列表里都搜索——`buy_side`、`sell_side`
+以及 `historical`——才能找到匹配的订单。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -479,18 +461,18 @@ and `historical` - to find the matching order.
   end
 ```
 
-## Implement callback for incoming trade events
+## 实现处理进入交易事件的回调
 
-Finally, we need to handle incoming trade events received from the PubSub topic.
-We'll implement a `handle_info/2` callback that performs the following steps:
+最后，我们需要处理从 PubSub topic 收到的交易事件。
+我们会实现一个 `handle_info/2` 回调，完成以下步骤：
 
-* Gets the order book for the `symbol` from the trade event.
-* Finds all `buy_side` orders that can be filled. A buy order is considered filled if its price is **greater than or equal** to the trade's price. For example, a buy order at $50.00 will be filled by a trade at $50.00 or below.
-* Finds all `sell_side` orders that can be filled. A sell order is considered filled if its price is **less than or equal** to the trade's price. For example, a sell order at $50.00 will be filled by a trade at $50.00 or above.
-* Moves the filled orders from the active `buy_side` and `sell_side` lists into a `historical` list for future lookups.
+* 从交易事件里取出对应 `symbol` 的订单簿。
+* 找出所有可以成交的 `buy_side` 订单。若买单价格 **大于或等于** 交易价格，就视为成交。例如，50 美元的买单会被 50 美元或更低的成交价填掉。
+* 找出所有可以成交的 `sell_side` 订单。若卖单价格 **小于或等于** 交易价格，就视为成交。例如，50 美元的卖单会被 50 美元或更高的成交价填掉。
+* 把已成交订单从正在活动的 `buy_side` 和 `sell_side` 列表移动到 `historical` 列表，供后续查询使用。
 
-**Here we see the payoff from our earlier decision to keep the order lists sorted.**
-We can efficiently filter out filled orders using `Enum.split_while/2`:
+**这里就能看到我们之前坚持让订单列表保持排序的回报。**
+我们可以借助 `Enum.split_while/2` 高效地把已成交订单筛出来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -534,14 +516,14 @@ We can efficiently filter out filled orders using `Enum.split_while/2`:
   end
 ```
 
-**Note:** We're letting that `historical` list grow forever. In a high-frequency environment,
-this is a silent "time bomb" that will eventually exhaust your RAM and crash the node -
-potentially hours or days after deployment, making it notoriously hard to debug.
-We'll leave it as-is since it's just a mock, but to make this production-grade,
-you'd want to either truncate the list (e.g., keep only the last 1,000 orders) or offload the data to persistent storage.
+**注意：** 我们让这个 `historical` 列表无限增长了。在高频环境里，
+这就是一个悄无声息的“定时炸弹”，最终会耗尽内存并把节点搞崩——
+而且可能是在部署后几小时或几天才出问题，特别难排查。
+这里因为只是 mock，我们先保持现状；但如果要把它做成生产级，
+你应该要么截断这个列表（比如只保留最近 1000 笔订单），要么把数据卸载到持久化存储里。
 
-And that's it for the `BinanceMock` implementation. Now, we need to add it to
-the application's supervision tree so it starts automatically:
+到这里，`BinanceMock` 的实现就完成了。现在，我们需要把它加入
+应用的监督树，让它能自动启动：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock/application.ex
@@ -555,19 +537,18 @@ the application's supervision tree so it starts automatically:
 end
 ```
 
-## Update the Trader and Configuration
+## 更新 Trader 和配置
 
-Next, let's update the `Naive.Trader` module.
-We'll use a module attribute to read the Binance client from
-the application's configuration:
+接下来，我们来更新 `Naive.Trader` 模块。
+我们会用一个模块属性，从应用配置里读取 Binance 客户端：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   @binance_client Application.compile_env(:naive, :binance_client)
 ```
 
-Inside the `Naive.Trader` module, we'll replace all direct calls to `Binance` with
-our new `@binance_client` module attribute:
+在 `Naive.Trader` 模块里，我们会把所有直接调用 `Binance` 的地方，
+都替换成新的 `@binance_client` 模块属性：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -585,8 +566,8 @@ our new `@binance_client` module attribute:
 ...
 ```
 
-Since `Naive.Trader` now relies on the application configuration to determine
-which client to use, we need to add this setting to our `/config/config.exs` file:
+既然 `Naive.Trader` 现在依赖应用配置来决定要使用哪个客户端，
+我们就需要把这项配置加到 `/config/config.exs` 文件里：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -595,9 +576,8 @@ config :naive,
   binance_client: BinanceMock
 ```
 
-The final step is to configure our dependencies.
-We'll start by modifying the `mix.exs` of the `binance_mock` app to list the
-packages it requires:
+最后一步是配置依赖。
+我们先修改 `binance_mock` 应用的 `mix.exs`，把它需要的包列出来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/mix.exs
@@ -613,8 +593,8 @@ packages it requires:
 ...
 ```
 
-We'll also add `:binance_mock` to the dependency list for the `naive` app,
-since it will use either `Binance` or `BinanceMock` to trade:
+我们还会把 `:binance_mock` 加到 `naive` 应用的依赖列表里，
+因为它会使用 `Binance` 或 `BinanceMock` 来执行交易：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/mix.exs
@@ -629,12 +609,12 @@ since it will use either `Binance` or `BinanceMock` to trade:
 ...
 ```
 
-## Test the implementation
+## 测试实现
 
-We can now see the `BinanceMock` in action.
-First, let's start an `iex` session and verify that the `BinanceMock` process is running.
-Since our configuration already points to `BinanceMock`, we can start streaming and
-trading on a `symbol` just as we did in the previous chapter:
+现在我们可以看看 `BinanceMock` 的实际效果了。
+先启动一个 `iex` 会话，确认 `BinanceMock` 进程已经在运行。
+既然配置已经指向了 `BinanceMock`，我们就可以像上一章一样，
+针对某个 `symbol` 开始流式接收和交易：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -652,32 +632,30 @@ quantity: 100.0
 00:20:09.391 [info]  Trade finished, trader will now exit
 ```
 
-**Well done!** You've just built one of the most critical components for any serious application:
-a mock for an external service. By creating `BinanceMock`, you've successfully *decoupled* your trading logic from the live Binance exchange -
-and decoupling is the secret weapon of maintainable software.
+**干得漂亮！** 你刚刚为一个严肃应用构建了最关键的组件之一：
+一个外部服务的 mock。通过创建 `BinanceMock`，你成功地把交易逻辑与真实 Binance 交易所*解耦*了——
+而解耦，正是可维护软件的秘密武器。
 
-This is a massive milestone. It means you can now test your trading strategies safely without risking real money,
-develop new features without needing an active internet connection,
-and run automated tests reliably without worrying about network latency or API rate limits.
+这是一个巨大的里程碑。它意味着你现在可以安全地测试交易策略，而不用冒真实资金风险；
+可以在没有网络连接的情况下继续开发新功能；
+也可以稳定地跑自动化测试，而不必担心网络延迟或 API 限流。
 
-More importantly, you've learned a pattern that applies far beyond this project:
-whenever you depend on an external system, consider how you'd swap it out. That mindset will serve you well.
+更重要的是，你学到了一种适用于远超本项目范围的模式：
+每当你依赖一个外部系统时，都要想想如何把它替换掉。这个思维方式会非常有用。
 
-**So, What's Next?**
+**那么，接下来呢？**
 
-Now that we have a safe and reliable testing environment, we can confidently tackle
-a much bigger challenge. Our current trader can only handle one symbol at a time.
-To build a truly effective bot, we need it to trade on many different symbols in parallel.
+既然我们已经有了一个安全可靠的测试环境，就可以自信地挑战更大的问题了。
+现在的 trader 一次只能处理一个 symbol。
+要做出真正有效的机器人，我们需要让它能同时交易多个不同的 symbol。
 
-In the next chapter, we'll dive deep into the heart of OTP by building a
-supervision tree. This will allow us to dynamically launch, monitor, and even
-automatically restart traders for multiple symbols, creating a truly fault-tolerant
-and concurrent trading system. The `BinanceMock` we've just built will be an essential
-safety net, allowing us to engineer this complex architecture with confidence.
-Let's get started!
+在下一章，我们会通过构建一个监督树，深入 OTP 的核心。
+这将让我们能够动态启动、监控，甚至自动重启多个 symbol 的 trader，
+从而构建一个真正具备容错能力、并发运行的交易系统。我们刚刚做出来的 `BinanceMock` 会成为一个重要的安全网，
+帮助我们自信地搭建这个复杂架构。
+我们开始吧！
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[注] 别忘了运行 `mix format`，让代码保持整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_04](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)).
+本章的源代码可以在本书的源代码仓库中找到（分支：
+[chapter_04](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_04)）。
