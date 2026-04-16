@@ -1,33 +1,33 @@
-# Introduce a trader budget and calculating the quantity
+# 引入 trader 预算并计算 quantity {#introduce-budget-and-quantity}
 
-In the previous chapter, we made our traders smarter about *when* to buy by introducing the `buy_down_interval`.
-But there's still a glaring problem: we've been hardcoding the quantity to 100 units every single trade.
+上一章里，我们通过引入 `buy_down_interval`，让 trader 在“什么时候买入”这件事上更聪明了。
+但还有一个明显的问题：我们一直都把 quantity 硬编码成每次 100 个单位。
 
-That's problematic for two reasons. First, 100 units of XRPUSDT (around $160) is very different from 100 units of BTCUSDT (around $9 million!).
-Second, when we start running multiple traders in parallel, we'll need to divide our budget between them -
-and we can't do that if the quantity is hardcoded.
+这有两个问题。第一，100 个 XRPUSDT（大约 160 美元）和 100 个 BTCUSDT（大约 900 万美元！）完全不是一回事。
+第二，当我们开始同时运行多个 trader 时，就需要在它们之间分配预算——
+如果 quantity 是硬编码的，这件事根本做不了。
 
-In this chapter, we'll introduce a proper `budget` for each symbol and calculate the `quantity` dynamically based on that budget and the current price.
-We'll also fetch the `step_size` from Binance, which tells us the minimum quantity increment for each symbol (just like `tick_size` does for prices).
+这一章里，我们会为每个 symbol 引入一个正式的 `budget`，并根据预算和当前价格动态计算 `quantity`。
+我们还会从 Binance 获取 `step_size`，它告诉我们每个 symbol 允许的最小 quantity 增量（就像 `tick_size` 对价格那样）。
 
-Let's make our traders budget-aware!
+让我们的 trader 学会认识预算吧！
 
-## Objectives
+## 目标
 
-- fetch `step_size`
-- append `budget` and `step_size` to the `Naive.Trader`'s state inside the `Naive.Leader`
-- add `budget` and `step_size` to the `Naive.Trader`'s `State` struct
-- calculate `quantity`
+- 获取 `step_size`
+- 在 `Naive.Leader` 里把 `budget` 和 `step_size` 加到 `Naive.Trader` 的状态中
+- 把 `budget` 和 `step_size` 加到 `Naive.Trader` 的 `State` 结构体里
+- 计算 `quantity`
 
-## Fetch `step_size`
+## 获取 `step_size`
 
-In the second chapter we hardcoded `quantity` to 100 - it's time to refactor that. Just like prices must be divisible by `tick_size`,
-quantities must be divisible by `step_size` - Binance will reject orders with invalid quantities.
+在第 2 章里，我们把 `quantity` 硬编码成了 100——现在是时候重构它了。
+就像价格必须能被 `tick_size` 整除一样，quantity 也必须能被 `step_size` 整除——否则 Binance 会拒绝这个订单。
 
-We're already retrieving this information in the `exchangeInfo` call alongside `tick_size`, but we're not extracting it from the response yet.
+其实我们已经在 `exchangeInfo` 里拿到了这类信息，并且和 `tick_size` 一起返回了，但还没把它从响应里提取出来。
 
-So we will rename the `fetch_tick_size/1` function to `fetch_symbol_filters/1`
-which will allow us to return multiple filters(`tick_size` and `step_size`) from that function.
+所以我们会把 `fetch_tick_size/1` 重命名为 `fetch_symbol_filters/1`，
+这样它就能返回多个过滤值（`tick_size` 和 `step_size`）。
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -75,15 +75,15 @@ which will allow us to return multiple filters(`tick_size` and `step_size`) from
   end
 ```
 
-Instead of reassigning the filters one by one into the settings, we merge them together using `Map.merge/2`.
-We also introduce a `budget` which will be shared across all traders of the symbol.
-Note that we don't need to explicitly assign `tick_size` anymore - it's included in `symbol_filters` and gets merged automatically.
+我们不再把这些过滤值一个个重新赋值到 settings 里，而是用 `Map.merge/2` 直接合并。
+同时我们还引入了一个 `budget`，这个预算会在该 symbol 的所有 trader 之间共享。
+注意我们不再需要显式设置 `tick_size`——它已经包含在 `symbol_filters` 里，并会自动合并进来。
 
 ## Append `budget` and `step_size` to the `Naive.Trader`'s state inside the `Naive.Leader`
 
-The `budget` needs to be calculated and added to the trader's `%State{}` inside `fresh_trader_state/1`.
-Since each trader gets only a chunk of the total budget, we divide it by the number of chunks before assigning.
-The `step_size`, on the other hand, passes through automatically - `struct/2` copies any matching keys from the settings map into the struct:
+`budget` 需要在 `fresh_trader_state/1` 里计算出来，并加入 trader 的 `%State{}`。
+由于每个 trader 只能拿到总预算的一部分，我们会先把预算除以 chunk 数，再赋值进去。
+而 `step_size` 则会自动透传——`struct/2` 会把 settings map 里所有匹配的键复制到结构体里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -95,7 +95,7 @@ The `step_size`, on the other hand, passes through automatically - `struct/2` co
   end
 ```
 
-In the code above we are using the `Decimal` module(aliased as `D`) to calculate the budget - we need to alias it at the top of `Naive.Leader`'s file:
+上面的代码里我们使用了 `Decimal` 模块（别名是 `D`）来计算预算——所以需要在 `Naive.Leader` 文件顶部加上对应的 alias：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -109,7 +109,7 @@ defmodule Naive.Leader do
 
 ## Add `budget` and `step_size` to the `Naive.Trader`'s `State` struct
 
-We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struct:
+我们需要把 `budget` 和 `step_size` 都加到 `Naive.Trader` 的 state 结构体里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -139,9 +139,9 @@ We need to add both `budget` and `step_size` to the `Naive.Trader`'s state struc
 
 ## Calculate quantity
 
-Jumping back to the `handle_info/2` where the `Naive.Trader` places a buy order,
-we need to pattern match on the `step_size` and `budget`,
-then we will be able to swap the hardcoded quantity with the result of calling the `calculate_quantity/3` function:
+回到 `Naive.Trader` 挂买单的那个 `handle_info/2`，
+我们需要把 `step_size` 和 `budget` 也匹配进来，
+这样就能把硬编码的 quantity 替换成 `calculate_quantity/3` 的返回值：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -162,9 +162,9 @@ then we will be able to swap the hardcoded quantity with the result of calling t
     ...
 ```
 
-To calculate quantity, the formula is simple: `quantity = budget / price`. For example, with a $20 budget and a price of $0.30, we'd buy about 66.67 units.
-But there's a caveat: just like prices must align to `tick_size`, quantities must align to `step_size`.
-So we'll round down to the nearest valid quantity:
+计算 quantity 的公式很简单：`quantity = budget / price`。例如预算是 20 美元、价格是 0.30 美元时，我们大概会买入 66.67 个单位。
+但这里有个注意点：就像价格必须对齐 `tick_size` 一样，quantity 也必须对齐 `step_size`。
+所以我们会向下舍入到最近的合法 quantity：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -184,12 +184,12 @@ So we'll round down to the nearest valid quantity:
   end
 ```
 
-### Manual testing in IEx
+### 在 IEx 中手动测试
 
-That finishes the `quantity`(and `budget`) implementation, we will jump into the IEx session to see how it works.
+到这里，`quantity`（以及 `budget`）的实现就完成了。我们进入 IEx 会话看看效果。
 
-First, start the streaming and trading on the same symbol.
-A moment later you should see the quantity being calculated from the budget rather than hardcoded:
+先对同一个 symbol 启动流式数据和交易。
+过一会儿你应该能看到 quantity 是根据预算计算出来的，而不再是硬编码的：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -204,27 +204,26 @@ iex(2)> Naive.start_trading("XRPUSDT")
 quantity: 67.7
 ```
 
-As we can see our `Naive.Trader` process is now buying and selling based on the passed budget.
-The quantity of 67.7 comes from dividing our $20 budget by the price of ~$0.295.
+可以看到，我们的 `Naive.Trader` 进程现在会基于传入预算来买卖。
+67.7 这个 quantity，就是用 20 美元预算除以大约 0.295 的价格算出来的。
 
-**Great progress!** Our traders now:
+**进展很不错！** 现在我们的 trader 已经可以：
 
-- Calculate quantity dynamically based on an assigned budget
-- Respect Binance's `step_size` requirement for valid quantities
-- Are ready to share a total budget across multiple parallel traders (via the `chunks` setting)
+- 根据分配到的预算动态计算 quantity
+- 遵守 Binance 的 `step_size` 数量合法性要求
+- 通过 `chunks` 设置，在多个并行 trader 之间共享总预算
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-We have all the pieces in place for something more ambitious. Right now, we start exactly one trader per symbol,
-and when it finishes a trade cycle, a new one starts. But what if the price keeps dropping after we buy?
-We're sitting there holding our position, watching opportunities pass by.
+我们已经具备了做更有野心功能的全部积木。现在每个 symbol 只会启动一个 trader，
+当它完成一次交易循环后，再启动下一个。但如果我们买入后价格继续下跌怎么办？
+我们就只能被动持仓，眼看机会从面前溜走。
 
-In the next chapter, we'll implement a "rebuy" mechanism. When the price drops below our buy price by a certain interval,
-we'll spin up another trader to buy more at the lower price. This lets us scale into positions as the price falls
-and potentially profit more when it recovers. We'll finally put that `chunks` setting to work!
+下一章里，我们会实现一个“rebuy”机制。当价格比我们的买入价再下跌到某个区间时，
+我们会再启动一个 trader，在更低价格继续买入。
+这样就能在下跌过程中逐步加仓，并在价格回升时获得更高的潜在收益。我们终于可以把 `chunks` 设置真正用起来了！
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[注] 别忘了运行 `mix format`，让代码保持整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_07](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07)).
+本章的源代码可以在本书的源代码仓库中找到（分支：
+[chapter_07](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_07)）。
