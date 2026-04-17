@@ -1,66 +1,63 @@
-# Start, stop, shutdown and autostart trading
+# 启动、停止、shutdown 和自动恢复 trading {#11-start-stop-and-autostart-trading}
 
-In the previous chapter, we gave the `streamer` app proper supervision, start/stop functionality,
-and autostart capabilities. Now it's time to do the same for the `naive` trading app - but with an important twist.
+在上一章中，我们为 `streamer` 应用加上了正确的监督、start/stop 功能，
+以及 autostart 能力。现在轮到 `naive` 交易应用也做同样的事情了——不过这里有一个重要区别。
 
-Trading is different from streaming.
-When we stop a streamer, we just close a WebSocket connection - no big deal.
-But when we stop a trader, it might be in the middle of a trade cycle:
-it bought some asset and is waiting for the price to rise before selling.
-If we abruptly terminate it, we're left holding a position we didn't intend to keep.
+Trading 和 streaming 不一样。
+当我们停止一个 streamer 时，只是关闭一个 WebSocket 连接——没什么大不了的。
+但当我们停止一个 trader 时，它可能正处在一次交易循环的中间：
+它已经买入了某个资产，正在等待价格上涨后卖出。
+如果我们粗暴地终止它，就会留下一个我们本不打算持有的仓位。
 
-That's why we'll implement four operations in this chapter:
+这就是为什么我们会在本章实现四个操作：
 
-- **start** - begin trading on a symbol (same pattern as streaming)
-- **stop** - immediately terminate trading (useful for emergencies)  
-- **shutdown** - gracefully stop trading by letting all active traders complete their current trade cycles before terminating
-- **autostart** - resume trading on previously enabled symbols when the app restarts
+- **start**——在某个交易对上开始 trading（模式和 streaming 一样）
+- **stop**——立即终止 trading（适用于紧急情况）  
+- **shutdown**——优雅地停止 trading，让所有活跃 trader 完成当前交易循环后再终止
+- **autostart**——在应用重启时恢复之前已启用的交易对上的 trading
 
-The shutdown feature is the key addition here.
-It gives us a controlled way to wind down trading without getting stuck with unwanted positions. Let's build it!
+其中最关键的新增功能就是 shutdown。
+它为我们提供了一种可控的收尾方式，避免被困在未完成的仓位里。让我们开始吧！
 
-## Objectives
-- describe and design the required functionality
-- (re-)implement the start trading functionality
-- implement the stop trading functionality
-- implement the autostart trading functionality
-- implement the shutdown trading functionality
-- test the implementation
+## 目标
+- 描述并设计所需功能
+- （重新）实现 start trading 功能
+- 实现 stop trading 功能
+- 实现 autostart trading 功能
+- 实现 shutdown trading 功能
+- 测试实现
 
-## Describe and design the required functionality
+## 描述并设计所需功能
 
-In the 9th chapter, we've introduced the Postgres database inside the `naive` application together with the settings per symbol.
+在第 9 章中，我们已经在 `naive` 应用里引入了 Postgres 数据库，并为每个 symbol 添加了 settings。
 
-In this chapter, we will progress forward to provide additional trading functionality that will be similar to
-the functionality implemented in the last chapter for the `streamer` application:
+在本章中，我们会继续推进，提供更多 trading 功能，这些功能会和上一章为 `streamer` 应用实现的功能非常相似：
 
-* **stop trading** - as the `Naive.SymbolSupervisor` processes are registered with names that can be easily reverse engineered, we should be able to utilize the `Process.whereis/1` function to retrieve the PIDs and instruct the `Naive.DynamicSymbolSupervisor` to terminate those child processes. Again, we need to put that logic somewhere so we will implement the `Naive.DynamicSymbolSupervisor` as a full module using the `DynamicSupervisor` behavior.
-* **start trading** - as our `Naive.DynamicSymbolSupervisor` will now be a module we will be able to remove the `start_trading/1` implementation from the `Naive` module and reimplement it inside the `Naive.DynamicSymbolSupervisor` module. It will follow the same pattern of checking for PID, starting the `Naive.SymbolSupervisor` process and flipping the `status` flag inside the `settings` table's row for that symbol.
-* **shutdown trading** - sometimes abruptly stopping trading won't be the best solution, it would be better to allow the `Naive.Trader` processes to finish their ongoing trades. To be able to do that we will need to inform the `Naive.Leader` process assigned to the symbol that the settings for that symbol have been updated and that should cause the `Naive.Leader` process to withhold starting new `Naive.Trader` processes and terminate the whole tree when the last trader will finish.
-* **autostart trading** - this will be a very similar implementation to the one from the last chapter. It will require introducing a new supervisor(we will follow the same naming convention: rename `Naive.Application`'s registered process name to `Naive.Application`, create a new supervisor called `Naive.Supervisor`) and utilize the `Task` process to execute the autostarting logic.
+* **stop trading** - 由于 `Naive.SymbolSupervisor` 进程是用可以轻松反推出名字的方式注册的，我们应该可以利用 `Process.whereis/1` 函数获取它们的 PID，并指示 `Naive.DynamicSymbolSupervisor` 终止这些子进程。同样，我们需要把这段逻辑放到某个地方，所以我们会把 `Naive.DynamicSymbolSupervisor` 实现成一个完整的模块，使用 `DynamicSupervisor` 行为。
+* **start trading** - 由于 `Naive.DynamicSymbolSupervisor` 现在会变成一个模块，我们就可以把 `Naive` 模块里的 `start_trading/1` 实现移除，并把它重新实现到 `Naive.DynamicSymbolSupervisor` 模块里。它会遵循和 streaming 相同的模式：检查 PID，启动 `Naive.SymbolSupervisor` 进程，并把该 symbol 在 `settings` 表中的 `status` 标志切换掉。
+* **shutdown trading** - 有时粗暴地停止 trading 并不是最好的办法，更好的方式是让 `Naive.Trader` 进程把正在进行的交易完成。为了做到这一点，我们需要通知负责该 symbol 的 `Naive.Leader` 进程，该 symbol 的 settings 已经更新，这样就应该让 `Naive.Leader` 停止启动新的 `Naive.Trader` 进程，并在最后一个 trader 完成后终止整个树。
+* **autostart trading** - 这会和上一章中的实现非常类似。它需要引入一个新的 supervisor（我们会沿用同样的命名规范：把 `Naive.Application` 注册的进程名改成 `Naive.Application`，再创建一个叫做 `Naive.Supervisor` 的新 supervisor）并利用 `Task` 进程执行 autostart 逻辑。
 
 
 ```{r, fig.align="center", out.height="50%", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_12_02_sup_diagram.jpg")
 ```
 
-## (Re-)Implement the start trading functionality
+## （重新）实现 start trading 功能
 
-To (re-)implement the `start_trading/1` functionality we will need to create a new file called                        
-`dynamic_symbol_supervisor.ex` inside the `/apps/naive/lib/naive` directory that will use the                            
-`DynamicSupervisor` behavior. Previously we have been using default `DynamicSupervisor` implementation(one of the children of the `Naive.Application` - to be substituted with the below module):
+要（重新）实现 `start_trading/1`，我们需要在 `/apps/naive/lib/naive` 目录下创建一个新的 `dynamic_symbol_supervisor.ex` 文件，并让它使用 `DynamicSupervisor` 行为。此前我们一直在使用默认的 `DynamicSupervisor` 实现（它是 `Naive.Application` 的一个子进程——之后会被下面这个模块替换）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
-defmodule Naive.DynamicSymbolSupervisor do # <= module updated
+defmodule Naive.DynamicSymbolSupervisor do # <= 更新后的模块名
   use DynamicSupervisor
 
-  require Logger # <= Logger added
+  require Logger # <= 添加 Logger
 
-  import Ecto.Query, only: [from: 2] # <= added for querying
+  import Ecto.Query, only: [from: 2] # <= 为查询而添加
 
-  alias Naive.Repo             # <= added for querying/updating
-  alias Naive.Schema.Settings  # <= added for querying/updating
+  alias Naive.Repo             # <= 为查询/更新而添加
+  alias Naive.Schema.Settings  # <= 为查询/更新而添加
 
   def start_link(init_arg) do
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -72,9 +69,9 @@ defmodule Naive.DynamicSymbolSupervisor do # <= module updated
 end
 ```
 
-The above code is a default implementation from the [DynamicSupervisor docs](https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors) with some additional imports, require and aliases as we will use them in this chapter.
+上面的代码是 [DynamicSupervisor 文档](https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors) 中的默认实现，只是加了一些额外的 import、require 和 alias，因为我们在本章会用到它们。
 
-Our `start_trading/1` implementation is almost the same as one for the `streamer` application from the last chapter:
+我们的 `start_trading/1` 实现和上一章 `streamer` 应用里的实现几乎一样：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -95,7 +92,7 @@ Our `start_trading/1` implementation is almost the same as one for the `streamer
   ...
 ```
 
-together with additional helper functions:
+以及一些额外的辅助函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -118,22 +115,22 @@ together with additional helper functions:
   end
 ```
 
-Both implementation and helper functions are almost the same as the ones inside the `streamer` application. It could be tempting to abstract some of the logic away but remember that we should treat all applications in our umbrella project as standalone services that should not share any code if possible(we broke that rule for the `TradeEvent` struct from the `streamer` app but we could easily just make a lib with that struct that would be shared between two applications). I would shy away from sharing any business logic between applications in the umbrella project.
+这套实现和辅助函数和 `streamer` 应用里的几乎一样。也许有人会想把某些逻辑抽象出来，但请记住，我们应该把 umbrella 项目里的各个应用当作独立服务来对待，尽量不要共享任何代码（我们在 `TradeEvent` 结构体上打破了这一点，但其实我们完全可以把那个结构体单独提取到一个 lib 里，共享给两个应用）。我会避免在 umbrella 项目中共享任何业务逻辑。
 
-There are two additional places where we need to make updates to get our `start_trading/1` to work again:
+为了让 `start_trading/1` 真正工作，我们还需要在两个地方做更新：
 
-* we need to update the `children` list inside the `Naive.Application`:
+* 更新 `Naive.Application` 里的 `children` 列表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/application.ex
     ...
     children = [
       {Naive.Repo, []},
-      {Naive.DynamicSymbolSupervisor, []} # <= replacement of DynamicSupervisor
+      {Naive.DynamicSymbolSupervisor, []} # <= 替换 DynamicSupervisor
     ]
 ```
 
-* we need to replace the `start_trading/1` implementation inside the `Naive` module to `defdelegate` macro(as we don't have any logic to run there):
+* 用 `defdelegate` 宏替换 `Naive` 模块里的 `start_trading/1` 实现（因为那里已经没有任何逻辑需要执行了）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive.ex
@@ -141,14 +138,13 @@ There are two additional places where we need to make updates to get our `start_
   alias Naive.DynamicSymbolSupervisor
 
   defdelegate start_trading(symbol), to: DynamicSymbolSupervisor
-...
 ```
 
-At this moment we are again able to use the `Naive.start_trading/1` function to start trading on a symbol (behind the scenes it will use logic from the new `Naive.DynamicSymbolSupervisor` module).
+此时我们又可以使用 `Naive.start_trading/1` 在某个交易对上开始 trading 了（底层会使用新的 `Naive.DynamicSymbolSupervisor` 模块中的逻辑）。
 
-## Implement the stop trading functionality
+## 实现 stop trading 功能
 
-Stop trading will require a change in two places, first inside the `Naive.DynamicSymbolSupervisor` where we will place the termination logic:
+停止 trading 需要在两个地方做改动，首先是在 `Naive.DynamicSymbolSupervisor` 里添加终止逻辑：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -174,7 +170,7 @@ Stop trading will require a change in two places, first inside the `Naive.Dynami
   ...
 ```
 
-The second change we need to make is to create a forwarding interface using `defdelegate` inside the `Naive` module:
+第二个改动，是在 `Naive` 模块里通过 `defdelegate` 创建一个转发接口：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive.ex
@@ -183,13 +179,13 @@ The second change we need to make is to create a forwarding interface using `def
   ...
 ```
 
-That pretty much finishes the `stop_trading/1` functionality. We are now able to start and stop(what was previously not available) trading on a symbol.
+这样就基本完成了 `stop_trading/1` 功能。我们现在已经可以开始和停止（之前做不到的）symbol trading 了。
 
-## Implement the autostart trading functionality
+## 实现 autostart trading 功能
 
-To implement the autostarting we will need to (in a similar fashion as in the last chapter) add a new supervision level that will be dedicated to supervising the `Naive.DynamicSymbolSupervisor` and the "autostarting" `Task`.
+为了实现自动启动，我们需要像上一章那样增加一个新的监督层，专门监督 `Naive.DynamicSymbolSupervisor` 和负责 autostart 的 `Task`。
 
-Let's create a new file called `supervisor.ex` inside the `/apps/naive/lib/naive` directory and (as in the last chapter) we will add the `Naive.DynamicSymbolSupervisor` and the `Task` to its children list. We will also update the supervision strategy to `:rest_for_one`:
+让我们在 `/apps/naive/lib/naive` 目录下创建一个 `supervisor.ex` 文件，并像上一章一样把 `Naive.DynamicSymbolSupervisor` 和 `Task` 放到 children 列表里。同时把监督策略更新为 `:rest_for_one`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/supervisor.ex
@@ -202,19 +198,19 @@ defmodule Naive.Supervisor do
 
   def init(_init_arg) do
     children = [
-      {Naive.DynamicSymbolSupervisor, []},                 # <= added
-      {Task,                                               # <= added
-       fn ->                                               # <= added
-         Naive.DynamicSymbolSupervisor.autostart_trading() # <= added
-       end}                                                # <= added
+      {Naive.DynamicSymbolSupervisor, []},                 # <= 添加
+      {Task,                                               # <= 添加
+       fn ->                                               # <= 添加
+         Naive.DynamicSymbolSupervisor.autostart_trading() # <= 添加
+       end}                                                # <= 添加
     ]
 
-    Supervisor.init(children, strategy: :rest_for_one) # <= strategy updated
+    Supervisor.init(children, strategy: :rest_for_one) # <= 更新策略
   end
 end
 ```
 
-Now we need to swap the `Naive.DynamicSymbolSupervisor` to `Naive.Supervisor` in the `children` list of the `Naive.Application`, as well as update the registered process' name of the `Naive.Application`:
+现在我们需要把 `Naive.Application` 的 children 列表中的 `Naive.DynamicSymbolSupervisor` 替换成 `Naive.Supervisor`，并更新 `Naive.Application` 进程注册时使用的名字：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/application.ex
@@ -222,20 +218,20 @@ Now we need to swap the `Naive.DynamicSymbolSupervisor` to `Naive.Supervisor` in
   def start(_type, _args) do
     children = [
       {Naive.Repo, []},
-      {Naive.Supervisor, []} # <= replacement for DynamicSymbolSupervisor
+      {Naive.Supervisor, []} # <= 替换为 DynamicSymbolSupervisor
     ]
 
-    opts = [strategy: :one_for_one, name: Naive.Application] # <= name updated
+    opts = [strategy: :one_for_one, name: Naive.Application] # <= 更新名称
 ```
 
 
 
-Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSymbolSupervisor` module as our new `Task` refers to it:
+最后，我们还需要在 `Naive.DynamicSymbolSupervisor` 模块中实现 `autostart_trading/0`，因为新的 Task 会引用它：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
   ...
-  # add the below function after the `init/1` function
+  # 在 `init/1` 函数后面添加下面这个函数
   def autostart_trading do
     fetch_symbols_to_trade()
     |> Enum.map(&start_trading/1)
@@ -243,7 +239,7 @@ Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSym
  
   ...
 
-  # and this helper at the end of the module
+  # 在模块末尾添加这个辅助函数
   defp fetch_symbols_to_trade do
     Repo.all(
       from(s in Settings,
@@ -255,9 +251,9 @@ Finally, we need to implement `autostart_trading/0` inside the `Naive.DynamicSym
   ...
 ```
 
-Those are the same (excluding updated function names) as inside the `streamer` application. We are fetching enabled symbols and starting new `Naive.SymbolSupervisor` processes for each one.
+这些和上一章里的实现是一样的（只是函数名不同）。我们会读取已启用的 symbol，并为每一个启动新的 `Naive.SymbolSupervisor` 进程。
 
-At this moment we can already see our implementation in action:
+此时我们已经可以看到这个实现开始工作了：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_12_01_autostarting_sup_tree.png")
@@ -265,7 +261,7 @@ knitr::include_graphics("images/chapter_12_01_autostarting_sup_tree.png")
 
 
 
-At this moment we are able to test the current implementation inside the IEx:
+现在我们可以在 IEx 中测试当前实现：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -302,7 +298,7 @@ iex(9)> Naive.stop_trading("ETHUSDT")
  }}
 ```
 
-We can now exit the IEx and start a new one:
+现在我们可以退出 IEx 并重新打开一个新的：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -313,11 +309,11 @@ $ iex -S mix
 iex(1)>
 ```
 
-The above logs confirm that the `naive` application autostarts the previously enabled symbols(using the `start_trading/1` function) as well as `stop_trading/1` updates the status inside the database (so the symbol isn't autostarted at the next initialization).
+上面的日志确认了 `naive` 应用会自动启动之前已启用的 symbol（通过 `start_trading/1`），同时 `stop_trading/1` 会更新数据库里的状态（因此该 symbol 在下次初始化时不会再被自动启动）。
 
-## Implement the shutdown trading functionality
+## 实现 shutdown trading 功能
 
-Last but not least, we will move on to the `shutdown_trading/1` functionality. Let's start with the simplest part which is delegating the function call to the `Naive.DynamicSymbolSupervisor` module from the `Naive` module(interface):
+最后但同样重要的一项，是实现 `shutdown_trading/1` 功能。我们先从最简单的一步开始：在 `Naive` 模块（接口层）中，把函数调用委托给 `Naive.DynamicSymbolSupervisor` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -326,9 +322,8 @@ Last but not least, we will move on to the `shutdown_trading/1` functionality. L
   ...
 ```
 
-Next, we will create a `shutdown_trading/1` function inside the `Naive.DynamicSymbolSupervisor` module
-where we will check if there is any trading going on for that symbol(the same as for start/stop),
-and in case of trading happening we will inform the `Naive.Leader` process handling that symbol that settings have been updated:
+接下来，我们在 `Naive.DynamicSymbolSupervisor` 模块里创建一个 `shutdown_trading/1` 函数。
+这里我们会检查该 symbol 是否还有 trading 在进行（和 start/stop 一样），如果有，我们就通知负责该 symbol 的 `Naive.Leader` 进程，说明该 symbol 的 settings 已经更新：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -349,14 +344,14 @@ and in case of trading happening we will inform the `Naive.Leader` process handl
   ...
 ```
 
-The crucial part of the implementation above is the `notify(:settings_updated, settings)` where we inform the `Naive.Leader` process that it needs to update trading settings.
+上面实现中的关键部分，是 `notify(:settings_updated, settings)`，它会通知 `Naive.Leader` 进程需要更新 trading settings。
 
-Currently, the `Naive.Leader` module does *not* support updating the settings after startup - let's add a new interface function together with a callback function that will handle settings updating:
+目前 `Naive.Leader` 模块 *并不支持* 在启动后更新 settings——我们来增加一个新的接口函数，以及一个处理 settings 更新的回调函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
   ...
-  # add the below function as the last clause of the `notify` function
+  # 把下面这个函数加到 `notify` 函数的最后一个分支
   def notify(:settings_updated, settings) do
     GenServer.call(
       :"#{__MODULE__}-#{settings.symbol}",
@@ -364,7 +359,7 @@ Currently, the `Naive.Leader` module does *not* support updating the settings af
     )
   end
 
-  # add the below handler function as the last clause of `handle_call` function
+  # 把下面这个 handler 加到 `handle_call` 函数的最后一个分支
   def handle_call(
         {:update_settings, new_settings},
         _,
@@ -374,14 +369,14 @@ Currently, the `Naive.Leader` module does *not* support updating the settings af
   end
 ```
 
-Ok, we have a way to update the settings of the `Naive.Leader` process "on the go" but what effects should the `shutdown` state have on the `Naive.Leader`'s actions?
+好，我们现在有办法“在线”更新 `Naive.Leader` 进程的 settings 了，但 `shutdown` 状态应该对 `Naive.Leader` 的行为产生什么影响呢？
 
-There are two places that require modification:
+有两个地方需要修改：
 
-* whenever the `Naive.Trader` process will finish the trade cycle, `Naive.Leader` process should *not* start a new one, as well as check if that was the last trader process - if so, it needs to call the `Naive.stop_trading/1` function with its symbol to terminate the whole supervision tree for that symbol
-* whenever the `Naive.Leader` process will receive a `rebuy` notification, it should just ignore it when the symbol is in the `shutdown` state.
+* 每当 `Naive.Trader` 进程完成交易循环时，`Naive.Leader` 进程都不应该启动新的 trader；同时还要检查这是不是最后一个 trader——如果是，就需要调用 `Naive.stop_trading/1`，传入它的 symbol，从而终止整个 symbol 的监督树
+* 每当 `Naive.Leader` 收到 `rebuy` 通知时，如果 symbol 处于 `shutdown` 状态，就应该直接忽略它
 
-Let's look at the updated implementation of the "end of trade" handler:
+先来看更新后的“交易结束” handler：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -399,7 +394,7 @@ Let's look at the updated implementation of the "end of trade" handler:
             "trader that leader is not aware of"
         )
 
-        if settings.status == "shutdown" and traders == [] do # <= additional check
+        if settings.status == "shutdown" and traders == [] do # <= 额外检查
           Naive.stop_trading(state.symbol)
         end
 
@@ -407,7 +402,7 @@ Let's look at the updated implementation of the "end of trade" handler:
 
       index ->
         new_traders =
-          if settings.status == "shutdown" do # <= refactored code
+          if settings.status == "shutdown" do # <= 重构后的代码
             Logger.warning(
               "The leader won't start a new trader on #{symbol} " <>
                 "as symbol is in the 'shutdown' state"
@@ -426,16 +421,13 @@ Let's look at the updated implementation of the "end of trade" handler:
         {:noreply, %{state | traders: new_traders}}
     end
   end
-  ...
 ```
 
-As visible in the above code, whenever the `Naive.Trader` process will finish the trade cycle,
-the `Naive.Leader` process will check if it can find a record of that trader in its state (no changes here).
-We will modify the callback so the leader process will check the `settings.status`.
-In the `shutdown` status it checks whether it was the last trader in the `traders` list,
-to terminate the whole tree at that time(using the `Naive.stop_trading/1` function).
+如上所示，每当 `Naive.Trader` 进程完成一次交易循环时，`Naive.Leader` 进程都会检查自己是否能在状态中找到这位 trader 的记录（这部分没有变化）。
+我们会修改这个回调，让 leader 进程检查 `settings.status`。
+在 `shutdown` 状态下，它会检查这是不是 `traders` 列表中的最后一个 trader，如果是，就会调用 `Naive.stop_trading/1` 来终止整个树。
 
-The second callback that we need to modify is the `rebuy` triggered:
+我们还需要修改的第二个回调，就是 `rebuy` 触发处理：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -479,9 +471,9 @@ The second callback that we need to modify is the `rebuy` triggered:
   ...
 ```
 
-In the above `rebuy_triggered` handler function we added branching on the `settings.status` and we simply ignore the rebuy notification when the symbol is in the `shutdown` status.
+在上面的 `rebuy_triggered` handler 里，我们根据 `settings.status` 添加了分支；当 symbol 处于 `shutdown` 状态时，我们就直接忽略 rebuy 通知。
 
-The final change will be to create a new migration that will update the `TradingStatusEnum` to have a `shutdown` option:
+最后一个改动，是创建一个新的 migration，让 `TradingStatusEnum` 多一个 `shutdown` 选项：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/naive 
@@ -489,7 +481,7 @@ $ mix ecto.gen.migration update_trading_status
 * creating priv/repo/migrations/20210205232303_update_trading_status.exs
 ```
 
-Inside the generated migration file we need to execute a raw SQL command:
+在生成的 migration 文件里，我们需要执行一条原始 SQL 命令：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210205232303_update_trading_status.exs
@@ -504,7 +496,7 @@ defmodule Naive.Repo.Migrations.UpdateTradingStatus do
 end
 ```
 
-We need to apply the same change to the `Naive.Schema.TradingStatusEnum`:
+我们还需要对 `Naive.Schema.TradingStatusEnum` 做同样的修改：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/schema/trading_status_enum.ex
@@ -513,11 +505,11 @@ import EctoEnum
 defenum(Naive.Schema.TradingStatusEnum, :trading_status, [:on, :off, :shutdown])
 ```
 
-Don't forget to run `mix ecto.migrate` to run the new migration.
+别忘了运行 `mix ecto.migrate` 来执行新的 migration。
 
-## Manual testing in IEx
+## 在 IEx 中手动测试
 
-We can now test the `shutdown_trading/1` functionality:
+现在我们可以测试 `shutdown_trading/1` 功能了：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -541,7 +533,7 @@ iex(2)> Naive.start_trading("XRPUSDT")
 21:53:27.250 [info]  Rebuy triggered for XRPUSDT by the trader(1612648325512)
 21:53:27.250 [info]  All traders already started for XRPUSDT
 
-# at this moment we have 5 `Naive.Trader` processes trading in parallel
+# 此时我们有 5 个 `Naive.Trader` 进程在并行交易
 
 iex(4)> Naive.shutdown_trading("XRPUSDT")
 21:55:01.556 [info]  Shutdown of trading on XRPUSDT initialized
@@ -573,31 +565,31 @@ shutdown state
 22:08:05.401 [info]  Stopping trading of XRPUSDT
 ```
 
-As we can see from the logs above, our `naive` strategy grew from 1 to 5 `Naive.Trader` processes running in parallel,
-then we called the `shutdown_trading/1` function.
-In the `shutdown` status, the `Naive.Leader` process ignored `rebuy` notifications and
-wasn't starting any new `Naive.Trader` processes as the old ones were finishing.
-At the moment when the last `Naive.Trader` process finished the trade cycle,
-the `Naive.Leader` called `stop_trading/1` on its symbol, terminating the whole supervision tree for that symbol.
+如上面的日志所示，我们的 `naive` 策略先从 1 个 `Naive.Trader` 进程扩展到了 5 个并行进程，
+然后我们调用了 `shutdown_trading/1`。
+在 `shutdown` 状态下，`Naive.Leader` 进程忽略了 `rebuy` 通知，
+也不会再启动新的 `Naive.Trader` 进程，而是等待现有 trader 完成。
+当最后一个 `Naive.Trader` 进程完成交易循环时，
+`Naive.Leader` 调用了 `stop_trading/1` 来终止整个 symbol 的监督树。
 
-**The naive trading app now has full lifecycle control!** We've implemented:
+**现在 naive 交易应用已经具备完整的生命周期控制了！** 我们实现了：
 
-- Start/stop trading with database-backed status persistence
-- Graceful shutdown that lets traders complete their cycles
-- Autostart functionality that resumes trading after app restart
-- A `rest_for_one` supervision strategy ensuring autostart runs when needed
+- 带数据库状态持久化的 start/stop trading
+- 允许 trader 完成当前循环的优雅 shutdown
+- 在应用重启后恢复 trading 的 autostart 功能
+- 一个 `rest_for_one` 监督策略，确保需要时 autostart 也会重新运行
 
-The shutdown feature is particularly important for a real trading system. It means we can safely wind down trading without being left with open positions or incomplete trades.
+shutdown 功能对真实交易系统尤其重要。它意味着我们可以安全地收尾，而不会留下未平仓位或未完成的交易。
 
-**So, What's Next?**
+**下一步是什么？**
 
-If you've been following along, you've probably noticed that the `Naive.DynamicSymbolSupervisor` and `Streamer.DynamicStreamerSupervisor` modules look remarkably similar. We've essentially copy-pasted the same supervision patterns between them.
+如果你一直跟着做，可能已经注意到 `Naive.DynamicSymbolSupervisor` 和 `Streamer.DynamicStreamerSupervisor` 模块看起来非常相似。实际上，我们已经在两个应用之间复制了同样的监督模式。
 
-In the next chapter, we'll address this duplication by creating a `Core.ServiceSupervisor` module that abstracts the common logic. We'll use Elixir macros to generate the boilerplate code, letting us define supervisors with minimal repetition while keeping each application independent.
+在下一章中，我们会通过创建一个 `Core.ServiceSupervisor` 模块来解决这种重复，抽象出通用逻辑。我们会使用 Elixir 宏来生成这些样板代码，让我们只用更少的重复，就能定义 supervisor，同时保持每个应用彼此独立。
 
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_11](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_11)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_11](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_11)）。

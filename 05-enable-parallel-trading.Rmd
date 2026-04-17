@@ -1,103 +1,102 @@
-# 支持多 symbol 并行交易 {#enable-parallel-trading}
+# 在多个 symbol 上启用并行交易 {#05-enable-parallel-trading}
 
-在上一章里，我们构建了 `BinanceMock`，把交易逻辑和真实交易所解耦了。
-这一步非常关键——但我们的系统仍然有一个根本性的限制：
-它一次只能交易一个 symbol，而且只要出了问题，整个系统就会停下来。
+在上一章中，我们构建了 `BinanceMock`，把交易逻辑与真实交易所解耦开来。
+这是至关重要的一步——但我们的系统仍然有一个根本限制：
+它一次只能交易一个 symbol，而且一旦出问题，所有东西都会停下来。
 
-这一章里，我们会通过构建一个完整的 OTP 监督树来同时解决这两个问题。
-这正是 Elixir 真正擅长的地方。我们不会为了处理每一种潜在故障而写一大堆防御性代码，
-而是拥抱“让它崩溃（let it crash）”的哲学，构建一个能够自动从错误中恢复的系统。
-到最后，你会拥有一个可以在多个 symbol 上并行运行的 trader 系统，并且每个 trader 都能抵抗崩溃。
+在本章中，我们会通过构建一个正确的 OTP 监督树来修复这两个问题。
+这正是 Elixir 真正闪光的地方。我们不再写大量防御性代码去处理每一种可能的故障，
+而是拥抱“让它崩溃”的哲学，构建一个能自动从错误中恢复的系统。
+到本章结束时，你会看到 trader 可以在多个 symbol 上并行运行，而且每个 trader 都能对崩溃具有韧性。
 
-我们开始吧！
+让我们开始吧！
 
 ## 目标
 
-- 设计一个监督树，让多个 trader 可以针对不同 symbol 并行交易
-- 更新应用级 supervisor
+- 设计一个监督树，允许每个 symbol 上并行运行多个 trader
+- 更新应用 supervisor
 - 实现 `Naive.Leader`
 - 实现 `Naive.SymbolSupervisor`
 
-## 介绍 - 架构设计
+## 介绍——架构设计
 
-在第 2 章里，我们实现了一个基础 trader，它会完整走完交易循环。在 IEx 会话里，我们通过 `start_link/1` 函数启动了 `Naive.Trader` 进程：
+在第二章中，我们实现了一个基本的 trader，它会经历完整的交易循环。在 iEx 会话里，我们通过 `start_link/1` 函数启动 `Naive.Trader` 进程：
 
 ```{r, fig.align="center", out.width="25%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_01_current_state.png")
 ```
 
-`GenServer.start_link/3` 会在 IEx 进程和新建的 `Naive.Trader` 进程之间建立链接。
-当某个 trader 进程终止时（无论是因为完成了交易循环，还是因为出错），都不会有新的进程自动启动——因为根本没有监督机制。
+`GenServer.start_link/3` 会在 iEx 的进程和新的 `Naive.Trader` 进程之间建立链接。
+每当 trader 进程终止（无论是因为完成交易循环还是因为错误），都不会有新的进程自动启动——这里完全没有监督。
 
-借助 Elixir 和 OTP，我们可以做得更好。
+不过，只要借助一点 Elixir 和 OTP 的帮助，我们可以做得更好。
 
-让我们在 trader 进程上方加一个 supervisor。它会在前一个 trader 结束或崩溃时，自动启动一个新的 trader 进程：
+先在 trader 进程上面加一个 supervisor。它会在前一个 trader 完成或崩溃后启动一个新的 trader 进程：
 
 ```{r, fig.align="center", out.width="25%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_02_supervise_the_trader.png")
 ```
 
-这样看起来好多了，但还有一个关键问题。
-当 trader 挂出买单时，这笔订单会同时存在于两个地方：
-一个是在 Binance 交易所（或我们的 mock）里，另一个是在 trader 自己的内部状态里。
-如果 trader 崩溃了，supervisor 会尽职地把它重新启动——但会给它一个全新的、空白的状态。
-与此同时，我们的买单还挂在交易所上，等着被成交。新启动的 trader 根本不知道这笔单子存在。
+这样看起来好多了，但这里有一个关键问题。
+当 trader 挂出一个买单时，这个订单会同时存在于两个地方：
+Binance 交易所（或者我们的 mock）以及 trader 自己的内部状态里。
+如果 trader 崩溃，supervisor 会尽职尽责地把它重新启动——但会用一个全新的空状态。
+与此同时，我们的买单还在交易所里等待成交。新的 trader 根本不知道它的存在。
 
-这就是有状态进程的核心难题：**supervisor 可以重启进程，但它不能恢复状态。**
+这正是状态型进程的根本挑战：**supervisor 可以重启进程，但它不能恢复状态。**
 
-要解决这个问题，我们需要把 trader 的状态副本保存在 trader 进程之外——因此我们会引入一个名为 `Naive.Leader` 的新 server，用来跟踪 trader 的数据：
+为了解决这个问题，我们需要把 trader 的状态复制到 trader 进程之外——这就是为什么我们会引入一个新的 server，叫做 `Naive.Leader`，用来跟踪 trader 的数据：
 
 ```{r, fig.align="center", out.width="70%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_03_leader_added.png")
 ```
 
 `Naive.Leader` 会成为启动新 trader 的接口。
-它会调用 `DynamicSupervisor.start_child/1`，而后者会继续调用 `Naive.Trader.start_link/1`。
+它会调用 `DynamicSupervisor.start_child/1`，而后者又会调用 `Naive.Trader.start_link/1`。
 
-这里我们用一种带点变化的方式来拥抱 Elixir 著名的“让它崩溃”哲学。
-我们的 trader 会以 `restart: :temporary` 启动，这会告诉 supervisor **不要** 自动重启它们。
-重启责任会交给 Leader。为什么？因为 Leader 持有缓存状态。
-当 trader 崩溃时，Leader 可以用它最后一次已知的状态来重启它，而不是从空白状态开始。
+这里就是我们拥抱 Elixir 著名的“让它崩溃”哲学的地方——不过有一点不同。
+我们的 trader 会用 `restart: :temporary` 启动，这会告诉 supervisor *不要* 自动重启它们。
+相反，重启职责由 Leader 来承担。为什么？因为 Leader 持有缓存状态。
+当 trader 崩溃时，Leader 可以用它最后已知的状态来重启它，而不是从空白状态开始。
 
-这种模式——把状态管理放到进程外，再结合 supervisor 负责重启——让我们同时拥有两个好处：容错能力 *和* 状态恢复。
+这种模式——外部状态管理加上受监督的重启——让我们同时拥有两种优势：容错性 *和* 状态恢复。
 
-随着 trader 状态不断更新，它会把新状态通知给 leader 保存起来。这样，一旦 trader 进程崩溃，leader 就能用最后一次已知状态启动一个新的 trader。
+随着 trader 状态不断更新，它会把新的状态通知给 leader 以便存储。
+这样每当 trader 进程崩溃时，leader 都能用最后已知的状态启动一个新的 trader 进程。
 
-这种结构也让我们能够为单个 symbol 启动并监督多个 trader——这正是下一章里朴素策略所需要的能力。
+这个结构也会让我们在同一个 symbol 上启动并监督多个 trader——这是我们朴素策略在下一章里会需要的能力。
 
-对于每个我们要交易的 symbol，我们都需要上面这一组三个进程（Leader + DynamicTraderSupervisor + Trader）。为了有效地初始化（并监督）它们，我们会加入一个 `Naive.SymbolSupervisor`，它会同时启动 `Naive.Leader` 和 `Naive.DynamicTraderSupervisor`：
+对于我们要交易的每个 symbol，我们都需要上面这一组三个进程（Leader + DynamicTraderSupervisor + Trader）。为了有效地初始化（并监督）它们，我们会再增加一个 `Naive.SymbolSupervisor`，它会同时启动 `Naive.Leader` 和 `Naive.DynamicTraderSupervisor`：
 
 ```{r, fig.align="center", out.width="70%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_04_symbol_sup.png")
 ```
 
 
-我们会需要多个 symbol supervisor，每个想交易的 symbol 都对应一个。
-和 trader 一样，它们也会按需动态启动。这也给了我们一个提示：我们还需要另一个动态 supervisor，
-来监督这些 symbol supervisor，并把它作为 `Naive.Supervisor`（也就是 `Naive.Application` 模块）的直接子进程：
+我们会需要多个 symbol supervisor，每个我们想交易的 symbol 都对应一个。和 trader 一样，它们会按需动态启动，这也提示我们需要另一个 dynamic supervisor 来监督 symbol supervisor，并且它会作为 `Naive.Supervisor`（也就是 `Naive.Application` 模块）的直接子进程：
 
 ```{r, fig.align="center", out.width="70%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_05_full.png")
 ```
 
-你可能会问：我们难道不需要另一个 server 来跟踪哪些 symbol 正在交易吗？
-答案是不需要——我们可以给每个 `Naive.SymbolSupervisor` 注册一个名字，比如 `:"Naive.SymbolSupervisor-XRPUSDT"`。
-这样我们就可以通过名字查找 supervisor，而不必自己追踪 PID。
-Elixir 的进程注册机制会帮我们处理这些 bookkeeping。
+你可能会想：我们是不是还需要另一个 server 来跟踪哪些 symbol 正在被交易？
+答案是不需要——我们可以给每个 `Naive.SymbolSupervisor` 注册一个名字，例如 `:"Naive.SymbolSupervisor-XRPUSDT"`。
+这样我们就能通过名字查找 supervisor，而不必自己维护 PID。
+Elixir 的进程注册表会替我们完成这些 bookkeeping。
 
-从图的最上方开始，事情是这样的：
+从图的最上层开始看，整个流程是这样的：
 
-* `Naive.Application` 是 `naive` 应用的顶层 supervisor，它是在创建 `naive` 应用时自动生成的
-* 它只有一个子进程 `Naive.DynamicSymbolSupervisor`，其策略是 one_for_one，而它的所有子进程都是 `Naive.SymbolSupervisor`
-* `Naive.SymbolSupervisor` 进程会再启动两个子进程：`Naive.Leader` 和 `DynamicTraderSupervisor`，它们都会在初始化时创建
-* `Naive.Leader` 会让 `DynamicTraderSupervisor` 启动 `Naive.Trader` 子进程
+* `Naive.Application` 是 `naive` app 的顶层应用 supervisor，它在 `naive` 应用创建时自动生成
+* 它只有一个子进程 `Naive.DynamicSymbolSupervisor`，它采用 one_for_one 策略，并且它的所有子进程都是 `Naive.SymbolSupervisor`
+* `Naive.SymbolSupervisor` 进程会再启动两个子进程：`Naive.Leader` 和 `DynamicTraderSupervisor`，它们都会在 init 时创建
+* `Naive.Leader` 会请求 `DynamicTraderSupervisor` 启动 `Naive.Trader` 子进程
 
-现在看起来可能有点绕，但等我们把代码写出来，就会清楚很多。
+现在看起来可能有点绕，但等我们开始写代码后，一切都会清楚得多。
 开始吧！
 
 ## 更新应用 supervisor
 
-先把 `Naive.DynamicSymbolSupervisor` 和一个 server 加到 `Naive.Application` supervisor 的 children 列表里：
+我们先从把 `Naive.DynamicSymbolSupervisor` 和一个 server 加到 `Naive.Application` supervisor 的 children 列表开始：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/application.ex
@@ -116,8 +115,7 @@ Elixir 的进程注册机制会帮我们处理这些 bookkeeping。
 
 ## 添加接口方法
 
-接下来，我们会在 `Naive` 模块里加一个接口方法，指示
-`Naive.DynamicSymbolSupervisor` 以子进程的形式启动 `Naive.SymbolSupervisor`（下一步会实现它）：
+现在我们来给 `Naive` 模块添加一个接口方法，它会指示 `Naive.DynamicSymbolSupervisor` 启动 `Naive.SymbolSupervisor`（我们下一步会实现它）作为它的子进程：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -134,9 +132,7 @@ Elixir 的进程注册机制会帮我们处理这些 bookkeeping。
 
 ## 实现 `Naive.SymbolSupervisor`
 
-接下来轮到 `Naive.SymbolSupervisor` 了。第一步是在 `apps/naive/lib/naive` 目录下创建一个名为 `symbol_supervisor.ex` 的文件。
-这里没必要使用 [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html)，因为我们在初始化时就已经知道要启动哪些子进程。
-这就是一个完整的 supervisor 实现，做法其实很简单：只要在 init 函数里列出子进程即可：
+接下来是 `Naive.SymbolSupervisor`。第一步是在 `apps/naive/lib/naive` 目录下创建一个名为 `symbol_supervisor.ex` 的文件。这里没有必要使用 [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html)，因为我们在 init 时就知道自己要自动启动哪些子进程。它是一个完整的 supervisor 实现，写法很简单：只需要在 init 函数里列出子进程即可：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/symbol_supervisor.ex
@@ -178,15 +174,15 @@ end
 <div class="sidequest">
 ```
 
-**关键架构说明：Atom 泄漏风险**
+**关键架构说明：原子泄漏风险**
 
-你可能会注意到，这里我们在动态创建 atom（例如 `:"#{__MODULE__}-#{symbol}"`）。
-在 Erlang VM 里，atom 是不会被垃圾回收的。如果这个系统接受任意用户输入（比如为 "User1"、"User2" 创建 trader）
-，我们最终会因为耗尽 atom 表而把 VM 搞崩（默认上限大约是一百万）。
+你可能注意到我们这里动态创建了 atom（例如 `:"#{__MODULE__}-#{symbol}"`）。
+在 Erlang VM 中，atom 不会被垃圾回收。如果这个系统接受任意用户输入（比如为 "User1"、"User2"……创建 trader），
+最终我们会因为耗尽 atom 表而把 VM 搞崩（默认上限大约一百万）。
 
-由于 Binance 的交易对列表是有限的，所以现在还算安全。
-不过这仍然被认为是一种反模式。**在第 13 章，我们会把它重构成使用 Registry**，
-这样就可以用字符串查找进程，从而彻底消除这个风险。"
+由于 Binance 交易对的列表是有限的，所以目前我们是安全的。
+不过，这仍然被视为一种反模式。**在第 13 章中，我们会重构这里，改用 Registry**，
+这样就可以用字符串查找进程，从而完全消除这个风险。
 
 ```{=html}
 </div>
@@ -195,17 +191,15 @@ end
 \end{sidequest}
 ```
 
-一般来说，supervisor 模块应该保持精简，只负责监督本身。业务逻辑应该放在它所管理的子进程里。
+一般来说，supervisor 模块应该保持精简，只专注于监督。业务逻辑应该放在它们管理的子进程里。
 
-我们给 `Naive.SymbolSupervisor` 进程注册了名字，这会帮助我们在 observer GUI 里看懂监督树（未来也方便我们停止这些 supervisor）。
+我们给 `Naive.SymbolSupervisor` 进程注册了名字，这会帮助我们在 observer GUI 中理解监督树（未来也能让我们停止这些 supervisor）。
 
-前面也提到过，只要 `Naive.Leader` 或 `Naive.DynamicSymbolSupervisor-#{symbol}` 其中一个崩溃，
-我们就希望把另一个子进程也一起杀掉，因为状态已经无法恢复——直接把两者都重新初始化会更简单。
+如前所述，一旦 `Naive.Leader` 或 `Naive.DynamicSymbolSupervisor-#{symbol}` 中的任意一个崩溃，我们都希望把另一个子进程也杀掉，因为我们无法恢复状态——把两者重新初始化会更简单。
 
 ## 实现 `Naive.Leader`
 
-轮到 `Naive.Leader` 模块了。第一步还是在 `apps/naive/lib/naive` 目录下创建一个 `leader.ex` 文件。
-现在它只需要是一个骨架版的 GenServer 实现，先让代码能编译起来即可：
+现在轮到 `Naive.Leader` 模块了。和前面一样，第一步是在 `apps/naive/lib/naive` 目录下创建一个名为 `leader.ex` 的文件。此时它先是一个骨架 GenServer 实现，用来让代码先能编译通过：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -226,8 +220,8 @@ defmodule Naive.Leader do
 end
 ```
 
-到这里，我们已经有一半的监督树能跑起来了，所以可以在 IEx 里试一试。
-借助 observer，我们可以看到在调用 `start_trading/1` 时创建出来的所有进程：
+现在我们已经让一半的监督树跑起来了，所以可以在 iex 里试试看。
+通过 observer，我们可以看到调用 `start_trading/1` 时创建的所有进程：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -241,23 +235,23 @@ iex(3)> Mix.ensure_application!(:observer)
 iex(4)> :observer.start()
 ```
 
-The above function will open a new window looking as follows:
+上面的函数会打开一个新的窗口，长得大概如下：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_06_new_observer.png")
 ```
 
-To clearly see the supervision tree we will click on the "Applications" tab at the top - the following tree of processes will be shown on the left:
+为了清楚地看到监督树，我们会点击顶部的 “Applications” 标签——左侧就会显示如下进程树：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_05_07_observer_app_list.png")
 ```
 
-If any other process tree is visible, go to the list on the left and select the `naive` application.
+如果你看到的是别的进程树，就在左侧列表里选择 `naive` 应用。
 
-The `Naive.Supervisor` is our `Naive.Application` module(you can confirm that by checking the `name` option send to the `start_link` function inside the module). It starts the `Naive.DynamicSymbolSupervisor`.
+`Naive.Supervisor` 就是我们的 `Naive.Application` 模块（你可以通过查看模块里传给 `start_link` 函数的 `name` 选项来确认）。它会启动 `Naive.DynamicSymbolSupervisor`。
 
-现在我们可以多调用几次 `Naive.start_trading/1`，看看随着进程增加，树会变成什么样（回到 `iex` 会话）：
+现在我们可以多次调用 `Naive.start_trading/1`，看看增加进程后这棵树会变成什么样（回到 iex 会话）：
 
 ```{r, engine = 'bash', eval = FALSE}
 ...
@@ -269,18 +263,18 @@ iex(3)> Naive.start_trading("xrpusdt")
 {:ok, #PID<0.345.0>}
 ```
 
-我们可以看到创建出了两条新的分支：
+我们可以看到新创建了两条分支：
 
 * `SymbolSupervisor-ADAUSDT`
 * `SymbolSupervisor-XRPUSDT`
 
-每条分支里都包含一个 `Naive.Leader` 和一个 `DynamicTraderSupervisor`。
+每一条分支里都包含一个 `Naive.Leader` 和一个 `DynamicTraderSupervisor`。
 
-### 更新 `leader` 模块
+### 更新 leader 模块
 
-现在我们回到 `leader` 的实现，继续把这些 trader 跑起来。
+接下来我们回到 leader 实现，继续把 trader 跑起来。
 
-我们会给 leader 引入一个状态，它由 symbol、设置，以及一组 trader 数据组成。trader 数据里会保存 trader 的 PID、ref 和 state：
+我们会引入一个 leader 的状态，它由 symbol、setting，以及 trader 数据列表组成。trader 数据会保存 trader 的 PID、ref 和 state：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -304,8 +298,8 @@ iex(3)> Naive.start_trading("xrpusdt")
   end
 ```
 
-我们会沿用第 2 章学过的 `handle_continue` 模式——
-这一次用它异步初始化 leader，并在不阻塞 supervisor 的情况下启动 trader：
+我们会沿用第 2 章里学到的 `handle_continue` 模式——
+这次是为了异步初始化 leader，并启动 trader，而不会阻塞 supervisor：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -317,11 +311,11 @@ iex(3)> Naive.start_trading("xrpusdt")
   end
 ```
 
-`Naive.Leader` 会获取 symbol 的设置，并据此构建 trader 的状态，这样 trader 自己就不用再去获取同样的设置了。它还会按照配置里的 `chunks` 数量，启动相应数量的 trader：
+`Naive.Leader` 会获取 symbol settings，然后基于它们构建 trader 的状态，这样 trader 就不需要再去获取一遍相同的设置了。它还会按照 setting 中 `chunks` 键的值启动同样数量的 trader：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # below init()
+  # 放在 init() 下面
   def handle_continue(:start_traders, %{symbol: symbol} = state) do
     settings = fetch_symbol_settings(symbol)
     trader_state = fresh_trader_state(settings)
@@ -332,8 +326,7 @@ iex(3)> Naive.start_trading("xrpusdt")
   end
 ```
 
-为了让这一章保持聚焦，获取 symbol 设置的过程暂时会写死。
-我们还会把获取 tick size 的代码从 `Naive.Trader` 移到 `Naive.Leader`，并把剩下的值先写死：
+获取 symbol settings 这件事现在先硬编码，以保持本章聚焦。我们还会把从 `Naive.Trader` 里获取 tick size 的代码移到 `Naive.Leader` 中，并把其他值都写死：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -360,17 +353,17 @@ iex(3)> Naive.start_trading("xrpusdt")
   end
 ```
 
-另外，我们还需要创建一个在 `handle_continue/2` 里会用到的辅助方法，叫做 `fresh_trader_state/1`：
+另外，我们还需要创建一个辅助方法 `fresh_trader_state/1`，它会在 `handle_continue/2` 回调里使用：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # place this one above the `fetch_symbol_settings` function
+  # 放在 `fetch_symbol_settings` 函数上方
   defp fresh_trader_state(settings) do
     struct(Trader.State, settings)
   end
 ```
 
-启动一个新的 trader 和我们之前写过的启动 `Naive.SymbolSupervisor` 的代码并没有本质区别。我们需要调用 `DynamicSupervisor.start_child/2` 函数，并开始监控这个进程：
+启动一个新的 trader 和我们之前写过的启动新的 `Naive.SymbolSupervisor` 的代码并没有什么不同。我们需要调用 `DynamicSupervisor.start_child/2`，并监控这个进程：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -389,8 +382,7 @@ iex(3)> Naive.start_trading("xrpusdt")
 
 ### 更新 `Naive.Trader` 模块
 
-现在我们可以更新 `Naive.Trader` 了。首先，我们会把 restart 设置成 temporary，
-这样它就不会被 `Naive.DynamicTraderSupervisor` 自动重启：
+现在我们可以更新 `Naive.Trader` 了。首先，我们会把 restart 设成 temporary，避免它被 `Naive.DynamicTraderSupervisor` 自动重启：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -399,13 +391,13 @@ defmodule Naive.Trader do
   ...
 ```
 
-有了新的监督结构之后，`tick_size` 会在 `Trader` 进程真正启动之前就先被解析出来。
-这对系统设计来说是一个很大的提升：我们的 `Trader` 不再依赖 Binance API 才能完成启动。
+在我们的新监督结构下，`tick_size` 会在 `Trader` 进程真正启动之前就被解析好。
+这对系统设计来说是一个很大的提升：我们的 `Trader` 不再依赖 Binance API 才能启动。
 
-既然现在我们把一个已经填充完整的 `%State{}` 结构体传进了 `start_link/1`，
-初始化就会立刻完成。我们也就不再需要用 `handle_continue/2` 来避免阻塞了，所以可以把它删掉。
+因为现在我们把一个已经填充好的 `%State{}` 结构体传给了 `start_link/1`，
+初始化会立刻完成。我们不再需要用 `handle_continue/2` 来避免阻塞，所以可以删除它。
 
-接下来我们重构 `start_link/1` 和 `init/1`，让它们接受这个注入进来的 state，并移除异步获取逻辑：
+我们来重构 `start_link/1` 和 `init/1`，让它们接受注入的状态，并移除异步获取逻辑：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -426,11 +418,10 @@ defmodule Naive.Trader do
     {:ok, state}
   end
 
-  def handle_continue(...) do # <= remove this function
+  def handle_continue(...) do # <= 删除这个函数
 ```
 
-接下来，我们需要更新三个会改变 `Naive.Trader` 进程状态的 `handle_info/2` 回调（挂买单、挂卖单，以及卖单成交时）。
-它们在返回 state 之前，都需要通知 `Naive.Leader` 状态已经发生了变化：
+接下来，我们需要更新三个会改变 `Naive.Trader` 进程状态的 `handle_info/2` 回调（在挂买单和挂卖单时）。在返回之前，它们需要通知 `Naive.Leader` 状态已经发生变化：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -471,13 +462,13 @@ defmodule Naive.Trader do
   ...
 ```
 
-### 完成 `Naive.Leader` 的实现
+### 完成 `Naive.Leader` 实现
 
-现在我们要回到 `Naive.Leader`，把通知逻辑补上。我们先从 `notify` 函数开始，它会负责调用 `Naive.Leader` 进程：
+现在我们回到 `Naive.Leader`，实现通知逻辑。我们先从 notify 函数开始，它只需要调用 `Naive.Leader` 进程：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # below init
+  # 放在 init 下面
   def notify(:trader_state_updated, trader_state) do
     GenServer.call(
       :"#{__MODULE__}-#{trader_state.symbol}",
@@ -486,12 +477,11 @@ defmodule Naive.Trader do
   end
 ```
 
-接下来是处理 trader 状态更新的回调函数。由于这是一个 `handle_call/3` 回调，我们可以拿到发送通知消息的 trader PID。
-我们会尝试在 trader 列表里找到这个 trader。如果找到了，就把这个 trader 的缓存状态在本地更新掉：
+现在，轮到一个处理 trader 状态更新的回调函数了。由于这是一个 `handle_call/3` 回调，我们能拿到发送通知消息的 trader PID。我们会尝试在 trader 列表里找到它。如果找到了，我们就把这个 trader 的本地缓存状态更新掉：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # below handle_continue
+  # 放在 handle_continue 下面
   def handle_call(
     {:update_trader_state, new_trader_state},
     {trader_pid, _},
@@ -514,13 +504,13 @@ defmodule Naive.Trader do
   end
 ```
 
-我们还需要再提供两个 `handle_info/2` 回调，分别处理交易完成和 trader 崩溃这两种情况。
+我们还需要另外两个 `handle_info/2` 回调：一个处理交易完成，另一个处理 trader 崩溃。
 
-先说交易完成的场景。和前面一样，我们会先在 trader 列表中找到对应的数据。如果找到了，我们就用一个新的状态启动一个新的 trader。同时，我们也会在本地覆盖旧的 trader 数据（因为 PID、ref 和 state 都变了）：
+先看交易完成场景。和之前一样，我们会尝试在 trader 列表里找到这个 trader。如果找到了，我们就用一个新的、带 fresh state 的 trader 替换它。我们还会在本地缓存里覆盖已有 trader 数据（因为 PID、ref 和 state 都会变）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # below state updated handle_call callback
+  # 放在 state updated handle_call 回调下面
   def handle_info(
         {:DOWN, _ref, :process, trader_pid, :normal},
         %{traders: traders, symbol: symbol, settings: settings} = state
@@ -545,14 +535,13 @@ defmodule Naive.Trader do
   end
 ```
 
-这里我们会假设：只要 `Naive.Trader` 进程的死亡原因是 `:normal`，就说明它是在交易循环结束后被正常停止的。
+这里我们假设，当 `Naive.Trader` 进程死掉的原因是 `:normal` 时，就表示它是在交易循环结束后被我们停止的。
 
-我们需要提供的最后一个回调，是处理 trader 崩溃的场景。我们希望找到这个崩溃 trader 的缓存状态，
-然后用同样的状态启动一个新的 trader，并更新本地缓存，因为这个 trader 的 PID 和 ref 都会改变：
+最后一个需要提供的回调会处理 trader 崩溃的场景。我们希望找到崩溃 trader 的缓存状态，然后用同样的状态重启一个新的 trader，接着更新本地缓存，因为那个 trader 的 PID 和 ref 都会变化：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # below trade finished handle_info callback
+  # 放在交易完成 handle_info 回调下面
   def handle_info(
         {:DOWN, _ref, :process, trader_pid, reason},
         %{traders: traders, symbol: symbol} = state
@@ -580,12 +569,11 @@ defmodule Naive.Trader do
 
 ### IEx 测试
 
-到这里，实现部分就完成了。我们进入 IEx 会话看看它是怎么工作的。
+这样实现部分就完成了，接下来我们进入 IEx 看看它的工作效果。
 
-我们会先启动 observer，然后在任意有效 symbol 上开始交易。
+我们先启动 observer，然后启动任意一个有效 symbol 的 trading。
 
-当 trader 启动后，你应该可以右键选择 “Kill process”（reason 保持 kill），然后点 “OK”。
-这时你应该能看到 trader 的 PID 变了，同时还能看到 leader 打印出来的日志信息。
+当 trader 启动后，你应该可以右键选择 “Kill process”（保留 reason 为 kill），然后点击 “OK”。这时你会看到 trader 的 PID 发生变化，同时 leader 也会输出一条日志。
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -610,25 +598,25 @@ iex(7)>
 00:08:01.476 [info]  Initializing new trader for XRPUSDT
 ```
 
-**做得很棒！** 你刚刚构建了一个可用于生产的监督树，它可以：
+**非常棒！** 你刚刚构建了一个生产级的监督树，它能够：
 
-- 在多个 symbol 上并行交易，每个 symbol 都有自己隔离的故障域
-- 用最后一次已知状态自动恢复崩溃的 trader
-- 只要对新 symbol 调用 `start_trading/1`，就能水平扩展
+- 并行交易多个 symbol，每个 symbol 都有自己独立的故障域
+- 用最后已知的状态自动恢复崩溃的 trader
+- 只要对新的 symbol 调用 `start_trading/1`，就能水平扩展
 
-这就是 OTP 的核心力量。我们构建的 `Naive.Leader` 模式——把状态缓存到外部并控制重启——
-会成为你在 Elixir 系统里反复使用的技巧。
+这就是 OTP 的核心体现。我们构建的 `Naive.Leader` 模式——在外部缓存状态并控制重启——
+是你在 Elixir 系统中会反复用到的一种技巧。
 
-**那么，下一步是什么？**
+**下一步是什么？**
 
-我们的监督树已经很稳了，但交易策略本身还有一个很隐蔽的缺陷。当 trader 完成一次卖出并启动新的 trader 时，
-它会立刻以当前市场价买入——也就是我们刚卖出的那个价格。这样等于白白多付了一次手续费，却没有任何收益！
+我们的监督树已经很稳固了，但我们的交易策略还有一个微妙的缺陷。当一个 trader 完成卖出、又启动新的 trader 时，
+它会立刻按当前市场价格买入——也就是我们刚刚卖出的那个价格。我们为了没有收益的操作支付了两次手续费！
 
-下一章我们会通过引入 `buy_down_interval` 来修复这个问题。我们的 trader 不再按当前价格买入，
-而是会把买单挂在**低于**市场价的位置，确保只有在真正有盈利空间时才重新入场。
-这是一个很小的改动，但对盈利能力的影响会非常大。
+在下一章中，我们会通过引入一个 `buy_down_interval` 来修复这个问题。不再按当前价格买入，
+而是让 trader 在*低于*市场价的位置挂买单，这样只有在确实有利润空间时才重新进入仓位。
+这只是一个小改动，但对盈利能力的影响很大。
 
-[注] 别忘了运行 `mix format`，让代码保持整洁。
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
 本章的源代码可以在本书的源代码仓库中找到（分支：
 [chapter_05](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_05)）。

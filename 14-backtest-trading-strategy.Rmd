@@ -1,52 +1,52 @@
-# Backtest trading strategy
+# 回测交易策略 {#14-backtest-trading-strategy}
 
-In the last chapter, we built a `data_warehouse` application that stores trade events and orders in a database.
-We also discovered that `Registry` plus `DynamicSupervisor` gives us a cleaner supervision pattern than macros.
-But storing data is only useful if we do something with it.
+在上一章中，我们构建了一个 `data_warehouse` 应用，用来把交易事件和订单存入数据库。
+我们还发现，`Registry` 加上 `DynamicSupervisor` 提供了比宏更清晰的监督模式。
+但如果不把数据用起来，存数据就没有意义。
 
-Here's what we're going to do: replay historical trade events through our system as if they were happening live.
-Our `Naive.Trader` won't know the difference - it will place buy and sell orders just like it would with real market data.
-This technique is called backtesting, and it's how traders evaluate strategies before risking real money.
+我们要做的是：把历史交易事件像实时发生一样重新通过系统播一遍。
+我们的 `Naive.Trader` 不会知道区别——它会像处理真实市场数据那样挂买单和卖单。
+这种技术叫做回测（backtesting），交易者就是靠它在不冒真钱风险的情况下评估策略的。
 
-The beauty of our pub/sub architecture becomes clear here.
-We built the system so that producers and consumers are decoupled - the trader doesn't care *who* broadcasts trade events,
-only that they arrive on the `TRADE_EVENTS:#{symbol}` topic.
-That means we can swap out the live `Streamer.Binance` process for a `Publisher` task that reads from our database,
-and everything just works.
+我们的 pub/sub 架构在这里的价值就体现出来了。
+我们把系统设计成生产者和消费者解耦——trader 并不关心是谁广播交易事件，
+它只关心这些事件是否到达 `TRADE_EVENTS:#{symbol}` topic。
+这意味着我们可以把实时的 `Streamer.Binance` 进程替换成一个从数据库读取数据的 `Publisher` task，
+而其他部分都不用改，系统就能照常工作。
 
-## Objectives
-- overview of requirements
-- implement the Publisher task
-- test the backtesting
+## 目标
+- 概述需求
+- 实现 Publisher task
+- 测试回测功能
 
-## Overview of requirements
+## 需求概述
 
-Before diving into implementation, let's visualize the current data flow through our system.
+在开始实现之前，我们先来看看当前系统里的数据流。
 
-At this moment we are receiving trade events from Binance through WebSocket.
-The `Streamer.Binance` process is handling those messages by parsing them from JSON string to map,
-then converting them to structs and broadcasting them to the `TRADE_EVENTS:#{symbol}` PubSub topic.
-The `Naive.Trader` subscribes to the `TRADE_EVENTS:#{symbol}` topic and takes decisions based on incoming data.
-As it places buy and sell orders it broadcasts them to the `ORDERS:#{symbol}` PubSub topic.
-The `DataWarehouse.Subscriber.Worker` processes subscribe to both trade events and orders topics and store incoming data inside the database.
+此时，我们是通过 WebSocket 从 Binance 接收交易事件的。
+`Streamer.Binance` 进程会先把这些消息从 JSON 字符串解析成 map，
+再把它们转换成结构体，然后广播到 `TRADE_EVENTS:#{symbol}` PubSub topic。
+`Naive.Trader` 会订阅 `TRADE_EVENTS:#{symbol}` topic，并根据收到的数据做决策。
+在挂出买单和卖单时，它也会把这些订单广播到 `ORDERS:#{symbol}` PubSub topic。
+`DataWarehouse.Subscriber.Worker` 进程则同时订阅交易事件和订单 topic，并把进入的数据存到数据库里。
 
-We can visualize this flow like this:
+这个流程可以画成这样：
 
 ```{r, fig.align="center", out.width="100%", out.height="60%", echo=FALSE}
 knitr::include_graphics("images/chapter_14_02_current_pubsub.png")
 ```
 
-To backtest, we substitute the `Streamer.Binance` process with a `Task` that streams trade events from the database
-to the same `TRADE_EVENTS:#{symbol}` topic:
+为了做回测，我们会把 `Streamer.Binance` 进程替换成一个 `Task`，让它把数据库中的交易事件
+通过同样的 `TRADE_EVENTS:#{symbol}` topic 广播出去：
 
 ```{r, fig.align="center", out.width="100%", out.height="60%", echo=FALSE}
 knitr::include_graphics("images/chapter_14_03_backtest_pubsub.png")
 ```
 
-## Implement the Publisher task
+## 实现 Publisher task
 
-We'll start by creating a new file called `publisher.ex` inside the
-`apps/data_warehouse/lib/data_warehouse` directory with the basic `Task` behavior:
+我们先在 `apps/data_warehouse/lib/data_warehouse` 目录下创建一个新文件 `publisher.ex`，
+并写入基础的 `Task` 行为：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/publisher.ex
@@ -63,7 +63,7 @@ defmodule DataWarehouse.Publisher do
 end
 ```
 
-To be able to query the database we will import `Ecto` and require `Logger` for logging:
+为了能够查询数据库，我们会导入 `Ecto`，并 `require Logger` 用于日志输出：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex
@@ -74,7 +74,7 @@ To be able to query the database we will import `Ecto` and require `Logger` for 
   ...
 ```
 
-We can now modify the `run/1` function to expect specific `type`, `symbol`, `from`, `to` and `interval`:
+现在我们把 `run/1` 函数修改为接收特定的 `type`、`symbol`、`from`、`to` 和 `interval`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex  
@@ -89,11 +89,11 @@ We can now modify the `run/1` function to expect specific `type`, `symbol`, `fro
     ...  
 ```
 
-The `interval` parameter controls the delay (in milliseconds) between broadcasting each event -
-this prevents overwhelming the system and simulates the pace of real market data.
+`interval` 参数控制每条事件广播之间的延迟（单位是毫秒）——
+这样可以防止系统被淹没，并模拟真实市场数据的节奏。
 
-Inside the body of the `run/1` function, first, we will convert `from` and `to` Unix timestamps by using private helper functions
-as well as make sure that the passed symbol is uppercase:
+在 `run/1` 函数体中，首先我们会把 `from` 和 `to` 的 Unix 时间戳转换出来，
+同时确保传入的 symbol 是大写的：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex  
@@ -121,11 +121,11 @@ as well as make sure that the passed symbol is uppercase:
   end
 ```
 
-Next, we will select data from the database but because of possibly hundreds of thousands of rows being selected and
-because we are broadcasting them to PubSub with a delay between each, it could take a substantial amount of time to `broadcast` all of them.
-Instead of selecting data and storing all of it in memory, we will use `Repo.stream/1` to keep broadcasting on the go.
-Additionally, we will add `index` to the data to be able to log info messages every 10k messages.
-The last thing that we need to define will be the timeout value - the default value is 5 seconds and we will change it to `:infinity`:
+接下来我们会从数据库里选择数据。但因为可能会选出几十万行，
+而且我们还要在每条事件之间加延迟广播，所以全部广播完可能会花很长时间。
+与其一次把所有数据选出来并全部放进内存，不如使用 `Repo.stream/1` 来边取边播。
+另外，我们还会加入 `index`，这样每隔 1 万条消息就能打印一次日志。
+最后还需要定义 timeout 值——默认是 5 秒，我们会把它改成 `:infinity`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex
@@ -161,8 +161,8 @@ The last thing that we need to define will be the timeout value - the default va
   end
 ```
 
-Finally, the above code uses the `publish_trade_event/1` helper function which converts DataWarehouse's TradeEvent
-to the Streamer's TradeEvent to broadcast the same structs as the `streamer` application:
+最后，上面的代码用到了 `publish_trade_event/1` 辅助函数，它会把 DataWarehouse 的 TradeEvent
+转换成 Streamer 的 TradeEvent，以便广播和 `streamer` 应用相同的结构体：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/publisher.ex
@@ -183,7 +183,7 @@ to the Streamer's TradeEvent to broadcast the same structs as the `streamer` app
   end
 ```
 
-We also need to keep the interface tidy, so we'll add `publish_data` to the `DataWarehouse` module:
+我们还需要保持接口整洁，所以会给 `DataWarehouse` 模块加一个 `publish_data` 方法：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse.ex
@@ -194,11 +194,11 @@ We also need to keep the interface tidy, so we'll add `publish_data` to the `Dat
 ...
 ```
 
-This finishes our implementation - we should be able to stream trade events from the database to the PubSub using the above Task which we will do below.
+这样就完成了实现——我们现在应该能通过上面的 Task 把数据库中的交易事件流式广播到 PubSub；下面我们会验证它。
 
-## Test the backtesting
+## 测试回测
 
-First, let's clean our database of any stored trade events and orders as well as disable all streaming/trading/data warehousing:
+首先，我们先清空数据库里已经存储的交易事件和订单，并关闭所有 streaming/trading/data warehousing：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ PGPASSWORD=postgres psql -Upostgres -hlocalhost <<EOF
@@ -213,8 +213,8 @@ DELETE FROM trade_events;
 EOF
 ```
 
-For consistency and ease of testing, I've prepared a compressed file of trade events for XRPUSDT(2019-06-03).
-We can download that file from GitHub using `wget`:
+为了保持一致并方便测试，我准备了一份 XRPUSDT（2019-06-03）的压缩交易事件文件。
+我们可以用 `wget` 从 GitHub 下载：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd /tmp
@@ -222,7 +222,7 @@ $ wget https://github.com/Cinderella-Man/binance-trade-events/\
 raw/master/XRPUSDT/XRPUSDT-2019-06-03.csv.gz
 ```
 
-We can now uncompress the archive and load those trade events into our database:
+现在我们解压这个文件，并把这些交易事件导入数据库：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ gunzip XRPUSDT-2019-06-03.csv.gz
@@ -233,11 +233,11 @@ PGPASSWORD=postgres psql -Upostgres -h localhost -ddata_warehouse \
 COPY 206115
 ```
 
-The number after the word `COPY` in the response indicates the number of rows that got copied into the database.
+响应里 `COPY` 后面的数字表示实际复制进数据库的行数。
 
-We can now start a new iex session where we will start trading(the `naive` application)
-as well as storing orders(the `data_warehouse` application) and instead of starting the `Streamer.Binance` worker
-we will start the `DataWarehouse.Publisher` task with arguments matching the imported day and symbol:
+接下来我们可以启动一个新的 iex 会话：
+我们会启动 trading（`naive` 应用）以及订单存储（`data_warehouse` 应用），
+然后不再启动 `Streamer.Binance` worker，而是根据导入的日期和 symbol 启动 `DataWarehouse.Publisher` task：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -274,10 +274,10 @@ XRPUSDT @ 0.44426, quantity: 450.5.
 19:39:44.576 [info]  Publisher finished streaming trade events
 ```
 
-From the above log, we can see that it took about 20 minutes to run 206k records through the system.
-Most of that time (17+ minutes) was the 5ms sleep between each event - the actual processing is much faster.
+从上面的日志可以看到，把 206k 条记录跑过系统大约花了 20 分钟。
+其中大部分时间（17 分钟以上）都花在每条事件之间 5ms 的 sleep 上——实际处理速度要快得多。
 
-After streaming finishes, we can check the orders table to see how many trades we made:
+在流式广播结束后，我们可以检查 orders 表，看看做了多少笔交易：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ PGPASSWORD=postgres psql -Upostgres -hlocalhost \
@@ -288,31 +288,31 @@ $ PGPASSWORD=postgres psql -Upostgres -hlocalhost \
 (1 row)
 ```
 
-By looking at the orders we can figure out some performance metrics, but manually querying the database after every backtest isn't practical.
-We'll address performance reporting in future chapters.
+通过查看订单，我们可以算出一些性能指标，但每次回测后都手动查数据库并不现实。
+这个问题我们会在后面的章节里解决。
 
-**We now have a working backtesting system.** Here's what we achieved:
+**我们现在已经有了一个可工作的回测系统。** 我们完成了这些：
 
-- Created a `Publisher` task that streams historical trade events from the database
-- Used `Repo.stream/1` to handle large datasets without loading everything into memory
-- Ran 200K+ trade events through our strategy and generated hundreds of orders
+- 创建了一个 `Publisher` task，可以把数据库中的历史交易事件流式广播出去
+- 使用 `Repo.stream/1` 处理大数据集，而不是一次性全部载入内存
+- 把 20 万+ 条交易事件跑过我们的策略，并生成了数百笔订单
 
-The key insight is that our pub/sub architecture made this almost trivial.
-We didn't need to modify the `Naive.Trader` at all - we just changed who's broadcasting to the `TRADE_EVENTS` topic.
-The same decoupling that makes our system modular also makes it testable.
+关键洞见是：我们的 pub/sub 架构让这件事变得几乎很简单。
+我们甚至不需要修改 `Naive.Trader`——只要换掉谁在向 `TRADE_EVENTS` topic 广播即可。
+同样的解耦设计，不仅让系统模块化，也让测试变得更容易。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-Speaking of testing - we've been manually verifying that things work by running iex sessions and checking database tables.
-That's fine for exploration, but it doesn't scale. What happens when we refactor and accidentally break something?
+说到测试——我们一直都是通过运行 iex 会话和检查数据库表来手动验证功能是否正常。
+这对探索来说没问题，但它并不具备可扩展性。等我们重构代码，不小心把东西改坏了怎么办？
 
-In the next chapter, we'll implement proper end-to-end tests.
-We'll broadcast carefully crafted trade events and assert that the right orders appear in the database.
-Along the way, we'll clean up some technical debt - remember how we put PubSub and TradeEvent in the `streamer` app?
-That decision is about to cause problems, and we'll fix it by introducing a `core` application.
+在下一章，我们会实现真正的端到端测试。
+我们会广播精心构造的交易事件，并断言数据库里出现了正确的订单。
+在这个过程中，我们还会清理一些技术债——记得我们把 PubSub 和 TradeEvent 放在 `streamer` 应用里吗？
+这个决定很快就会带来麻烦，而我们会通过引入一个 `core` 应用来修复它。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_14](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_14)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_14](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_14)）。

@@ -1,7 +1,7 @@
-# 模拟 Binance API {#mock-binance-api}
+# 模拟 Binance API {#04-mock-binance-api}
 
 到目前为止，我们的 `Trader` 一直在直接和真实的 Binance 交易所通信。
-如果你跑过上一章的例子，可能已经感受到了这种压力：
+如果你跑过上一章的例子，可能已经感受到这种压力：
 每次测试都会调用真实 API、消耗限流额度，而且——如果不小心——还会动用真金白银。
 在真实 API 上开发，就像没有安全网地走钢丝。
 
@@ -289,11 +289,11 @@ end
 
     order_book =
       if order.side == "SELL" do
-        # Sell orders are sorted ascending (lowest price first)
+        # 卖单按升序排序（价格最低的在前）
         updated_sell_side = insert_sorted(order, order_book.sell_side, &D.lt?/2)
         %{order_book | sell_side: updated_sell_side}
       else
-        # Buy orders are sorted descending (highest price first)  
+        # 买单按降序排序（价格最高的在前）  
         updated_buy_side = insert_sorted(order, order_book.buy_side, &D.gt?/2)
         %{order_book | buy_side: updated_buy_side}
       end

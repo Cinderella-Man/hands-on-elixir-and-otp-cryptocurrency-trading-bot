@@ -1,63 +1,53 @@
-# Idiomatic trading strategy
+# 惯用式交易策略 {#19-idiomatic-trading-strategy}
 
-In the last chapter, we proved a point with the OHLC indicator: fewer processes,
-more pure functions, simpler system. We went from six GenServer processes per symbol
-down to one and the code got better in every measurable way - fewer PubSub
-subscriptions, a flatter supervision tree, easier testing.
+在上一章中，我们用 OHLC 指标证明了一件事：进程越少、纯函数越多，系统就越简单。
+我们把每个 symbol 的六个 GenServer 进程减少到一个，代码在每一个可衡量的维度上都变得更好了——更少的 PubSub 订阅、更平坦的监督树、更容易测试。
 
-But the OHLC indicator was a clean, self-contained example. Our naive trading
-strategy is a different beast. Right now, every symbol spawns multiple Trader
-processes, each managed by a dedicated Leader, all wrapped inside a
-SymbolSupervisor. The Leader handles rebuys, tracks state across traders,
-and coordinates shutdown. It's a lot of machinery for what is fundamentally
-a sequential decision-making process.
+但 OHLC 指标是一个干净、独立的例子。我们的朴素交易策略则完全不是这样。
+现在，每个 symbol 都会启动多个 `Trader` 进程，每个进程由一个专门的 `Leader` 管理，全部都包在一个 `SymbolSupervisor` 里。
+`Leader` 负责 rebuy、在多个 trader 之间跟踪状态，以及协调 shutdown。
+对于一个本质上是顺序决策过程的东西来说，这套机器有点太多了。
 
-In this chapter, we'll apply the same principles to the trading strategy itself.
-We'll merge multiple trader processes into one per symbol. We'll eliminate the
-Leader and SymbolSupervisor entirely. We'll move rebuy logic and shutdown
-handling into the pure strategy code where they belong.
+在本章中，我们会把同样的原则应用到交易策略本身。
+我们会把多个 trader 进程合并成每个 symbol 一个进程。我们会彻底删除 `Leader` 和 `SymbolSupervisor`。
+我们会把 rebuy 逻辑和 shutdown 处理移动到它们真正该在的地方：纯策略代码中。
 
-The result will be a dramatically simpler system. Not because we're cutting
-corners, but because we're putting logic where it actually makes sense -
-in pure functions, not in process hierarchies.
+结果会是一个大幅简化的系统。不是因为我们偷工减料，而是因为我们把逻辑放到了真正合理的位置——纯函数里，而不是进程层级里。
 
-## Objectives
-- Following the OHLC footsteps
-- Simplifying the Naive supervision tree
-- Supporting multiple positions
-- Retrofitting the "shutdown" functionality
-- Updating the Strategy to handle rebuys
-- Fetching active positions
-- Tidying up
+## 目标
+- 跟随 OHLC 的脚步
+- 简化 Naive 监督树
+- 支持多个 position
+- 改造 “shutdown” 功能
+- 更新 Strategy 以处理 rebuy
+- 获取活跃 position
+- 清理收尾
 
-## Following the OHLC footsteps
+## 跟随 OHLC 的脚步
 
-The OHLC refactoring gave us a clean, self-contained proof of concept.
-Now we'll apply the same thinking to a messier, more interconnected piece of our system.
-We will update the `Naive.Trader` process to be responsible
-for multiple trades(we will call them "positions" from now on) on a single symbol.
-This way, we will have a single `Naive.Trader` process per symbol,
-and we will get rid of both the `Naive.Leader`(we will move rebuy/shutdown logic to our strategy - where it belongs) and the `Naive.SymbolSupervisor`:
+OHLC 的重构给了我们一个干净、独立的概念验证。
+现在我们会把同样的思路应用到系统中一个更杂乱、联系更紧密的部分。
+我们会更新 `Naive.Trader` 进程，让它负责单个 symbol 上的多个交易（从现在开始我们称它们为 “positions”）。
+这样一来，每个 symbol 只会有一个 `Naive.Trader` 进程，
+而我们会把 `Naive.Leader`（我们会把 rebuy/shutdown 逻辑移到策略中——它本来就应该在那里）和 `Naive.SymbolSupervisor` 都去掉：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_20_01_current_hierarchy.jpg")
 ```
 
-There are multiple benefits of simplifying the supervision hierarchy, and we will look at them closely as we refactor the code - let's get to it.
+简化监督层级有很多好处，我们会在重构代码的过程中认真看它们——开始吧。
 
-## Simplifying the Naive supervision tree
+## 简化 Naive 监督树
 
-Starting from the top of the tree, the first module we need to update will be the `Naive.DynamicSymbolSupervisor` module.
+从树的最上层开始，我们首先需要更新的是 `Naive.DynamicSymbolSupervisor` 模块。
 
-### The `Naive.DynamicTraderSupervisor` module
+### `Naive.DynamicTraderSupervisor` 模块
 
-The filename needs to be updated to `dynamic_trader_supervisor.ex` and the module name to
+文件名需要更新为 `dynamic_trader_supervisor.ex`，模块名更新为 `Naive.DynamicTraderSupervisor`。
 
-`Naive.DynamicTraderSupervisor`.
+接下来，要把 `@registry` 属性改名为 `:naive_traders`。
 
-Next, there's the `@registry` attribute that we will rename to `:naive_traders`.
-
-Finally, update the alias to the `Naive.SymbolSupervisor` to the `Naive.Trader` and use it inside the `start_child/1` function:
+最后，把指向 `Naive.SymbolSupervisor` 的 alias 更新为 `Naive.Trader`，并在 `start_child/1` 函数里使用它：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_trader_supervisor.ex
@@ -71,11 +61,9 @@ Finally, update the alias to the `Naive.SymbolSupervisor` to the `Naive.Trader` 
   end
 ```
 
-### The `Naive` module
+### `Naive` 模块
 
-The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now called the
-
-`Naive.DynamicTraderSupervisor`), we need to update all the references to it:
+`Naive` 模块高度依赖 `Naive.DynamicSymbolSupervisor`（现在叫 `Naive.DynamicTraderSupervisor`），所以我们需要更新所有对它的引用：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -88,11 +76,9 @@ The `Naive` module heavily depends on the `Naive.DynamicSymbolSupervisor`(now ca
   |> DynamicTraderSupervisor.shutdown_worker()
 ```
 
-### The `Naive.Supervisor` module
+### `Naive.Supervisor` 模块
 
-The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now called the
-
-`Naive.DynamicTraderSupervisor`) and the registry that stores the traders' PIDs - we need to update both:
+`Naive.Supervisor` 监督着 `Naive.DynamicSymbolSupervisor`（现在叫 `Naive.DynamicTraderSupervisor`）以及存储 trader PID 的 registry——我们需要把这两处都更新：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/supervisor.ex
@@ -110,9 +96,9 @@ The `Naive.Supervisor` supervises the `Naive.DynamicSymbolSupervisor`(now called
     ]
 ```
 
-### The `Naive.Trader` module
+### `Naive.Trader` 模块
 
-The final module to be updated will be the `Naive.Trader`. It needs to register process' PID inside the Registry:
+最后一个需要更新的模块是 `Naive.Trader`。它需要把进程 PID 注册到 Registry 里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -133,18 +119,18 @@ The final module to be updated will be the `Naive.Trader`. It needs to register 
   end
 ```
 
-That finishes the changes to the supervision tree - the `Naive.Leader` and the `Naive.SymbolSupervisor` aren't used anymore.
-At this moment, our codebase won't work as we need to retrofit the functionality that the `Naive.Leader` was offering
-into our `Naive.Trader` and `Naive.Strategy` modules, which we will focus on in the next section.
+这样监督树的改动就完成了——`Naive.Leader` 和 `Naive.SymbolSupervisor` 已经不再使用。
+但此时我们的代码库还不能正常工作，因为我们需要把 `Naive.Leader` 提供的功能
+重新补进 `Naive.Trader` 和 `Naive.Strategy` 模块里，接下来我们会处理这个问题。
 
-## Supporting multiple positions
+## 支持多个 position
 
-With the supervision tree simplified, we've got a new problem: our single `Naive.Trader` process needs to manage what used to be spread across many.
-The current `State` struct inside the `Naive.Trader` was geared toward a single trade cycle -
-it doesn't know anything about multiple concurrent positions.
-We need two things: a new `State` for the `Naive.Trader` that holds settings and a list of positions,
-and a `Position` struct that captures what each individual trade cycle looks like.
-We will start by moving the current `State` struct from the `Naive.Trader` into the `Naive.Strategy` and renaming it to `Position`:
+监督树简化之后，我们就遇到了一个新问题：我们的单个 `Naive.Trader` 进程现在需要管理过去分散在多个进程中的事情。
+当前 `Naive.Trader` 里的 `State` 结构体是为单次交易循环准备的——
+它根本不知道多个并发 position 是什么。
+我们需要两样东西：一个新的 `Naive.Trader` `State`，用于保存 settings 和 position 列表；
+以及一个 `Position` 结构体，用来描述每个独立的交易循环是什么样子。
+我们先把当前 `Naive.Trader` 里的 `State` 结构体移到 `Naive.Strategy` 里，并把它重命名为 `Position`：
 
 
 
@@ -162,8 +148,7 @@ defmodule Naive.Strategy do
   end
 ```
 
-This will break all the references to `Naive.Trader.State` inside the `Naive.Strategy`,
-which we need to update to `Position`(and remove the alias of `Naive.Trader.State`):
+这会打断 `Naive.Strategy` 里所有对 `Naive.Trader.State` 的引用，我们需要把它们改成 `Position`（并删除 `Naive.Trader.State` 的 alias）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -197,10 +182,10 @@ which we need to update to `Position`(and remove the alias of `Naive.Trader.Stat
     {:ok, new_position} # <^= similar changes in all execute_decision
 ```
 
-We will ignore the fact that we are still calling the `@leader` and still dealing with a single position(inside the strategy) -
-we will fix that in the following section. One step at a time ;)
+我们先忽略这样一个事实：我们现在还在调用 `@leader`，而且在策略内部仍然只处理单个 position——
+这个问题会在下一节修掉。一点一点来；
 
-As we are already changing strategy to work with positions, we will update all the logger messages:
+既然我们已经在把策略改成处理 position，那就顺手更新所有 logger 消息：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -253,15 +238,14 @@ As we are already changing strategy to work with positions, we will update all t
      ... # ^^^ updated message
 ```
 
-Our code is still far from working, but we are incrementally updating it to work with multiple positions.
+我们的代码离真正可用还很远，但我们正在逐步把它改造成可以处理多个 position 的样子。
 
-### Initialization
+### 初始化
 
-At this moment, the `Naive.Trader` expects the `state` to be injected on start (using the `start_link/1` function).
-We were able to do that because the `Naive.Leader` was fetching the settings and building the fresh trader state.
+此时，`Naive.Trader` 还期望在启动时注入 `state`（通过 `start_link/1` 函数）。
+我们之所以能这样做，是因为 `Naive.Leader` 会先获取 settings，再构建 fresh trader state。
 
-First, let's update the `State` of the `Naive.Trader` - it will now hold the symbol's settings(previously held in the leader)
-and list of positions(list of the `Naive.Strategy.Position` structs):
+先更新 `Naive.Trader` 的 `State`——现在它会保存 symbol 的 settings（以前由 leader 保存）以及 position 列表（`Naive.Strategy.Position` 结构体的列表）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -271,8 +255,8 @@ and list of positions(list of the `Naive.Strategy.Position` structs):
   end
 ```
 
-Now we need to update the `start_link/1` and `init/1` functions as well as add the `handle_continue/2` callback to fetch settings
-and store them together with an initial position in the state:
+接下来我们要更新 `start_link/1` 和 `init/1` 函数，并添加 `handle_continue/2` 回调来获取 settings，
+并把它们和一个初始 position 一起存入 state：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -308,24 +292,22 @@ and store them together with an initial position in the state:
   end # ^^^ new function/callback
 ```
 
-As the `Naive.Trader` starts, it returns the `{:continue, ...}` tuple from the `init/1` function.
-This will cause the `handle_continue/2` callback to be called asynchronously.
-Inside it, we fetch settings and add a single fresh position to the list of positions - both stored in Trader's state.
+`Naive.Trader` 启动时，会从 `init/1` 返回 `{:continue, ...}` 元组。
+这会让 `handle_continue/2` 回调异步执行。
+在里面，我们会获取 settings，并把一个新的 position 加入 position 列表——两者都存储在 Trader 的 state 中。
 
-There's a trade-off worth flagging here: by consolidating all positions into one process,
-we lose per-position fault isolation. If one position's execution crashes,
-all positions for that symbol go down with it.
-The DynamicSupervisor will restart the trader, and we could recover state from the database,
-but it's a different failure mode than before. We'll revisit this trade-off in the final thoughts.
+这里有一个需要注意的取舍：把所有 position 合并到一个进程里之后，
+我们就失去了每个 position 独立的故障隔离。如果一个 position 的执行崩溃，
+同一个 symbol 的所有 position 都会一起倒下。
+DynamicSupervisor 会重启 trader，而我们也可以从数据库里恢复 state，
+但这和之前相比是另一种故障模式。我们会在最后思考里重新看这个取舍。
 
-**Coming Full Circle**: Notice that we're back to using `handle_continue` in the Trader -
-the same pattern we started with in Chapter 2. But the context has evolved: back then, each Trader fetched its own `tick_size`.
-Then in Chapter 5, we moved that responsibility to the Leader. Now, with our simplified architecture,
-the Trader once again handles its own initialization -
-but this time it's fetching settings and creating positions for a much more sophisticated trading system.
+**兜了一圈回来了**：注意我们又开始在 Trader 里使用 `handle_continue` 了——
+这和第 2 章里我们最开始用的模式一样。但上下文已经变化了：那时每个 Trader 都要自己获取 `tick_size`。
+然后在第 5 章里，我们把这个责任移到了 Leader。现在，随着架构简化，
+Trader 又一次负责自己的初始化——但这次它要获取的是 settings，并为一个更复杂的交易系统创建 positions。
 
-Both functions inside the `handle_continue/2` callback previously were part of the `Naive.Leader` -
-we need to move them across to the `Naive.Strategy`:
+`handle_continue/2` 回调里原先的两个函数都属于 `Naive.Leader`——我们需要把它们移到 `Naive.Strategy`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -376,16 +358,16 @@ we need to move them across to the `Naive.Strategy`:
   end
 ```
 
-Inside the above code, we modified the `fetch_symbol_settings/1` function to fetch settings
-from binance and DB first and then progress with the "pure" part.
-This update allows us to test most of the logic easily without using mocks.
+在上面的代码里，我们修改了 `fetch_symbol_settings/1` 函数，让它先从 Binance 和数据库获取 settings，
+然后再继续处理“纯”的那部分。
+这个改动让我们在不使用 mock 的情况下，也能轻松测试大部分逻辑。
 
-The `generate_fresh_position/2` was previously called `fresh_trader_state/1` inside the `Naive.Leader`.
-It had an `id` assigned inside the function based on the current system time.
-That made it a bit more difficult to test as we don't know what we should expect there as a value.
-By moving the `id` to the arguments and assigning the current time there, we are now able to test it by passing our dummy value.
+`generate_fresh_position/2` 以前在 `Naive.Leader` 里叫 `fresh_trader_state/1`。
+它会在函数内部基于当前系统时间分配一个 `id`。
+这让它稍微难测一点，因为我们没法知道那里应该期待什么值。
+现在把 `id` 提到参数里，并在外部赋值当前时间后，我们只需要传入一个虚拟值就能测试它了。
 
-We are now using `@repo` inside the `Naive.Strategy` so we need to add it to configuration files(including test configuration):
+我们现在在 `Naive.Strategy` 中使用了 `@repo`，所以需要把它加到配置文件里（包括测试配置）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -401,9 +383,9 @@ config :naive,
   repo: Test.Naive.RepoMock
 ```
 
-### Parallelising the strategy
+### 并行化策略
 
-We can now move on to the strategy, but first, let's update the `Naive.Trader` to pass positions and settings separately:
+现在我们可以继续处理策略了，但先更新 `Naive.Trader`，让它把 positions 和 settings 分开传递：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -418,12 +400,12 @@ We can now move on to the strategy, but first, let's update the `Naive.Trader` t
   end
 ```
 
-We need all the `positions` to iterate through them, deciding and executing appropriate actions.
-The `settings` will be used inside the strategy later, but we will pass it on now to avoid going back and forward later.
+我们需要所有 `positions` 来遍历它们，决定并执行相应动作。
+`settings` 稍后也会在策略里用到，但我们现在先把它传过去，免得之后来回折腾。
 
-Additionally, we updated the `case` match to expect a list of updated positions which we will assign to the `Trader`'s state.
+另外，我们还把 `case` 的匹配更新成了：它会期待一个更新后的 position 列表，我们会把这个列表赋给 Trader 的 state。
 
-Now we can modify the `Naive.Strategy` to handle multiple positions:
+现在我们可以修改 `Naive.Strategy` 来处理多个 position：
 
 ```{r, engine = 'elixir', eval = FALSE}
    # /apps/naive/lib/naive/strategy.ex
@@ -437,17 +419,16 @@ Now we can modify the `Naive.Strategy` to handle multiple positions:
   end
 ```
 
-We need to write most of the functions used above, but we can already see the idea.
-We will map each of the decisions that we generate to async tasks that execute them.
-Next, we wait for all of them to finish and parse the results.
+上面用到的大部分函数我们还要写，但思路已经很清楚了。
+我们会把生成出来的每个 decision 映射成异步 task，让它们执行。
+然后等待所有 task 完成，再解析结果。
 
-It's worth noting that `Task.async/1` links the spawned task to the caller process.
-If any of the `execute_decision` calls crashes, the whole `Naive.Trader` process goes down -
-which is the behavior we want here, as the `Naive.DynamicSupervisor` will restart it.
-If we needed individual tasks to fail independently, we'd reach for `Task.Supervisor.async_nolink/2` instead.
+值得注意的是，`Task.async/1` 会把新起的 task 和调用者进程链接起来。
+如果任何一个 `execute_decision` 调用崩溃，整个 `Naive.Trader` 进程都会挂掉——
+而这正是我们想要的，因为 `Naive.DynamicSupervisor` 会重启它。
+如果我们需要让单个 task 独立失败，那就应该改用 `Task.Supervisor.async_nolink/2`。
 
-First, we are calling a new function `generate_decisions/4`,
-which is a recursive function on top of the existing `generate_decision/2`:
+首先，我们调用一个新的函数 `generate_decisions/4`，它是在现有 `generate_decision/2` 之上的递归函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -470,18 +451,18 @@ which is a recursive function on top of the existing `generate_decision/2`:
   end
 ```
 
-We are using `case` here instead of a simple variable binding because we'll be pattern matching on specific decisions like `:exit` and `:rebuy` shortly.
+这里我们用了 `case`，而不是简单的变量绑定，因为马上我们就要对 `:exit` 和 `:rebuy` 这样的特定 decision 做模式匹配。
 
-At this moment, `generate_decisions/4` can look like an overengineered `Enum.map/2` function,
-but we are actually preparing the ground for the subsequent updates later in this chapter(to get the rest of the functionality running).
-The key detail is `current_positions` on line 3 -
-it combines positions we haven't processed yet with positions we've already decided on.
-This gives each `generate_decision/4` call visibility into the full picture,
-which we'll need when the rebuy logic checks how many positions are currently open.
+此时，`generate_decisions/4` 看起来可能像一个过度设计的 `Enum.map/2`，
+但实际上我们是在为本章后续更新铺路（让剩余功能继续工作）。
+关键细节是第 3 行的 `current_positions`——
+它把还没处理的 positions 和已经决定好的 positions 合并了起来。
+这让每次 `generate_decision/4` 调用都能看到全局视图，
+rebuy 逻辑检查当前有多少 position 打开时会用到这个信息。
 
-It's important to note that we are now passing four arguments into the `generate_decision` function -
-we added `current_positions` and `settings` - those will be required in the further updates as it was mentioned above.
-At this moment though, we will update **all** the `generate_decision/2` clauses to include two additional arguments:
+要注意的是，我们现在向 `generate_decision` 函数传入了四个参数——
+我们新增了 `current_positions` 和 `settings`，后续更新会需要它们。
+不过目前，我们会把 **所有** `generate_decision/2` 子句都更新成带两个额外参数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -497,7 +478,7 @@ At this moment though, we will update **all** the `generate_decision/2` clauses 
 
 
 
-Now back to the main `execute/3` function where we are calling `execute_decision/3`, which we need to update as well(**all** clauses):
+现在回到主 `execute/3` 函数，我们会调用 `execute_decision/3`，它也需要更新（**所有**子句都要改）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -510,7 +491,7 @@ Now back to the main `execute/3` function where we are calling `execute_decision
        ) do
 ```
 
-The final function that gets called from the `execute/3` function is `parse_results/1`, which will aggregate all the results into a single tuple:
+`execute/3` 调用的最后一个函数是 `parse_results/1`，它会把所有结果聚合成一个 tuple：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -521,9 +502,9 @@ The final function that gets called from the `execute/3` function is `parse_resu
   end
 ```
 
-At this moment, we should be able to run our code for a single trade cycle.
-Note that `parse_results/1` only matches `{:ok, _}` tuples right now -
-it will crash when a trade cycle completes and returns `:exit`. We'll fix that shortly:
+此时我们应该已经可以运行单次交易循环的代码了。
+注意，`parse_results/1` 现在只匹配 `{:ok, _}` tuple——
+当交易循环完成并返回 `:exit` 时，它会崩溃。我们很快就会修掉这个问题：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -539,8 +520,8 @@ quantity: 31.00000000
 ** (stop) exited in: GenServer.call(:"Elixir.Naive.Leader-XRPUSDT"...
 ```
 
-So we have a trader that starts and places a buy order but then it tries to update the leader with its new state -
-we can update the `execute_decision/3` function to drop the updates(in **all** of the clauses):
+所以现在 trader 会启动并挂出买单，但随后它会尝试把新 state 更新给 leader——
+我们可以把 `execute_decision/3` 函数里更新 leader 的逻辑删掉（**所有**子句都要改）：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/strategy.ex
@@ -557,19 +538,18 @@ we can update the `execute_decision/3` function to drop the updates(in **all** o
   end
 ```
 
-Apply similar changes to all the clauses of the `execute_decision/3` to get rid of the references to the `@leader` -
-remember to remove the module's attribute as well, as we won't need it anymore.
+对所有 `execute_decision/3` 子句做类似修改，删掉对 `@leader` 的引用——别忘了把这个模块属性也删掉，因为我们已经不需要它了。
 
-Important note - one of those references to the `@leader` will be the notification that rebuy was triggered:
+一个重要提醒：这些对 `@leader` 的引用里，有一个是通知 rebuy 已经触发的：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/strategy.ex
     @leader.notify(:rebuy_triggered, new_position)
 ```
 
-At this moment, remove that reference as well. We will get back to the rebuy functionality in the next section.
+这个引用也要一起删掉。rebuy 功能我们会在下一节重新处理。
 
-We can now rerun our code:
+现在我们可以重新运行代码：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -592,11 +572,10 @@ Naive.Strategy.parse_results/1
     Naive.Strategy.parse_results/1
 ```
 
-We can see that our trader process can now go through the whole trade cycle,
-but it fails to start a new position after the first trade cycle finishes and returns `:exit`.
+可以看到，trader 进程现在已经能完整走完整个交易循环，
+但在第一轮交易完成后，它没法再启动一个新的 position，因为返回了 `:exit`。
 
-To fix this issue, we need to return `:finished` instead of `:exit` from
-the `generate_decision/4` clause responsible for matching end of the trade cycle:
+要修复这个问题，我们需要把负责匹配交易循环结束的 `generate_decision/4` 子句，返回 `:finished` 而不是 `:exit`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -614,9 +593,8 @@ the `generate_decision/4` clause responsible for matching end of the trade cycle
   end
 ```
 
-This decision will end up inside the `execute_decision/3` where previously we were returning `:exit` atom,
-which was causing an error - let's move this clause to be the last clause and
-update its body to generate a fresh state instead of returning a dummy atom:
+这个 decision 会落到之前返回 `:exit` 的 `execute_decision/3` 子句里，
+而这正是导致错误的地方——我们把这个子句移到最后，并把它的主体改成生成 fresh state，而不是返回一个哑 atom：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -636,7 +614,7 @@ update its body to generate a fresh state instead of returning a dummy atom:
   end
 ```
 
-At this moment, our trader process should be able to run across multiple trade cycles one after another:
+此时，我们的 trader 进程应该已经可以连续跑多个交易循环了：
 
 ```
 $ iex -S mix
@@ -650,19 +628,17 @@ iex(2)> Naive.start_trading("XRPUSDT")
   quantity: 0.06790000
 ```
 
-This finishes direct changes related to making the trader/strategy work with multiple positions,
-but it lacks all the features that the `Naive.Leader` offered.
-We will now iterate on this code to bring that missing functionality.
+到这里，和让 trader / strategy 支持多个 position 直接相关的改动就完成了，
+但它还缺少 `Naive.Leader` 之前提供的全部功能。
+接下来我们会继续迭代这份代码，把缺失的功能补回来。
 
-## Retrofitting the "shutdown" functionality
+## 改造 “shutdown” 功能
 
-Previously, the shutdown logic was scattered around in multiple places inside the `Naive.Leader`,
-for example, when the rebuy was triggered - making sure that new Trader processes won't get started in the "shutdown" state.
+以前，shutdown 逻辑散落在 `Naive.Leader` 的多个位置里，比如 rebuy 触发的时候——要确保在 “shutdown” 状态下不会再启动新的 Trader 进程。
 
-Now, we have an opportunity to make the shutdown functionality part of our strategy.
+现在，我们有机会把 shutdown 功能变成策略的一部分。
 
-We will start by modifying the `DynamicTraderSupervisor` where we will update the `shutdown_worker/1` function
-to call the `Naive.Trader` instead of the `Naive.Leader`:
+我们先从修改 `DynamicTraderSupervisor` 开始，把 `shutdown_worker/1` 函数改成调用 `Naive.Trader`，而不是 `Naive.Leader`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_trader_supervisor.ex
@@ -674,9 +650,8 @@ to call the `Naive.Trader` instead of the `Naive.Leader`:
   end
 ```
 
-Now, the Trader will handle updating the settings, which we will add next, but before we do that,
-we should move the `update_status/2` function into the `Naive.Strategy` as it
-will be used from both the `DynamicTraderSupervisor` and the `Naive.Strategy`:
+现在，Trader 会负责更新 settings，接下来我们会添加这部分逻辑。不过在此之前，
+我们应该把 `update_status/2` 函数移动到 `Naive.Strategy` 里，因为它会被 `DynamicTraderSupervisor` 和 `Naive.Strategy` 两边都用到：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -688,7 +663,7 @@ will be used from both the `DynamicTraderSupervisor` and the `Naive.Strategy`:
   end
 ```
 
-Now we need to update the `DynamicTraderSupervisor` module to call the `update_status/2` from the `Naive.Strategy` module:
+现在我们需要更新 `DynamicTraderSupervisor` 模块，让它调用 `Naive.Strategy` 模块里的 `update_status/2`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_trader_supervisor.ex
@@ -710,9 +685,9 @@ Now we need to update the `DynamicTraderSupervisor` module to call the `update_s
     {:ok, settings} = Strategy.update_status(symbol, "shutdown") # <= updated
 ```
 
-### Handling updated settings
+### 处理更新后的 settings
 
-We can now move on to the `Naive.Trader` module, where we need to add  a new `notify/2` interface function:
+现在我们可以继续处理 `Naive.Trader` 模块了，在这里我们需要新增一个 `notify/2` 接口函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -735,12 +710,12 @@ We can now move on to the `Naive.Trader` module, where we need to add  a new `no
   end
 ```
 
-The `notify/2` function acts as a part of the public interface of the `Naive.Trader` module.
-It uses the `call_trader/2` helper function to abstract away looking up the `Trader` process from the `Registry` and making a `GenServer.call`.
-Besides the "looking up" part being an implementation detail that should be abstracted,
-we will also need to look up traders' PIDs to provide other functionalities in the upcoming sections.
+`notify/2` 函数是 `Naive.Trader` 模块公共接口的一部分。
+它通过 `call_trader/2` 辅助函数，把在 Registry 里查找 Trader 进程以及发起 `GenServer.call` 这件事隐藏起来。
+除了“查找”本身是一个需要抽象的实现细节外，
+我们在后面还会用到查找 trader PID 的能力，以提供更多功能。
 
-As we are making a call to the trader process, we need to add a callback:
+既然我们要向 trader 进程发起调用，就需要加一个回调：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -753,13 +728,12 @@ As we are making a call to the trader process, we need to add a callback:
   end
 ```
 
-### Updating the `Naive.Strategy` to honour the "shutdown" state
+### 让 `Naive.Strategy` 遵守 “shutdown” 状态
 
-We updated all of the modules to update the `settings` inside the `%State{}` of the `Trader` process.
-That's the first step, but now we need to modify our strategy to act appropriately.
+我们已经更新了所有模块，让它们都能更新 `Trader` 进程的 `%State{}` 里的 settings。
+这是第一步，但现在我们还需要让策略按正确方式响应。
 
-The first step will be to update the `generate_decision/4` clause that handles the rebuy
-being triggered to take under consideration the `settings.status`:
+第一步是更新处理 rebuy 触发的 `generate_decision/4` 子句，把 `settings.status` 考虑进去：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -786,7 +760,7 @@ being triggered to take under consideration the `settings.status`:
   end
 ```
 
-Another clause that we need to update is the one responsible for matching end of the trading cycle:
+另一个需要更新的子句，是负责匹配交易循环结束的那个：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -808,8 +782,8 @@ Another clause that we need to update is the one responsible for matching end of
   end
 ```
 
-As we added a new `:exit` decision that we need to handle inside the `generate_decisions/4` -
-it needs to remove this decision from the list of generated decisions:
+既然我们加了一个新的 `:exit` decision，就需要在 `generate_decisions/4` 里处理它——
+它应该把这个 decision 从已生成决策列表中移除：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -823,9 +797,9 @@ it needs to remove this decision from the list of generated decisions:
       ...
 ```
 
-Inside the recursive function, we are skipping all the positions that ended up with the `:exit` decisions.
-This will slowly cause the list of positions to drain to an empty list, which will cause the `parse_results/1` function
-to fail(as it expects non-empty list). We will add a new first clause to match the empty list of positions and return the `:exit` atom:
+在这个递归函数里，我们把所有最后变成 `:exit` 的 positions 都跳过了。
+这会慢慢把 position 列表耗尽，最终变成空列表，这会让 `parse_results/1` 函数失败（因为它要求的是非空列表）。
+我们会添加一个新的第一个子句来匹配空的 position 列表，并返回 `:exit` atom：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -838,9 +812,8 @@ to fail(as it expects non-empty list). We will add a new first clause to match t
   end
 ```
 
-In the end, the `:exit` atom will cause the `Naive.Trader` module to stop the process.
-
-The final step will be to update the `Naive.Trader` to log a message and update the status to `"off"` before exiting the process:
+最后，`:exit` atom 会让 `Naive.Trader` 模块停止进程。
+最后一步是更新 `Naive.Trader`，在退出进程之前记录日志并把状态更新为 `"off"`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -854,7 +827,7 @@ The final step will be to update the `Naive.Trader` to log a message and update 
         {:stop, :normal, state}
 ```
 
-We can test this by running the following:
+我们可以通过运行下面的命令来测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -869,16 +842,16 @@ iex(4)> Naive.shutdown_trading("XRPUSDT")
 23:05:40.123 [info]  Trading for XRPUSDT stopped
 ```
 
-That finishes the shutdown functionality. As mentioned previously, one after another,
-positions will complete their trading cycles, and the whole process will exit at the end.
+这样 shutdown 功能就完成了。如前所述，position 会一个接一个地完成交易循环，
+然后整个进程会在最后退出。
 
-## Updating the Strategy to handle rebuys
+## 更新 Strategy 以处理 rebuy
 
-Previously, both the `Trader` and the `Leader` were involved in the rebuy functionality.
-As now we removed the `Leader`, it's an excellent opportunity to move as much as possible of that logic into our strategy.
+以前，rebuy 功能由 `Trader` 和 `Leader` 共同参与。
+现在 `Leader` 已经被移除，这正是把尽可能多的逻辑移进策略里的好机会。
 
-We will start by updating the `generate_decision/4` clause responsible for matching the rebuy scenario.
-We will take into consideration the number of currently open positions(this check was previously done inside the `Naive.Leader`):
+我们先更新负责 rebuy 场景的 `generate_decision/4` 子句。
+我们会把当前打开的 position 数量也考虑进去（这以前是在 `Naive.Leader` 里完成的）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -906,11 +879,11 @@ We will take into consideration the number of currently open positions(this chec
   end
 ```
 
-Now we need to deal with the `:rebuy` decision(previously, we removed the logic notifying the `Naive.Leader` about the rebuy being triggered).
+现在我们要处理 `:rebuy` decision（之前我们已经删掉了通知 `Naive.Leader` rebuy 被触发的逻辑）。
 
 
 
-In case of rebuy decision we need to add a new position to the positions list which can be done by modifying the `generate_decisions/4` function:
+在 rebuy 的情况下，我们需要向 positions 列表里再加一个新的 position，这可以通过修改 `generate_decisions/4` 来实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -928,13 +901,10 @@ In case of rebuy decision we need to add a new position to the positions list wh
       decision -> ...
 ```
 
-In the case of the `:rebuy` decision, we are updating the `rebuy_notified` of the position that triggered it,
-as well as adding another position to the list with the `:rebuy` decision(it's the same position that triggered
-rebuy but we will ignore it further down the line).
+对于 `:rebuy` decision，我们会更新触发 rebuy 的那个 position 的 `rebuy_notified`，
+并且再往列表里添加一个带有 `:rebuy` decision 的 position（其实还是同一个触发 rebuy 的 position，但我们后面会把它忽略掉）。
 
-The final step will be to update the `execute_decision/3` clause that matches the `:rebuy` decision to
-
-`generate_fresh_position/1`, log and return that newly created position:
+最后一步，是把匹配 `:rebuy` decision 的 `execute_decision/3` 子句改成调用 `generate_fresh_position/1`，记录日志，并返回这个新创建的 position：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -954,10 +924,10 @@ The final step will be to update the `execute_decision/3` clause that matches th
   end
 ```
 
-We updated the whole function body as now it deals with initialising a new position instead
-of just flipping the `rebuy_triggered` flag inside the original position.
+我们已经把整个函数体更新了，因为现在它处理的是初始化一个新的 position，
+而不只是把原 position 里的 `rebuy_triggered` 标志翻转一下。
 
-We can now run the strategy to confirm that rebuy starts new positions:
+现在我们可以运行策略，确认 rebuy 会启动新的 position：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -971,9 +941,9 @@ iex(2)> Naive.start_trading("XRPUSDT")
   quantity: 14.93000000
 ```
 
-The above shows that a single buy position can trigger rebuy, starting a new position immediately placing another buy order.
+上面的输出表明，一个买入 position 可以触发 rebuy，并立即启动一个新的 position，同时又挂出另一笔买单。
 
-At this moment the integration tests should already be passing, but first, we need to fix the `Naive.TraderTest` a bit to make the test code compile:
+此时集成测试应该已经能通过了，但首先我们需要稍微修一下 `Naive.TraderTest`，让测试代码能够编译：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive/trader_test.exs
@@ -981,9 +951,9 @@ At this moment the integration tests should already be passing, but first, we ne
     %Naive.Strategy.Position{ # <= updated
 ```
 
-That's just the bare minimum as this test won't run,
-but Elixir would not be able to find the `:id` attribute inside the `State` struct at the compilation time.
-We can now run the integration tests:
+这只是最低限度的修补，因为这个测试实际上跑不起来；
+但如果不这样做，Elixir 在编译时就找不到 `State` 结构体里的 `:id` 属性了。
+现在我们可以运行集成测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
@@ -992,18 +962,18 @@ Finished in 7.2 seconds (0.00s async, 7.2s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-Yay! We reached the point where our strategy took over all the functionality that the `Naive.Leader` provided.
+太好了！我们已经走到了这样一个阶段：交易策略接管了 `Naive.Leader` 曾经提供的所有功能。
 
-## Fetching active positions
+## 获取活跃 positions
 
-Previously, we were able to figure out the number of currently open positions by looking at the supervision tree,
-but now there's just a single trader process with possibly multiple open positions.
+以前，我们可以通过查看监督树来判断当前有多少个打开的 position，
+但现在只有一个 trader 进程，可能内部持有多个打开的 position。
 
-This is actually a win - instead of piecing together state from multiple processes, we can query it all from one place.
+这其实是件好事——与其从多个进程里拼状态，不如直接从一个地方查询。
 
-To aid observability, we will add an interface to fetch the currently open positions of the trader process.
+为了增强可观测性，我们会给 trader 进程增加一个接口，用来获取它当前打开的 positions。
 
-We will start with the interface itself. It will take a symbol to be able to find the trader responsible for it:
+我们先从接口本身开始。它会接收一个 symbol，以便找到负责这个 symbol 的 trader：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive.ex
@@ -1016,8 +986,7 @@ We will start with the interface itself. It will take a symbol to be able to fin
   end
 ```
 
-Now the trader's interface function will forward the symbol via `GenServer.call/2` to
-the `Naive.Trader` process responsible for trading on that symbol:
+现在 trader 的接口函数会把 symbol 通过 `GenServer.call/2` 转发给负责该 symbol 交易的 `Naive.Trader` 进程：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -1026,10 +995,10 @@ the `Naive.Trader` process responsible for trading on that symbol:
   end
 ```
 
-As we need to look up the PID of the trader process in the `Registry`,
-we can use the same `call_trader/2` helper as in the case of the `notify/2` function.
+由于我们需要在 Registry 里查找 trader 进程的 PID，
+这里可以和 `notify/2` 函数一样复用 `call_trader/2` 辅助函数。
 
-The message will get sent to the `Trader` process, where we need to add a callback that will return all the current positions:
+消息会发到 Trader 进程里，我们需要添加一个回调，返回当前所有 positions：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -1042,7 +1011,7 @@ The message will get sent to the `Trader` process, where we need to add a callba
   end
 ```
 
-We can now test fetching currently open positions by running:
+现在我们可以通过下面的命令测试获取当前打开的 positions：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -1063,70 +1032,65 @@ iex(3)> Naive.get_positions("XRPUSDT")
 ]  
 ```
 
-We can see that we now have a better overview of what's happening.
-Previously we needed to go to the database as the state was shared between multiple Trader processes.
-Now everything is in one place, which we could leverage to load the initial state
-for some frontend dashboards(subsequent positions' updates could be done by listening to the PubSub topic
-and pushing diffs to the browser via WebSocket).
+我们可以看到，现在我们对正在发生的事情有了更好的整体视图。
+以前我们必须去数据库里看，因为状态是分散在多个 Trader 进程之间的。
+现在所有东西都在一个地方，这样我们甚至可以把它用在某些前端 dashboard 的初始状态加载上（后续 positions 的更新可以通过监听 PubSub topic，再通过 WebSocket 把 diff 推给浏览器）。
 
-## Tidying up
+## 清理收尾
 
-Let's tidy up the codebase. Start by removing `/apps/naive/lib/naive/leader.ex`
-and `/apps/naive/lib/naive/symbol_supervisor.ex` as we don't need them anymore.
+让我们清理一下代码库。先删除 `/apps/naive/lib/naive/leader.ex`
+和 `/apps/naive/lib/naive/symbol_supervisor.ex`，因为我们已经不再需要它们了。
 
-This will cause problems with our mocks that we need to update in the test helper:
+这会让我们的 mock 出问题，我们需要在 test helper 里更新它们：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
 Mox.defmock(Test.Naive.LeaderMock, for: Naive.Leader) # <= remove
 ```
 
-Our integration test will now run again and pass. Sadly that won't be the case for our unit tests.
-We will revisit the mocking and unit tests in the next chapter,
-where we will once again look into how we should structure our code to be more testable and "mockable".
+我们的集成测试现在应该还能再次运行并通过。遗憾的是，单元测试不会如此顺利。
+我们会在下一章重新讨论 mock 和单元测试，
+再次看看我们应该如何组织代码，才能让它更易测试、也更容易被 mock。
 
-## Final thoughts
+## 最后思考
 
-**We've just collapsed an entire layer of our supervision hierarchy.** Here's what we accomplished:
+**我们刚刚把整个监督层压扁了。** 我们完成了这些：
 
-- Merged multiple Trader processes per symbol into a single process handling all positions
-- Eliminated the Leader process entirely, moving rebuy and shutdown logic into the pure strategy
-- Removed the SymbolSupervisor - no longer needed without multiple processes to coordinate
-- Added the `get_positions/1` interface for observability into the trader's current state
-- Kept side-effectful code at the edges while the core decision-making stayed pure
+- 把每个 symbol 的多个 Trader 进程合并成一个负责所有 positions 的单进程
+- 完全删除了 Leader 进程，把 rebuy 和 shutdown 逻辑移进了纯策略里
+- 删除了 SymbolSupervisor——既然不再需要协调多个进程，它也就没用了
+- 添加了 `get_positions/1` 接口，用于观察 trader 当前 state
+- 把有副作用的代码留在边缘，把核心决策逻辑保持纯净
 
-The refactoring pattern we followed is worth calling out explicitly:
+我们遵循的重构模式值得明确说出来：
 
-1. Move state from multiple processes into a single process(positions list)
-2. Move coordination logic(rebuys, shutdown) from a manager process(Leader) into pure functions(Strategy)
-3. Parallelise execution of decisions using `Task.async` where it makes sense, not where the architecture forces it
+1. 把 state 从多个进程移到一个进程里（positions 列表）
+2. 把协调逻辑（rebuy、shutdown）从管理进程（Leader）移到纯函数（Strategy）里
+3. 在合适的地方用 `Task.async` 并行执行决策，而不是让架构强行决定并行方式
 
-It's worth noting what we traded away:
+也值得说明我们放弃了什么：
 
-- Individual trader fault isolation - if one position's execution crashes, it takes down all positions for that symbol. But the DynamicSupervisor will restart the trader, and the positions were ephemeral anyway
-- The Leader as a coordination point - but the coordination was artificial complexity caused by having multiple processes in the first place
-- Parallel trade cycles per symbol - but they were never truly parallel; they all depended on the same price stream
+- 单个 trader 的故障隔离——如果某个 position 的执行崩溃，会带倒同一个 symbol 的所有 positions。不过 DynamicSupervisor 会重启 trader，而这些 positions 本来就是短暂的
+- 作为协调点的 Leader——但这种协调本身就是因为一开始放了多个进程才产生的人工复杂度
+- 每个 symbol 的并行交易循环——但它们其实从来都不是真正并行；它们都依赖同一条价格流
 
-The biggest win isn't in the code we wrote - it's in the code we deleted.
-The Leader module, the SymbolSupervisor, the inter-process notification system - all gone.
-And with them went an entire category of bugs: race conditions between the Leader and Traders,
-orphaned processes after partial failures, state synchronization issues.
+最大的收获不在于我们写了什么代码，而在于我们删除了什么代码。
+Leader 模块、SymbolSupervisor、进程间通知系统——全都没了。
+连同它们一起消失的，还有一整类 bug：Leader 和 Trader 之间的竞态条件、部分失败后的孤儿进程、状态同步问题。
 
-This pattern of "consolidate, then simplify" shows up across well-designed Elixir systems.
-A common mistake in OTP design is creating process hierarchies
-that mirror code organization rather than concurrency needs.
-Our refactoring is a concrete example of correcting exactly that mistake.
+这种“先合并，再简化”的模式在设计良好的 Elixir 系统里很常见。
+OTP 设计里的一个常见错误，是构建反映代码组织方式而不是并发需求的进程层级。
+我们的重构就是一个直接纠正这个错误的具体例子。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-Our strategy is cleaner, but we've been sweeping a testing problem under the rug.
-We removed the `@leader` attribute, we dropped the `Mox`-based mocks,
-and our unit tests need rethinking. In the next chapter, we'll look at how to properly test code that lives
-at the boundary between pure logic and side effects. We'll introduce layers of abstraction and
-explore alternatives to `Mox` that don't force us into premature behaviour definitions.
+我们的策略更干净了，但我们一直把一个测试问题埋在地毯下面。
+我们移除了 `@leader` 属性，删除了基于 `Mox` 的 mock，而我们的单元测试需要重新思考。
+下一章里，我们会看看如何正确测试那些处于纯逻辑和副作用边界上的代码。
+我们会引入抽象层，并探索 `Mox` 的替代方案，避免被迫过早定义 behaviour。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_19](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_19](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19)）。

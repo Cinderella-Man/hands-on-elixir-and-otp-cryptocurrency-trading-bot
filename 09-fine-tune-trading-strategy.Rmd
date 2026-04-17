@@ -1,33 +1,33 @@
-# Fine-tune trading strategy per symbol
+# 按交易对微调交易策略 {#09-fine-tune-trading-strategy}
 
-In the previous chapter, we achieved a major milestone:
-our trading strategy can now dynamically scale from 1 to 5 parallel traders as the price moves.
-But all those traders share the same hardcoded settings - the same budget, the same intervals, the same profit targets.
+在上一章中，我们取得了一个重要里程碑：
+随着价格变化，我们的交易策略现在可以动态地从 1 个 trader 扩展到 5 个并行 trader。
+但这些 trader 都共享同一套硬编码设置——同样的预算、同样的区间、同样的盈利目标。
 
-That's a problem. Different trading pairs have wildly different characteristics.
-A volatile meme coin might need wider intervals to avoid getting wiped,
-while a stable blue-chip pair could use tighter settings.
-And right now, if we want to change any parameter, we have to edit code and redeploy.
+这就有问题了。不同交易对的特性差异非常大。
+一个波动很大的 meme coin 可能需要更宽的区间，才能避免被来回扫掉；
+而一个稳定的蓝筹交易对则可以使用更紧的设置。
+而且现在，如果我们想改任何参数，都必须改代码并重新部署。
 
-In this chapter, we'll fix this by moving our settings out of the code and into a Postgres database.
-We'll set up Docker to run Postgres, add Ecto to our project, create a settings table,
-and seed it with default values for every trading pair Binance supports.
-By the end, each symbol will have its own configurable settings that we can tweak without touching code.
+在本章中，我们会把设置从代码中移到 Postgres 数据库里来解决这个问题。
+我们会配置 Docker 来运行 Postgres，给项目添加 Ecto，创建 settings 表，
+并为 Binance 支持的每个交易对填充默认值。
+到本章结束时，每个交易对都会有自己可配置的设置，我们可以在不改代码的情况下进行调整。
 
-Let's make our strategy configurable!
+让我们的策略变得可配置吧！
 
-## Objectives
+## 目标
 
-- describe and design the required functionality
-- add docker to project
-- set up Ecto inside the `naive` app
-- create and migrate the DB
-- seed symbols' settings
-- update the `Naive.Leader` to fetch settings
+- 描述并设计所需功能
+- 在项目中添加 docker
+- 在 `naive` 应用中配置 Ecto
+- 创建并迁移数据库
+- 为交易对的 settings 填充默认值
+- 更新 `Naive.Leader` 去读取 settings
 
-## Describe and design the required functionality
+## 描述并设计所需功能
 
-At this moment, the settings of our naive strategy are hardcoded inside the `Naive.Leader`:
+此时，我们 naive 策略的设置都硬编码在 `Naive.Leader` 里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -40,9 +40,9 @@ At this moment, the settings of our naive strategy are hardcoded inside the `Nai
         symbol: symbol,              # <=
         chunks: 5,                   # <=
         budget: 100,                 # <=
-        # -0.01% for quick testing   # <=
-        buy_down_interval: "0.0001", # <= all of those settings
-        # -0.12% for quick testing   # <=
+        # 快速测试用 -0.01%   # <=
+        buy_down_interval: "0.0001", # <= 所有这些设置
+        # 快速测试用 -0.12%   # <=
         profit_target: "-0.0012",    # <=
         rebuy_interval: "0.001"      # <=
       },
@@ -52,15 +52,15 @@ At this moment, the settings of our naive strategy are hardcoded inside the `Nai
   ...
 ```
 
-The problem is that they're hardcoded - there's no flexibility to define different values per symbol.
+问题在于它们是硬编码的——我们无法针对不同交易对定义不同值。
 
-In this chapter, we will move them out from this file into the Postgres database.
+在本章中，我们会把它们从这个文件移到 Postgres 数据库中。
 
-## Add docker to project
+## 为项目添加 docker
 
-The requirement for this section is `docker` installed on your system.
+这一节要求你的系统已经安装了 `docker`。
 
-Inside the main directory of our project create a new file called `docker-compose.yml` and fill it with the below details:
+在项目的主目录下创建一个名为 `docker-compose.yml` 的新文件，并写入以下内容：
 
 ```{r, engine = 'yaml', eval = FALSE}
 # /docker-compose.yml
@@ -76,22 +76,22 @@ services:
       - ../postgres-data:/var/lib/postgresql/data
 ```
 
-If you are new to Docker, here's the gist of what the above will do:
+如果你刚接触 Docker，下面是这段配置会做什么：
 
-- it will start a single service called "db"
-- "db" service will use the `latest` version of the `postgres` (image) inside the docker container (`latest` version as tagged per https://hub.docker.com/_/postgres/)
-- we map TCP port 5432 in the container to port 5432 on the Docker host(format: host_port:container_port)
-- we set up an environment variable inside the Docker container that will be used by Postgres as the password for the default (`postgres`) user
-- `volumes` option maps the directory from inside of the container to the host. This way we will keep the state of the database between restarts.
+- 它会启动一个名为 “db” 的服务
+- “db” 服务会在 docker 容器中使用 `latest` 版本的 `postgres` 镜像（`latest` 标签的含义见 https://hub.docker.com/_/postgres/）
+- 我们把容器内的 TCP 5432 端口映射到 Docker 主机的 5432 端口（格式：host_port:container_port）
+- 我们在 Docker 容器内部设置一个环境变量，Postgres 会把它用作默认（`postgres`）用户的密码
+- `volumes` 选项会把容器内的目录映射到宿主机。这样我们就能在重启后保留数据库状态。
 
-We can now start the service using `docker compose`:
+现在我们可以用 `docker compose` 启动这个服务：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ docker compose up -d
 Creating hedgehog_db_1 ... done
 ```
 
-To validate that it works we can run:
+为了验证它是否正常工作，我们可以运行：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ docker ps -a
@@ -101,9 +101,9 @@ PORTS                    NAMES
 0.0.0.0:5432->5432/tcp   hedgehog_db_1
 ```
 
-## Set up Ecto inside the `naive` app
+## 在 `naive` 应用中配置 Ecto
 
-Let's start by adding database access to the `naive` application. The first step is to add the [Ecto](https://github.com/elixir-ecto/ecto) module together with the [Postgrex](https://github.com/elixir-ecto/postgrex) ecto's driver package to the `deps` function inside the `mix.exs` file. As we are going to use Enums inside Postgres, we need to add the [EctoEnum](https://github.com/gjaldon/ecto_enum) module as well:
+我们先给 `naive` 应用添加数据库访问能力。第一步，是把 [Ecto](https://github.com/elixir-ecto/ecto) 模块以及 [Postgrex](https://github.com/elixir-ecto/postgrex)（ecto 的驱动包）添加到 `mix.exs` 文件中的 `deps` 函数里。由于我们还会在 Postgres 中使用 Enum，所以也需要添加 [EctoEnum](https://github.com/gjaldon/ecto_enum) 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/mix.exs
@@ -112,22 +112,22 @@ Let's start by adding database access to the `naive` application. The first step
       {:binance_mock, in_umbrella: true},
       {:binance, "~> 1.0"},
       {:decimal, "~> 2.0"},
-      {:ecto_sql, "~> 3.0"},     # <= New line
-      {:ecto_enum, "~> 1.4"},    # <= New line
+      {:ecto_sql, "~> 3.0"},     # <= 新增行
+      {:ecto_enum, "~> 1.4"},    # <= 新增行
       {:phoenix_pubsub, "~> 2.0"},
-      {:postgrex, ">= 0.0.0"},   # <= New line
+      {:postgrex, ">= 0.0.0"},   # <= 新增行
       {:streamer, in_umbrella: true}
     ]
   end
 ```
 
-Remember about installing those deps using:
+记得使用下面的命令安装这些依赖：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix deps.get
 ```
 
-We can now use the Ecto generator to add a repository to the Naive application:
+接下来我们可以使用 Ecto 生成器为 Naive 应用添加一个 repository：
 
 ```{r, eval = FALSE}
 $ cd apps/naive
@@ -147,31 +147,31 @@ configuration files (so Ecto tasks work as expected):
       ecto_repos: [Naive.Repo]
 ```
 
-Back to the IDE, the generator updated our `config/config.exs` file with the default access details to the database, we need to modify them to point to our Postgres docker instance as well as add a list of ecto repositories for our naive app (as per instruction above):
+回到 IDE，生成器已经把数据库默认访问配置更新到我们的 `config/config.exs` 文件里了，我们需要把它改成指向本地的 Postgres docker 实例，并且为 naive 应用添加 ecto repositories 列表（正如上面的提示所说）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
 config :naive, Naive.Repo,
-  database: "naive",    # <= updated
-  username: "postgres", # <= updated
-  password: "postgres", # <= updated
+  database: "naive",    # <= 更新
+  username: "postgres", # <= 更新
+  password: "postgres", # <= 更新
   hostname: "localhost"
 ...
 config :naive,
-  ecto_repos: [Naive.Repo],   # <= added line
+  ecto_repos: [Naive.Repo],   # <= 添加这一行
   binance_client: BinanceMock
 ```
 
-Here we can use `localhost` as inside the `docker-compose.yml` file we defined port forwarding from the container to the host(Postgres is available at localhost:5432). We also merged the existing `binance_client` setting together with the new `ecto_repos` setting.
+这里我们可以使用 `localhost`，因为在 `docker-compose.yml` 里我们已经把容器端口转发到了宿主机（Postgres 现在可通过 localhost:5432 访问）。我们还把原有的 `binance_client` 设置和新的 `ecto_repos` 设置合并在了一起。
 
-The last step to be able to communicate with the database using `Ecto` will be to add the `Naive.Repo` module(created by generator) to the children list of the `Naive.Application`:
+为了让 `Ecto` 能真正和数据库通信，最后一步是把由生成器创建的 `Naive.Repo` 模块加入到 `Naive.Application` 的 children 列表中：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/application.ex
 ...
   def start(_type, _args) do
     children = [
-      {Naive.Repo, []}, # <= added line
+      {Naive.Repo, []}, # <= 添加这一行
       {
         DynamicSupervisor,
         strategy: :one_for_one, name: Naive.DynamicSymbolSupervisor
@@ -180,9 +180,9 @@ The last step to be able to communicate with the database using `Ecto` will be t
     ...
 ```
 
-## Create and migrate the DB
+## 创建并迁移数据库
 
-We can now create a new naive database using the `mix` tool, after that we will be able to generate a migration file that will create the `settings` table:
+现在我们可以使用 `mix` 工具创建一个新的 naive 数据库，之后就可以生成一个 migration 文件来创建 `settings` 表：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.create -r Naive.Repo
@@ -193,7 +193,7 @@ $ mix ecto.gen.migration create_settings
 * creating priv/repo/migrations/20210202223209_create_settings.exs
 ```
 
-We can now copy the current hardcoded settings from the `Naive.Leader` module and use them as a column list of our new `settings` table. All of the below alterations need to be done inside the `change` function of our migration file:
+现在我们可以把 `Naive.Leader` 模块里当前硬编码的设置复制出来，把它们作为新建 `settings` 表的列清单。下面所有的修改都需要在 migration 文件的 `change` 函数中完成：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs
@@ -210,7 +210,8 @@ We can now copy the current hardcoded settings from the `Naive.Leader` module an
   end
 ```
 
-At this moment we just copied the settings and converted them to columns using the `add` function. We need now to take care of the `id` column. We need to pass `primary_key: false` to the `create table` macro to stop it from creating the default integer-based `id` column. Instead of that we will define the `id` column ourselves with `:uuid` type and pass a flag that will indicate that it's the primary key of the `settings` table:
+此时我们只是把 settings 复制出来，并通过 `add` 函数把它们转换成列。
+现在我们还需要处理 `id` 列。我们需要在 `create table` 宏里传入 `primary_key: false`，这样它就不会自动创建默认的整型 `id` 列了。取而代之，我们自己定义 `id` 列，使用 `:uuid` 类型，并传入一个标记来表明它是 `settings` 表的主键：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs
@@ -222,7 +223,7 @@ At this moment we just copied the settings and converted them to columns using t
 
 
 
-We will also add create and update timestamps that come as a bundle when using the `timestamps()` function inside the `create table` macro:
+我们还会在 `create table` 宏里使用 `timestamps()`，它会把创建时间和更新时间一起加上：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs
@@ -230,12 +231,12 @@ We will also add create and update timestamps that come as a bundle when using t
     create table(...) do
       ...
 
-      timestamps() # <= both create and update timestamps
+      timestamps() # <= 包含创建与更新时间
     end
     ...
 ```
 
-We will add a unique index on the symbol column to avoid any possible duplicates:
+我们还会在 symbol 列上添加一个唯一索引，以避免任何重复：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs
@@ -249,8 +250,8 @@ We will add a unique index on the symbol column to avoid any possible duplicates
 ...
 ```
 
-We will now add the `status` field which will be an Enum. It will be defined inside a separate file and `alias`'ed from our migration, this way we will be able to use it from within the migration and the inside the `lib` code. First, we will apply changes to our migration and then we will move on to creating the Enum module.
-Here's the full implementation of migration for reference:
+接下来我们要添加 `status` 字段，它会是一个 Enum。它会定义在单独的文件里，并在 migration 中通过 `alias` 引入，这样我们就能在 migration 以及 `lib` 代码里使用它。首先，我们先把 migration 改好，然后再去创建 Enum 模块。
+下面是 migration 的完整实现，供参考：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/repo/migrations/20210202223209_create_settings.exs
@@ -280,7 +281,7 @@ defmodule Naive.Repo.Migrations.CreateSettings do
 end
 ```
 
-That finishes our work on the migration file. We will now focus on `TradingStatusEnum` implementation. First, we need to create a `schema` directory inside the `apps/naive/lib/naive` directory and file called `trading_status_enum.ex` and place below logic (defining the enum) in it:
+这样 migration 文件的工作就完成了。接下来我们会处理 `TradingStatusEnum` 的实现。首先，我们需要在 `apps/naive/lib/naive` 目录下创建一个 `schema` 目录，并创建一个名为 `trading_status_enum.ex` 的文件，然后把下面的逻辑（定义 enum）放进去：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/schema/trading_status_enum.ex
@@ -289,9 +290,9 @@ import EctoEnum
 defenum(Naive.Schema.TradingStatusEnum, :trading_status, [:on, :off])
 ```
 
-We used the `defenum` macro from the `ecto_enum` module to define our enum. It's interesting to point out that we didn't need to define a new module as `defenum` macro takes care of that for us.
+我们使用了 `ecto_enum` 模块中的 `defenum` 宏来定义这个 enum。值得注意的是，我们并没有显式定义一个新模块，因为 `defenum` 宏会自动帮我们完成这件事。
 
-Let's run the migration to create the table, unique index, and the enum:
+现在我们运行 migration 来创建表、唯一索引和 enum：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.migrate
@@ -303,7 +304,7 @@ forward
 00:51:16.829 [info]  == Migrated 20210202223209 in 0.0s
 ```
 
-We can now create a schema file for the `settings` table so inside the `/apps/naive/lib/naive/schema` create a file called `settings.ex`. We will start with a skeleton implementation of schema file together with the copied list of columns from the migration and convert to `ecto`'s types using it's [docs](https://hexdocs.pm/ecto/Ecto.Schema.html#module-primitive-types):
+接下来我们可以为 `settings` 表创建一个 schema 文件，所以请在 `/apps/naive/lib/naive/schema` 目录下创建 `settings.ex`。我们会先给 schema 文件写一个骨架实现，同时把 migration 中的列列表复制过来，并按照 [Ecto 文档](https://hexdocs.pm/ecto/Ecto.Schema.html#module-primitive-types)把它们转换成 ecto 类型：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/schema/settings.ex
@@ -328,11 +329,11 @@ defmodule Naive.Schema.Settings do
 end
 ```
 
-## Seed symbols' settings
+## 为交易对的 settings 填充默认值
 
-So we have all the pieces of implementation to be able to create DB, migrate the `settings` table, and query it using Ecto. To be able to drop the hardcoded settings from the `Naive.Leader` we will need to fill our database with the "default" setting for each symbol. To achieve that we will define default settings inside the `config/config.exs` file and we will create a seed script that will fetch all pairs from Binance and insert a new config row inside DB for each one.
+现在我们已经具备了创建数据库、迁移 `settings` 表以及使用 Ecto 查询它的所有实现。为了把 `Naive.Leader` 中硬编码的设置删掉，我们需要把数据库填充为每个交易对的“默认”设置。为此，我们会在 `config/config.exs` 里定义默认设置，并创建一个 seed 脚本，去获取 Binance 的所有交易对，然后为每个交易对在数据库中插入一行新的配置。
 
-Let's start by adding those default values to the config file(we will merge them into the structure defining `binance_client` and `ecto_repos`):
+先把这些默认值加到配置文件里（我们会把它们合并进 `binance_client` 和 `ecto_repos` 所在的配置结构中）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # config/config.exs
@@ -350,8 +351,8 @@ config :naive,
   }
 ```
 
-Moving on to the seeding script, we need to create a new file called `seed_settings.exs` inside the `/apps/naive/priv/` directory.
-Let's start by aliasing the required modules and requiring the `Logger`:
+接下来是 seeding 脚本，我们需要在 `/apps/naive/priv/` 目录下创建一个名为 `seed_settings.exs` 的新文件。
+先把所需模块别名引入，并 `require` `Logger`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -361,7 +362,7 @@ alias Naive.Repo
 alias Naive.Schema.Settings
 ```
 
-Next, we will get the Binance client from the config:
+接下来，我们从配置中拿到 Binance client：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -369,7 +370,7 @@ Next, we will get the Binance client from the config:
 binance_client = Application.compile_env(:naive, :binance_client)
 ```
 
-Now, it's time to fetch all the symbols(pairs) that Binance supports:
+现在轮到获取 Binance 支持的所有交易对（symbols/pairs）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -379,7 +380,7 @@ Logger.info("Fetching exchange info from Binance to create trading settings")
 {:ok, %{symbols: symbols}} = binance_client.get_exchange_info()
 ```
 
-Now we need to fetch default trading settings from the config file as well as the current timestamp:
+接下来我们还需要从配置文件中拿到默认 trading 设置，以及当前时间戳：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -396,14 +397,13 @@ timestamp = NaiveDateTime.utc_now()
   |> NaiveDateTime.truncate(:second)
 ```
 
-We will use the default settings for all rows to be able to insert data into the database.
-Normally we wouldn't need to set `inserted_at` and `updated_at` fields as Ecto would generate those values for us
-when using `Repo.insert/2` but we won't be able to use this functionality as it takes a *single* record at a time.
-We will be using `Repo.insert_all/3` which is a bit more low-level function without those nice features like filling timestamps(sadly).
-Just to be crystal clear - `Repo.insert/2` takes *at least a couple of seconds*(on my machine) for thousands of symbols currently supported by Binance,
-on the other hand `Repo.insert_all/3`, will insert all of them in a couple of hundred milliseconds.
+我们会把这些默认设置用于所有行，以便把数据插入数据库。
+通常情况下，如果使用 `Repo.insert/2`，我们不需要手动设置 `inserted_at` 和 `updated_at`，因为 Ecto 会替我们生成这些值；但这里我们没法用这个功能，因为它一次只能处理 *一条* 记录。
+我们将使用 `Repo.insert_all/3`，这是一种更底层一些的函数，但没有自动填充时间戳这样的便利功能（很遗憾）。
+说得更清楚一点——对于当前 Binance 支持的成千上万个交易对，`Repo.insert/2` 在我的机器上至少要花 *几秒钟*，
+而 `Repo.insert_all/3` 则只需要几百毫秒就能把它们全部插入。
 
-As our structs will differ by only the `symbol` column we can first create a full struct that will serve as a template:
+由于这些结构体之间唯一不同的只是 `symbol` 列，我们可以先创建一个完整的结构体，把它当作模板：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -421,9 +421,9 @@ base_settings = %{
 }
 ```
 
-We will now prepare and insert 1000 rows at a time.
-Each row will be the `base_settings` struct with injected symbol.
-Using `Enum.reduce/3` will enable us to sum each result of the `Repo.insert_all/3` function call:
+现在我们来准备一次插入 1000 行。
+每一行都将是带有注入 symbol 的 `base_settings` 结构体。
+使用 `Enum.reduce/3` 可以把每次 `Repo.insert_all/3` 的结果累加起来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -442,9 +442,9 @@ total_count = symbols
 Logger.info("Inserted settings for #{total_count} symbols")
 ```
 
-## Update the `Naive.Leader` to fetch settings
+## 更新 `Naive.Leader` 去读取 settings
 
-The final step will be to update the `Naive.Leader` to fetch the settings from the database. At the top of the module add the following:
+最后一步，是更新 `Naive.Leader`，让它从数据库里读取 settings。在模块顶部添加如下内容：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -454,12 +454,11 @@ The final step will be to update the `Naive.Leader` to fetch the settings from t
   ...
 ```
 
-Now we need to modify the `fetch_symbol_settings/1` to fetch settings from DB instead of the hardcoded map.
-We will use `Repo.get_by!/2` as we are unable to trade without settings.
-The second trick used here is `Map.from_struct/1` that is required here as otherwise
-result would become the `Naive.Schema.Settings` struct
-(this would cause problems further down the line as we are iterating on the returned map and
-would get the `protocol Enumerable not implemented for %Naive.Schema.Settings` error):
+接下来我们需要修改 `fetch_symbol_settings/1`，让它不再返回硬编码 map，而是从数据库里读取 settings。
+我们会使用 `Repo.get_by!/2`，因为没有 settings 我们就无法交易。
+这里用到的第二个技巧是 `Map.from_struct/1`，之所以需要它，是因为否则返回值会变成 `Naive.Schema.Settings` 结构体
+（这会在后面的流程中引发问题，因为我们会遍历返回的 map，
+并得到 `protocol Enumerable not implemented for %Naive.Schema.Settings` 这样的错误）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/leader.ex
@@ -476,9 +475,9 @@ would get the `protocol Enumerable not implemented for %Naive.Schema.Settings` e
   ...
 ```
 
-## Manual testing in IEx and psql
+## 在 IEx 和 psql 中手动测试
 
-We can now run the seeding script to fill our database with the default settings:
+现在我们可以运行 seeding 脚本，把默认 settings 填充进数据库：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/naive
@@ -490,11 +489,11 @@ $ mix run priv/seed_settings.exs
 18:52:31.645 [info] Inserted settings for 1276 symbols
 ```
 
-We can verify that records were indeed inserted into the database by connecting to it using the `psql` application:
+我们可以通过连接 `psql` 来验证记录确实已经插入到数据库里：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ psql -Upostgres -hlocalhost
-Password for user postgres: # <= use 'postgres' password here
+Password for user postgres: # <= 这里使用 'postgres' 密码
 ...
 postgres=# \c naive
 You are now connected to database "naive" as user "postgres".
@@ -513,16 +512,16 @@ status            | off
 inserted_at       | 2021-02-02 18:52:31
 updated_at        | 2021-02-02 18:52:31
 
-# press arrows to scroll, otherwise press `q`
+# 按方向键继续滚动，否则按 `q`
 
 naive=# SELECT COUNT(*) FROM settings;
 -[ RECORD 1 ]
 count | 1276
 
-naive=# \q # <= to close the `psql`
+naive=# \q # <= 关闭 `psql`
 ```
 
-That confirms that there are 1276 settings inside the database that will allow us to continue trading which we can check by running our app inside the IEx(from the main project's directory):
+这确认了数据库里确实已经有 1276 条 settings，接下来我们可以继续交易；这一点可以通过在 IEx 中运行我们的应用来验证（从主项目目录运行）：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -535,27 +534,27 @@ iex(2)> Naive.start_trading("XRPUSDT")
 19:20:04.584 [info]  Initializing new trader(1612293637000) for XRPUSDT
 ```
 
-The above log messages confirm that the `Naive.Leader` was able to fetch settings from the database that were later put into the `Naive.Trader`'s state and passed to it.
+上面的日志信息说明 `Naive.Leader` 成功从数据库中读取了 settings，随后这些 settings 又被放入 `Naive.Trader` 的状态并传递给它。
 
-**Settings are now database-driven!** This opens up a lot of possibilities:
+**现在 settings 已经由数据库驱动了！** 这带来了很多可能性：
 
-- Each symbol can have its own unique trading parameters
-- We can adjust settings without redeploying code
-- We've added a `status` field that will let us enable/disable trading per symbol
-- The seeding script makes it easy to populate settings for all Binance pairs
+- 每个交易对都可以有自己独特的交易参数
+- 我们可以不重新部署代码就调整设置
+- 我们新增了 `status` 字段，可以按交易对启用/禁用交易
+- seeding 脚本让我们能轻松为所有 Binance 交易对填充 settings
 
-**So, What's Next?**
+**下一步是什么？**
 
-We've made the `naive` trading app configurable, but the `streamer` app is still completely manual.
-Every time we restart the application, we have to call `Streamer.start_streaming/1` for each symbol we want to trade.
+我们已经让 `naive` 交易应用变得可配置了，但 `streamer` 应用仍然完全依赖手动操作。
+每次重启应用后，我们都必须为每个想要交易的交易对手动调用 `Streamer.start_streaming/1`。
 
-In the next chapter, we'll give the streamer the same treatment:
-add supervision, database-backed settings, and autostart functionality.
-When we start our app, it will automatically resume streaming on all previously enabled symbols.
-We'll also add the ability to stop streaming - something we can't even do right now!
+在下一章中，我们会对 streamer 也做同样的处理：
+添加监督、数据库驱动的 settings，以及 autostart 功能。
+当我们启动应用时，它会自动恢复所有之前启用的交易对的 streaming。
+我们还会增加停止 streaming 的能力——这是我们现在还完全做不到的！
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_09](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_09)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_09](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_09)）。

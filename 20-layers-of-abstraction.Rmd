@@ -1,64 +1,49 @@
-# Layers of abstraction
+# 抽象层 {#20-layers-of-abstraction}
 
-In the last chapter, we collapsed an entire supervision layer - one process per
-symbol, no Leader, no SymbolSupervisor. The code is simpler, the strategy is
-purer, and the trading logic lives where it belongs.
+在上一章中，我们把整层监督结构都压扁了——每个 symbol 一个进程，没有 Leader，也没有 SymbolSupervisor。代码更简单了，策略也更纯粹，交易逻辑回到了它该在的位置。
 
-But we swept a testing problem under the rug. Our unit tests relied on `Mox`,
-which pushed us into defining behaviours for third-party packages we don't
-control. That felt wrong at the time, and it still does. Now, with the Leader
-gone and the `@leader` attribute removed, our mocking story is broken entirely.
+但我们顺手把一个测试问题埋在了地毯下面。我们的单元测试依赖 `Mox`，这把我们推向了为我们并不控制的第三方包定义 behaviours 的做法。
+当时这样做感觉不对，现在依然如此。现在，随着 Leader 消失、`@leader` 属性被移除，我们的 mocking 方案彻底坏掉了。
 
-In this chapter, we'll confront that head-on. We'll first walk the `Mox` path
-to its logical conclusion - building a full `Core.Exchange` behaviour with
-generic structs and multiple implementations - to understand exactly where it
-leads and why it costs more than it's worth. Then we'll revert everything and
-reach for a lighter tool: the `Mimic` package, which lets us mock modules
-directly without forcing premature abstractions.
+在本章中，我们会正面处理这个问题。我们会先沿着 `Mox` 路径走到逻辑尽头——构建一个完整的 `Core.Exchange` behaviour、通用结构体以及多个实现——这样我们就能准确理解它最终会走向哪里，以及为什么它的成本高于它的价值。
+然后我们会把一切都恢复原状，转而使用一个更轻量的工具：`Mimic` 包。它允许我们直接 mock 模块，而不必强行引入过早的抽象。
 
-The takeaway won't be "Mox bad, Mimic good." It'll be something more useful:
-know when an abstraction is earning its keep versus when it's just tax you pay
-to make your test framework happy.
+这章的结论不会是“`Mox` 坏，`Mimic` 好”。而会是更实用的东西：知道一个抽象是在赚它应得的回报，还是只是在为让测试框架满意而缴纳额外税费。
 
-## Objectives
-- admitting the mistake
-- abstracting the exchange
-- mimicking the reality
-- swapping back to attributes
+## 目标
+- 承认错误
+- 抽象 exchange
+- 用 mimic 模拟现实
+- 切回属性方案
 
-## Admitting the mistake
+## 承认错误
 
-There comes a time when we need to admit to a mistake that crept in as this book was being written - one that was repeated throughout.
+总会有那么一个时候，我们需要承认一个在这本书写作过程中悄悄混进来的错误——而且这个错误反复出现了很多次。
 
-When we were using the `Mox` package, we were disappointed that most packages don't provide behaviours
-we could use in our tests(to mock the actual implementations).
+当我们使用 `Mox` 包时，我们很失望，因为大多数包都没有提供 behaviours，供我们在测试里使用（用来 mock 实际实现）。
 
-To fix that, we were creating behaviours for 3rd party packages we are using, like `Binance` or even `Ecto.Repo`.
+为了修复这一点，我们开始为我们使用的第三方包创建 behaviours，比如 `Binance`，甚至 `Ecto.Repo`。
 
-This approach felt weird, and it should, as that was **not the intended usage** of the Mox package.
+这种做法感觉很奇怪，而它确实应该让人觉得奇怪，因为这**并不是** Mox 包的预期用法。
 
-Instead, we should introduce an additional layer(of abstraction) on top of the 3rd party modules we are using.
-A typical example could be abstracting dealing with an exchange to a behaviour and
-providing different implementations(for example, one could be wrapping the `Binance` module):
+相反，我们应该在所用的第三方模块之上再引入一层额外的抽象。一个典型例子，是把和交易所交互这件事抽象成一个 behaviour，并提供不同实现（例如，一个实现可以包装 `Binance` 模块）：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_21_01_additional_layer.jpg")
 ```
 
-In the example above, we will introduce a new behaviour module called `Core.Exchange` that would
-define the standard way to interact with any exchange. As this will be a generic **exchange** behaviour,
-it needs to accept and return generic structs(we will need to define those as well).
+在上面的例子中，我们会引入一个新的 behaviour 模块 `Core.Exchange`，它会定义与任何交易所交互的标准方式。由于这是一个通用的 **exchange** behaviour，
+它需要接收并返回通用结构体（我们也需要定义这些结构体）。
 
-We will also create a new `Core.Exchange.Binance` module(wrapping up the `Binance` module) and
-update the `BinanceMock` module. Both will implement the `Core.Exchange` behaviour.
+我们还会创建一个新的 `Core.Exchange.Binance` 模块（包装 `Binance` 模块）并更新 `BinanceMock` 模块。两者都会实现 `Core.Exchange` behaviour。
 
-## Abstracting the exchange
+## 抽象 exchange
 
-First, we will look at an intended use case for the `Mox` module, as mentioned above.
+首先，我们会先看一下前面提到的 `Mox` 模块的预期用途。
 
-### Defining the `Core.Exchange` behaviour
+### 定义 `Core.Exchange` behaviour
 
-We will start by creating a new file `/apps/core/lib/core/exchange.ex` together with a new module inside it:
+我们先创建一个新文件 `/apps/core/lib/core/exchange.ex`，并在其中定义一个新模块：
 
 ```{r, engine = 'elixir', eval = FALSE}	 
 # /apps/core/lib/core/exchange.ex
@@ -67,9 +52,9 @@ defmodule Core.Exchange do
 end
 ```
 
-Now, based on how we currently interact with the `Binance` module inside the `Naive.Strategy`, we can define the following callback functions:
+现在，根据我们在 `Naive.Strategy` 中与 `Binance` 模块交互的方式，我们可以定义如下回调函数：
 
-`order_limit_buy/3` - almost the same as the `Binance.order_limit_buy/4`, just skipped the optional argument
+`order_limit_buy/3` - 基本上和 `Binance.order_limit_buy/4` 一样，只是跳过了可选参数
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
@@ -78,7 +63,7 @@ Now, based on how we currently interact with the `Binance` module inside the `Na
               | {:error, any()}
 ```
 
-`order_limit_sell/3` - almost the same as the `Binance.order_limit_sell/4`, just skipped the optional argument
+`order_limit_sell/3` - 基本上和 `Binance.order_limit_sell/4` 一样，只是跳过了可选参数
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
@@ -87,7 +72,7 @@ Now, based on how we currently interact with the `Binance` module inside the `Na
               | {:error, any()}
 ```
 
-`get_order/3` - the same as the `Binance.get_order/3`
+`get_order/3` - 和 `Binance.get_order/3` 一样
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
@@ -100,7 +85,7 @@ Now, based on how we currently interact with the `Binance` module inside the `Na
               | {:error, any()}
 ```
 
-All of the above callbacks rely on the `Core.Exchange.Order` struct, which we will add now inside the `Core.Exchange` module:
+以上所有回调都依赖 `Core.Exchange.Order` 结构体，我们现在就把它加到 `Core.Exchange` 模块里：
 
 ```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
@@ -119,12 +104,12 @@ All of the above callbacks rely on the `Core.Exchange.Order` struct, which we wi
   end
 ```
 
-The above struct is a simplification of the `Binance.Order` struct limited to just the fields we are using in our strategy.
+上面的结构体是 `Binance.Order` 结构体的简化版，只保留了我们在策略中用到的字段。
 
-Additionally, we use the `Binance` module to fetch symbol filters inside the `Naive.Strategy`
-(we actually fetch the whole exchange info and then dig inside to find our filters) - we will create a dedicated struct for those filters:
+此外，我们在 `Naive.Strategy` 中也会用到 `Binance` 模块来获取 symbol filter（实际上我们会先获取完整 exchange info，再从中取出所需 filter）——
+为此我们会创建一个专门表示这些 filter 的结构体：
 
-```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
   # add below inside the Core.Exchange module
   defmodule SymbolInfo do
@@ -142,10 +127,9 @@ Additionally, we use the `Binance` module to fetch symbol filters inside the `Na
               | {:error, any()}
 ```
 
-The final usage of the `Binance` module comes from the seed scripts, where we fetch the exchange info just
-to get the list of the supported currencies. We will make getting a list of supported currencies part of our behaviour:
+`Binance` 模块的最后一个用途来自 seed 脚本：我们会获取 exchange info，只是为了得到支持的币种列表。我们会把“获取支持币种列表”也纳入 behaviour：
 
-```{r, engine = 'elixir', eval = FALSE}
+```{r, engine = 'elixir', eval = FALSE}	 
   # /apps/core/lib/core/exchange.ex
   # add below inside the Core.Exchange module
   @callback fetch_symbols() ::
@@ -153,16 +137,13 @@ to get the list of the supported currencies. We will make getting a list of supp
               | {:error, any()}
 ```
 
-This finishes the definition of the `Core.Exchange` behaviour. It should consist of five callback functions(
-`fetch_symbols/0`, `fetch_symbol_filters/1`, `get_order/3`, `order_limit_buy/3` and `order_limit_sell/3`)
-together with two structs(`Order` and `SymbolInfo`).
+这样 `Core.Exchange` behaviour 的定义就完成了。它应该包含五个回调函数（`fetch_symbols/0`、`fetch_symbol_filters/1`、`get_order/3`、`order_limit_buy/3` 和 `order_limit_sell/3`）以及两个结构体（`Order` 和 `SymbolInfo`）。
 
-### Implementation of the `Core.Exchange.Binance` module
+### `Core.Exchange.Binance` 模块的实现
 
-As we defined the behaviour, we can now wrap the production implementation(the `Binance` module) inside a module that will implement that behaviour.
+既然 behaviour 已经定义好了，我们现在就可以把生产实现（`Binance` 模块）包装到一个实现该 behaviour 的模块里。
 
-We will start by creating a new directory called "exchange" inside the `apps/core/lib/core` directory,
-together with a new file called `binance.ex`. Inside it, we will define a module that will implement the `Core.Exchange` behaviour:
+我们先在 `apps/core/lib/core` 目录下创建一个名为 `exchange` 的新目录，并在其中创建一个名为 `binance.ex` 的新文件。接着我们会定义一个模块来实现 `Core.Exchange` behaviour：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/exchange/binance.ex
@@ -171,7 +152,7 @@ defmodule Core.Exchange.Binance do
 end
 ```
 
-Now we are obliged to implement all functions defined in the behaviour, starting with the `fetch_symbols/0`:
+现在我们就必须实现 behaviour 定义的所有函数，先从 `fetch_symbols/0` 开始：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/exchange/binance.ex
@@ -191,12 +172,11 @@ Now we are obliged to implement all functions defined in the behaviour, starting
   end
 ```
 
-As we can see - the `case` statement wraps the call to the `Binance` module,
-and either we evaluate further business logic or forward the error so the "consumer" of our library
-can decide what to do with the error condition. This pattern will appear in all our functions
-as the `Core.Exchange.Binance` module is our own "library" module.
+可以看到，`case` 语句把对 `Binance` 模块的调用包了起来，
+我们要么继续执行后续业务逻辑，要么直接把错误往上传递，这样“消费者”就能决定遇到错误时怎么处理。
+在 `Core.Exchange.Binance` 这个模块里，这种模式会在所有函数中出现，因为它本质上就是我们自己的“库”模块。
 
-Let's continue with implementing the remaining functions defined in the behaviour:
+我们继续实现 behaviour 定义中的剩余函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/exchange/binance.ex
@@ -233,13 +213,11 @@ Let's continue with implementing the remaining functions defined in the behaviou
   end
 ```
 
-The `fetch_symbol_filters/1` function follows the previously discussed pattern.
+`fetch_symbol_filters/1` 函数遵循了前面讨论过的模式。
 
-The `fetch_symbol_filters/2`, on the other hand,
-is a modified copy of the `merge_filters_into_settings/3` function from the `Naive.Strategy` module
-and is now returning the `Exchange.SymbolInfo` struct.
+而 `fetch_symbol_filters/2` 则是 `Naive.Strategy` 模块里 `merge_filters_into_settings/3` 函数的修改版复制，现在返回的是 `Exchange.SymbolInfo` 结构体。
 
-Another function to be implemented to fulfil the behaviour is `get_order/3`:
+下面还要实现的一个函数是 `get_order/3`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/exchange/binance.ex
@@ -270,13 +248,10 @@ Another function to be implemented to fulfil the behaviour is `get_order/3`:
   defp status_to_atom("FILLED"), do: :filled
 ```
 
-As in the case of the previously implemented functions, the `get_order/3` implementation wraps
-the `Binance`'s function inside the `case` statement. To satisfy the `Core.Exchange` behaviour,
-it needs to return the `Exchange.Order` struct - hence the conversion.
-It also needs to convert the string `side` and `status` fields to atoms before assigning
-them to the struct(that's the role of the `status_to_atom` and `side_to_atom` helper functions).
+和前面实现的函数一样，`get_order/3` 的实现也把 `Binance` 的函数包进了 `case` 语句里。为了满足 `Core.Exchange` behaviour，它需要返回 `Exchange.Order` 结构体——所以必须做转换。
+它还需要在赋值到结构体之前，把字符串形式的 `side` 和 `status` 字段转换成 atom（这就是 `status_to_atom` 和 `side_to_atom` 辅助函数的作用）。
 
-The final two functions to be implemented will be the `order_limit_buy/3` and `order_limit_sell/3`:
+最后两个要实现的函数是 `order_limit_buy/3` 和 `order_limit_sell/3`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/exchange/binance.ex
@@ -319,10 +294,8 @@ The final two functions to be implemented will be the `order_limit_buy/3` and `o
   end
 ```
 
-That finishes our first implementation of the `Core.Exchange` behaviour.
-It will be used in production by our `Naive.Strategy`, but before we will update it,
-we need to update the dependencies of the `core` application as now we are using the `Binance` module
-inside the `core` application:
+这样 `Core.Exchange` behaviour 的第一个实现就完成了。
+它会在生产环境中被 `Naive.Strategy` 使用，但在更新它之前，我们先要更新 `core` 应用的依赖，因为现在 `core` 应用内部也在使用 `Binance` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/mix.exs
@@ -334,13 +307,12 @@ inside the `core` application:
   end
 ```
 
-### Updating the `BinanceMock` module to implement the `Core.Exchange` behaviour
+### 更新 `BinanceMock` 模块以实现 `Core.Exchange` behaviour
 
-The `BinanceMock` module must implement the `Core.Exchange` behaviour.
-It will (at compile time) guarantee that both `Core.Exchange.Binance` and `BinanceMock`
-share a common interface that can be used by the `Naive.Strategy`.
+`BinanceMock` 模块也必须实现 `Core.Exchange` behaviour。
+这样就能（在编译期）保证 `Core.Exchange.Binance` 和 `BinanceMock` 共享一套可供 `Naive.Strategy` 使用的统一接口。
 
-First, we will start by declaring that the `BinanceMock` actually implements the `Core.Exchange` behaviour:
+首先，我们先声明 `BinanceMock` 确实实现了 `Core.Exchange` behaviour：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -348,19 +320,18 @@ defmodule BinanceMock do
   @behaviour Core.Exchange # <= added
 ```
 
-Next, we can replace all the aliases to the `Binance` structs with a single alias to the `Core.Exchange` module:
+接着，我们可以把所有指向 `Binance` 结构体的 alias 都替换成对 `Core.Exchange` 模块的一个 alias：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
   alias Core.Exchange
 ```
 
-Don't forget to update all references to the `Binance.Order` with `Exchange.Order` module.
+别忘了把所有 `Binance.Order` 的引用都更新成 `Exchange.Order`。
 
-As the behaviour is now defined in the `Core.Exchange` module, we can remove all `@type` and `@callback` attributes.
+既然 behaviour 现在已经定义在 `Core.Exchange` 模块里，我们可以删除所有 `@type` 和 `@callback` 属性。
 
-Moving on, we will replace the `get_exchange_info/0`(together with its `get_cached_exchange_info/0` helper function)
-with `fetch_symbols/0` and `fetch_symbol_filters/1`(and their helper functions):
+接下来，我们会把 `get_exchange_info/0`（以及它的辅助函数 `get_cached_exchange_info/0`）替换成 `fetch_symbols/0` 和 `fetch_symbol_filters/1`（以及它们的辅助函数）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
@@ -415,17 +386,15 @@ with `fetch_symbols/0` and `fetch_symbol_filters/1`(and their helper functions):
   end
 ```
 
-There are a few additional helpers above, and it got a bit long - let's unpack it.
+上面还有几个辅助函数，内容有点长——我们拆开来看。
 
-First, both the `fetch_symbols/0` and `fetch_symbol_filters/1` look very similar to the ones
-we implemented for the `Core.Exchange.Binance` module. The main difference here is
-that we support cached exchange info by introducing the `fetch_exchange_info/0` function,
-which branches out to either using the `Binance` module or the `get_cached_exchange_info/0` function.
-The latter was updated to return the raw data instead of the `Binance.ExchangeInfo` struct.
+首先，`fetch_symbols/0` 和 `fetch_symbol_filters/1` 看起来和 `Core.Exchange.Binance` 模块里实现的很像。主要区别是：
+我们通过引入 `fetch_exchange_info/0` 支持缓存的 exchange info，它会分支到 `Binance` 模块或 `get_cached_exchange_info/0` 函数。
+后者也被更新为返回原始数据，而不是 `Binance.ExchangeInfo` 结构体。
 
-Next, there's the `get_order/3` function - as it's working in the same way as per our behaviour, we will leave it as it is.
+接着是 `get_order/3` 函数——因为它的工作方式和 behaviour 定义一致，我们就保持不变。
 
-The final two functions to update will be the `order_limit_buy/4` and `order_limit_sell/4`, which will now become three-argument functions:
+最后两个要更新的函数是 `order_limit_buy/4` 和 `order_limit_sell/4`，它们现在会变成三个参数的函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
@@ -438,9 +407,9 @@ The final two functions to update will be the `order_limit_buy/4` and `order_lim
   end
 ```
 
-In the above functions, we simply skipped the fourth argument to fulfil the behaviour.
+在上面的函数里，我们只是省掉了第四个参数，以满足 behaviour 的要求。
 
-The changes to different structs will have a ripple effect in other parts of the BinanceMock module:
+对不同结构体的这些改动，会在 `BinanceMock` 模块的其他部分引发连锁变化：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
@@ -495,28 +464,27 @@ The changes to different structs will have a ripple effect in other parts of the
   # remove the `convert_order_to_order_response/1` function - not required anymore
 ```
 
-The above changes finish the modifications to the BinanceMock. The module now correctly implements the behaviour.
+上面的这些改动完成了对 BinanceMock 的修改。这个模块现在已经正确实现了 behaviour。
 
-### Updating the `Naive.Strategy`
+### 更新 `Naive.Strategy`
 
-We can now move on to the code that will use our implementations of the `Core.Exchange` behaviour - the `Naive.Strategy` module.
+接下来，我们把重点转到使用 `Core.Exchange` behaviour 实现的代码——`Naive.Strategy` 模块。
 
-We will start by adding an alias to the `Core.Exchange` at the top of the module:
+我们先在模块顶部加上对 `Core.Exchange` 的 alias：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
   alias Core.Exchange
 ```
 
-Next, we can rename the configuration based `@binance_client` to `@exchange_client` and update references to it throughout the module:
+接着，我们可以把基于配置的 `@binance_client` 改名为 `@exchange_client`，并在模块里把所有引用都更新掉：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
   @exchange_client Application.compile_env(:naive, :exchange_client)
 ```
 
-Besides the above, we are now relying on the generic structs, so we need to update all references
-to the `Binance.OrderResponse` and `Binance.Order` modules with the `Exchange.Order` (including updating all field names) - for example:
+除此之外，我们现在依赖的是通用结构体，所以需要把所有对 `Binance.OrderResponse` 和 `Binance.Order` 模块的引用都改成 `Exchange.Order`（包括更新字段名）——例如：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -526,8 +494,7 @@ to the `Binance.OrderResponse` and `Binance.Order` modules with the `Exchange.Or
             order_id: order_id,
             status: "FILLED"
           },
-          sell_order: %Binance.OrderResponse{}
-        },
+          sell_order: %Binance.OrderResponse{},
 
   # to:
         %Position{
@@ -547,7 +514,7 @@ to the `Binance.OrderResponse` and `Binance.Order` modules with the `Exchange.Or
 
 
 
-As the behaviour's interface(public functions) differs from the `Binance` module, we need to update all calls that we simplified:
+因为 behaviour 的接口（public functions）和 `Binance` 模块不同，我们需要更新所有简化过的调用：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -557,9 +524,8 @@ As the behaviour's interface(public functions) differs from the `Binance` module
       @exchange_client.order_limit_sell(symbol, quantity, sell_price)
 ```
 
-As of now, we will deal only with the `Exchange.Order` structs instead of
-a pair of `Binance.OrderResponse` and `Binance.Order`.
-We can simplify the existing two clauses of `broadcast_order/1` into a single one(and remove the `convert_to_order/1` function):
+现在我们只会处理 `Exchange.Order` 结构体，而不再是 `Binance.OrderResponse` 和 `Binance.Order` 这对结构体了。
+我们可以把 `broadcast_order/1` 的两个子句合并成一个（并删除 `convert_to_order/1` 函数）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -572,7 +538,7 @@ We can simplify the existing two clauses of `broadcast_order/1` into a single on
   end
 ```
 
-We also don't need to convert `Order` to `OrderResponse` structs so we can update the clauses that fetch the buy and sell orders:
+我们也不再需要把 Order 转成 OrderResponse，所以可以更新获取买单和卖单的分支：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -611,10 +577,9 @@ We also don't need to convert `Order` to `OrderResponse` structs so we can updat
   end
 ```
 
-We can go ahead and remove `convert_order_to_order_response/1` function as it's not used anymore.
+我们可以把 `convert_order_to_order_response/1` 函数删掉，因为现在已经没有人用它了。
 
-The final change to the `Naive.Strategy` module will be to update the `fetch_symbol_settings/1` function
-(and remove the `merge_filters_into_settings/3` function):
+`Naive.Strategy` 模块的最后一个变化，是更新 `fetch_symbol_settings/1` 函数（并删除 `merge_filters_into_settings/3` 函数）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/strategy.ex
@@ -629,12 +594,11 @@ The final change to the `Naive.Strategy` module will be to update the `fetch_sym
   end
 ```
 
-The function is now much more straightforward as we use the `fetch_symbol_filters/1` function
-implemented as a part of the `Core.Exchange` behaviour.
+现在这个函数简洁得多，因为我们使用了作为 `Core.Exchange` behaviour 一部分实现的 `fetch_symbol_filters/1` 函数。
 
-### Updating the seed scripts
+### 更新 seed 脚本
 
-The other places we use the exchange are seed scripts that we need to update. First inside the `Naive` application:
+我们使用交易所的其他地方，是 seeding 脚本，也需要更新。先从 `Naive` 应用开始：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/priv/seed_settings.exs
@@ -646,15 +610,12 @@ total_count = symbols
   |> Enum.map(&(%{base_settings | symbol: &1}))
 ```
 
-We no longer use the `binance_client` but `exchange_client` instead -
-in the same fashion as inside the `Naive.Strategy` module.
-Both implementations provide the `fetch_symbols/0` function, which returns a list of symbols -
-hence the change inside the `Enum.map/2` function.
+我们不再使用 `binance_client`，而是改用 `exchange_client`——这和 `Naive.Strategy` 模块中的做法一致。
+两个实现都提供 `fetch_symbols/0` 函数，它返回 symbol 列表，因此 `Enum.map/2` 里也要相应调整。
 
-We will follow up with changes to the seeding script of the `Streamer` application
-(I will skip listing the changes here as they are **the same** as in the case of the `Naive` application).
+接下来是 `Streamer` 应用的 seeding 脚本（这里我就不逐行列出变化了，因为和 `Naive` 应用里的**完全一样**）。
 
-At this moment, we can change the configuration to make the `Naive.Strategy` work:
+此时，我们可以调整配置，让 `Naive.Strategy` 正常工作：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -676,9 +637,9 @@ config :naive,
   exchange_client: Test.BinanceMock, # <= key updated
 ```
 
-### Manual testing after the refactoring
+### 重构后的手动测试
 
-We can now test that `Naive.Strategy` works:
+现在我们可以测试 `Naive.Strategy` 是否工作正常：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -687,22 +648,22 @@ iex(1)> Streamer.start_streaming("XRPUSDT")
 ...
 iex(2)> Naive.start_trading("XRPUSDT")
 ...
-21:42:12.813 [info]  Position (XRPUSDT/1662842530254): Placing a BUY order @ 0.35560000,
+21:42:12.813 [info] Position (XRPUSDT/1662842530254): Placing a BUY order @ 0.35560000,
 quantity: 562.00000000
-21:42:15.280 [info]  Position (XRPUSDT/1662842530254): The BUY order is now filled
-21:42:15.281 [info]  Position (XRPUSDT/1662842530254): Placing a SELL order @ 0.35580000,
+21:42:15.280 [info] Position (XRPUSDT/1662842530254): The BUY order is now filled
+21:42:15.281 [info] Position (XRPUSDT/1662842530254): Placing a SELL order @ 0.35580000,
 quantity: 562.00000000
-21:42:15.536 [info]  Position (XRPUSDT/1662842530254): The SELL order is now filled
-21:42:15.593 [info]  Position (XRPUSDT/1662842530254): Trade cycle finished
+21:42:15.536 [info] Position (XRPUSDT/1662842530254): The SELL order is now filled
+21:42:15.593 [info] Position (XRPUSDT/1662842530254): Trade cycle finished
 ```
 
-The above output confirms that we have a full working trading flow using either `Core.Exchange.Binance` or `BinanceMock`. 
+上面的输出确认我们通过 `Core.Exchange.Binance` 或 `BinanceMock` 都能完整跑通交易流程。
 
-### Storing the data
+### 存储数据
 
-As we are now using generic structs like the `Core.Exchange.Order`, all data storage-related code needs to be updated.
+既然我们现在使用的是像 `Core.Exchange.Order` 这样的通用结构体，所有和数据存储相关的代码都需要更新。
 
-We will start by updating the migration script to match our simplified data model:
+我们先从 migration 脚本开始，把它改成与我们简化后的数据模型一致：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs
@@ -721,7 +682,7 @@ We will start by updating the migration script to match our simplified data mode
   end
 ```
 
-A lot of fields got removed/renamed, including the primary key. We will follow up by updating the schema for that table:
+很多字段都被删掉或改名了，包括主键。接着我们更新这张表对应的 schema：
 
 ```{r, engine = 'elixir', eval = FALSE}
  # /apps/data_warehouse/lib/data_warehouse/schema/order.ex
@@ -739,8 +700,8 @@ A lot of fields got removed/renamed, including the primary key. We will follow u
   end
 ```
 
-The schema was updated to mirror the new shape of the `orders` db table.
-We can now progress to the Worker, where we will start to use the `Core.Exchange` based structs:
+schema 已经更新成了新的 `orders` 数据表结构。
+现在我们可以继续到 Worker，在这里我们会开始使用基于 `Core.Exchange` 的结构体：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -770,72 +731,61 @@ We can now progress to the Worker, where we will start to use the `Core.Exchange
   defp atom_to_status(:filled), do: "FILLED"
 ```
 
-The `Worker` will now pattern match on the `Core.Exchange.Order` struct instead of `Binance.Order` as before.
-Inside the callback, we simplified the mapping to the schema struct and updated the conflict to the renamed `id` column.
-Finally, we added the helper functions to convert `status` and `side` atoms to strings.
+`Worker` 现在会匹配 `Core.Exchange.Order` 结构体，而不是之前的 `Binance.Order`。
+在这个回调里，我们简化了映射到 schema 结构体的过程，并把冲突目标更新为重命名后的 `id` 列。
+最后，我们补上了辅助函数，用来把 `status` 和 `side` 的 atom 转回字符串。
 
-### The `Mox` approach summary
+### `Mox` 方案总结
 
-We didn't yet look into updating our tests, but instead of focusing on that, we will chat about our implementation.
+我们还没有更新测试，但先不谈测试，我们先聊聊这个实现。
 
-First, it's worth stressing that it required multiple changes to many parts of the system spanning from the `Naive` application
-through `Streamer` (seeding) and ending in the `DataWarehouse` application.
+首先，要强调的是，这套方案需要对系统很多部分做多处修改：从 `Naive` 应用开始，经过 `Streamer`（seeding），最后到 `DataWarehouse` 应用。
 
-More importantly, we needed to define a behaviour. It gives us a compile-time guarantee,
-but on the other hand, we were pushed to define it very early.
+更重要的是，我们还必须定义一个 behaviour。它给了我们编译期保证，
+但另一方面，我们被迫很早就要定义它。
 
-Let me explain.
+让我解释一下。
 
-Up to this moment, we have been using only the `Binance` module.
-We didn't have an opportunity to work with other modules/exchanges.
-In fact, we **didn't want to** create an `Exchange` level abstraction.
-We were happy with using the `Binance` module, and we added the behaviour
-just to be able to use the `Mox` package to mock it inside our tests.
-All of this feels like a really heavy over-engineering just to be able to test.
+直到现在为止，我们一直只用 `Binance` 模块。
+我们没有机会和其他模块/交易所打交道。实际上，我们**并不想**创建一个 `Exchange` 级别的抽象。
+我们原本对使用 `Binance` 模块已经很满意，而我们引入 behaviour 只是为了能够在测试中用 `Mox` 包去 mock 它。
+这一切看起来像是为了测试而做的重度过度设计。
 
-Furthermore, as we defined the behaviour, we needed to define the generic structs that we based on the ones from the `Binance` module.
-We have never seen examples of structs from other packages,
-so we took only fields that we are using in our strategy to limit the possibility of missing data from another exchange in the future.
+此外，一旦定义了 behaviour，我们还需要定义依赖于 `Binance` 模块的那些通用结构体。
+我们从来没见过其他包里的结构体示例，所以我们只取了策略中正在使用的字段，
+以减少未来某个交易所缺少数据的可能性。
 
-The knock-on effect is twofold: we are already missing valuable data in the database,
-and adding any new exchanges in the future may require updates to the behaviour,
-its existing implementations, and most of the code that uses it(like the `Naive.Strategy`).
+这会带来双重连锁反应：数据库里已经缺了有价值的数据，
+而未来如果要添加新的交易所，可能还需要更新 behaviour、它已有的实现，以及大多数使用它的代码（比如 `Naive.Strategy`）。
 
-Additionally, we returned the `Binance`'s error messages straight to the user of our abstraction(`Naive.Strategy`).
-We should be converting those to generic errors, but we don't have a clue about other exchanges and the errors they could raise.
+此外，我们还把 `Binance` 的错误消息原封不动地返回给了抽象的使用者（`Naive.Strategy`）。
+我们本应把这些错误转换成通用错误，但我们并不了解其他交易所，也不知道它们会抛出什么样的错误。
 
-At this moment, abstracting our code into behaviour+implementations is uneducated over-engineering and simply asking for troubles in the future.
+到了这个阶段，把代码抽象成 behaviour + implementations，显然是一种缺乏依据的过度设计，只会给未来埋雷。
 
-What's the alternative?
+那替代方案是什么？
 
-The first thing that comes to mind would be to look for some "standard"
-that could be leveraged to build our behaviour/define structs. For cryptocurrency exchanges,
-that will be "CCXT" - it's an open-source "library" available for Python, JavaScript and PHP.
+最先想到的，是找某种“标准”来帮助我们构建 behaviour / 定义结构体。对于加密货币交易所来说，这个标准就是 “CCXT”——一个开源“库”，支持 Python、JavaScript 和 PHP。
 
-We could go further and look for an Elixir implementation of the CCXT package and find the package named `ccxtex`.
-It's a wrapper around the JavaScript version of the CCXT package.
+我们还可以更进一步，找一个 Elixir 版的 CCXT 实现，叫做 `ccxtex`。它是对 CCXT 的 JavaScript 版本的封装。
 
-Using the above(either the `ccxtex` package or `ccxt` as a "blueprint")
-instead of trying to figure out our own behaviour based on our limited knowledge about exchanges would most certainly
-let us avoid continuous updates to our code.
+使用上面这种方式（无论是 `ccxtex` 包，还是把 `ccxt` 当作“蓝图”），而不是靠我们对交易所有限的了解来自己定义 behaviour，肯定能避免我们不断修改代码。
 
-Those updates, coupled with the fact that we would add the behaviour just to be able to test the implementation,
-put usage of the `Mox` package in serious doubt.
+而这些持续修改，加上我们引入 behaviour 只是为了测试实现，这让 `Mox` 的使用变得非常值得怀疑。
 
-The source code up to this moment can be found at Github -
-[chapter_20_mox](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20_mox).
+此时的源代码可以在 Github 上找到——
+[chapter_20_mox](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20_mox)。
 
-We will stop here and **revert** to the source code from the end of the
-[19th chapter](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19).
-Instead of leaving something we are not prepared to continue with, we will look into alternative ways to test our strategy.
+我们先停在这里，并回退到 [第 19 章](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_19) 结束时的源码。
+与其继续坚持一个我们还没准备好推进的方向，不如看看别的方法来测试我们的策略。
 
-## Mimicking the reality
+## 用 Mimic 模拟现实
 
-With a clean slate, let's take a completely different approach.
-Instead of building behaviours and abstractions just to satisfy our test framework,
-we'll use the `Mimic` package, which lets us mock any module directly - no behaviours required.
+在一个干净的起点上，我们换一种完全不同的方法。
+我们不再为了测试框架而构建 behaviours 和抽象，
+而是使用 `Mimic` 包，它允许我们直接 mock 任意模块——不需要 behaviour。
 
-Let's kick this off by swapping the `mox` package to the `mimic` package in the dependencies of the `Naive` application:
+我们先把 `Naive` 应用依赖里的 `mox` 包换成 `mimic` 包：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/mix.exs
@@ -848,12 +798,12 @@ Let's kick this off by swapping the `mox` package to the `mimic` package in the 
   end
 ```
 
-Don't forget to run `mix deps.get` to resolve the dependencies.
+别忘了运行 `mix deps.get` 来解析依赖。
 
-### Updating the `Naive.Strategy`
+### 更新 `Naive.Strategy`
 
-Before we dive into writing new tests, we can update the `Naive.Strategy` module.
-The `mimic` module doesn't require us to inject dependencies into module attributes based on config, so we can remove them:
+在写新测试之前，我们可以先更新 `Naive.Strategy` 模块。
+`mimic` 模块不要求我们通过配置把依赖注入到模块属性里，所以这些属性可以删掉：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -864,8 +814,8 @@ The `mimic` module doesn't require us to inject dependencies into module attribu
   @repo Application.compile_env(:naive, :repo)
 ```
 
-We will switch back to using modules' names as before.
-We will update all references to attributes throughout the module with corresponding hardcoded module names:
+我们会切回之前那种直接使用模块名的方式。
+然后把模块里对这些属性的引用，全部替换成对应的硬编码模块名：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -875,25 +825,19 @@ We will update all references to attributes throughout the module with correspon
 # change @repo to Repo
 ```
 
-As we are pointing to `Repo` instead of `Naive.Repo`, we need to add an alias at the top of the module:
+由于我们现在指向的是 `Repo` 而不是 `Naive.Repo`，
+所以需要在模块顶部加一个 alias：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
 alias Naive.Repo
 ```
 
-[Note: At this moment, we will apply the above changes to the `Indicator.Ohlc.Worker` and `Indicator.Ohlc`(
-  
-`apps/indicator/lib/indicator/ohlc/worker.ex` and `apps/indicator/lib/indicator/ohlc.ex`) and the `Naive.Trader`(
-
-`apps/naive/lib/naive/trader.ex`
-) to avoid breaking the application when we will clean
-up the config in the next step.]
+[注意：到这个时点，我们会把上述修改同时应用到 `Indicator.Ohlc.Worker` 和 `Indicator.Ohlc`（`apps/indicator/lib/indicator/ohlc/worker.ex` 和 `apps/indicator/lib/indicator/ohlc.ex`），以及 `Naive.Trader`（`apps/naive/lib/naive/trader.ex`），这样在下一步清理配置时应用不会坏掉。]
 
 
 
-That finishes our conversion to hardcoded module names. As we are no longer basing our module on the configuration,
-we can remove all redundant configuration keys from the main `config.exs` file:
+这样，我们就完成了切换到硬编码模块名的工作。既然我们不再基于配置来构建模块，就可以从主 `config.exs` 文件里删掉所有多余的配置键：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -911,13 +855,13 @@ config :naive,
   ...
 ```
 
-We can now move on to figure out how we are going to test it.
+接下来，我们可以开始弄清楚要怎么测试它。
 
-### Testing the `Naive.Strategy`
+### 测试 `Naive.Strategy`
 
-First, we can remove the existing unit tests(`apps/naive/test/naive/trader_test.exs`) as they are not applicable anymore.
+首先，我们可以删除现有的单元测试（`apps/naive/test/naive/trader_test.exs`），因为它们已经不适用了。
 
-Next, we will create a new file `apps/naive/test/naive/strategy_test.exs` with a skeleton of a test:
+接着，我们会创建一个新文件 `apps/naive/test/naive/strategy_test.exs`，并写一个测试骨架：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -932,10 +876,10 @@ defmodule Naive.StrategyTest do
 end
 ```
 
-As we will stub dependencies using `mimic`, we need to `use` it inside the test module.
+由于我们会使用 `mimic` 来 stub 依赖，所以需要在测试模块里 `use` 它。
 
-We will be testing the primary entry function, the `Naive.Strategy.execute/3`,
-where we will first focus on placing a buy order scenario:
+我们会测试主入口函数 `Naive.Strategy.execute/3`，
+先从挂买单的场景开始：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -945,8 +889,7 @@ where we will first focus on placing a buy order scenario:
   end
 ```
 
-The simplest scenario will be to pass hardcoded settings,
-a fresh position(based on those settings) and a trade event(that will trigger the buy order):
+最简单的场景是传入硬编码设置、一个基于这些设置的新 position，以及一个会触发买单的 trade event：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -973,9 +916,9 @@ a fresh position(based on those settings) and a trade event(that will trigger th
   )
 ```
 
-Now, the above call to the `Naive.Strategy.execute/3` will cause the `Binance.order_limit_buy/4`,
-`Phoenix.PubSub.broadcast/3` and `Logger.info/1`(we will skip this one and get back to it later) functions to be called.
-We need to mock those functions at the beginning of our test before calling the `Naive.Strategy.execute/3` function:
+现在，上面对 `Naive.Strategy.execute/3` 的调用会触发 `Binance.order_limit_buy/4`、
+`Phoenix.PubSub.broadcast/3` 和 `Logger.info/1`（这个我们先略过，后面再处理）被调用。
+我们需要在调用 `Naive.Strategy.execute/3` 之前，先 mock 这些函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -1003,8 +946,8 @@ We need to mock those functions at the beginning of our test before calling the 
   )
 ```
 
-We can use the `expected_order` above to assert that the `Naive.Strategy.execute/3` returned the correct value -
-the `buy_order` field should hold the same data as the `expected_order`. We can add the below assertions at the end of the test:
+我们可以用上面的 `expected_order` 来断言 `Naive.Strategy.execute/3` 返回了正确的值——
+buy_order 字段应该包含和 `expected_order` 相同的数据。我们可以把下面这些断言加到测试末尾：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -1014,8 +957,7 @@ the `buy_order` field should hold the same data as the `expected_order`. We can 
     assert buy_order == expected_order
 ```
 
-That finishes the test implementation, but before we will be able to use the `mimic` module,
-we need to prepare modules so we can stub them inside tests - here are the new contents of the test helper file:
+这样测试实现就完成了，但在我们能使用 `mimic` 模块之前，还需要准备好可供测试 stub 的模块——下面是 test helper 文件的新内容：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
@@ -1027,9 +969,9 @@ Mimic.copy(Phoenix.PubSub)
 ExUnit.start()
 ```
 
-We removed all references to the `mox` module and replaced them with calls to the `Mimic.copy/1` function.
+我们删除了所有 `mox` 模块的引用，并把它们替换成了 `Mimic.copy/1` 调用。
 
-We are now ready to run our new test:
+现在我们可以运行新测试了：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix test.unit
@@ -1040,17 +982,17 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-As we can see, we successfully mocked the `Binance` and `Phoenix.PubSub` modules.
-We can also see that we are getting log messages that we will deal with next.
+可以看到，我们成功 mock 了 `Binance` 和 `Phoenix.PubSub` 模块。
+同时我们也看到了日志信息——接下来我们会处理它。
 
-### Logging elephant in the room
+### 日志这个必须面对的问题
 
-As we moved back to using the `Logger` module instead of some dummy implementation,
-we are now back to square one, seeing logs in our tests. We could go on the route of mocking the `Logger` module using the `Mimic`,
-but actually, there's a better way to deal with logs in the tests.
+既然我们又回到了使用 `Logger` 模块，而不是某个假的实现，
+测试里又重新出现了日志输出。我们当然可以继续用 `Mimic` 去 mock `Logger` 模块，
+但实际上，处理测试中的日志还有更好的办法。
 
-As ExUnit starts, it allows us to pass options that will modify its behaviour. One of those is `capture_log`,
-which, when set to `true`, will cause ExUnit to hide all log messages - let's update the test helper script to enable this feature:
+ExUnit 启动时允许我们传入一些选项来修改它的行为。其中一个选项是 `capture_log`，
+设为 `true` 时，ExUnit 会隐藏所有日志消息——我们来更新 test helper 脚本，启用这个功能：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
@@ -1058,7 +1000,7 @@ which, when set to `true`, will cause ExUnit to hide all log messages - let's up
 ExUnit.start(capture_log: true)
 ```
 
-Let's rerun our tests to see the difference:
+我们重新跑一下测试，看看差别：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix test.unit
@@ -1068,13 +1010,12 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-We can see that the ExUnit output is now free of any logs.
+可以看到，ExUnit 输出里已经没有日志了。
 
-But what if we would like to assert the logged message? We were able to do that using the `mox` package,
-as we were mocking and asserting log messages' contents inside those mocks.
+但如果我们希望断言日志消息呢？以前我们用 `mox` 包时，可以通过 mock 里对日志内容的断言来做到这一点。
 
-ExUnit provides a helper function for that case as well.
-We will modify our test to capture the log inside it and assert that it logs the correct value (the price of $0.8):
+ExUnit 也提供了这种场景的辅助函数。
+我们会修改测试，把日志捕获进来，并断言它记录了正确的值（0.8 这个价格）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/strategy_test.exs
@@ -1098,10 +1039,11 @@ We will modify our test to capture the log inside it and assert that it logs the
     assert log =~ "0.8"
 ```
 
-In the above code, we wrapped our call to the `Naive.Strategy.execute/3` into an anonymous function
-that we passed as an argument to the `with_log/1` function. The `with_log/1` function returns a tuple containing
-the result of the passed function and the generated log message(s).
-We can then assert that the logged message contains the expected value, strengthening our test. We can now rerun our unit test:
+在上面的代码里，我们把对 `Naive.Strategy.execute/3` 的调用包进了一个匿名函数，
+再把这个匿名函数作为参数传给 `with_log/1`。
+`with_log/1` 会返回一个元组，里面包含被调用函数的结果和生成的日志消息。
+这样我们就可以断言日志里包含了预期值，从而增强测试。
+现在我们可以重新运行单元测试：
 
 
 ```{r, engine = 'bash', eval = FALSE}
@@ -1112,23 +1054,20 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-It's worth noting that we were able to capture the log message even with global capture_log enabled(inside the test helper when starting ExUnit).
-This gives us ultimate flexibility. None of the logs are displayed, although whenever we need,
-we can always capture logs inside test cases on a test-by-test basis.
+值得注意的是，即使我们在 ExUnit 启动时已经全局启用了 `capture_log`，也依然能够在测试里单独捕获日志。
+这给了我们最大的灵活性。默认情况下不会显示任何日志，但只要需要，我们总可以按测试单独捕获它们。
 
-That would wrap up the writing unit tests part. But how will this work with running our code locally(or in "production") or running integration tests?
+这就完成了单元测试部分。不过如果我们要在本地（或者“生产”）运行代码，或者运行集成测试，这套方案该怎么运作呢？
 
-## Swapping back to attributes
+## 切回属性方案
 
-We need to have a way to swap Binance's implementation between dev/test/integration and prod environments.
+我们需要一种方式，能在 dev/test/integration 和 prod 环境之间切换 Binance 的实现。
 
-We can't use the `mimic` package to swap the implementation as this is a "running" mode, not some tests.
+我们不能用 `mimic` 包去切换实现，因为那是“运行中”的模式，不是测试。
 
-Please note that most of the applications won't need to change the implementation based on
-the environment as the 3rd party library/package itself will provide some flags to enable/disable the functionality
-(like sending emails to newly registered users).
+请注意，大多数应用并不需要根据环境去改变实现，因为第三方库/包本身通常就会提供开关来启用/禁用功能（比如给新注册用户发邮件）。
 
-Let's get back to the `Naive.Strategy` module, where we will bring back the attribute-based `@binance_client`:
+我们回到 `Naive.Strategy` 模块，把基于属性的 `@binance_client` 再拿回来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -1145,12 +1084,12 @@ Let's get back to the `Naive.Strategy` module, where we will bring back the attr
   @binance_client.get_exchange_info(...)
 ```
 
-We need to update all references to the Binance module's functions to use the `@binance_client` module's attribute.
+我们需要把模块里所有对 `Binance` 模块函数的引用都改回使用 `@binance_client` 属性。
 
-### Config files
+### 配置文件
 
-We will now move to config files, where we will re-add the `binance_client` configuration.
-As previously we will want the `BinanceMock` to be used everywhere besides production:
+接下来我们回到配置文件，把 `binance_client` 配置加回来。
+和之前一样，我们会让 `BinanceMock` 除了生产环境外都被使用：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -1168,11 +1107,11 @@ config :naive,
 # remove everything besides the `import`
 ```
 
-It's important to understand that we don't need to configure the `binance_client` inside the test configuration.
-As we now utilise the `mimic` package, we can drive mocking from the test level.
+需要理解的是，我们不需要在 test 配置里设置 `binance_client`。
+既然现在我们使用的是 `mimic` 包，就可以直接在测试层驱动 mock。
 
-The knock-on effect of bringing back the environment driven `@binance_client` is that now we will
-need to mimic the `BinanceMock` module instead of `Binance` for our unit tests. To fix that, we need to update the test helper:
+把环境驱动的 `@binance_client` 加回来之后，我们的单元测试现在需要 mock 的不是 `Binance`，而是 `BinanceMock`。
+为此，我们需要更新 test helper：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
@@ -1180,7 +1119,7 @@ need to mimic the `BinanceMock` module instead of `Binance` for our unit tests. 
 Mimic.copy(BinanceMock) # <= updated from Binance
 ```
 
-and the unit test:
+以及单元测试：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/test/naive/strategy_test.exs
@@ -1189,9 +1128,9 @@ and the unit test:
     |> stub(
 ```
 
-We needed to change the above as now, in the case of dev and integration, we are using the `BinanceMock`. 
+之所以要做上面的改动，是因为在 dev 和 integration 环境下我们现在用的是 `BinanceMock`。
 
-After applying the above changes, we can now run the unit tests:
+应用上述改动后，现在我们可以运行单元测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix test.unit
@@ -1201,7 +1140,7 @@ Finished in 0.2 seconds (0.2s async, 0.00s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-As well as run the integration tests:
+也可以运行集成测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
@@ -1210,7 +1149,7 @@ Finished in 7.2 seconds (0.04s async, 7.1s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-And finally, we are able to run the project:
+最后，我们还可以运行项目本身：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -1223,47 +1162,44 @@ iex(2)> Naive.start_trading("XRPUSDT")
 quantity: 0.12240000
 ```
 
-## Final thoughts
+## 最后的思考
 
-**We went in a full circle in this chapter - and that was the point.** Here's what we covered:
+**本章我们兜了一个大圈——而这正是重点。** 我们完成了这些内容：
 
-- Built a complete `Core.Exchange` behaviour with generic `Order` and `SymbolInfo` structs
-- Implemented that behaviour in both `Core.Exchange.Binance` and `BinanceMock`
-- Updated the `Naive.Strategy`, seed scripts, and `DataWarehouse` to use the abstraction
-- Admitted it was premature over-engineering and reverted everything
-- Replaced `Mox` with `Mimic`, which let us mock modules without behaviours
-- Brought back the `@binance_client` attribute for environment-based implementation swapping
-- Captured and asserted log messages using ExUnit's built-in `capture_log` and `with_log/1`
+- 构建了完整的 `Core.Exchange` behaviour，包含通用的 `Order` 和 `SymbolInfo` 结构体
+- 在 `Core.Exchange.Binance` 和 `BinanceMock` 中都实现了这个 behaviour
+- 更新了 `Naive.Strategy`、seeding 脚本和 `DataWarehouse`，让它们使用这个抽象层
+- 承认这是一种过早的过度设计，并把它全部回退
+- 用 `Mimic` 替换了 `Mox`，这样我们就能在没有 behaviours 的情况下 mock 模块
+- 把 `@binance_client` 属性恢复回来，用于按环境切换实现
+- 使用 ExUnit 自带的 `capture_log` 和 `with_log/1` 来捕获并断言日志消息
 
-The pattern worth remembering here is the layering decision itself:
+这里值得记住的模式，是“分层决策”本身：
 
-1. If you need to swap implementations between environments (dev/test/prod), use compile-time module attributes (`@binance_client`)
-2. If you need to mock dependencies in tests, prefer `Mimic` over `Mox` unless you already have a natural behaviour
-3. If you genuinely have multiple implementations of a concept (not just for testing), then define a behaviour -
-but wait until you've seen at least two real implementations before committing
+1. 如果你需要在不同环境之间切换实现（dev/test/prod），使用编译期模块属性（`@binance_client`）
+2. 如果你需要在测试里 mock 依赖，优先使用 `Mimic` 而不是 `Mox`，除非你本来就有一个自然的 behaviour
+3. 如果你真的有同一个概念的多个实现（而不只是为了测试），那就定义一个 behaviour——但要等你至少见过两个真实实现之后再决定
 
-It's worth being honest about the trade-offs of each approach:
+也值得诚实地说说每种方案的取舍：
 
-- **`Mox` with behaviours** gives you compile-time contract guarantees but forces you to abstract before you understand the domain. In our case, we defined `Core.Exchange` structs based on a single exchange - that's guessing, not designing
-- **`Mimic`** is lightweight and test-friendly but offers no compile-time safety. If the real module's API changes, your stubs will silently pass until they hit production
-- **Module attributes** are the simplest swap mechanism but they're resolved at compile time, which means you can't change implementations at runtime
+- **带 behaviours 的 `Mox`** 给你编译期契约保证，但会逼你在还没真正理解领域之前就开始抽象。就我们这个例子而言，我们是基于单一交易所定义了 `Core.Exchange` 结构体——这更像是在猜，而不是在设计
+- **`Mimic`** 轻量、对测试友好，但没有编译期安全性。如果真实模块 API 变了，你的 stub 也许会悄悄继续通过，直到它到了生产环境才出问题
+- **模块属性** 是最简单的切换机制，但它在编译期求值，这意味着你不能在运行时切换实现
 
-The biggest lesson from this chapter isn't about any specific package.
-It's about timing. Abstractions introduced too early calcify around
-assumptions you haven't validated. The `Core.Exchange` behaviour we built
-was structurally correct but informationally bankrupt - we'd never seen a
-second exchange, so every design decision was a guess dressed up as architecture.
+本章最大的教训不是某个特定包本身。
+而是时机问题。过早引入的抽象会围绕着尚未验证的假设变得僵化。
+我们构建的 `Core.Exchange` behaviour 在结构上是正确的，但在信息上是贫瘠的——
+我们从来没见过第二个交易所，所以每个设计决定都只是披着架构外衣的猜测。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-We have a clean testing setup now, but we've barely used it. Our strategy has
-a lot of pure logic that we haven't covered with tests yet. In the next chapter,
-we'll write tests for `generate_decision/4` and the other pure functions to show
-just how much coverage you get for free when your business logic doesn't touch
-the outside world.
+我们现在有了一个干净的测试环境，但其实还没怎么真正用它。
+我们的策略里有很多纯逻辑，还没有被测试覆盖。
+在下一章里，我们会为 `generate_decision/4` 以及其他纯函数编写测试，
+展示当业务逻辑不接触外部世界时，你能轻松拿到多少免费的覆盖率。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_20](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20)).
+本章源码可以在本书的源代码仓库中找到
+（分支：
+[chapter_20](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_20)）。
