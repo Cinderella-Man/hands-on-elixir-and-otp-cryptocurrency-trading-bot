@@ -1,30 +1,30 @@
-# Run multiple traders in parallel
+# 并行运行多个 trader {#08-run-multiple-parallel-traders}
 
-In the previous chapter, we gave our traders a proper budget and dynamic quantity calculation.
-But we're still only running one trader at a time per symbol. When that trader buys and the price keeps dropping,
-it just sits there waiting for the price to climb back up to its sell target - missing every dip along the way.
+在上一章中，我们为交易者引入了合适的预算和动态数量计算。
+但我们仍然只是对每个交易对一次只运行一个 trader。当这个 trader 买入后，如果价格继续下跌，
+它就只能一直等待价格涨回到卖出目标——错过了沿途的每一次下跌。
 
-That's leaving money on the table. What if we could spin up additional traders as the price falls,
-each one buying at a lower level? Then when the price recovers, they'd all sell at their respective targets,
-potentially turning a single trade into multiple profitable ones.
+这其实是在把钱留在桌上。要是我们能在价格下跌时不断启动更多 trader，
+让每一个都在更低的位置买入，会怎样？这样当价格回升时，它们就可以各自按自己的目标卖出，
+把一笔交易变成多笔有利润的交易。
 
-In this chapter, we'll implement exactly that. We'll add a "rebuy" mechanism that monitors the price after a buy order fills.
-When the price drops below our buy price by a configurable `rebuy_interval`, we'll notify the Leader to start another trader.
-The Leader will honor our `chunks` setting to cap the maximum number of parallel traders - remember that budget we set up?
-It's about to get divided among multiple traders working in concert.
+在本章中，我们会 בדיוק 实现这一点。我们会添加一个“rebuy”机制，在买单成交后持续监控价格。
+当价格相对于我们的买入价下跌到可配置的 `rebuy_interval` 之后，我们会通知 Leader 再启动一个 trader。
+Leader 会遵守我们设置的 `chunks`，以限制并行 trader 的最大数量——还记得我们前面设置的预算吗？
+它现在要被拆分给多个协同工作的 trader 了。
 
-Let's put our supervision tree to work!
+让我们的监督树真正发挥作用吧！
 
-## Objectives
+## 目标
 
-- describe and design the required functionality
-- implement rebuy in the `Naive.Trader`
-- implement rebuy in the `Naive.Leader`
-- improve logs by assigning IDs to traders
+- 描述并设计所需功能
+- 在 `Naive.Trader` 中实现 rebuy
+- 在 `Naive.Leader` 中实现 rebuy
+- 通过给 trader 分配 ID 来改进日志
 
-## Describe and design the required functionality
+## 描述并设计所需功能
 
-At this moment, inside the `Naive.Leader` we have some silly code that starts all of the traders at the same moment:
+此时，在 `Naive.Leader` 里我们有一段有些傻的代码，它会在同一时刻启动所有 trader：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/leader.ex
@@ -35,27 +35,28 @@ At this moment, inside the `Naive.Leader` we have some silly code that starts al
     ...
 ```
 
-Let's say that we placed a buy order that got filled and the price has fallen before reaching the sell level. We can see here that we missed a nice opportunity to buy more as price drops and make money as it climbs back:
+假设我们挂出了一笔买单并且它已经成交，而价格在到达卖出水平之前就开始下跌。我们可以看出，我们错过了一个很好的机会：
+在价格下跌时继续买入，并在它回升时赚钱：
 
 ```{r, fig.align="center", out.height="20%", echo=FALSE}
 knitr::include_graphics("images/chapter_09_01_single_trader.png")
 ```
 
-We will implement an additional trade event callback inside the `Naive.Trader` that will keep checking the price after the buy order has been filled.
-Whenever the price drops below the `buy_order`'s `price` by `rebuy_interval`, we will notify the `Naive.Leader` to start a new `Naive.Trader` process:
+我们会在 `Naive.Trader` 里实现一个额外的交易事件回调，它会在买单成交之后继续检查价格。
+每当价格相对于 `buy_order` 的 `price` 按 `rebuy_interval` 再次下跌时，我们都会通知 `Naive.Leader` 再启动一个新的 `Naive.Trader` 进程：
 
 ```{r, fig.align="center", out.height="20%", echo=FALSE}
 knitr::include_graphics("images/chapter_09_02_multi_traders.png")
 ```
 
-The `Naive.Leader` keeps track of how many `Naive.Trader`s are running and needs to honor the number of `chunks` set up in the settings (one chunk == one trader).
+`Naive.Leader` 需要跟踪当前有多少个 `Naive.Trader` 在运行，并且需要遵守 settings 里设置的 `chunks` 数量（一个 chunk == 一个 trader）。
 
-To stop the `Naive.Trader`s from continuously notifying about price drops,
-we'll introduce a boolean flag that tracks whether the `Naive.Leader` has already been notified.
+为了避免 `Naive.Trader` 不断地就价格下跌发出通知，
+我们会引入一个布尔标志，用来记录 `Naive.Leader` 是否已经收到了通知。
 
-## Implement rebuy inside `Naive.Trader`
+## 在 `Naive.Trader` 中实现 rebuy
 
-We will start by adding the `rebuy_interval` and the `rebuy_notified` to the trader's state:
+我们先把 `rebuy_interval` 和 `rebuy_notified` 添加到 trader 的状态中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -66,8 +67,8 @@ We will start by adding the `rebuy_interval` and the `rebuy_notified` to the tra
       :budget,
       :buy_down_interval,
       :profit_target,
-      :rebuy_interval, # <= add this field
-      :rebuy_notified, # <= add this field
+      :rebuy_interval, # <= 添加这个字段
+      :rebuy_notified, # <= 添加这个字段
       :tick_size,
       :step_size
     ]
@@ -78,21 +79,21 @@ We will start by adding the `rebuy_interval` and the `rebuy_notified` to the tra
       :sell_order,
       :buy_down_interval,
       :profit_target,
-      :rebuy_interval, # <= add this field
-      :rebuy_notified, # <= add this field
+      :rebuy_interval, # <= 添加这个字段
+      :rebuy_notified, # <= 添加这个字段
       :tick_size,
       :step_size
     ]
   end
 ```
 
-Rebuy logic should be placed almost as the last callback, just before the catch-all that ignores all events.
-We need to retrieve the current `price` and `buy_price` and check that we haven't already notified the leader (via the `rebuy_notified` flag):
+rebuy 逻辑应放在几乎最后一个回调位置，也就是在捕获所有事件的兜底回调之前。
+我们需要取出当前 `price` 和 `buy_price`，并检查我们是否还没有通知过 leader（通过 `rebuy_notified` 标志）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
   ...
-  # sell filled callback here
+  # sell filled 回调在这里
   ...
   def handle_info(
         %TradeEvent{
@@ -109,16 +110,16 @@ We need to retrieve the current `price` and `buy_price` and check that we haven'
       ) do
 
   end
-  # catch all callback here
+  # 兜底回调在这里
 ```
 
-We need to calculate whether the current price has dropped below the rebuy threshold.
-If yes, we will notify the leader and update the boolean flag.
-We'll abstract the calculation to a separate function(for readability) that we'll write below:
+我们需要计算当前价格是否已经跌破 rebuy 阈值。
+如果是，我们就通知 leader，并更新这个布尔标志。
+为了可读性，我们会把这个判断抽成一个独立函数，放在下面：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/trader.ex
-    # body of the above callback
+    # 上面回调的主体
     if trigger_rebuy?(buy_price, current_price, rebuy_interval) do
       Logger.info("Rebuy triggered for #{symbol} trader")
       new_state = %{state | rebuy_notified: true}
@@ -129,13 +130,13 @@ We'll abstract the calculation to a separate function(for readability) that we'l
     end
 ```
 
-As mentioned before, we will set the `rebuy_notified` boolean flag to true and notify the leader using the `notify` function with the dedicated atom.
+正如前面提到的，我们会把 `rebuy_notified` 布尔标志设为 true，并使用带有专用 atom 的 `notify` 函数通知 leader。
 
-At the bottom of the module we need to add the `trigger_rebuy?` helper function:
+在模块底部，我们需要添加 `trigger_rebuy?` 辅助函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
-  # bottom of the module
+  # 模块底部
   defp trigger_rebuy?(buy_price, current_price, rebuy_interval) do
     buy_price = Decimal.from_float(buy_price)
     current_price = Decimal.from_float(current_price)
@@ -150,26 +151,26 @@ At the bottom of the module we need to add the `trigger_rebuy?` helper function:
   end
 ```
 
-## Implement rebuy in the `Naive.Leader`
+## 在 `Naive.Leader` 中实现 rebuy
 
-Moving on to the `Naive.Leader` module,
-we need to change it so it only starts one trader initially (instead of all of them at once) inside `handle_continue`:
+接下来我们转到 `Naive.Leader` 模块，
+需要修改它，让它在 `handle_continue` 里一开始只启动一个 trader，而不是一下子启动全部：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
   def handle_continue(:start_traders, %{symbol: symbol} = state) do
     ...
-    traders = [start_new_trader(trader_state)] # <= updated part
+    traders = [start_new_trader(trader_state)] # <= 更新的部分
 
     ...
   end
 ```
 
-We will need to add a new clause of the `notify` function that will handle the rebuy scenario:
+我们还需要为 `notify` 函数增加一个新的分支，用来处理 rebuy 场景：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # add below current `notify` function
+  # 添加在当前 `notify` 函数下面
   def notify(:rebuy_triggered, trader_state) do
     GenServer.call(
       :"#{__MODULE__}-#{trader_state.symbol}",
@@ -178,11 +179,11 @@ We will need to add a new clause of the `notify` function that will handle the r
   end
 ```
 
-We need to add a new `handle_call` function that will start new traders only when there are still chunks available(enforce the maximum number of parallel traders) - let's start with a header:
+我们还需要添加一个新的 `handle_call` 函数：当还有可用 chunk 时，它才会启动新的 trader（也就是强制限制并行 trader 的最大数量）——先写一个函数头：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
-  # place this one after :update_trader_state handle_call
+  # 放在 :update_trader_state 的 handle_call 之后
   def handle_call(
         {:rebuy_triggered, new_trader_state},
         {trader_pid, _},
@@ -192,19 +193,19 @@ We need to add a new `handle_call` function that will start new traders only whe
   end
 ```
 
-There are a few important details to make note of:
+这里有几个重要细节需要注意：
 
-* we need the trader's PID to be able to find its details inside the list of traders
-* we need settings to confirm the number of chunks to be able to limit the maximum number of parallel traders
+* 我们需要 trader 的 PID，才能在 trader 列表中找到它的具体信息
+* 我们需要 settings 来确认 chunk 数量，从而限制并行 trader 的最大数目
 
-Moving on to the body of our callback.
-As with the other callbacks,
-we'll check if we can find the trader in our list,
-and based on that we'll either start another one (if we haven't reached the chunk limit) or ignore the request:
+继续看这个回调的主体。
+和其他回调一样，
+我们会先检查是否能在列表中找到这个 trader，
+然后根据结果决定是启动新的 trader（如果还没到 chunk 上限）还是忽略请求：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/leader.ex
-    # body of our callback
+    # 回调主体
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
         Logger.warning("Rebuy triggered by trader that leader is not aware of")
@@ -228,10 +229,10 @@ and based on that we'll either start another one (if we haven't reached the chun
     end
 ```
 
-In the above code, we need to remember to update the state of the trader that triggered the rebuy inside the `traders` list as well as add the state of a new trader to that list.
+在上面的代码中，我们需要记住：不仅要更新触发 rebuy 的 trader 在 `traders` 列表中的状态，还要把一个新 trader 的状态加到这个列表里。
 
-As with the other settings, we'll hardcode the `rebuy_interval` inside `fetch_symbol_settings`
-and initialize `rebuy_notified` inside `fresh_trader_state`:
+和其他 settings 一样，我们会把 `rebuy_interval` 硬编码在 `fetch_symbol_settings` 里，
+并在 `fresh_trader_state` 里把 `rebuy_notified` 初始化为 false：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -239,7 +240,7 @@ and initialize `rebuy_notified` inside `fresh_trader_state`:
     %{
       struct(Trader.State, settings)
       | budget: D.div(settings.budget, settings.chunks),
-        rebuy_notified: false # <= add this line
+        rebuy_notified: false # <= 添加这一行
     }
   end
 
@@ -249,38 +250,38 @@ and initialize `rebuy_notified` inside `fresh_trader_state`:
     Map.merge(
       %{
         ...
-        chunks: 5, # <= update to 5 parallel traders max
-        budget: 100, # <= update this line
+        chunks: 5, # <= 更新为最多 5 个并行 trader
+        budget: 100, # <= 更新这一行
         ...
         profit_target: "-0.0012",
-        rebuy_interval: "0.001" # <= add this line
+        rebuy_interval: "0.001" # <= 添加这一行
       },
       symbol_filters
     )
   end
 ```
 
-We also update the `chunks` and the `budget` to allow our strategy to start up to 5 parallel traders with a budget of 20 USDT each(100/5) as Binance has minimal order requirement at about $15(when using the `BinanceMock` this doesn't really matter).
+我们还把 `chunks` 和 `budget` 更新了，这样我们的策略就能启动最多 5 个并行 trader，每个 trader 的预算是 20 USDT（100/5），因为 Binance 的最小下单要求大约是 15 美元（在使用 `BinanceMock` 时这点其实无所谓）。
 
-## Improve logs by assigning ids to traders
+## 通过分配 trader ID 改进日志
 
-The final change will be to add an `id` to the trader's state so we can use it inside log messages to give us meaningful data about what's going on(otherwise we won't be able to tell which message was logged by which trader).
+最后一个改动，是给 trader 的状态增加一个 `id`，这样我们就可以在日志消息中使用它，从而得到更有意义的信息（否则我们没法知道哪条日志是哪个 trader 打出来的）。
 
-First, let's add the `id` into the `Naive.Leader`'s fresh_trader_state as it will be defined per trader:
+首先，我们把 `id` 加到 `Naive.Leader` 的 `fresh_trader_state` 里，因为它是按 trader 定义的：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
   defp fresh_trader_state(settings) do
     %{
       struct(Trader.State, settings)
-      | id: :os.system_time(:millisecond), # <= add this line
+      | id: :os.system_time(:millisecond), # <= 添加这一行
         budget: D.div(settings.budget, settings.chunks),
         rebuy_notified: false
     }
   end
 ```
 
-Now we can move on to the `Naive.Trader` and add it to the `%State{}` struct. We'll also modify every callback to include the id in log messages:
+现在我们可以转到 `Naive.Trader`，把它加到 `%State{}` 结构体中。我们还会修改所有回调，让日志消息里包含这个 id：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -366,12 +367,12 @@ Now we can move on to the `Naive.Trader` and add it to the `%State{}` struct. We
   end
 ```
 
-That finishes the implementation part - we should now be able to test the implementation and see a dynamically growing number of traders for our strategy based on price movement.
+到这里实现部分就完成了——现在我们应该能够测试这个实现，并看到我们的策略会根据价格走势动态增长 trader 数量。
 
-## Manual testing in IEx
+## 在 IEx 中手动测试
 
-Let's start an IEx session and open the `:observer`(go to the "Applications" tab and click on `naive` in the left panel).
-We'll be able to watch the number of traders grow and see PIDs changing as traders complete their trade cycles:
+让我们启动一个 IEx 会话，并打开 `:observer`（进入 “Applications” 标签页，然后在左侧面板点击 `naive`）。
+我们就能看到 trader 数量增长，并且随着 trader 完成交易循环，PID 也会变化：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -446,37 +447,37 @@ quantity: 2.445
 10:25:40.015 [info]  All traders already started for XRPUSDT
 ```
 
-And our observer shows the following:
+而我们的 observer 显示如下：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_09_supervision_tree.png")
 ```
 
-We can clearly see that our strategy dynamically scaled from 1 to 5 parallel traders and they were going through different trading steps without any problems -
-I think that's really cool to see and it wasn't difficult to achieve in Elixir.
+可以清楚地看到，我们的策略动态地从 1 个 trader 扩展到了 5 个并行 trader，并且它们在没有任何问题的情况下执行不同的交易步骤——
+我觉得这在 Elixir 里实现起来真的很酷。
 
-**This is a big milestone!** Our naive trading strategy now:
+**这是一个重要的里程碑！** 我们的 naive 交易策略现在：
 
-- Dynamically scales from 1 to N parallel traders based on price movement
-- Buys at progressively lower prices as the market dips
-- Respects the `chunks` limit to cap maximum parallel exposure
-- Assigns unique IDs to each trader for meaningful log output
-- Automatically restarts traders after completed trade cycles
+- 可以根据价格走势动态地从 1 个扩展到 N 个并行 trader
+- 在市场下跌时以逐步更低的价格买入
+- 遵守 `chunks` 限制，控制最大并行敞口
+- 为每个 trader 分配唯一 ID，以便生成有意义的日志输出
+- 在完成交易循环后自动重启 trader
 
-The supervision tree we built back in Chapter 5 is now fully utilized - each trader runs independently,
-and if one crashes, the Leader can restart it with cached state while the others keep trading.
+我们在第 5 章中构建的监督树现在已经被充分利用——每个 trader 都独立运行，
+如果其中一个崩溃了，Leader 可以用缓存的状态把它重启，而其他 trader 继续交易。
 
-**So, What's Next?**
+**下一步是什么？**
 
-Our strategy works, but all the settings are still hardcoded in the `Naive.Leader`.
-Want to trade BTCUSDT with different parameters than XRPUSDT? Too bad - they all use the same values.
+我们的策略已经可以工作，但所有设置仍然硬编码在 `Naive.Leader` 里。
+如果你想用不同参数交易 BTCUSDT 而不是 XRPUSDT？没办法，它们都只能用同一套参数。
 
-In the next chapter, we'll fix this by moving our settings into a Postgres database.
-We'll set up Docker, add Ecto to our project, create a settings table, and seed it with defaults for every trading pair Binance supports.
-This will let us fine-tune the strategy per symbol and eventually enable or disable trading dynamically.
+在下一章中，我们会把这些设置迁移到 Postgres 数据库中。
+我们会配置 Docker，给项目添加 Ecto，创建 settings 表，并为 Binance 支持的每个交易对填充默认值。
+这样我们就能按交易对微调策略，最终还能动态启用或停用交易。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_08](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_08)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_08](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_08)）。

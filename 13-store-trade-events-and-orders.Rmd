@@ -1,62 +1,61 @@
-# Store trade events and orders inside the database
+# 将交易事件和订单存入数据库 {#13-store-trade-events-and-orders}
 
-In the last chapter, we built a macro-based `Core.ServiceSupervisor` to eliminate duplicated supervision code.
-It works - but if you felt like we were reaching for a sledgehammer to hang a picture frame, you're not alone.
-Macros are powerful, but they add complexity that can make debugging harder and confuse developers unfamiliar with metaprogramming.
+在上一章中，我们通过一个基于宏的 `Core.ServiceSupervisor` 消除了重复的监督代码。
+它确实能工作——但如果你觉得我们像是为了挂一幅画而抡起了大锤，你并不是一个人。
+宏很强大，但它也会增加复杂性，让调试更难，也会让不熟悉元编程的开发者感到困惑。
 
-Here's the good news: Elixir provides a simpler tool for exactly this problem.
-The `Registry` module lets us track dynamic processes using plain strings instead of atoms,
-and it integrates seamlessly with `DynamicSupervisor`.
-By the end of this chapter, we'll have a supervision pattern so clean that the `Core.ServiceSupervisor` becomes obsolete.
+好消息是：Elixir 针对这个问题提供了一个更简单的工具。
+`Registry` 模块让我们可以用普通字符串而不是 atom 来跟踪动态进程，
+而且它和 `DynamicSupervisor` 可以无缝配合。
+到本章结束时，我们会得到一种非常干净的监督模式，足以让 `Core.ServiceSupervisor` 变得多余。
 
-But first, we need data to work with. Our trading bot can execute trades, but it has amnesia -
-every time we restart, all history vanishes. That's a problem for two reasons:
+但首先，我们需要有数据可用。我们的交易机器人可以执行交易，但它有“健忘症”——
+每次重启时，所有历史都会消失。这有两个问题：
 
-1. **Backtesting**: We can't evaluate our strategy against historical data if we don't store that data.
-2. **Auditing**: Any serious trading system needs a record of what happened and when.
+1. **回测**：如果我们不存数据，就没法用历史数据评估策略。
+2. **审计**：任何严肃的交易系统都需要记录发生了什么，以及何时发生。
 
-In this chapter, we'll create a `data_warehouse` application that subscribes to trade events and orders,
-persisting them to a database. Along the way, we'll discover that `Registry` plus `DynamicSupervisor`
-gives us everything the macro approach provided - with half the complexity.
+在本章中，我们会创建一个 `data_warehouse` 应用，它会订阅交易事件和订单，
+并把它们持久化到数据库中。与此同时，我们会发现 `Registry` 加上 `DynamicSupervisor`
+能提供宏方案所能提供的一切——而复杂度只有一半。
 
-## Objectives
-- overview of requirements
-- create a new `data_warehouse` application in the umbrella
-- connect to the database using Ecto
-- store trade events' data
-- store orders' data
-- implement supervision
+## 目标
+- 概述需求
+- 在 umbrella 中创建一个新的 `data_warehouse` 应用
+- 使用 Ecto 连接数据库
+- 存储交易事件数据
+- 存储订单数据
+- 实现监督
 
-## Overview of requirements
+## 需求概述
 
-In the next chapter, we will test our strategy against historical data - a process called backtesting that I'll explain in detail when we get there.
+在下一章中，我们会针对历史数据测试策略——这个过程叫做回测，到了那一章我会详细解释。
 
-What we need to have in place before we will be able to do that is both trade events and orders stored in the database.
+在我们能够进行回测之前，需要先把交易事件和订单都存进数据库。
 
-Starting with the trade events.
-The `streamer` application could store trade events from Binance inside its database but how would that work
-if we would like to introduce another source of non-streamed trade events(ie. flat files, HTTP polling).
-It would be better if the `Streamer.Binance` process would keep on streaming those trade events
-as it is and we would create a new application that would subscribe to the existing `TRADE_EVENTS:#{symbol}` topic and store them in the database.
+先说交易事件。
+`streamer` 应用当然可以把来自 Binance 的交易事件存进自己的数据库，但如果我们还想引入另一种非流式的交易事件来源（比如平面文件或 HTTP 轮询）呢？
+更好的做法是：让 `Streamer.Binance` 进程继续像现在这样负责流式发送这些交易事件，
+然后我们创建一个新的应用，去订阅现有的 `TRADE_EVENTS:#{symbol}` topic，并把它们存到数据库里。
 
-A similar idea applies to the orders' data. At this moment the `naive` application uses the Binance module to place orders.
-We could store them inside the `naive` application's database but how would that work if we would like to introduce another trading strategy.
-Holding data in separate databases for each strategy would cause further complications in future reporting, auditing, etc.
+订单数据也类似。此时，`naive` 应用使用 Binance 模块来下单。
+我们也可以把订单存进 `naive` 应用自己的数据库，但如果我们以后还想引入另一个交易策略呢？
+为每个策略分别维护独立数据库，会让未来的报表、审计等工作变得更加复杂。
 
-To store trade events' and orders' data we will create a new application called `data_warehouse` inside our umbrella project.
-It will subscribe to a `TRADE_EVENTS:#{symbol}` stream as well as `ORDERS:#{symbol}` stream,
-convert broadcasted data to its own representations(structs) and store it inside the database.
+为了存储交易事件和订单数据，我们会在 umbrella 项目里创建一个名为 `data_warehouse` 的新应用。
+它会订阅 `TRADE_EVENTS:#{symbol}` 流以及 `ORDERS:#{symbol}` 流，
+把广播过来的数据转换成它自己的表示形式（结构体），再存入数据库。
 
-Trade events are already broadcasted to the PubSub topic, orders on the other hand aren't.
-We will need to modify the `Naive.Trader` module to broadcast the new and updated orders to the `ORDERS:#{symbol}` topic.
+交易事件已经通过 PubSub topic 广播了，而订单还没有。
+我们需要修改 `Naive.Trader` 模块，在挂出买单和卖单时，把新的和更新后的订单广播到 `ORDERS:#{symbol}` topic。
 
-After implementing the basic worker that will store the incoming data(trade events and orders) inside the database,
-we will look into adding a supervision tree utilizing [Elixir Registry](https://hexdocs.pm/elixir/master/Registry.html).
-It will allow us to skip registering every worker with a unique atom and will offer an easy lookup to fetch PIDs instead.
+在实现了一个基础 worker 用来把接收到的数据（交易事件和订单）存进数据库之后，
+我们再来引入一个使用 [Elixir Registry](https://hexdocs.pm/elixir/master/Registry.html) 的监督树。
+它会让我们不必再用唯一 atom 来注册每个 worker，而是能直接通过查找 PID 来完成关联。
 
-## Create a new `data_warehouse` application in the umbrella
+## 在 umbrella 中创建一个新的 `data_warehouse` 应用
 
-Let's start by creating a new application called `data_warehouse` inside our umbrella:
+我们先在 umbrella 里创建一个新应用，叫做 `data_warehouse`：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
@@ -74,9 +73,9 @@ $ mix new data_warehouse --sup
 ...
 ```
 
-## Connect to the database using Ecto
+## 使用 Ecto 连接数据库
 
-We can now follow similar steps as previously and add required dependencies (like the `ecto`) to its `deps` by modifying its `mix.exs` file:
+现在我们可以像之前那样继续，修改 `mix.exs` 文件，把所需依赖（比如 `ecto`）加入 `deps`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/mix.exs
@@ -93,10 +92,10 @@ We can now follow similar steps as previously and add required dependencies (lik
   end
 ```
 
-Additionally, we added the `phoenix_pubsub`(to subscribe to the PubSub topic), the `streamer` application(to use its `Streamer.Binance.TradeEvent` struct),
-the `decimal` module to convert numbers and the `binance` package(to pattern match its structs).
+另外，我们还加入了 `phoenix_pubsub`（用于订阅 PubSub topic）、`streamer` 应用（用于复用它的 `Streamer.Binance.TradeEvent` 结构体）、
+`decimal` 模块（用于数值转换）以及 `binance` 包（用于匹配其结构体）。
 
-We can now jump back to the terminal to install added dependencies and generate a new `Ecto.Repo` module:
+现在我们可以回到终端安装新增依赖，并生成一个新的 `Ecto.Repo` 模块：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix deps.get
@@ -108,7 +107,7 @@ $ mix ecto.gen.repo -r DataWarehouse.Repo
 * updating ../../config/config.exs
 ```
 
-Before we will be able to create migrations that will create our tables we need to update the generated configuration inside the `config/config.exs` file:
+在我们能够创建 migration 来建立表之前，需要先更新 `config/config.exs` 文件中自动生成的配置：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -123,7 +122,7 @@ config :data_warehouse,            # <= add this line
   ecto_repos: [DataWarehouse.Repo] # <= add this line
 ```
 
-and add the `DataWarehouse.Repo` module to the children list of the `DataWarehouse.Application`'s process:
+并把 `DataWarehouse.Repo` 模块加入 `DataWarehouse.Application` 进程的 children 列表：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/data_warehouse/lib/data_warehouse/application.ex
@@ -134,15 +133,15 @@ and add the `DataWarehouse.Repo` module to the children list of the `DataWarehou
     ...
 ```
 
-The last step will be to create a database by running `mix ecto.create -r DataWarehouse.Repo` command.
+最后一步是运行 `mix ecto.create -r DataWarehouse.Repo` 来创建数据库。
 
-This ends up the setup of the `Ecto` - we can now move on to the implementation of storing the orders and the trade events.
+这样 Ecto 的基础就完成了——接下来我们可以开始实现订单和交易事件的存储。
 
 
 
-## Store trade events' data
+## 存储交易事件数据
 
-The first step to store trade events inside the database will be to create a table that will hold our data. We will start by creating the migration:
+要把交易事件存入数据库，第一步是创建一个表来保存这些数据。我们先创建 migration：
 
 ```{r, engine = 'elixir', eval = FALSE}
 $ cd apps/data_warehouse
@@ -151,15 +150,13 @@ $ mix ecto.gen.migration create_trade_events
 * creating priv/repo/migrations/20210222224514_create_trade_events.exs
 ```
 
-The `Streamer.Binance.TradeEvent` struct will serve as a list of columns for our new `trade_events` table.
+`Streamer.Binance.TradeEvent` 结构体会作为我们新 `trade_events` 表的列清单。
 
-Please note that we'll store `price` and `quantity` as `:decimal` rather than `:string` to enable mathematical
-comparisons in SQL queries (e.g., `WHERE price > 1000.5`).
-String columns would perform lexicographic comparisons `where "9.0" > "10.0"`,
-which would give incorrect results. We'll use `:decimal` instead of `:float` to
-maintain exact precision for financial calculations without floating-point rounding errors.
+请注意，我们会把 `price` 和 `quantity` 存为 `:decimal`，而不是 `:string`，以便在 SQL 查询中做数学比较（比如 `WHERE price > 1000.5`）。
+字符串列做的是字典序比较，比如 `where "9.0" > "10.0"`，那就会得到错误结果。
+我们也会用 `:decimal` 而不是 `:float`，这样可以在金融计算中保持精确精度，避免浮点舍入误差。
 
-Here's the full implementation of our migration:
+下面是 migration 的完整实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210222224514_create_trade_events.exs
@@ -184,18 +181,17 @@ defmodule DataWarehouse.Repo.Migrations.CreateTradeEvents do
 end
 ```
 
-We added the additional `id` field to easily identify each trade event and our timestamps for monitoring.
+我们额外加入了 `id` 字段，方便识别每条交易事件，并加入了 timestamps 用于监控。
 
-Let's run the migration so it will create a new `trade_events` table for us:
+现在我们运行 migration，为我们创建一个新的 `trade_events` 表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 $ mix ecto.migrate
 ```
 
-The next step will be to create a new directory called `schema` inside the                              
-`apps/data_warehouse/lib/data_warehouse` directory.
-Inside it, we need to create a new schema file called `trade_event.ex`.
-We can copy across the same columns from the migration straight to schema:
+下一步是在 `apps/data_warehouse/lib/data_warehouse` 目录下创建一个新的 `schema` 目录。
+在其中，我们需要创建一个新的 schema 文件 `trade_event.ex`。
+我们可以直接把 migration 中的列拷贝到 schema 里：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/trade_event.ex
@@ -219,10 +215,10 @@ defmodule DataWarehouse.Schema.TradeEvent do
 end
 ```
 
-At this moment we should be able to execute crud(create, read[select], update, delete) operations over the table using the above struct.
+此时我们应该已经可以对这张表执行 crud（create、read/select、update、delete）操作了。
 
-Currently, we can already store the trade events' data inside the database so we can move on to collecting it.
-Trade events are getting broadcasted by the `Streamer.Binance` process here:
+现在，交易事件已经可以存进数据库了，我们接着来收集它们。
+交易事件是通过这里的 `Streamer.Binance` 进程广播出来的：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/streamer/lib/streamer/binance.ex
@@ -235,12 +231,12 @@ Trade events are getting broadcasted by the `Streamer.Binance` process here:
     ...
 ```
 
-We will implement a `subscriber` process that will be given a PubSub topic and will store incoming data inside the database.
+我们会实现一个 `subscriber` 进程，它会被赋予一个 PubSub topic，并把进入的数据存入数据库。
 
 
 
-Let's start by creating a new folder called `subscriber` inside the                              
-`apps/data_warehouse/lib/data_warehouse` directory together with a new file called `worker.ex` inside it:
+先在 `apps/data_warehouse/lib/data_warehouse` 目录下创建一个名为 `subscriber` 的新文件夹，
+并在其中添加一个 `worker.ex` 文件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -271,12 +267,12 @@ defmodule DataWarehouse.Subscriber.Worker do
 end
 ```
 
-At this moment it's just a bog-standard implementation of the `GenServer` with a state struct containing a single key(`:topic`).
+此时它只是一个标准的 `GenServer` 实现，状态结构体里只有一个键（`:topic`）。
 
-**Note:** We're using an atom-based name here (`:"#{__MODULE__}-#{topic}"`).
-This works for now, but we'll replace it with Registry-based naming in the supervision section.
+**注意：** 这里我们使用的是基于 atom 的名字（`:"#{__MODULE__}-#{topic}"`）。
+现在这样可以工作，但我们会在监督部分用基于 Registry 的命名方式替换掉它。
 
-We need to update the `init/1` function to subscribe to the PubSub topic:
+我们需要更新 `init/1` 函数，让它订阅 PubSub topic：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -292,7 +288,7 @@ We need to update the `init/1` function to subscribe to the PubSub topic:
 
 
 
-Next, we need to add a handler for received messages:
+接下来，我们需要为收到的消息添加处理器：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -310,11 +306,10 @@ Next, we need to add a handler for received messages:
   end
 ```
 
-As we did in the case of the `Naive.Trader`, all incoming messages trigger a `handle_info/2` callback with the contents of
-the message and the current state of the subscriber worker.
-We just convert that incoming trade event to a map and then that map to the `TradeEvent` struct that gets inserted into the database.
+和 `Naive.Trader` 的情况一样，所有进入的消息都会触发一个 `handle_info/2` 回调，回调参数就是消息内容和 subscriber worker 当前状态。
+我们只需要把收到的交易事件转成 map，再把这个 map 转成 `TradeEvent` 结构体，最后插入数据库即可。
 
-That's all the code we need to store trade events. Let's test it in the interactive shell:
+要存储交易事件，所需代码就这些了。我们在交互式 shell 里测试一下：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -327,7 +322,7 @@ iex(2)> DataWarehouse.Subscriber.Worker.start_link("TRADE_EVENTS:XRPUSDT")
 {:ok, #PID<0.405.0>}
 ```
 
-After a couple of minutes we can check the database using `psql`:
+过几分钟后，我们可以用 `psql` 检查数据库：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ psql -Upostgres -h127.0.0.1
@@ -352,11 +347,11 @@ inserted_at        | 2021-02-23 00:49:48
 ...
 ```
 
-As we can see in the above output, trade events are now getting stored inside the database.
+从上面的输出可以看出，交易事件已经开始存入数据库。
 
-## Store orders' data
+## 存储订单数据
 
-In the same fashion as with trade events' data above, to store orders data we will create an `orders` table inside a new migration:
+和上面的交易事件数据一样，要存储订单数据，我们会通过新的 migration 创建一个 `orders` 表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 $ cd apps/data_warehouse
@@ -364,8 +359,7 @@ $ mix ecto.gen.migration create_orders
 * creating priv/repo/migrations/20210222224522_create_orders.exs
 ```
 
-The list of columns for this table will be a copy of [`Binance.Order`](https://github.com/dvcrn/binance.ex/blob/master/lib/binance/order.ex)
-struct returned from the Binance exchange:
+这张表的列清单会直接复制自 Binance 交易所返回的 [`Binance.Order`](https://github.com/dvcrn/binance.ex/blob/master/lib/binance/order.ex) 结构体：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210222224522_create_orders.exs
@@ -396,18 +390,18 @@ defmodule DataWarehouse.Repo.Migrations.CreateOrders do
 end
 ```
 
-We updated all of the shortened names like `orig_qty` to full names like `original_quantity`.
+我们把所有缩写名称，比如 `orig_qty`，都改成了完整名称，比如 `original_quantity`。
 
 
 
-Let's run the migration so it will create a new `orders` table for us:
+现在运行 migration，为我们创建新的 `orders` 表：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.migrate
 ```
 
-We can copy the above fields list to create a schema module.
-First, let's create a new file called `order.ex` inside the `apps/data_warehouse/lib/data_warehouse/schema` directory:
+我们可以把上面的字段列表复制出来，创建一个 schema 模块。
+先在 `apps/data_warehouse/lib/data_warehouse/schema` 目录下创建一个名为 `order.ex` 的新文件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/order.ex
@@ -437,8 +431,7 @@ defmodule DataWarehouse.Schema.Order do
 end
 ```
 
-We can now add a handler to our `DataWarehouse.Subscriber.Worker` that will convert the `Binance.Order` struct
-to `DataWarehouse.Schema.Order` and store data inside the database:
+现在我们可以为 `DataWarehouse.Subscriber.Worker` 增加一个处理器，它会把 `Binance.Order` 结构体转换成 `DataWarehouse.Schema.Order`，并把数据存进数据库：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -466,15 +459,13 @@ to `DataWarehouse.Schema.Order` and store data inside the database:
   ...
 ```
 
-In the above code, we are copying the matching fields using the `struct/2` function but all other fields
-that aren't 1 to 1 between two structs won't be copied,
-so we need to merge them in the second step(using the `Map.merge/2` function).
-We are also using the `on_conflict: :replace_all` option to make the `insert/2` function act as
-it would be `upsert/2`(to avoid writing separate logic for inserting and updating the orders).
+在上面的代码中，我们使用 `struct/2` 函数复制了匹配的字段，但两个结构体之间并非一一对应的其他字段不会被复制，
+所以我们需要在第二步里用 `Map.merge/2` 把它们补上。
+我们还使用了 `on_conflict: :replace_all` 选项，让 `insert/2` 的行为更像 `upsert/2`（这样就不用单独写插入和更新订单的逻辑了）。
 
-Having all of this in place we will now be able to store broadcasted orders' data in the database but there's nothing actually broadcasting them.
+有了这些之后，我们现在可以把广播出来的订单数据存进数据库了，不过目前还没有东西真正广播订单。
 
-We need to modify the `Naive.Trader` module to broadcast the `Binance.Order` whenever it places buy/sell orders:
+我们需要修改 `Naive.Trader` 模块，让它在挂出买单/卖单时广播 `Binance.Order`：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/lib/naive/trader.ex
@@ -502,7 +493,7 @@ We need to modify the `Naive.Trader` module to broadcast the `Binance.Order` whe
         order_id
       )
 
-    buy_order_response = convert_order_to_order_response(current_buy_order)
+    buy_order_response = convert_to_order_response(current_buy_order)
     :ok = broadcast_order(buy_order_response)
     ...
     {:ok, %Binance.OrderResponse{} = order} =
@@ -527,13 +518,13 @@ We need to modify the `Naive.Trader` module to broadcast the `Binance.Order` whe
         order_id
       )
 
-    sell_order_response = convert_order_to_order_response(current_sell_order)
+    sell_order_response = convert_to_order_response(current_sell_order)
     :ok = broadcast_order(sell_order_response)
     ...
 ```
 
-The above four places send the `Binance.OrderResponse` structs - our `broadcast_order/1` function needs to convert them to the `Binance.Order` structs.
-Add the following at the bottom of the `Naive.Trader` module:
+上面这四个地方发送的是 `Binance.OrderResponse` 结构体——而我们的 `broadcast_order/1` 函数需要把它们转换成 `Binance.Order` 结构体。
+在 `Naive.Trader` 模块底部添加如下代码：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -564,14 +555,13 @@ Add the following at the bottom of the `Naive.Trader` module:
   end
 ```
 
-As `DataWarehouse.Subscriber.Worker` process expects only the `Binance.Order` structs to be broadcasted,
-we first convert the passed `Binance.OrderResponse` struct to the `Binance.Order` struct
-and only then broadcast it to the PubSub topic.
+由于 `DataWarehouse.Subscriber.Worker` 进程只接受广播出来的 `Binance.Order` 结构体，
+我们先把传入的 `Binance.OrderResponse` 结构体转换为 `Binance.Order`，然后再把它广播到 PubSub topic。
 
-The converting logic as previously uses the `struct/2` function but it also merges in default values that
-are missing from the much smaller `Binance.OrderResponse` struct(with comparison to the `Binance.Order`).
+和之前一样，转换逻辑使用了 `struct/2` 函数，但它也补上了 `Binance.OrderResponse` 中缺失的默认值，
+因为后者比 `Binance.Order` 小得多。
 
-At this moment we will be able to store orders inside the database and we can check that by running:
+现在我们就可以把订单存进数据库里了，下面可以检查一下：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -593,7 +583,7 @@ quantity: 5.326
 quantity: 5.326.
 ```
 
-At this moment inside the DataWarehouse's database we should see orders:
+此时在 DataWarehouse 的数据库里，我们应该能看到订单：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ psql -Upostgres -h127.0.0.1
@@ -642,41 +632,39 @@ inserted_at                | 2021-02-23 22:55:10
 updated_at                 | 2021-02-23 22:55:10
 ```
 
-The first record above got inserted and updated as its state is "FILLED",
-the second one wasn't updated yet as it's still in "NEW" state - that confirms that the upsert trick works.
+上面的第一条记录已经插入并更新，因为它的状态是 `FILLED`；
+第二条还没有更新，因为它仍然是 `NEW` 状态——这说明 upsert 的技巧确实起作用了。
 
-That finishes the implementation of storing orders inside the database.
+到这里，订单存储的实现就完成了。
 
-At this point we can manually start workers to store data, but there's no fault tolerance.
-If a worker crashes, the data stops flowing and nobody restarts it.
-Let's fix that by building a proper supervision tree - and while we're at it,
-we'll discover a pattern that makes our macro-based `Core.ServiceSupervisor` obsolete.
+此时我们可以手动启动 worker 来存储数据，但还没有容错能力。
+如果某个 worker 崩溃了，数据流就会中断，而且没人会重启它。
+让我们通过构建一个正确的监督树来解决这个问题——顺便，我们还会发现一种让基于宏的 `Core.ServiceSupervisor` 变得多余的模式。
 
-## Implement supervision
+## 实现监督
 
-The supervision tree for the `data_warehouse` application will be similar to ones from the `naive` and `streamer` apps
-but different enough to *not* use the `Core.ServiceSupervisor` abstraction.
+`data_warehouse` 应用的监督树会和 `naive`、`streamer` 应用里的类似，
+但又有足够不同，不适合再使用 `Core.ServiceSupervisor` 这个抽象。
 
-For example, our schema uses a `topic` column instead of `symbol`. We could update `Core.ServiceSupervisor` to accept a configurable column name,
-but that's adding complexity to solve a problem we created by overengineering in the first place.
+比如，我们的 schema 用的是 `topic` 列，而不是 `symbol`。我们当然可以修改 `Core.ServiceSupervisor` 让它接受一个可配置的列名，
+但那是在为我们自己过度设计制造的问题增加复杂度。
 
-There's a deeper issue too: we're registering every worker with an atom name. Atoms aren't garbage collected - once created,
-they live forever in the VM's atom table. With enough symbols and topics, we could eventually hit Erlang's atom limit(about 1 million by default).
-That's unlikely in practice, but it's a code smell that suggests we're using the wrong tool.
+还有一个更深层的问题：我们现在给每个 worker 都注册成一个 atom 名称。atom 不会被垃圾回收——一旦创建，它们就永远留在 VM 的 atom 表里。
+如果 symbol 和 topic 足够多，我们最终可能会碰到 Erlang 的 atom 上限（默认大约 100 万个）。
+这种情况在实践中不一定会发生，但它确实是一个代码异味，说明我们用错了工具。
 
-The better approach is to combine [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html)
-with [Registry](https://hexdocs.pm/elixir/master/Registry.html).
+更好的办法是把 [DynamicSupervisor](https://hexdocs.pm/elixir/master/DynamicSupervisor.html)
+和 [Registry](https://hexdocs.pm/elixir/master/Registry.html) 组合起来。
 
-The `DynamicSupervisor` will supervise the `Subscriber.Worker`s and instead of keeping track of them by registering them
-using atoms we will start them `:via` Elixir `Registry`.
+`DynamicSupervisor` 会监督 `Subscriber.Worker`，而我们不再用 atom 注册它们，而是通过 `:via` 的 Elixir `Registry` 来启动。
 
-We will add all functionality that we implemented for `naive` and `streamer` applications.
-We will provide the functions to start and stop storing data on passed PubSub topics
-as well as store those topics inside the database so storing will be autostarted.
+我们会把在 `naive` 和 `streamer` 应用里实现过的所有功能都加进来。
+我们会提供 start 和 stop 存储的函数，输入的是 PubSub topic；
+同时也会把这些 topic 存到数据库里，这样存储功能就能自动启动。
 
-### Create `subscriber_settings` table
+### 创建 `subscriber_settings` 表
 
-To provide autostarting function we need to create a new migration that will create the `subscriber_settings` table:
+为了支持自动启动功能，我们需要创建一个新的 migration，用来创建 `subscriber_settings` 表：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/data_warehouse
@@ -684,10 +672,9 @@ $ mix ecto.gen.migration create_subscriber_settings
 * creating priv/repo/migrations/20210227230123_create_subscriber_settings.exs
 ```
 
-At this moment we can copy the code to create the `settings` table(enum and index as well)
-from the `streamer` application and tweak it to fit the `data_warehouse` application.
-So the first important change (besides updating namespaces from `Streamer` to `DataWarehouse`)
-will be to make a note that we have a setting per topic - not per symbol as for the `naive` and `streamer` applications:
+此时我们可以把在 `streamer` 应用里创建 `settings` 表（包括 enum 和 index）的代码复制过来，并稍微修改以适配 `data_warehouse` 应用。
+第一个重要变化（除了把命名空间从 `Streamer` 改为 `DataWarehouse`）是：
+这里我们是按 topic 配置，而不是按 symbol，像 `naive` 和 `streamer` 那样。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/priv/repo/migrations/20210227230123_create_subscriber_settings.exs
@@ -712,7 +699,7 @@ defmodule DataWarehouse.Repo.Migrations.CreateSubscriberSettings do
 end
 ```
 
-The schema and enum are nearly identical to the `streamer` versions - copy them and update the namespaces:
+schema 和 enum 几乎和 `streamer` 版本一样——把它们复制过来，并更新命名空间：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cp apps/streamer/lib/streamer/schema/settings.ex \
@@ -722,9 +709,7 @@ apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex
 ```
 
 
-After copying, update `symbol` to `topic` and change the table name in
-
-`DataWarehouse.Schema.SubscriberSettings`:
+复制之后，把 `symbol` 改成 `topic`，并更新 `DataWarehouse.Schema.SubscriberSettings` 中的表名：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/subscriber_settings.ex
@@ -744,8 +729,8 @@ defmodule DataWarehouse.Schema.SubscriberSettings do
 end
 ```
 
-Inside `apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex` we need to swap references
-of `Streamer` to `DataWarehouse` and references of `StreamingStatusEnum` to `SubscriberStatusEnum`:
+在 `apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex` 中，我们需要把引用从 `Streamer` 改成 `DataWarehouse`，
+并把 `StreamingStatusEnum` 改成 `SubscriberStatusEnum`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/schema/subscriber_status_enum.ex
@@ -754,52 +739,48 @@ import EctoEnum
 defenum(DataWarehouse.Schema.SubscriberStatusEnum, :subscriber_status, [:on, :off])
 ```
 
-Don't forget to run the migration:
+别忘了运行 migration：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.migrate
 ```
 
-At this moment we have all pieces in place to execute queries on our new table.
-In this place, we can think about the seeding script. For the `data_warehouse` specifically,
-we won't need to provide that script as we don't know in advance what topic names we will use.
-Instead of seeding settings in advance, our code will "upsert"(using `insert` function)
-settings when `start_storing/1` or `stop_storing/1` are called.
+此时我们已经具备了对新表执行查询所需的所有部件。
+在这里，我们可以顺便想一想 seeding 脚本。对于 `data_warehouse` 来说，
+我们其实不需要预先提供这个脚本，因为我们事先并不知道会用到哪些 topic 名称。
+所以这里不采用预先 seed 的方式，而是在调用 `start_storing/1` 或 `stop_storing/1` 时，用代码“upsert”（通过 `insert` 函数）对应的 settings。
 
-### Redesign supervision using Registry
+### 使用 Registry 重新设计监督
 
-We can now focus on the supervision tree. As with the `naive` and `streamer` applications,
-we'll need an additional supervision level for the autostart `Task` - plus, for `data_warehouse`, the `Registry`.
+现在我们可以专注于监督树。和 `naive`、`streamer` 应用一样，
+我们还需要一个额外的监督层来管理自动启动的 `Task`——而对于 `data_warehouse`，还要加上 `Registry`。
 
-The full supervision tree will look as follows:
+完整的监督树会长这样：
 
 ```{r, fig.align="center", out.width="100%", out.height="40%", echo=FALSE}
 knitr::include_graphics("images/chapter_14_01_sup_diagram.png")
 ```
 
-Everything looks very similar to the supervision tree that we created in the `streamer` and the `naive` applications
-but there's an additional `Registry` that is supervised by the `SubscriberSupervisor` process.
+整体看起来和我们在 `streamer`、`naive` 应用里创建的监督树非常相似，
+但这里多了一个 `Registry`，它由 `SubscriberSupervisor` 进程负责监督。
 
-The idea is that inside the `Worker` module's `start_link/1` we will register worker processes
-using [:via](https://hexdocs.pm/elixir/master/GenServer.html#module-name-registration) tuple.
-Internally, GenServer will utilize `Registry`'s functions like `register_name/2` to add process
-to the registry under the `topic` string. This way we will be able to retrieve PIDs assigned to
-topics using those topic strings instead of registering each worker process with an atom name.
+思路是：在 `Worker` 模块的 `start_link/1` 里，我们会使用 `:via` 元组来注册 worker 进程。
+GenServer 内部会利用 `Registry` 的 `register_name/2` 之类的函数，把进程按 `topic` 字符串注册起来。
+这样我们就能通过这些 topic 字符串来取回对应 PID，而不必再把每个 worker 进程注册成一个 atom 名称。
 
-Just as previously the `DynamicSupervisor` will be in charge of supervising the `Worker` processes
-and it won't be even aware that we are using the `Registry` to keep track of `topic => PID` association.
+和之前一样，`DynamicSupervisor` 仍然负责监督 `Worker` 进程，
+它甚至不会知道我们用了 `Registry` 来维护 `topic => PID` 的关联。
 
-This is the payoff for the atom concern we flagged back in Chapter 5.
-Instead of creating atoms like `:"Naive.SymbolSupervisor-XRPUSDT"` for every symbol,
-we now use plain strings as Registry keys.
-No atom table growth, no risk of hitting the VM's atom limit - just clean, garbage-collectible strings.
+这正是我们在第 5 章里提到的 atom 问题的回报。
+我们不再为每个 symbol 创建 `:"Naive.SymbolSupervisor-XRPUSDT"` 这样的 atom，
+而是直接使用普通字符串作为 Registry 的键。
+没有 atom 表增长，也没有撞上 VM atom 上限的风险——只有干净、可回收的字符串。
 
-And here's the best part: this entire pattern required zero macros.
+更棒的是：这一整套模式完全不需要宏。
 
-### Create the `DataWarehouse.Subscriber.DynamicSupervisor` module
+### 创建 `DataWarehouse.Subscriber.DynamicSupervisor` 模块
 
-Let's start by creating a new file called `dynamic_supervisor.ex` inside the                                  
-`apps/data_warehouse/lib/data_warehouse/subscriber` directory and put default dynamic supervisor implementation inside:
+我们先在 `apps/data_warehouse/lib/data_warehouse/subscriber` 目录下创建一个名为 `dynamic_supervisor.ex` 的新文件，并放入默认的 dynamic supervisor 实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -816,7 +797,8 @@ defmodule DataWarehouse.Subscriber.DynamicSupervisor do
 end
 ```
 
-As we will put all our logic related to autostarting, starting and stopping inside this module we can already add aliases, import and require:
+由于我们会把所有与自动启动、启动和停止相关的逻辑都放在这个模块里，
+现在就可以先加上 alias、import 和 require：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -831,10 +813,9 @@ As we will put all our logic related to autostarting, starting and stopping insi
   @registry :subscriber_workers
 ```
 
-Additionally, we added the `@registry` module attribute that we will use to retrieve PID for the specific topic.
+另外，我们还添加了 `@registry` 模块属性，后面会用它来取回特定 topic 对应的 PID。
 
-We can move on to implementing `autostart_workers/0` which will look very similar to the ones
-that we implemented in the `streamer` and the `naive` applications:
+接下来可以实现 `autostart_workers/0`，它会和我们在 `streamer` 和 `naive` 应用中实现的版本非常相似：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -857,12 +838,11 @@ that we implemented in the `streamer` and the `naive` applications:
   end
 ```
 
-We can see that we are querying the database for a list of `topic`s(not symbols) and we are calling `start_child/2` for each result.
+可以看到，我们查询数据库获取的是 `topic` 列表（不是 symbol），然后对每个结果调用 `start_child/2`。
 
-The `start_worker/1` is where the `Registry` will shine as we won't need
-to check if there's already a process running for that topic - we can leave that check to the `Registry`.
+`start_worker/1` 才是 `Registry` 发挥作用的地方，因为我们不需要再检查某个 topic 是否已经有进程在运行——这个检查可以交给 `Registry`。
 
-If there's a process already running for that topic it will just return a tuple starting with `:error` atom:
+如果某个 topic 已经有进程在运行，它就只会返回一个以 `:error` 开头的元组：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -886,10 +866,10 @@ If there's a process already running for that topic it will just return a tuple 
   end
 ```
 
-Since we're not seeding the database with default settings, we use the same upsert pattern we used for orders.
+由于我们没有用默认设置去 seed 数据库，所以这里使用了和订单存储时一样的 upsert 模式。
 
-Last function in this module will be `stop_worker/1` which uses private `stop_child/1` function.
-The `stop_child/1` function shows how to retrieve `PID` of the process assigned to the passed `topic`:
+这个模块最后一个函数是 `stop_worker/1`，它会使用私有的 `stop_child/1` 函数。
+`stop_child/1` 展示了如何取出分配给传入 `topic` 的进程 PID：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/dynamic_supervisor.ex
@@ -908,14 +888,13 @@ The `stop_child/1` function shows how to retrieve `PID` of the process assigned 
   end
 ```
 
-That's the full implementation of `DataWarehouse.Subscriber.DynamicSupervisor` -
-and it's nearly as slim as our macro-based version from the last chapter, but without any metaprogramming.
+这就是 `DataWarehouse.Subscriber.DynamicSupervisor` 的完整实现——
+它几乎和上一章基于宏的版本一样精简，但没有任何元编程。
 
-### Register Worker processes using :via
+### 使用 `:via` 注册 Worker 进程
 
-The above `DynamicSupervisor` module assumes that Workers are registered inside the `Registry` -
-to make this happen we will need to update the `start_link/1` function of the
-`DataWarehouse.Subscriber.Worker` module:
+上面的 `DynamicSupervisor` 模块假设 Worker 已经注册进 `Registry` 了——
+为了做到这一点，我们需要更新 `DataWarehouse.Subscriber.Worker` 模块的 `start_link/1` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/subscriber/worker.ex
@@ -934,15 +913,13 @@ to make this happen we will need to update the `start_link/1` function of the
   ...    
 ```
 
-Passing the `:name` option to the `GenServer`'s `start_link/3` function we instruct it to
-utilize the `Registry` module to register processes under topic names.
+把 `:name` 选项传给 `GenServer.start_link/3`，就是在告诉它使用 `Registry` 模块来按 topic 名称注册进程。
 
-### Create a new supervision level for Registry, Task and the DynamicSupervisor
+### 创建一个新的监督层，管理 Registry、Task 和 DynamicSupervisor
 
-We have the lowest level modules - the `Worker` and the `DynamicSupervisor` implemented -
-time to add a new `Supervisor` that will start the `Registry`, the `DynamicSupervisor`,
-and the autostart storing `Task`.
-First create a new file called `subscriber_supervisor.ex` inside the `apps/data_warehouse/lib/data_warehouse` directory:
+我们已经有了最底层的模块——`Worker` 和 `DynamicSupervisor`——
+现在该添加一个新的 `Supervisor`，让它启动 `Registry`、`DynamicSupervisor`，以及负责自动启动存储的 `Task`。
+先在 `apps/data_warehouse/lib/data_warehouse` 目录下创建一个新文件 `subscriber_supervisor.ex`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/data_warehouse/lib/data_warehouse/subscriber_supervisor.ex
@@ -972,12 +949,11 @@ defmodule DataWarehouse.SubscriberSupervisor do
 end
 ```
 
-The important part here will be to match the `Registry` name to the one defined inside the `DynamicSupervisor` and the `Worker` modules.
+这里最重要的是，`Registry` 的名字必须和 `DynamicSupervisor` 以及 `Worker` 模块里定义的名字一致。
 
-### Link the `SubscriberSupervisor` to the `Application`
+### 将 `SubscriberSupervisor` 连接到 `Application`
 
-We need to update the `DataWarehouse.Application` module to start our new                          
-`DataWarehouse.SubscriberSupervisor` process as well as register itself under name matching to its module(just for consistency with other applications):
+我们需要更新 `DataWarehouse.Application` 模块，让它启动新的 `DataWarehouse.SubscriberSupervisor` 进程，并且像其他应用一样，把自己按模块名注册（只是为了保持一致性）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse/application.ex
@@ -994,9 +970,9 @@ We need to update the `DataWarehouse.Application` module to start our new
   ...
 ```
 
-### Add interface
+### 添加接口
 
-The final step will be to add an interface to the `DataWarehouse` application to start and stop storing:
+最后一步，是给 `DataWarehouse` 应用增加一个开始和停止存储的接口：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/data_warehouse/lib/data_warehouse.ex
@@ -1019,12 +995,11 @@ The final step will be to add an interface to the `DataWarehouse` application to
   end
 ```
 
-Inside the above functions, we are just doing a couple of sanity checks on the case of
-the passed arguments assuming that both topics and stream are uppercase.
+在上面这些函数里，我们只是对传入参数做了一些大小写上的 sanity check，假定 topic 和 stream 都是大写的。
 
-### Test
+### 测试
 
-The interface above was the last step in our implementation, we can now test that all works as expected:
+上面的接口就是实现中的最后一步，现在可以测试一切是否按预期运行：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -1072,44 +1047,37 @@ true
 16:43:40.812 [info]  DataWarehouse worker is subscribing to ORDERS:XRPUSDT
 ```
 
-As we can see even this simple implementation handles starting, autostarting, and stopping.
-It also gracefully handles starting workers when one is already running as well as stopping when there are none running.
+可以看到，即使是这样一个简单实现，也能处理 start、autostart 和 stop。
+它还可以优雅地处理“启动已经在运行的 worker”以及“停止根本没有在运行的 worker”这两种情况。
 
-As a challenge, you could update the `naive` and the `streamer` application to use the `Registry`
-and remove the `Core.ServiceSupervisor` module(together with the `core` application)
-as it was superseded by the above solution -
-here's the [link to PR](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/pull/27)(pull request)
-that sums up the required changes.
+作为一个挑战，你可以把 `naive` 和 `streamer` 应用也改成使用 `Registry`，并删除 `Core.ServiceSupervisor` 模块（以及 `core` 应用），因为上面的方案已经把它替代了——
+这里有一个 [PR 链接](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/pull/27)，里面总结了所需的修改。
 
-**We now have persistent storage and a cleaner supervision pattern.** Here's what we achieved:
+**我们现在有了持久化存储和更清晰的监督模式。** 我们完成了这些：
 
-- Created a `data_warehouse` application that subscribes to PubSub topics and stores incoming data
-- Implemented handlers for both trade events and orders
-- Used `Registry` with `:via` tuples to track worker processes by topic - no atoms required
-- Built a complete supervision tree with autostart capability
+- 创建了一个订阅 PubSub topic 并存储进入数据的 `data_warehouse` 应用
+- 为交易事件和订单都实现了处理器
+- 使用 `Registry` 搭配 `:via` 元组按 topic 跟踪 worker 进程——不需要 atom
+- 构建了一个带自动启动能力的完整监督树
 
-The key insight is that `Registry` solves the same "identify processes dynamically" problem as our macro approach,
-but without any metaprogramming. We register processes using plain strings (like `"TRADE_EVENTS:XRPUSDT"`),
-look them up when needed, and let the Registry handle all the bookkeeping.
-The DynamicSupervisor doesn't even know we're using Registry - it just supervises children as usual.
+关键洞见是：`Registry` 解决了和我们宏方案相同的“动态识别进程”问题，
+但不需要元编程。我们用普通字符串（比如 `"TRADE_EVENTS:XRPUSDT"`）来注册进程，
+需要时再查找它们，让 Registry 负责所有 bookkeeping。
+`DynamicSupervisor` 甚至都不知道我们在用 Registry——它只是照常监督子进程。
 
-This pattern is so much simpler that the `Core.ServiceSupervisor` module is now dead weight.
-If you completed the challenge to refactor `naive` and `streamer` to use Registry,
-you've already deleted it. If not, I encourage you to try - the PR linked above shows exactly what changes are needed.
+这个模式比 `Core.ServiceSupervisor` 简单得多，所以 `Core.ServiceSupervisor` 现在已经成了多余的负担。
+如果你完成了把 `naive` 和 `streamer` 重构为使用 Registry 的挑战，你大概已经把它删掉了；如果还没有，我建议你试试看——上面的 PR 已经展示了所需的具体修改。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-With trade events flowing into our database, we finally have the raw material for backtesting.
-In the next chapter, we'll build a `Publisher` task that streams historical trade events from the database
-back through PubSub - essentially replaying the past. Our `Naive.Trader` won't know the difference
-between live data and historical data, which means we can test our strategy against real market conditions
-without risking real money.
+随着交易事件流入数据库，我们终于有了做回测所需的原材料。
+在下一章里，我们会构建一个 `Publisher` task，它会把数据库中的历史交易事件通过 PubSub 再次流式发送出去——本质上就是重放过去。
+我们的 `Naive.Trader` 不会区分实时数据和历史数据，这意味着我们可以在不冒真钱风险的情况下，拿真实市场条件来测试策略。
 
-This is where all our architectural decisions pay off: the pub/sub model we've used from the beginning
-makes swapping data sources trivial. Same interface, different producer.
+这正是我们所有架构决策开始发挥作用的地方：从一开始就采用的 pub/sub 模式，让切换数据源变得非常简单。同样的接口，不同的生产者。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter(including the above challenge) can be found in the book's source code repository
-(branch:
+本章源码（包括上面的挑战）可以在本书的源码仓库中找到
+（分支：
 [chapter_13](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_13)).

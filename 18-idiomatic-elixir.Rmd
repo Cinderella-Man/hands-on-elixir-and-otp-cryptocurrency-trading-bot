@@ -1,68 +1,55 @@
-# Idiomatic OTP
+# 习惯用法里的 OTP {#18-idiomatic-elixir}
 
-We've separated pure logic from side effects, turning our trading strategy into 
-testable decision-making functions. The `Naive.Strategy` module now handles the "what" - 
-calculating prices, determining actions. The `Naive.Trader` handles the "how" - 
-calling APIs, broadcasting messages, managing state.
+我们已经把纯逻辑和副作用分开，把交易策略变成了可测试的决策函数。`Naive.Strategy` 模块现在负责“做什么”——计算价格、决定动作。
+`Naive.Trader` 负责“怎么做”——调用 API、广播消息、管理状态。
 
-But here's the thing: we've been throwing processes at problems without asking 
-whether we actually need them. Every symbol has six OHLC workers, one for each timeframe. 
-Each trader spawns its own process. We have leaders, symbol supervisors, dynamic supervisors - 
-our supervision tree looks like a small forest.
+但问题在于：我们一直在把进程往问题上堆，却没有先问自己到底需不需要它们。每个 symbol 都有六个 OHLC worker，每个时间周期一个。每个 trader 都会启动自己的进程。我们还有 leader、symbol supervisor、dynamic supervisor——我们的监督树看起来像一片小森林。
 
-Are we using all these processes for concurrency? For fault isolation? 
-Or are we just using them because we can?
+我们这么多进程，是为了并发吗？为了故障隔离吗？还是只是因为我们能这么做？
 
-In this chapter, we'll build an OHLC (open-high-low-close) indicator two different ways. 
-The first way: spawn six GenServer processes per symbol, each tracking a different timeframe. 
-The second way: one process per symbol, handling all timeframes with pure functions.
+在本章中，我们会用两种方式构建一个 OHLC（open-high-low-close）指标。第一种方式：每个 symbol 启动六个 GenServer 进程，每个进程跟踪一个不同时间周期。第二种方式：每个 symbol 只用一个进程，通过纯函数处理所有时间周期。
 
-We'll discover that processes are powerful, but they're not free. Each one adds supervision 
-complexity, PubSub subscriptions, and message passing overhead. Sometimes the simplest solution 
-is just fewer processes and more pure functions.
+我们会发现，进程很强大，但它们并不是免费的。每一个进程都会带来监督复杂度、PubSub 订阅和消息传递开销。有时候，最简单的解决方案就是更少的进程和更多的纯函数。
 
-Along the way, we'll establish a rule of thumb: use processes for concurrency and fault isolation, 
-not for code organization. Elixir gives us processes cheaply, but that doesn't mean we should 
-use them everywhere.
+在这个过程中，我们会建立一个经验法则：进程应该用于并发和故障隔离，而不是用于代码组织。Elixir 让我们可以低成本地使用进程，但这并不意味着我们应该到处都用它们。
 
-## Objectives
-- the concept
-- initial implementation
-- idiomatic solution
+## 目标
+- 概念
+- 初始实现
+- 习惯用法方案
 
-## The concept
+## 概念
 
-In this chapter, we will look into building an OHLC(open-high-low-close) indicator.
-We will discuss different potential implementations, which will give us an excellent example to understand the idiomatic usage of the OTP framework.
+在这一章里，我们会看看如何构建一个 OHLC（open-high-low-close）指标。
+我们会讨论不同的潜在实现方式，这会成为理解 OTP 框架惯用用法的绝佳例子。
 
-The OHLC indicator consists of four prices that could be used to draw a candle on the chart:
+OHLC 指标由四个价格组成，可以用来在图表上画出蜡烛图：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_19_01_ohlc_candle.jpg")
 ```
 
-The OHLC indicators get created by collecting the first price (the "open" price), lowest price(the "low" price),
-highest price(the "high" price), and the last price(the "close" price) within a specific timeframe like 1 minute.
+OHLC 指标的生成方式，是在特定时间周期（比如 1 分钟）内，收集第一个价格（“open”价格）、最低价（“low”）、最高价（“high”）以及最后一个价格（“close”）。
 
-Our code will need to be able to generate those for multiple timeframes at once - 1m, 5m, 15m, 1h, 4h and 24h.
+我们的代码需要能够同时生成多个时间周期的数据——1m、5m、15m、1h、4h 和 24h。
 
-## Initial implementation
+## 初始实现
 
-What we could do is to have multiple GenServer processes subscribed to the trade events topic in the PubSub where each one would update their own OHLC numbers:
+我们可以让多个 GenServer 进程订阅 PubSub 里的交易事件 topic，每个进程更新自己的 OHLC 数值：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_19_02_multi_workers.jpg")
 ```
 
-Let's start by creating a new application inside our umbrella called "indicator"(run below inside terminal):
+我们先在 umbrella 中创建一个名为 `indicator` 的新应用（在终端中运行下面命令）：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps 
 $ mix new indicator --sup
 ```
 
-We can now create a new directory called "ohlc" inside the "/apps/indicator/lib/indicator" directory,
-where we will create the GenServer "worker.ex" file:
+现在我们可以在 `/apps/indicator/lib/indicator` 目录下创建一个新的 `ohlc` 目录，
+并在其中创建一个 GenServer 的 `worker.ex` 文件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
@@ -81,7 +68,7 @@ end
 
 
 
-As each worker will need to subscribe to the PubSub's `"TRADE_EVENTS:#{symbol}"` topic, we can update the `init/1` function to do that:
+由于每个 worker 都需要订阅 PubSub 的 `"TRADE_EVENTS:#{symbol}"` topic，我们可以更新 `init/1` 函数来完成这件事：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
@@ -109,11 +96,10 @@ As each worker will need to subscribe to the PubSub's `"TRADE_EVENTS:#{symbol}"`
   end
 ```
 
-Following the pattern established by the `Naive.Trader`,
-we use the module's attributes(with values based on the configuration) instead of hardcoded module names.
+按照 `Naive.Trader` 建立的模式，我们使用模块属性（其值基于配置）而不是写死的模块名。
 
-Additionally, we've used the `Core.PubSub` and `Phoenix.PubSub`(indirectly) modules
-so we need to add them to the dependencies list of the `indicator` application:
+此外，我们用到了 `Core.PubSub` 和（间接的）`Phoenix.PubSub` 模块，
+所以需要把它们加入 `indicator` 应用的依赖列表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/mix.exs
@@ -124,7 +110,7 @@ so we need to add them to the dependencies list of the `indicator` application:
       ...
 ```
 
-As we subscribed to the PubSub, we need to provide a callback that will handle the incoming trade events:
+既然已经订阅了 PubSub，我们就需要提供一个回调来处理进入的交易事件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
@@ -137,8 +123,8 @@ As we subscribed to the PubSub, we need to provide a callback that will handle t
   end
 ```
 
-To avoid mixing our business logic with the GenServer boilerplate(as discussed in the last chapter),
-we will place it in a new module. First, we need to create a new file `/apps/indicator/lib/indicator/ohlc.ex` and the `Indicator.Ohlc` module inside it:
+为了避免把业务逻辑和 GenServer 样板代码混在一起（正如上一章讨论的那样），
+我们会把业务逻辑放进一个新模块里。首先，我们需要创建一个新文件 `/apps/indicator/lib/indicator/ohlc.ex`，并在其中定义 `Indicator.Ohlc` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -147,7 +133,7 @@ defmodule Indicator.Ohlc do
 end
 ```
 
-The `Indicator.Ohlc` module will define a struct that the `Indicator.Ohlc.Worker` will use as a state:
+`Indicator.Ohlc` 模块会定义一个结构体，供 `Indicator.Ohlc.Worker` 作为 state 使用：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -167,19 +153,18 @@ The `Indicator.Ohlc` module will define a struct that the `Indicator.Ohlc.Worker
   ]
 ```
 
-Most of the above are self-descriptive, besides the `start_time`(a Unix timestamp) and the `duration`(the timeframe in minutes).
+上面大部分字段都不言自明，只有 `start_time`（Unix 时间戳）和 `duration`（以分钟为单位的时间周期）需要特别说明。
 
-We can now progress to the implementation of the `process/2` function, but instead of focusing on it,
-we will start from the "deepest"/"bottom" function that it will rely on and work our way up.
-As we discussed in the last chapter, we will try to maximize the amount of pure code. 
+现在我们可以实现 `process/2` 函数了，但我们不会直接从这里开始，而是先从它会依赖的“最底层”函数开始，再一路向上实现。
+正如我们在上一章中讨论的，我们会尽量最大化纯代码的比例。
 
-We can imagine that the bottom function will merge the trade event's data with the current OHLC data.
-Two things can happen, either:
+我们可以把最底层函数想象成：把 trade event 的数据和当前 OHLC 数据合并。
+可能出现两种情况：
 
-- trade event's `trade_time` is **within** the current OHLC timeframe. Trade event's price will get merged to the current OHLC
-- trade event's `trade_time` is **outside** the current OHLC timeframe. The current(now old) OHLC will be returned together with a new OHLC based on the trade event's price
+- trade event 的 `trade_time` 在当前 OHLC 时间周期**内**。trade event 的价格会合并到当前 OHLC
+- trade event 的 `trade_time` 在当前 OHLC 时间周期**外**。当前的（已经过期的）OHLC 会和基于 trade event 价格生成的新 OHLC 一起返回
 
-Here's the implementation:
+实现如下：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -192,7 +177,7 @@ Here's the implementation:
   end
 ```
 
-together with the `within_current_timeframe/3` and `generate_ohlc/3` function:
+再加上 `within_current_timeframe/3` 和 `generate_ohlc/3` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -218,9 +203,8 @@ together with the `within_current_timeframe/3` and `generate_ohlc/3` function:
   end  
 ```
 
-Moving up the call chain, besides merging the trade event's data into OHLC data,
-we need to deal with the initial state of the worker(the `{symbol, duration}` tuple).
-Let's add a `process/2` function with two clauses handling each of those cases:
+沿着调用链往上走，除了把 trade event 的数据合并进 OHLC 数据，我们还需要处理 worker 的初始状态（也就是 `{symbol, duration}` 元组）。
+我们来添加一个带两个子句的 `process/2` 函数，分别处理这两种情况：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -238,24 +222,20 @@ Let's add a `process/2` function with two clauses handling each of those cases:
   end
 ```
 
-The second clause takes care of the initial state of
-the OHLC worker(happens upon receiving the first trade event - once in the lifetime of the worker process).
+第二个子句负责 OHLC worker 的初始状态（发生在 worker 进程接收到第一条交易事件时——这在它的生命周期里只会发生一次）。
 
-The first clause handles all the other trade events.
+第一个子句负责其他所有交易事件。
 
-This order of clauses could appear weird, but it makes a lot of sense
-as Elixir will try pattern match clauses from the top, and in our case, the first(top) clause will be used for almost all of the calls.
+这个子句顺序看起来可能有点奇怪，但实际上很合理，因为 Elixir 会从上到下做模式匹配，在我们的例子里，第一个（最上面的）子句会被几乎所有调用匹配到。
 
-### Maybe functions
+### Maybe 函数
 
-Let's get back to the first clause of the `process/2` function as it uses another Elixir/Erlang pattern
-that we didn't discuss before - the `maybe_do_x` functions.
+回到 `process/2` 函数的第一个子句，它还用到了另一个我们之前没讨论过的 Elixir/Erlang 模式——`maybe_do_x` 函数。
 
-In case of the incoming trade event's `trade_time` **outside** of the current OHLC's timeframe,
-we would like to **broadcast** the current OHLC and return a new OHLC(based on the trade event's data).
-Otherwise(trade event's `trade_time` **within** the current OHLC), the trade event's `price` is merged into the current OHLC, and it's **not** broadcasted.
+如果传入的 trade event 的 `trade_time` **在**当前 OHLC 的时间周期**之外**，我们希望**广播**当前 OHLC，并返回一个新的 OHLC（基于 trade event 的数据）。
+否则（trade event 的 `trade_time` **在**当前 OHLC 时间周期内），trade event 的 `price` 会合并进当前 OHLC，而且**不会**被广播。
 
-This sounds very similar to the if-else, but it's most of the time achieved using the pattern matching:
+这听起来很像 if-else，但大多数时候我们会通过模式匹配来实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -277,18 +257,16 @@ This sounds very similar to the if-else, but it's most of the time achieved usin
   end
 ```
 
-By using a separate function, we avoided branching using if-else inside the `process/2` function.
-The idea is not necessarily to avoid if statements but to keep the code at the consistent level of abstraction,
-so it's easier to understand. Inside the `process/2` function,
-we can understand what's going on just by reading the function names inside - there's no "logic".
+通过使用单独的函数，我们避免了在 `process/2` 里写 if-else 分支。
+这里的重点不一定是避免 if 语句，而是让代码保持在一致的抽象层级上，这样更容易理解。
+在 `process/2` 里，我们只要读函数名就能明白发生了什么——没有“逻辑噪音”。
 
-Sometimes people advise that "code should be like well written prose" and
-`maybe_do_x` functions are one of the ways to achieve this "nirvana" state.
+有人常说“代码应该像写得好的散文”，而 `maybe_do_x` 这类函数就是达成这种“理想状态”的方式之一。
 
-### Testing
+### 测试
 
-At this moment, our code should compile, and we should already be able to test it.
-First, let's change the logging function to `info` inside `apps/indicator/lib/indicator/ohlc.ex` to see what OHLC structs got broadcasted:
+此时，我们的代码应该已经能编译，也应该可以开始测试了。
+首先，我们把 `/apps/indicator/lib/indicator/ohlc.ex` 里的日志函数改成 `info`，这样我们就能看到哪些 OHLC 结构体被广播了：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc.ex
@@ -298,7 +276,7 @@ First, let's change the logging function to `info` inside `apps/indicator/lib/in
   end
 ```
 
-We can now progress with testing:
+现在我们可以开始测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -312,14 +290,13 @@ high: "0.63890000", low: "0.63840000", open: "0.63860000", start_time: 164401464
 symbol: "XRPUSDT"}
 ```
 
-The above test confirms that we can manually start a single OHLC worker that will aggregate data over a single minute timeframe.
-Please remember to revert the change to the logging function back to `debug` inside the `maybe_broadcast/1` in the `Indicator.Ohlc.Worker` module
-back to `debug/1`.
+上面的测试确认了，我们可以手动启动一个 OHLC worker，让它在单分钟时间周期上聚合数据。
+请记得把 `Indicator.Ohlc.Worker` 模块里的 `maybe_broadcast/1` 中日志函数改回 `debug`（恢复成 `debug/1`）。
 
-### Supervision 
+### 监督
 
-To supervise multiple `Indicators.Worker`s we will use the `DynamicSupervisor`.
-We need to update the Indicators application's supervision tree to start a dynamic supervisor:
+为了监督多个 `Indicator.Worker`，我们会使用 `DynamicSupervisor`。
+我们需要更新 `Indicators` 应用的监督树，加入一个 dynamic supervisor：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/application.ex
@@ -330,7 +307,7 @@ We need to update the Indicators application's supervision tree to start a dynam
 
 
 
-We can now add `aggregate_ohlcs/1` function that will start all workers:
+现在我们可以添加 `aggregate_ohlcs/1` 函数，让它启动所有 worker：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
@@ -345,7 +322,7 @@ We can now add `aggregate_ohlcs/1` function that will start all workers:
   end
 ```
 
-We can now start multiple OHLC workers just by running a single function:
+现在我们只要调用一个函数，就能启动多个 OHLC worker：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -355,48 +332,44 @@ iex(2)> Indicator.aggregate_ohlcs("XRPUSDT")
 {:ok, #PID<0.447.0>}
 ```
 
-The above calls will start six OHLC worker processes supervised under the `Indicator.DynamicSupervisor` process.
+上面的调用会在 `Indicator.DynamicSupervisor` 进程下启动六个 OHLC worker 进程。
 
-We could continue with this exercise, add a Registry to be able to stop the indicators and
-a database to be able to autostart them. Those improvements would get the "indicators" application in line with the other applications,
-but that's not the goal of this chapter.
+我们还可以继续这个练习，加一个 Registry 来允许停止这些指标，再加一个数据库来支持自动启动它们。
+这些改进会让 `indicator` 应用和其他应用保持一致，但这不是本章的重点。
 
-## Idiomatic solution
+## 习惯用法方案
 
-What we will focus on is the **usage of processes**(in our case the GenServers) in our solution.
-We've split our logic between multiple processes, each aggregating a single timeframe.
-All of those processes work in the same way. They subscribe to the PubSub topic, merge the incoming data into OHLC structs,
-and potentially broadcast them. The only difference is the timeframe that they use for merging data.
+我们这一节要关注的是在方案中**如何使用进程**（这里指 GenServer）。
+我们把逻辑拆成了多个进程，每个进程聚合一个时间周期。
+这些进程的工作方式都一样：它们订阅 PubSub topic，把进入的数据合并到 OHLC 结构体里，然后在需要时广播出去。
+唯一的区别就是它们用于合并数据的时间周期不同。
 
-The solution feels very clean, but also we are using multiple processes to aggregate data for each symbol.
-In a situation like this, we should always ask ourselves:
+这个方案看起来非常干净，但我们也在用多个进程去为每个 symbol 聚合数据。
+遇到这种情况，我们应该总是问自己：
 
-- do we need that many processes?
-- are we using them to achieve parallelism? Is it required?
-- could we reorganize our code to use fewer processes?
+- 我们真的需要这么多进程吗？
+- 我们是在用它们实现并行吗？这有必要吗？
+- 我们能不能重组代码，使用更少的进程？
 
-The main idea is to keep our code as simple as possible and only use processes when it's absolutely required.
+核心思想是尽可能把代码保持简单，只有在绝对需要时才使用进程。
 
-Instead of a single worker being responsible for aggregation within a single timeframe,
-we could restructure our code to make it responsible for all timeframes of the symbol.
+与其让一个 worker 只负责单个时间周期的聚合，不如重构代码，让它负责该 symbol 的所有时间周期。
 
-This improvement would:
+这样会带来这些好处：
 
-- make our merging code a little bit complex(it would merge multiple timeframes at once)
-- decrease the amount of PubSub subscribers by six (instead of six processes per symbol, we would have just one)
-- potentially decrease the amount of broadcasted messages (we could group OHLC structs into a single message)
-- allow a single worker to decide what to do with all current OHLCs in case of errors, **without** need for any additional symbol supervision level(like `one_for_all`)
-- make it **impossible** to aggregate nor broadcast OHLCS of the same symbol in **parallel**
+- 合并代码会复杂一点（它需要一次处理多个时间周期）
+- PubSub 订阅者数量减少六个（不再是每个 symbol 六个进程，而是一个）
+- 广播消息数量可能减少（我们可以把多个 OHLC 结构体打包成一条消息）
+- 单个 worker 在出错时可以决定所有当前 OHLC 应该怎么处理，**不需要**额外的 symbol 监督层（比如 `one_for_all`）
+- 但它会让同一 symbol 的 OHLC **无法并行**聚合或广播
 
-We can see that the solution based on processes could get really complex really quickly(multiple processes per symbol,
-growing supervision tree, multiple subscriptions, multiple messages etc).
+我们可以看到，基于进程的方案很快就会变得非常复杂（每个 symbol 多个进程、越来越大的监督树、多个订阅、多个消息等等）。
 
-Just to be clear - processes **do** have their place, they are a really powerful tool, but as with every tool,
-the responsibility lies on us developers to use them wisely - they **must not** be used for code organization.
+再强调一次——进程**当然**有它们的位置，它们确实是非常强大的工具，但和所有工具一样，责任在我们开发者手里：我们必须聪明地使用它们——它们**不应该**被用于代码组织。
 
-Enough theory - let's look into how we could update our `Indicator.Ohlc` module to be able to deal with multiple timeframes at once.
+理论讲够了，我们来看看如何更新 `Indicator.Ohlc` 模块，使其一次能够处理多个时间周期。
 
-Initially, we could be tempted to update the `process/2` function:
+一开始，我们可能会想更新 `process/2` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
@@ -422,13 +395,12 @@ Initially, we could be tempted to update the `process/2` function:
   end
 ```
 
-We added some logic to both clauses. At this moment, it maybe doesn't look that bad,
-but it's a great place to mix even more logic with dirty code.
-This is a great example where we should stop and rethink how we could maximize the amount of pure code.
+我们在两个子句里都加了些逻辑。此时看起来也许还不算太糟，
+但这正是把更多逻辑和脏代码混在一起的好地方。
+这是一个很好的例子，说明我们应该停下来重新思考：怎样才能最大化纯代码的比例。
 
-Instead of expanding the `process/2` function, we could build on top of the `merge_price/3` and
-`generate_ohlc/4` functions, which deal with a single OHLC data.
-We could add plural versions of those functions that will understand that we now deal with multiple OHLC structs:
+与其扩展 `process/2` 函数，不如基于 `merge_price/3` 和 `generate_ohlc/4` 函数继续扩展，它们本来就处理单个 OHLC 数据。
+我们可以给它们添加复数版本，让它们理解我们现在面对的是多个 OHLC 结构体：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
@@ -456,7 +428,7 @@ We could add plural versions of those functions that will understand that we now
   end
 ```
 
-Now the `process/2` function got back to its almost original shape:
+现在 `process/2` 函数又回到了几乎原来的样子：
 
 ```{r, engine = 'elixir', eval = FALSE}
   def process([_ | _] = ohlcs, %TradeEvent{} = trade_event) do
@@ -471,12 +443,10 @@ Now the `process/2` function got back to its almost original shape:
   end
 ```
 
-By introducing the `merge_prices/3` and `generate_ohlcs/3` functions,
-we were able to keep the dirty part of our code small(it grew only to accommodate multiple broadcasts).
-The new functions are pure and can be easily tested.
+通过引入 `merge_prices/3` 和 `generate_ohlcs/3` 函数，我们把脏代码部分保持得很小（它只是为了容纳多个广播而增长了一点点）。
+新函数是纯函数，可以很容易测试。
 
-As we modified the interface of the `process/2` function (by removing the `duration`),
-we need to update the `Indicator.Ohlc.Worker` module to be blissfully not aware that we have different durations:
+由于我们修改了 `process/2` 函数的接口（去掉了 `duration`），我们还需要更新 `Indicator.Ohlc.Worker` 模块，让它完全不需要知道我们有不同时间周期：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator/ohlc/worker.ex
@@ -495,7 +465,7 @@ we need to update the `Indicator.Ohlc.Worker` module to be blissfully not aware 
   end
 ```
 
-The final update will be to simplify the `Indicator.aggregate_ohlcs/1` function just to start a single OHLC worker:
+最后一步，是把 `Indicator.aggregate_ohlcs/1` 函数简化为只启动一个 OHLC worker：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/indicator/lib/indicator.ex
@@ -507,7 +477,7 @@ The final update will be to simplify the `Indicator.aggregate_ohlcs/1` function 
   end
 ```
 
-We can now test our implementation by running the following once again:
+现在我们可以再次运行下面的命令来测试实现：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -520,67 +490,56 @@ high: "0.68330000", low: "0.68130000", open: "0.68160000", start_time: 164418972
 symbol: "XRPUSDT"}
 ```
 
-The logged message(s) confirms that our OHLC aggregator logic works as expected using a single process.
+上面的日志确认我们的 OHLC 聚合逻辑用单个进程运行时也能按预期工作。
 
-## Final thoughts
+## 最后思考
 
-**We've just learned when to say "no" to processes.** Here's what we accomplished:
+**我们刚刚学会了什么时候该对进程说“不”。** 我们完成了这些：
 
-- Built an OHLC indicator that spawns six processes per symbol - straightforward but expensive
-- Refactored it to use one process per symbol, handling all timeframes with pure functions
-- Kept the `process/2` function clean by extracting plural versions of our pure functions
-- Reduced PubSub subscriptions from six to one per symbol
-- Simplified our supervision tree from six workers per symbol to just one
+- 构建了一个 OHLC 指标，每个 symbol 启动六个进程——直接但昂贵
+- 把它重构成每个 symbol 只用一个进程，用纯函数处理所有时间周期
+- 通过提取复数版纯函数，保持 `process/2` 函数的整洁
+- 把 PubSub 订阅数从每个 symbol 六个减少到一个
+- 把监督树从每个 symbol 六个 worker 简化成一个
 
-The key insight is that processes aren't free, even in Elixir. Each process means:
+关键洞见是：进程并不是免费的，即使在 Elixir 中也是如此。每个进程都意味着：
 
-- Another PubSub subscription and message in the queue
-- More supervision complexity (six processes that can crash independently)
-- More message passing overhead (six broadcasts instead of one)
-- No shared state (can't decide what to do with all timeframes together)
+- 又一个 PubSub 订阅和消息队列里的消息
+- 更多监督复杂度（六个可以独立崩溃的进程）
+- 更多消息传递开销（六次广播，而不是一次）
+- 没有共享状态（不能一起决定所有时间周期该怎么处理）
 
-The single-process version trades a bit of merging complexity for massive simplification 
-everywhere else. And here's the thing: the merging isn't even that complex. We created 
-`merge_prices/3` and `generate_ohlcs/3` - plural versions of functions we already had. 
-The pure logic scales naturally.
+单进程版本用一点点合并复杂度，换来了其他所有地方的大幅简化。而且问题在于：合并其实也并不复杂。我们只是创建了 `merge_prices/3` 和 `generate_ohlcs/3`——它们是我们已有函数的复数版本。纯逻辑会自然扩展。
 
-It's worth noting the trade-offs of this approach:
+值得注意的是这种方案的取舍：
 
-- One process handling all timeframes means no parallelism across timeframes - but did we need it? The merging is just min/max comparisons
-- More code in the `Indicator.Ohlc` module - but it's all pure and easily testable
-- The `process/2` function deals with lists now - but the complexity moved to pure functions, not side effects
+- 一个进程处理所有时间周期意味着时间周期之间没有并行性——但我们真的需要吗？这里的合并只是 min/max 比较
+- `Indicator.Ohlc` 模块里的代码更多了——但它们都是纯代码，很容易测试
+- `process/2` 函数现在要处理列表了——但复杂度被转移到了纯函数，而不是副作用里
 
-The pattern we've established appears throughout production Elixir systems. Phoenix channels 
-don't spawn a process per event type - they handle all event types in one process. Ecto doesn't 
-spawn a process per query - it pools connections and reuses them.
+我们建立的这个模式在生产级 Elixir 系统中随处可见。Phoenix channel 不会针对每种事件类型起一个进程——它们在一个进程里处理所有事件类型。Ecto 也不会针对每个查询启动一个进程——它会池化连接并重复利用它们。
 
-**When Should You Use Processes?**
+**什么时候该用进程？**
 
-Use processes when you need one of these three things:
+当你需要下面三件事之一时，就该用进程：
 
-1. **Concurrency** - truly parallel work (not our case - sequential price updates)
-2. **Fault isolation** - one failure shouldn't take down others (maybe relevant per symbol, but not per timeframe)
-3. **State isolation** - independent lifecycles (each symbol needs this, but not each timeframe)
+1. **并发**——真正并行的工作（我们这里不是——价格更新是顺序进行的）
+2. **故障隔离**——一个失败不能拖垮其他进程（按 symbol 隔离也许有意义，但按时间周期就没必要了）
+3. **状态隔离**——彼此独立的生命周期（每个 symbol 需要这个，但每个时间周期不需要）
 
-Don't use processes for code organization. That's what modules are for.
+不要把进程用于代码组织。那是模块该做的事。
 
-A study by Kero van Gelder analyzing Elixir production systems found that the median 
-number of processes in production apps is around 200-500, not 20,000. The apps that 
-worked best kept processes focused on concurrency and state, not structure 
-(source: ElixirConf 2019 - "The Right Tool for the Job").
+Kero van Gelder 对 Elixir 生产系统的分析研究发现，生产应用中的进程中位数大约在 200 到 500 之间，而不是 20,000。表现最好的应用会把进程聚焦于并发和状态，而不是结构（来源：ElixirConf 2019 - “The Right Tool for the Job”）。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-The OHLC example was clean and simple - a perfect learning vehicle. But our naive strategy 
-is messier. We have traders, leaders, symbol supervisors, a whole supervision hierarchy. 
-In the next chapter, we'll apply what we learned here to refactor the naive strategy itself.
+OHLC 这个例子干净、简单——是一个完美的学习载体。但我们的 naive 策略更复杂一些。我们有 trader、leader、symbol supervisor，还有整套监督层级。
+在下一章里，我们会把这里学到的东西用到 naive 策略本身的重构中。
 
-We'll merge multiple trader processes per symbol into one. We'll eliminate the leader 
-and symbol supervisor entirely. We'll move the rebuy logic where it belongs - into 
-the pure strategy code. The result will be simpler, easier to test, and easier to reason about.
+我们会把每个 symbol 的多个 trader 进程合并成一个。我们会彻底移除 leader 和 symbol supervisor。我们会把 rebuy 逻辑放回它该在的地方——纯策略代码里。结果会更简单、更容易测试，也更容易推理。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_18](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18)).
+本章源码可以在本书的源代码仓库中找到
+（分支：
+[chapter_18](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_18)）。

@@ -1,64 +1,63 @@
-# Introduce a `buy_down_interval` to make a single trader more profitable
+# 引入 `buy_down_interval`，让单个交易者更赚钱 {#06-introduce-buydown-interval}
 
-In the previous chapter, we built a robust supervision tree that can trade multiple symbols in parallel and recover from crashes.
-That's great for reliability - but our trading strategy still has a subtle profitability problem.
+在上一章中，我们构建了一个健壮的监督树，它可以并行交易多个交易对，并在崩溃后恢复。
+这对可靠性来说很棒——但我们的交易策略仍然有一个微妙的盈利问题。
 
-When a trader finishes a sell and the Leader starts a new one, it immediately places a buy order at the current market price.
-That's the same price we just sold at! We're paying exchange fees twice (once for the sell, once for the buy) without any price movement in our favor.
-It's like running on a treadmill - lots of activity, but we're not actually getting anywhere.
+当一个交易者完成一次卖出，Leader 启动新的交易者时，它会立刻按当前市场价格挂出买单。
+而这个价格，和我们刚刚卖出的价格是一样的！这意味着我们在没有任何有利价格波动的情况下，既支付了卖出手续费，也支付了买入手续费。
+这就像在跑步机上跑步——很忙，但实际上并没有前进。
 
-In this chapter, we'll fix this by introducing a `buy_down_interval`. Instead of buying at the current price,
-our traders will calculate a lower price and place their buy orders there. This simple change ensures we only re-enter a position
-when the price has dipped enough to cover our fees and leave room for profit. It's a small tweak with a meaningful impact on the bottom line.
+在本章中，我们会通过引入 `buy_down_interval` 来解决这个问题。交易者不再按当前价格买入，
+而是先计算一个更低的价格，并把买单挂在那里。这个简单的改动，能确保我们只有在价格下跌到足以覆盖手续费并留下利润空间时，才重新进入仓位。
+这是一个很小的调整，但对最终收益有明显影响。
 
-Let's dive in!
+让我们开始吧！
 
-## Objectives
+## 目标
 
-- present reasons why to introduce `buy_down_interval`
-- add `buy_down_interval` to `Naive.Trader`'s state and calculate buy price
-- add `buy_down_interval` to `Naive.Trader`'s state compiled by the `Naive.Leader`
-- manually test the implementation inside IEx
+- 说明为什么要引入 `buy_down_interval`
+- 将 `buy_down_interval` 添加到 `Naive.Trader` 的状态中，并计算买入价格
+- 将 `buy_down_interval` 添加到由 `Naive.Leader` 组装的 `Naive.Trader` 状态中
+- 在 IEx 中手动测试实现
 
-## Why do we need to buy below the current price? Feature overview
+## 为什么需要在当前价格下方买入？功能概览
 
 ```{r, fig.align="center", out.width="50%", echo=FALSE}
 knitr::include_graphics("images/chapter_06_01_current_buy_price.png")
 ```
 
-The `Naive.Trader` process(marked in the above diagram with blue color),
-upon receiving the first trade event, immediately places a buy order at the current price.
+`Naive.Trader` 进程（上图中以蓝色标出）
+在收到第一条交易事件后，会立刻按当前价格挂出买单。
 
-Trader A exits and a new trader B is started which again immediately places a buy order *at the same price* as the previous trader just sold.
-When this gets filled, the sell order gets placed and the loop continues on and on.
+Trader A 退出后，会启动新的 trader B，而它又会在 *与上一个 trader 刚刚卖出时相同的价格* 上立刻挂出买单。
+当这笔订单成交后，就会继续挂出卖单，如此循环往复。
 
-We can see that there's a problem here as we just paid a fee twice (once for selling by Trader A and once for buying by Trader B)
-without really gaining anything. Let's say the fee is 0.1% per transaction.
-If Trader A sells at $100 and Trader B immediately buys at $100, we've lost 0.2% ($0.20) in fees for zero price movement.
-Trader A could have just held the currency and cashed in on double the profit in this specific situation -
-we're essentially burning money on unnecessary round trips.
+我们可以看出这里有问题，因为我们刚刚支付了两次手续费（一次是 Trader A 卖出，一次是 Trader B 买入），
+但实际上并没有获得任何收益。假设每笔交易的手续费是 0.1%。
+如果 Trader A 以 100 美元卖出，而 Trader B 立刻又以 100 美元买入，那么我们就在零价格波动的情况下损失了 0.2%（0.20 美元）的手续费。
+在这种情况下，Trader A 其实只要持有资产，就能拿到双倍利润——我们本质上是在为无意义的来回交易烧钱。
 
-The solution is to be more clever about our buy order's price.
+解决办法是更聪明地确定买单价格。
 
-The idea is simple, instead of placing a new buy order at the current price(price from the last TradeEvent), we will introduce a `buy_down_interval`:
+思路很简单：不再按当前价格（也就是上一条 `TradeEvent` 里的价格）挂新的买单，而是引入一个 `buy_down_interval`：
 
 ```{r, fig.align="center", out.width="50%", echo=FALSE}
 knitr::include_graphics("images/chapter_06_02_rebuy_expl.png")
 ```
 
-When a new `Naive.Trader` process receives its first trade event, it takes that price, reduces it by the `buy_down_interval` (for example, 0.005 means 0.5% below), and places a buy order at that calculated price.
+当一个新的 `Naive.Trader` 进程收到第一条交易事件时，它会取出那个价格，按 `buy_down_interval` 把它往下调（例如 0.005 表示低 0.5%），然后在这个计算出来的价格上挂买单。
 
-When looking at the chart above we can figure out that `buy_down_interval` should never be smaller than double the fee that you are paying per transaction.
-Why double? Because each complete cycle involves two fees: one when buying and one when selling.
-At the moment of writing, Binance's transaction fee is 0.1%, so our `buy_down_interval` should be at least 0.2% to break even -
-anything above that is profit margin.
+从上面的图可以看出，`buy_down_interval` 不应该小于每笔交易手续费的两倍。
+为什么是两倍？因为一个完整循环包含两次手续费：一次买入，一次卖出。
+在撰写本文时，Binance 的交易手续费是 0.1%，所以我们的 `buy_down_interval` 至少应该是 0.2%，这样才能打平——
+超过这个数值的部分才算利润空间。
 
-One thing to keep in mind: if the `buy_down_interval` is set too high,
-our buy orders might never get filled because the price may not drop that far.
+还有一点需要注意：如果 `buy_down_interval` 设得太高，
+我们的买单可能永远不会成交，因为价格未必会跌到那么低。
 
-## `Naive.Trader` implementation
+## `Naive.Trader` 的实现
 
-Let's open the `Naive.Trader` module's file(`/apps/naive/lib/naive/trader.ex`) and add `buy_down_interval` to its state:
+我们先打开 `Naive.Trader` 模块的文件（`/apps/naive/lib/naive/trader.ex`），并把 `buy_down_interval` 加到它的状态中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -66,7 +65,7 @@ Let's open the `Naive.Trader` module's file(`/apps/naive/lib/naive/trader.ex`) a
   defmodule State do
     @enforce_keys [
       :symbol,
-      :buy_down_interval, # <= add this line
+      :buy_down_interval, # <= 添加这一行
       :profit_target,
       :tick_size
     ]
@@ -74,7 +73,7 @@ Let's open the `Naive.Trader` module's file(`/apps/naive/lib/naive/trader.ex`) a
       :symbol,
       :buy_order,
       :sell_order,
-      :buy_down_interval, # <= add this line
+      :buy_down_interval, # <= 添加这一行
       :profit_target,
       :tick_size
     ]
@@ -82,7 +81,7 @@ Let's open the `Naive.Trader` module's file(`/apps/naive/lib/naive/trader.ex`) a
   ...
 ```
 
-Next, we need to update the initial `handle_info/2` callback which places the buy order. We need to retrieve the `buy_down_interval` and the `tick_size` from the `state` of the trader to be able to calculate the buy price. We will put the logic to calculate that price in a separate function at the end of the file:
+接下来，我们需要更新最初的 `handle_info/2` 回调，它负责挂买单。我们需要从 trader 的 `state` 中取出 `buy_down_interval` 和 `tick_size`，以便计算买入价格。我们会把价格计算逻辑放到文件末尾的一个独立函数中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -92,29 +91,28 @@ Next, we need to update the initial `handle_info/2` callback which places the bu
         %State{
           symbol: symbol,
           buy_order: nil,
-          buy_down_interval: buy_down_interval, # <= add this line
-          tick_size: tick_size                  # <= add this line          
+          buy_down_interval: buy_down_interval, # <= 添加这一行
+          tick_size: tick_size                  # <= 添加这一行          
         } = state
       ) do
     price = calculate_buy_price(price, buy_down_interval, tick_size)
-    # ^ add above call
+    # ^ 添加上面的调用
     ...
 ```
 
-To calculate the buy price we will use a very similar method to the one used
-before to calculate the sell price - if you recall, both involve percentage-based adjustments followed by tick size alignment.
+为了计算买入价格，我们会使用一种和之前计算卖出价格非常相似的方法——如果你还记得的话，这两者都包含基于百分比的调整，再配合 tick size 对齐。
 
-The formula is straightforward: `buy_price = current_price - (current_price × buy_down_interval)`.
-For example, if the current price is $100 and our `buy_down_interval` is 0.005 (0.5%), we'd place our buy order at $99.50.
+公式很直接：`buy_price = current_price - (current_price × buy_down_interval)`。
+例如，如果当前价格是 100 美元，而我们的 `buy_down_interval` 是 0.005（0.5%），那么买单就会挂在 99.50 美元。
 
-First, we cast all variables into `Decimal` structs.
-This is important for financial calculations - regular floats can introduce tiny rounding errors that accumulate over many trades.
-With Decimals, we get exact arithmetic.
+首先，我们把所有变量转换成 `Decimal` 结构体。
+这对金融计算非常重要——普通浮点数可能引入细小的舍入误差，而这些误差会在很多次交易后累计。
+使用 Decimal 后，我们可以得到精确的算术结果。
 
-Then we subtract the buy-down amount (price × buy_down_interval) from the price.
+然后我们从价格中减去下调金额（价格 × buy_down_interval）。
 
-The number that we will end up with won't necessarily be a legal price as every price needs to be divisible by the `tick_size`
-which we will ensure in the last calculation:
+最终得到的数值未必是合法价格，因为每个价格都必须能够被 `tick_size` 整除，
+我们会在最后一步里保证这一点：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -122,15 +120,15 @@ which we will ensure in the last calculation:
   defp calculate_buy_price(current_price, buy_down_interval, tick_size) do
     current_price = D.from_float(current_price)
 
-    # not necessarily legal price
+    # 不一定是合法价格
     exact_buy_price =
       D.sub(
         current_price,
         D.mult(current_price, buy_down_interval)
       )
 
-    # Round down to nearest legal tick size
-    # e.g., 0.15173 with tick_size 0.0001 -> div_int gives 1517 -> mult gives 0.1517
+    # 向下舍入到最近的合法 tick size
+    # 例如，0.15173 且 tick_size 为 0.0001 -> div_int 得到 1517 -> mult 得到 0.1517
     exact_buy_price
     |> D.div_int(tick_size)
     |> D.mult(tick_size)
@@ -139,9 +137,9 @@ which we will ensure in the last calculation:
   ...
 ```
 
-## `Naive.Leader` implementation
+## `Naive.Leader` 的实现
 
-Next, we need to update the `Naive.Leader` as it needs to add `buy_down_interval` to the `Naive.Trader`'s state:
+接下来，我们需要更新 `Naive.Leader`，让它把 `buy_down_interval` 加入到 `Naive.Trader` 的状态中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/leader.ex
@@ -151,9 +149,9 @@ Next, we need to update the `Naive.Leader` as it needs to add `buy_down_interval
     %{
       symbol: symbol,
       chunks: 1,
-      # 0.01% for quick testing
-      buy_down_interval: "0.0001", # <= add this line
-      # -0.12% for quick testing
+      # 快速测试用 0.01%
+      buy_down_interval: "0.0001", # <= 添加这一行
+      # 快速测试用 -0.12%
       profit_target: "-0.0012",
       tick_size: tick_size
     }
@@ -161,21 +159,19 @@ Next, we need to update the `Naive.Leader` as it needs to add `buy_down_interval
   ...
 ```
 
+### 在 IEx 中手动测试
 
-
-### Manual testing in IEx
-
-That finishes the `buy_down_interval` implementation, we will jump into the IEx session to see how it works, but before that, for a moment we will change the logging level to `debug` to see current prices:
+这样就完成了 `buy_down_interval` 的实现。接下来我们进入 IEx 里看看它是如何工作的，不过在那之前，我们会先把日志级别改成 `debug`，这样才能看到当前价格：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
 ...
 config :logger,
-  level: :debug # <= updated for our manual test
+  level: :debug # <= 为手动测试而更新
 ...
 ```
 
-After starting the streaming we should start seeing log messages with current prices. As we updated our implementation we should place our buy order below the current price as it's visible below:
+启动 streaming 后，我们应该能开始看到带有当前价格的日志信息。由于我们更新了实现，现在挂出的买单应该位于当前价格下方，如下面所示：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -191,28 +187,28 @@ iex(2)> Naive.start_trading("XRPUSDT")
 21:16:20.009 [info]  Placing BUY order for XRPUSDT @ 0.1517, quantity: 100
 ```
 
-As we can see our `Naive.Trader` process placed a buy order at 0.1517, which is below the current price of 0.1518 from the trade event.
-The difference represents our `buy_down_interval` applied to the current price and rounded to the tick size.
+可以看到，`Naive.Trader` 进程把买单挂在了 0.1517，这低于交易事件中的当前价格 0.1518。
+这个差值体现了我们把 `buy_down_interval` 应用到当前价格后，再按 tick size 进行舍入的结果。
 
-**Nice!** With this change, our traders are now smarter about when they enter positions:
+**不错！** 有了这个改动，我们的交易者在建仓时会更聪明：
 
-- Buy orders are placed *below* the current market price, not at it
-- We avoid the "treadmill effect" of paying fees for zero price movement
-- The `buy_down_interval` gives us control over how much of a dip we require before buying back in
+- 买单会挂在 *当前市场价格下方*，而不是等于当前价格
+- 我们避免了那种“为了零价格波动而支付手续费”的跑步机效应
+- `buy_down_interval` 让我们可以控制回撤多少后才重新买入
 
-**So, What's Next?**
+**下一步是什么？**
 
-Our traders now buy at better prices, but there's still a hardcoded value lurking in the code: the quantity.
-We've been buying exactly 100 units every time, regardless of the symbol's price or how much budget we actually have.
-That's very *naive* of us. Actually, it's a bit too naive.
+我们的交易者现在会以更好的价格买入了，但代码里还有一个硬编码值：数量。
+我们每次都固定买 100 个单位，不管交易对价格是多少，也不管我们实际上有多少预算。
+这对我们来说非常 *naive*。实际上，已经有点太 naive 了。
 
-In the next chapter, we'll introduce a proper `budget` for each trader and calculate the quantity dynamically based on that budget and the current price.
-This will make our trading more realistic and set us up for running multiple traders with divided budgets.
+在下一章中，我们会为每个 trader 引入一个真正的 `budget`，并根据这个预算和当前价格动态计算数量。
+这样我们的交易会更真实，也为后续将预算拆分给多个 trader 做好准备。
 
-[Note] Please remember to revert the change to logger level as otherwise there's too much noise in the logs.
+[Note] 请记得把 logger level 改回去，否则日志会太吵。
 
-[Note 2] Please remember to run `mix format` to keep things nice and tidy.
+[Note 2] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_06](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_06)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_06](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_06)）。

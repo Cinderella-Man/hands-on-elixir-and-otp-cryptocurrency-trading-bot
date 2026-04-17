@@ -1,48 +1,46 @@
-# Streaming Live Cryptocurrency Prices from Binance WebSocket
+# 使用 Binance WebSocket 流式获取实时加密货币价格 {#01-stream-crypto-prices}
 
-In this chapter, we'll build an Elixir application to stream real-time cryptocurrency prices -
-a perfect starting point that introduces several core concepts in a practical way.
-You'll learn how to manage dependencies, connect to a live data feed, and process
-incoming information.
-These are all essential skills for building robust Elixir applications.
+在本章中，我们将构建一个 Elixir 应用来流式获取实时加密货币价格——
+这是一个很好的起点，可以以实战方式引入几个核心概念。
+你将学习如何管理依赖、连接实时数据源，以及处理
+进入的数据。
+这些都是构建健壮 Elixir 应用所必需的技能。
 
-## Objectives
+## 目标
 
-- Create a new umbrella project.
-- Create a supervised application.
-- Connect to the Binance WebSocket with the `WebSockex` library.
-- Define a `%Streamer.TradeEvent{}` struct to represent incoming data.
-- Decode incoming JSON events with the `Jason` library.
+- 创建一个新的 umbrella 项目。
+- 创建一个受监督的应用。
+- 使用 `WebSockex` 库连接 Binance WebSocket。
+- 定义一个 `%Streamer.TradeEvent{}` 结构体来表示进入的数据。
+- 使用 `Jason` 库解码进入的 JSON 事件。
 
-## Create a New Umbrella Project
+## 创建一个新的 Umbrella 项目
 
-Since we're starting from scratch, let's create a new umbrella project:
+既然我们从零开始，那就先创建一个新的 umbrella 项目：
 
 ```{r, engine = 'bash', eval = FALSE}
 mix new hedgehog --umbrella
 ```
 
-## Create a Supervised Application
+## 创建一个受监督的应用
 
-Next, we'll create a new supervised application called `streamer` inside our umbrella:
+接下来，我们将在 umbrella 中创建一个名为 `streamer` 的新受监督应用：
 
 ```{r, engine = 'bash', eval = FALSE}
 cd hedgehog/apps
 mix new streamer --sup
 ```
 
-Creating the `streamer` as a supervised application within an umbrella project allows us to enforce strict boundaries
-between different parts of our logic, such as data streaming and trading.
-While this isolation makes the system easier to reason about early on, it comes with an architectural tax:
-every boundary we draw now is one we must manage through explicit configuration and dependency rules.
-We're choosing this structure deliberately so you can observe how those costs grow as the system expands.
+在 umbrella 项目中把 `streamer` 创建成一个受监督的应用，可以让我们在不同逻辑之间建立严格边界，例如数据流与交易。
+这种隔离会让系统在早期更容易推理，但它也有架构成本：
+我们现在划出的每一道边界，之后都必须通过显式配置和依赖规则来维护。
+我们有意选择这种结构，是为了让你看到随着系统扩展，这些成本会如何增长。
 
-## Connect to the Binance WebSocket with the WebSockex Library
+## 使用 WebSockex 库连接 Binance WebSocket
 
-To connect to the Binance WebSocket stream, we'll use [`WebSockex`](https://github.com/dominicletz/websockex),
-a popular WebSocket client library that handles the low-level connection details for us.
-According to the library's README, the first step is to add `:websockex` to the `deps` function
-in the `streamer` application's `mix.exs` file:
+要连接 Binance WebSocket 流，我们会使用 [`WebSockex`](https://github.com/dominicletz/websockex)，
+这是一个很常见的 WebSocket 客户端库，它会替我们处理底层连接细节。
+根据该库的 README，第一步是把 `:websockex` 加到 `streamer` 应用 `mix.exs` 文件里的 `deps` 函数中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs
@@ -53,12 +51,12 @@ in the `streamer` application's `mix.exs` file:
   end
 ```
 
-After adding a new dependency, we'll need to fetch it by running `mix deps.get` from the `apps/streamer` directory.
-This command downloads the library's source code (and any of its own dependencies) into our project's `deps` folder.
+添加新的依赖之后，我们需要从 `apps/streamer` 目录运行 `mix deps.get` 来拉取依赖。
+这个命令会把库的源代码（以及它自己的依赖）下载到项目的 `deps` 目录中。
 
-Now let's create a module responsible for streaming. We'll create a new file called `binance.ex` inside the `apps/streamer/lib/streamer` directory.
+现在我们来创建一个负责 streaming 的模块。我们会在 `apps/streamer/lib/streamer` 目录下创建一个名为 `binance.ex` 的新文件。
 
-The [WebSockex](https://github.com/dominicletz/websockex) README provides a great starting point. To handle the WebSocket connection, we'll create a module that uses the `WebSockex` behavior, which looks like this:
+[WebSockex](https://github.com/dominicletz/websockex) 的 README 提供了一个很好的起点。为了处理 WebSocket 连接，我们会创建一个使用 `WebSockex` 行为的模块，如下所示：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # From the WebSockex README
@@ -81,62 +79,62 @@ defmodule WebSocketExample do
 end
 ```
 
-We'll copy this code to our new `binance.ex` file.
+我们会把这段代码复制到新的 `binance.ex` 文件中。
 
-First, let's update the module name to `Streamer.Binance` to match our file name:
+首先，把模块名改成 `Streamer.Binance`，让它和文件名一致：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
 defmodule Streamer.Binance do
 ```
 
-We can simplify this example right away.
-The `handle_cast/2` callback is for sending messages to the WebSocket server.
-Since our application will only be receiving data for
-now, we can remove it.
+我们可以马上简化这个示例。
+`handle_cast/2` 回调是用来向 WebSocket 服务器发送消息的。
+而我们的应用目前只会接收数据，
+所以可以先把它删除。
 
-Next, let's find the correct URL for the Binance API.
-Binance provides its WSS (Web Socket Streams) documentation on [GitHub](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md).
+接下来，我们来找 Binance API 的正确 URL。
+Binance 把它的 WSS（Web Socket Streams）文档放在 [GitHub](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md) 上。
 
-The "General WSS information" section provides three key details:
+其中 “General WSS information” 小节给出了三个关键信息：
 
-* The base endpoint is: `wss://stream.binance.com:9443` (use `wss://stream.binance.us:9443` if you're US-based)
-* Raw streams are accessed at `/ws/<streamName>`
-* All symbols for streams are *lowercase*
+* 基础端点是：`wss://stream.binance.com:9443`（如果你在美国，请使用 `wss://stream.binance.us:9443`）
+* 原始流通过 `/ws/<streamName>` 访问
+* 所有流的 symbol 都是 *小写* 的
 
-The full URL for the raw streams we'll use is `wss://stream.binance.com:9443/ws/` followed by the stream name (e.g., `<symbol>@trade`).
+我们要使用的 raw streams 的完整 URL 是 `wss://stream.binance.com:9443/ws/`，后面跟上流名称（例如 `<symbol>@trade`）。
 
-A quick note: Binance uses "raw" to indicate that no data aggregation occurs before broadcasting over WebSocket.
-This means you receive every single trade as it happens. In a high-volume market like BTC/USDT,
-this can mean dozens of messages per second. Elixir's lightweight processes are perfect for this:
-we can ingest thousands of messages without blocking the rest of our application logic.
+顺带一提：Binance 使用 “raw” 来表示在通过 WebSocket 广播之前不会做数据聚合。
+这意味着你会收到每一笔交易发生时的原始数据。在像 BTC/USDT 这样高成交量的市场里，
+这可能意味着每秒收到几十条消息。Elixir 轻量级进程非常适合这种场景：
+我们可以吞吐成千上万条消息，而不会阻塞应用的其他逻辑。
 
-Let's define a module attribute to hold the base stream endpoint:
+我们先定义一个模块属性，用来保存基础流地址：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
 @stream_endpoint "wss://stream.binance.com:9443/ws/"
 ```
 
-Heading back to the [Binance](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md) documentation, let's search for 'Trade Streams'.
-In this context, a "trade" is a completed transaction - someone bought and someone sold at a specific price.
-For our purposes, the "latest price" is simply the price from the most recent trade.
+回到 [Binance](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md) 文档，我们来查找 “Trade Streams”。
+在这里，“trade” 指的是一笔已完成的交易——有人在某个价格买入，也有人在同样的价格卖出。
+对我们来说，“最新价格”其实就是最近一笔成交的价格。
 
-The docs point to the following stream name:
+文档给出的流名称如下：
 
 ```
 Stream Name: <symbol>@trade
 ```
 
-Together, our full URL looks like: `wss://stream.binance.com:9443/ws/<symbol>@trade`.
-For example, the raw trade stream URL for the `XRPUSDT` symbol is:
+合在一起，我们的完整 URL 看起来是：`wss://stream.binance.com:9443/ws/<symbol>@trade`。
+例如，`XRPUSDT` 的 raw trade stream URL 是：
 "wss://stream.binance.com:9443/ws/xrpusdt@trade"
 
-**Heads up:** Binance requires the symbol to be lowercase. If you provide an uppercase symbol like "XRPUSDT",
-the connection will succeed, but you **will not receive any data**, and no error will be returned.
-This can be tricky to debug, so always remember to downcase the symbol!
+**注意：** Binance 要求 symbol 必须是小写。如果你传入像 "XRPUSDT" 这样的大小写符号，
+连接会成功，但你**不会收到任何数据**，而且也不会返回错误。
+这会很难排查，所以一定要记得把 symbol 转成小写！
 
-Back in our editor, let's modify the `start_link/1` function to construct the correct URL:
+回到编辑器里，我们来修改 `start_link/1` 函数，以构造正确的 URL：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -151,11 +149,11 @@ Back in our editor, let's modify the `start_link/1` function to construct the co
   end
 ```
 
-Our `start_link/1` function now accepts a `symbol` instead of a full URL.
-It ensures the `symbol` is lowercase before combining it with our `@stream_endpoint`
-to build the complete URL.
+现在 `start_link/1` 函数接收的是 `symbol`，而不是完整 URL。
+它会先确保 `symbol` 是小写，然后再和 `@stream_endpoint` 组合起来，
+构造完整 URL。
 
-Our trade event streaming is now functional! Let's test it using `iex`:
+我们的 trade event streaming 现在已经能工作了！让我们用 `iex` 测试一下：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -167,13 +165,13 @@ Received Message - Type: :text -- Message: "{\"e\":\"trade\", \"E\":160322639474
   \"T\":1603226394739,\"m\":true,\"M\":true}"
 ```
 
-These messages appear because the code we copied from the [WebSockex README](https://github.com/dominicletz/websockex)
-uses `IO.puts/1` to print all incoming data.
+之所以会看到这些消息，是因为我们从 [WebSockex README](https://github.com/dominicletz/websockex)
+复制来的示例代码使用了 `IO.puts/1` 来打印所有进入的数据。
 
-The key takeaway is that `WebSockex` automatically calls our `handle_frame/2` function
-for each message it receives from the server. This makes it the perfect place to process incoming data.
+关键的一点是：`WebSockex` 会在每次收到服务器消息时自动调用我们的 `handle_frame/2` 函数。
+这让它成为处理进入数据的理想位置。
 
-For reference, our module should currently look like this:
+供参考，我们的模块此时应该长这样：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
@@ -199,16 +197,16 @@ defmodule Streamer.Binance do
 end
 ```
 
-## Decode Incoming JSON Events With the `Jason` Library
+## 使用 `Jason` 库解码进入的 JSON 事件
 
-The incoming WebSocket data is a JSON string. To parse it into a usable Elixir map,
-we'll use the popular [Jason](https://github.com/michalmuskala/jason) library.
+进入的 WebSocket 数据是一个 JSON 字符串。为了把它解析成可用的 Elixir map，
+我们会使用流行的 [Jason](https://github.com/michalmuskala/jason) 库。
 
-The library's README shows the standard installation procedure:
-add `:jason` to your dependencies, and you're ready to go.
+该库的 README 给出了标准安装方式：
+把 `:jason` 加到依赖里，你就可以开始使用了。
 
-Let's open the `mix.exs` file of the `streamer` application and append the `:jason`
-dependency to the list inside the `deps` function:
+让我们打开 `streamer` 应用的 `mix.exs` 文件，并把 `:jason`
+依赖追加到 `deps` 函数里的列表中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs
@@ -220,14 +218,14 @@ dependency to the list inside the `deps` function:
   end
 ```
 
-As before, don't forget to run `mix deps.get` to fetch the new dependency.
+别忘了像之前一样运行 `mix deps.get` 来拉取这个新依赖。
 
-In the Jason documentation, you'll find functions like `encode!/2` and `decode!/2`.
-In Elixir, a trailing exclamation mark (`!`) is a convention indicating that a function will raise an error on failure.
-While this is useful, it's better to handle potential errors gracefully when working with external data.
-Instead of using `try/rescue`,
-we'll look for a function that returns a tagged tuple like `{:ok, result}` or `{:error, reason}`.
-This pattern is more idiomatic in Elixir.
+在 Jason 的文档里，你会看到像 `encode!/2` 和 `decode!/2` 这样的函数。
+在 Elixir 中，函数名末尾带感叹号（`!`）通常表示：函数失败时会抛出错误。
+这当然有用，不过在处理外部数据时，最好优雅地处理潜在错误。
+因此我们不会使用 `try/rescue`，
+而是寻找一个返回标记元组的函数，比如 `{:ok, result}` 或 `{:error, reason}`。
+这种写法在 Elixir 中更符合惯用风格。
 
 ```{=latex}
 \begin{sidequest}
@@ -236,14 +234,14 @@ This pattern is more idiomatic in Elixir.
 <div class="sidequest">
 ```
 
-**Pro Tip: Don't Be Afraid to Read the Source!**
+**小技巧：别怕去读源码！**
 
-I highly recommend this kind of code exploration.
-Let's look inside the `Jason` module's source code, which we can find in our project's
-`deps/jason/lib/jason.ex` file.
+我非常推荐这种代码探索方式。
+让我们看看 `Jason` 模块的源代码，它就在项目里的
+`deps/jason/lib/jason.ex` 文件中。
 
-If we scroll down in search of `decode/2` (without the exclamation mark),
-we find it defined like this:
+如果我们向下翻找 `decode/2`（不带感叹号的那个），
+会发现它是这样定义的：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /deps/jason/lib/jason.ex
@@ -253,18 +251,17 @@ we find it defined like this:
   end
 ```
 
-This function uses `parse/2` from a `Decoder` module. Let's scroll back up to see where
-that module is defined:
+这个函数调用的是 `Decoder` 模块里的 `parse/2`。我们再往上翻一下，看看
+这个模块是在哪里定义的：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /deps/jason/lib/jason.ex
 alias Jason.{Encode, Decoder, DecodeError, EncodeError, Formatter}
 ```
 
-We can see `Decoder` is an alias for
-the [`Jason.Decoder`](https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex) module.
+可以看到，`Decoder` 其实是 [`Jason.Decoder`](https://github.com/michalmuskala/jason/blob/master/lib/decoder.ex) 模块的别名。
 
-Scrolling down to the `Jason.Decoder` module we'll find a `parse/2` function:
+继续往下找到 `Jason.Decoder` 模块，就能看到一个 `parse/2` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /deps/jason/lib/decoder.ex
@@ -291,14 +288,12 @@ Scrolling down to the `Jason.Decoder` module we'll find a `parse/2` function:
   end
 ```
 
-As you can see, the function returns either `{:ok, value}` on success or
-`{:error, %DecodeError{...}}` on failure.
+可以看到，这个函数在成功时返回 `{:ok, value}`，在失败时返回 `{:error, %DecodeError{...}}`。
 
-This side quest shows that Elixir code is often quite readable.
-Don't be afraid to dive into the source code when you're curious about the
-implementation details. It's the best way to learn!
-Better yet, if you spot an opportunity for improvement,
-consider it a chance to contribute back to the project's documentation or code!
+这段小探索说明，Elixir 代码通常都很容易读懂。
+如果你对实现细节好奇，不妨大胆去看源码——这是最好的学习方式！
+更进一步，如果你发现了可以改进的地方，
+也可以把它当作一次回馈项目文档或代码的机会！
 
 ```{=html}
 </div>
@@ -307,20 +302,20 @@ consider it a chance to contribute back to the project's documentation or code!
 \end{sidequest}
 ```
 
-Now let's modify the `handle_frame/2` function in our `Streamer.Binance` module to decode incoming JSON messages.
+现在，我们来修改 `Streamer.Binance` 模块里的 `handle_frame/2`，让它能解码进入的 JSON 消息。
 
-We'll use Elixir's built-in `Logger` to report any parsing failures. To use `Logger` macros like `Logger.error/1`,
-we need to `require` the module at the top of our file. Let's add that now:
+我们会使用 Elixir 内置的 `Logger` 来记录解析失败。要使用像 `Logger.error/1` 这样的 `Logger` 宏，
+需要在文件顶部 `require` 这个模块。现在先加上：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
   require Logger
 ```
 
-We'll use a `case` statement to handle the result from `Jason.decode/2`:
-if it's successful, we'll process the event; otherwise, we'll log the error.
+我们会用一个 `case` 表达式来处理 `Jason.decode/2` 的返回值：
+如果成功，就处理事件；如果失败，就记录错误。
 
-Here's the new version of the `handle_frame/2` function:
+下面是新版的 `handle_frame/2` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -334,17 +329,17 @@ Here's the new version of the `handle_frame/2` function:
   end
 ```
 
-Note that we prefixed `type` with an underscore (`_type`).
-This is an Elixir convention to signal an intentionally unused variable, which prevents a compiler warning.
+注意这里我们把 `type` 前面加了一个下划线（`_type`）。
+这是 Elixir 的惯例，用来表示这个变量是故意不使用的，从而避免编译器警告。
 
-Before implementing `process_event/1`, we need a struct to hold the data from
-the incoming trade events.
+在实现 `process_event/1` 之前，我们还需要一个结构体来保存
+进入的交易事件数据。
 
-Let's create a new directory called `binance` in `apps/streamer/lib/streamer/` and add a file called `trade_event.ex`.
+先在 `apps/streamer/lib/streamer/` 下创建一个名为 `binance` 的新目录，并添加一个 `trade_event.ex` 文件。
 
-This new module will define a struct to hold our trade event data.
-We'll use more descriptive field names instead of the abbreviated ones from the JSON payload.
-We can start by creating a skeleton module:
+这个新模块会定义一个结构体来保存我们的交易事件数据。
+我们会用更具描述性的字段名，替换 JSON 负载里那些缩写键。
+先从一个骨架模块开始：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance/trade_event.ex
@@ -353,7 +348,7 @@ defmodule Streamer.Binance.TradeEvent do
 end
 ```
 
-[Binance's documentation](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#trade-streams) lists these fields:
+[Binance 的文档](https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#trade-streams) 列出了这些字段：
 
 ```
 {
@@ -369,10 +364,10 @@ end
 }
 ```
 
-Now, let's define our struct, translating the abbreviated keys from the JSON payload
-into more descriptive field names.
+现在我们来定义这个结构体，把 JSON 负载里的缩写键
+转换成更清晰的字段名。
 
-Update the `defstruct` in the `Streamer.Binance.TradeEvent` module as follows:
+按下面的方式更新 `Streamer.Binance.TradeEvent` 模块里的 `defstruct`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance/trade_event.ex
@@ -406,21 +401,21 @@ Update the `defstruct` in the `Streamer.Binance.TradeEvent` module as follows:
 <div class="sidequest">
 ```
 
-The `@type` definition describes what a `TradeEvent` struct is supposed to look like.
-Today, it's mainly used by tools like Dialyzer and by your editor  -  not by the compiler itself.
+`@type` 定义描述了 `TradeEvent` 结构体应该长什么样。
+现在它主要是给 Dialyzer 之类的工具和编辑器用的——并不是编译器本身强制检查。
 
-This is an important detail to understand. Even though we say price is a `float()` and symbol is a `String.t()`,
-the compiler won't stop us from doing something silly like passing a string as the price.
-There are no warnings and no errors  -  Elixir is still very much dynamically typed here.
+这一点很重要。即使我们写明 price 是 `float()`、symbol 是 `String.t()`，
+编译器也不会阻止我们把字符串塞进 price 这种“离谱”的操作。
+这里不会有警告，也不会有错误——Elixir 在这里依然是动态类型语言。
 
-So why bother with typespecs at all? Because they still pull their weight.
-They make the code easier to read, help static analysis tools catch some mistakes,
-and set us up nicely for future improvements to Elixir's gradual type system.
+那为什么还要写 typespec 呢？因为它们依然很有价值。
+它们能提升可读性，帮助静态分析工具发现部分错误，
+也能为未来 Elixir 渐进式类型系统的改进做好铺垫。
 
-When it comes to actual safety, we rely on more traditional Elixir tools:
-pattern matching (`%TradeEvent{}`) to make sure we're dealing with the right struct,
-and well-defined boundaries between parts of the system.
-The typespecs don't enforce correctness, but they do help us reason about the code as it grows.
+真正的安全性，我们还是更多依赖传统的 Elixir 工具：
+比如模式匹配（`%TradeEvent{}`）来确保我们拿到的是正确的结构体，
+以及系统各部分之间清晰明确的边界。
+Typespec 并不会强制保证正确性，但它们能帮助我们在代码增长时更好地推理系统。
 
 ```{=html}
 </div>
@@ -429,11 +424,11 @@ The typespecs don't enforce correctness, but they do help us reason about the co
 \end{sidequest}
 ```
 
-With our struct defined, let's return to the `Streamer.Binance` module to implement
-the `process_event/1` function.
-We'll use pattern matching in the function head to ensure we're only handling events where the "e" key is "trade".
-Inside the function, we'll map the raw event data into our clean `%Streamer.Binance.TradeEvent{}` struct.
-The `process_event/1` function should now look like this:
+结构体已经定义好了，接下来回到 `Streamer.Binance` 模块，来实现
+`process_event/1` 函数。
+我们会在函数头里使用模式匹配，确保只处理 `{"e" => "trade"}` 的事件。
+函数内部会把原始事件数据映射成我们干净的 `%Streamer.Binance.TradeEvent{}` 结构体。
+`process_event/1` 函数现在应当如下：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -458,14 +453,14 @@ The `process_event/1` function should now look like this:
   end
 ```
 
-Two details here are noteworthy:
+这里有两个值得注意的点：
 
-- **The Float Warning:** We use `Float.parse/1` here strictly for simplicity. **In production financial systems, never use floats** - rounding errors can lead to "dust" (tiny, untradeable amounts left in your wallet) or to failed orders due to insufficient funds. In a professional system, you'd use a library like `Decimal`. We'll stick with floats for now to keep our initial logic readable.
-- We added a `Logger.debug/1` message to see our formatted trade events in the console.
+- **关于 Float 的提醒：** 这里我们只是为了简单才使用 `Float.parse/1`。**在生产级金融系统里，千万不要使用 float**——精度误差会导致“dust”（钱包里留下的极小、无法交易的余额），或者因为余额不足导致订单失败。在专业系统里，你应该使用像 `Decimal` 这样的库。为了让最初的逻辑更易读，我们现在先继续使用 float。
+- 我们加了一个 `Logger.debug/1` 消息，方便在控制台看到格式化后的交易事件。
 
-Lastly, before testing our implementation, let's add a clean, public API to our `streamer` application.
-The `Streamer.start_streaming/1` function will serve as our public interface,
-hiding the `Streamer.Binance` implementation details from the rest of the project.
+最后，在测试实现之前，我们先给 `streamer` 应用加一个干净的公共 API。
+`Streamer.start_streaming/1` 函数将作为我们的对外接口，
+把 `Streamer.Binance` 的实现细节隐藏在项目内部。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer.ex
@@ -480,11 +475,11 @@ defmodule Streamer do
 end
 ```
 
-For reference, the final version of the `Streamer.Binance` module
-can be found [here](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex).
+供参考，`Streamer.Binance` 模块的最终版本可以在这里找到：
+[chapter_01](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/blob/chapter_01/apps/streamer/lib/streamer/binance.ex)。
 
-Now let's configure the Logger in our main `config/config.exs` file.
-We'll temporarily set the Logger level to `:debug` so we can see the incoming trade events:
+现在，我们来在主配置文件 `config/config.exs` 里配置 Logger。
+我们会暂时把 Logger 的级别设为 `:debug`，这样就能看到进入的交易事件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -492,13 +487,13 @@ config :logger,
   level: :debug
 ```
 
-**Architecture Note:** We are using the umbrella's root configuration file for simplicity.
-While this works perfectly for now, it's worth noting that as we add more applications to our umbrella,
-the root config can become a "junk drawer" where settings for different apps get tangled together.
-This shared configuration is one of the reasons we will eventually consolidate into a single Phoenix application,
-moving away from the overhead of managing multiple app-specific environments in favor of a simpler, unified deployment.
+**架构说明：** 这里为了简单起见，我们使用 umbrella 的根配置文件。
+虽然现在这样完全没问题，但要注意：随着 umbrella 中加入越来越多的应用，
+根配置很可能会变成一个“杂物抽屉”，不同应用的设置会混在一起。
+这种共享配置也是我们最终会收敛到单个 Phoenix 应用的重要原因之一——
+它能减少管理多个应用环境的额外复杂度，换来更简单、更统一的部署方式。
 
-With our implementation complete, it's time to see it in action in an `iex` session:
+实现完成后，现在我们来在 `iex` 中看看效果：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -511,15 +506,15 @@ iex(1)> Streamer.start_streaming("xrpusdt")
 23:14:36.386 [debug] Trade event received XRPUSDT@0.25606000
 ```
 
-Our application now establishes a WebSocket connection, receives trade events, decodes the JSON into `%Streamer.Binance.TradeEvent{}` structs, and logs a formatted message.
+我们的应用现在已经建立起 WebSocket 连接，接收交易事件，把 JSON 解码为 `%Streamer.Binance.TradeEvent{}` 结构体，并输出格式化日志。
 
-Notice that we are starting this process manually. In Elixir, a process without a supervisor is an "orphan" -
-if the WebSocket connection drops or Binance rate-limits us,
-our streamer will simply die and stay dead,
-leaving our bot blind to the market.
-We'll address this vulnerability by implementing a proper supervision tree in Phase 2.
+请注意，这里我们是手动启动这个进程的。在 Elixir 里，没有 supervisor 保护的进程就是“孤儿”——
+如果 WebSocket 连接断开，或者 Binance 对我们做了限流，
+我们的 streamer 就会直接死掉，而且不会自己恢复，
+这会让机器人对市场完全失明。
+我们会在第 2 阶段通过实现正确的监督树来修复这个问题。
 
-Finally, let's reset the `Logger` level back to `:info` to avoid cluttering our console with debug messages.
+最后，把 `Logger` 级别重新调回 `:info`，避免 debug 日志刷屏。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -527,12 +522,11 @@ config :logger,
   level: :info
 ```
 
-You've just built a real-time data pipeline in Elixir.
-Take a moment to appreciate what you've accomplished:
-you've connected to a live WebSocket stream, parsed incoming events, and structured the data cleanly.
-This isn't just a toy example; it's the core of a serious application, and you built it from scratch.
-As a final step, remember to run `mix format` to keep your code nice and tidy.
+你刚刚用 Elixir 搭建了一个实时数据管道。
+花一点时间感受一下自己已经完成了什么：
+你连接了实时 WebSocket 流，解析了进入的事件，并把数据整理成了清晰的结构。
+这可不是一个玩具示例；它已经是一个严肃应用的核心，而你是从零开始把它做出来的。
+最后别忘了运行 `mix format`，让代码保持整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_01](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_01)).
+本章对应的源代码可以在本书的源代码仓库中找到（分支：
+[chapter_01](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_01)）。

@@ -1,32 +1,24 @@
-# 80/20 win with pure logic
+# 用纯逻辑赢得 80/20 {#21-80-20-win-with-pure-code}
 
-In the last chapter, we went in a full circle - built a complete exchange
-abstraction, admitted it was premature, tore it out, and landed on `Mimic` with
-compile-time module attributes. We now have a clean testing setup that doesn't
-force us into unnecessary behaviours.
+在上一章里，我们绕了一个大圈——构建了完整的 exchange 抽象，承认它太早了，把它整个拆掉，然后改用 `Mimic` 配合编译期模块属性。
+现在我们有了一个干净的测试方案，不再被迫为了测试去定义不必要的 behaviours。
 
-But we haven't exploited the real payoff yet. Remember when we split the
-`Naive.Strategy` into pure functions like `generate_decision/4` and effectful
-ones that talk to Binance? That separation wasn't just for aesthetics - it
-was an investment. Pure functions are trivially testable: no mocks, no setup,
-no state. You call them with inputs and assert on outputs.
+但我们还没真正吃到这份投资的回报。还记得我们把 `Naive.Strategy` 拆成了像 `generate_decision/4` 这样的纯函数，
+以及那些和 Binance 交互的有副作用函数吗？这种拆分不只是为了美观——它是一项投资。纯函数几乎是最容易测试的：不需要 mock，不需要搭建，不需要状态。
+你只要传入输入，再断言输出就行。
 
-In this chapter, we'll cash in that investment. We'll write tests for every
-clause of `generate_decision/4` and show that more than half our strategy code
-can be covered without touching a single external dependency. The Pareto
-principle applies here almost literally - a small effort on pure code testing
-buys us the majority of our confidence.
+在本章中，我们就要兑现这份投资。我们会为 `generate_decision/4` 的每个子句写测试，并展示如何在不接触任何外部依赖的情况下，覆盖掉一半以上的策略代码。
+帕累托原则在这里几乎是字面意义上的成立——对纯代码测试做一点小努力，就能换来我们大部分的信心。
 
-## Objectives
-- testing the pure logic
+## 目标
+- 测试纯逻辑
 
-## Testing the pure logic
+## 测试纯逻辑
 
-With the testing infrastructure behind us, let's put it to work. The `generate_decision/4` function
-has multiple clauses - each one a pure branch that maps inputs to a decision atom.
-We'll write a test for every one of them.
+有了测试基础设施，我们就开始用它。`generate_decision/4` 函数有多个子句——每个子句都是一个纯分支，把输入映射成一个决策 atom。
+我们会给每一个子句都写测试。
 
-We will start by removing all "hello world" tests that were generated when we were creating each of the umbrella apps - all of them look the same:
+我们先删除在创建每个 umbrella 应用时自动生成的所有“hello world”测试——它们都长得一样：
 
 ```
   test "greets the world" do
@@ -34,10 +26,10 @@ We will start by removing all "hello world" tests that were generated when we we
   end
 ```
 
-After taking care of this nuisance, we can now focus on testing our strategy.
+处理完这个烦人的东西之后，我们就可以专注于测试我们的策略了。
 
-Let's open the `apps/naive/test/naive/strategy_test.exs` where we will add tests of `generate_decision/4` function.
-We will test each clause starting with the first (returning `:place_buy_order`):
+打开 `apps/naive/test/naive/strategy_test.exs`，我们会在里面添加 `generate_decision/4` 的测试。
+我们先从第一个子句开始测试（返回 `:place_buy_order`）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive/strategy_test.exs
@@ -57,8 +49,8 @@ We will test each clause starting with the first (returning `:place_buy_order`):
   end
 ```
 
-The above test checks that the function returns `:place_buy_order` in case of a lack of buy/sell order.
-Inside the test, we are using a helper function that we need to add below:
+上面的测试检查的是：在没有 buy/sell order 的情况下，函数会返回 `:place_buy_order`。
+在测试中，我们使用了一个需要在下面添加的辅助函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive/strategy_test.exs
@@ -81,7 +73,7 @@ Inside the test, we are using a helper function that we need to add below:
   end
 ```
 
-At this moment, we should already be able to run the above test(together with the one from the previous chapter):
+此时，我们应该已经可以运行上面的测试了（连同上一章里的那个一起）：
 
 ```
 $ MIX_ENV=test mix test.unit
@@ -91,11 +83,9 @@ $ MIX_ENV=test mix test.unit
 2 tests, 0 failures (1 excluded)
 ```
 
-We will now take care of the remaining clauses of `generate_decision/4` function.
-Each test targets a specific branch: placing a sell order when a buy fills,
-fetching order status when the price crosses a threshold, finishing or exiting a position,
-triggering a rebuy, and the catch-all skip. The structure is identical every time -
-call the function with the right inputs, assert the right atom comes back:
+接下来我们处理 `generate_decision/4` 函数剩下的子句。
+每个测试都对应一个特定分支：买单成交后挂卖单、价格跨过阈值时获取订单状态、完成或退出 position、触发 rebuy，以及兜底的 skip。
+每个测试的结构都一样——传入正确输入，断言返回正确的 atom：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive/strategy_test.exs
@@ -248,7 +238,7 @@ call the function with the right inputs, assert the right atom comes back:
   end
 ```
 
-This brings us to 10 tests:
+这样一来，我们的测试就有 10 个了：
 
 ```
 $ MIX_ENV=test mix test.unit
@@ -259,40 +249,36 @@ $ MIX_ENV=test mix test.unit
 10 tests, 0 failures (1 excluded)
 ```
 
-The above tests are straightforward and uneventful, but that's good. They prove that tests of pure code are easy to write and maintain.
+上面的测试都很直接，也很平静——但这其实是好事。它们证明了纯代码测试既容易写，也容易维护。
 
-Furthermore, besides the `generate_decision/4` function, we also have `generate_decisions/4`,
-`parse_results/1` and helper methods that are all pure functions. After a little bit of math,
-we can work out that out of 424 lines, 262 lines contain pure code - that's a whopping 61%.
+另外，除了 `generate_decision/4`，我们还有 `generate_decisions/4`、`parse_results/1` 以及其他辅助方法，它们也都是纯函数。
+简单算一算，我们会发现：在 424 行代码里，262 行是纯代码——也就是高达 61%。
 
-## Final thoughts
+## 最后思考
 
-**This was the shortest chapter in the book - and that's the point.** Here's what we covered:
+**这本书里最短的一章，就是为了说明这一点。** 我们完成了这些：
 
-- Removed boilerplate "hello world" tests generated by the umbrella scaffold
-- Wrote tests for every clause of `generate_decision/4` using only pure function calls
-- Measured the pure-to-effectful ratio in `Naive.Strategy` to quantify the payoff
+- 删除了 umbrella 脚手架自动生成的样板“hello world”测试
+- 只用纯函数调用，为 `generate_decision/4` 的每个子句写了测试
+- 统计了 `Naive.Strategy` 中纯代码和有副作用代码的比例，量化了这份回报
 
-The pattern worth remembering is the testing pyramid this creates:
+这里值得记住的模式，是它带来的测试金字塔：
 
-1. Pure functions like `generate_decision/4` need only inputs and assertions - they're the cheapest tests to write and maintain
-2. Effectful functions that call Binance or write to the database need `Mimic` stubs - more setup, but still manageable
-3. Integration tests that spin up the full system are the most expensive and should cover the least ground
+1. 像 `generate_decision/4` 这样的纯函数只需要输入和断言——它们是最便宜、最容易维护的测试
+2. 会调用 Binance 或写数据库的有副作用函数需要 `Mimic` stub——准备工作更多，但仍然可控
+3. 启动整套系统的集成测试最昂贵，覆盖面也应该最少
 
-The underlying principle is simple: push side effects to the edges, keep the core pure, and your test suite becomes fast,
-reliable, and cheap to maintain. We've been doing exactly that - perhaps without naming it -
-since we split `Naive.Strategy` into decision functions and execution functions.
+背后的原则很简单：把副作用推到边缘，把核心保持纯净，你的测试套件就会又快、又稳、又便宜。
+我们一直在这么做——也许没明确说出来——自从我们把 `Naive.Strategy` 拆成决策函数和执行函数开始，就是这样。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-Our strategy is tested, our mocking story is clean, and our code is structured
-well. But we're still running as an umbrella application with multiple databases
-and duplicated configuration. In the next chapter, we'll ditch the umbrella
-entirely and migrate to a single Phoenix application - simplifying deployment
-and setting us up for clustering.
+我们的策略已经有测试了，mock 方案也很干净，代码结构也不错。
+但我们仍然把它当作一个 umbrella 应用在跑，里面有多个数据库和重复的配置。
+在下一章，我们会彻底抛弃 umbrella，迁移到一个单一的 Phoenix 应用——这会简化部署，也为集群部署打好基础。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_21](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21)).
+本章源码可以在本书的源代码仓库中找到
+（分支：
+[chapter_21](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_21)）。

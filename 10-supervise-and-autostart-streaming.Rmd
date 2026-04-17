@@ -1,54 +1,53 @@
-# Supervise and autostart streaming
+# 对 streaming 进行监督并自动启动 {#10-supervise-and-autostart-streaming}
 
-In the previous chapter, we moved our trading settings into a database,
-giving each symbol its own configurable parameters.
-But there's still a major pain point: every time we restart the application,
-we have to manually call `Streamer.start_streaming/1` for each symbol we want to stream.
+在上一章中，我们把交易设置移动到了数据库里，
+让每个交易对都拥有自己可配置的参数。
+但仍然有一个主要痛点：每次重启应用时，
+我们都必须为每个想要 streaming 的交易对手动调用 `Streamer.start_streaming/1`。
 
-Even worse, there's no supervision around our streamer processes.
-If a `Streamer.Binance` process crashes due to a network hiccup or WebSocket disconnection,
-it's gone forever - no automatic restart, no recovery.
+更糟的是，我们的 streamer 进程完全没有监督。
+如果某个 `Streamer.Binance` 进程因为网络抖动或者 WebSocket 断开而崩溃，
+它就永远消失了——不会自动重启，也不会恢复。
 
-In this chapter, we'll fix both problems.
-We'll add a `DynamicSupervisor` to manage our streamer processes,
-implement proper start/stop functionality with database-backed settings,
-and create an autostart mechanism that resumes streaming on all previously enabled symbols when the application boots.
-By the end, our streaming infrastructure will be robust and self-healing.
+在本章中，我们会把这两个问题都解决掉。
+我们会添加一个 `DynamicSupervisor` 来管理 streamer 进程，
+实现带数据库设置支持的 start/stop 功能，
+并创建一个 autostart 机制，让应用启动时自动恢复所有之前启用的交易对的 streaming。
+到本章结束时，我们的 streaming 基础设施会既健壮又能自我恢复。
 
-Let's make our streamers supervised and persistent!
+让我们的 streamers 变得可监督且持久化吧！
 
-## Objectives
+## 目标
 
-- describe and design the required functionality
-- register the `Streamer.Binance` processes with names
-- set up Ecto inside the `streamer` app
-- create and migrate the DB
-- seed default settings
-- implement the supervision tree and start streaming functionality
-- implement the stop functionality
-- implement the autostart streaming functionality
-- test the implementation
+- 描述并设计所需功能
+- 给 `Streamer.Binance` 进程注册名字
+- 在 `streamer` 应用中配置 Ecto
+- 创建并迁移数据库
+- 为默认 settings 填充数据
+- 实现监督树和 start streaming 功能
+- 实现 stop 功能
+- 实现 autostart streaming 功能
+- 测试实现
 
-## Describe and design the required functionality
+## 描述并设计所需功能
 
-At this moment, there's no supervision around the streamer processes. If an error occurs inside a `Streamer.Binance` process, it will die and never come back up.
+此时，streamer 进程周围还没有任何监督。如果 `Streamer.Binance` 进程内部发生错误，它就会死掉并且再也不会回来。
 
-That's less than perfect, but we can use supervisors to the rescue.
+这并不理想，不过我们可以借助 supervisor。
 
-We will create a new `Streamer.DynamicStreamerSupervisor` module inside our `streamer` application that will supervise the `Streamer.Binance` processes.
+我们会在 `streamer` 应用里创建一个新的 `Streamer.DynamicStreamerSupervisor` 模块，用来监督 `Streamer.Binance` 进程。
 
-Next, we will consider a list of functionalities that we would like it to provide:
+接下来，我们先考虑一下它应该提供哪些功能：
 
-- start streaming. This will require a new `Streamer.Binance` process started under the                           
-`Streamer.DynamicStreamerSupervisor`. We will put logic responsible for starting that process inside the `Streamer.DynamicStreamerSupervisor` module.
-- stop streaming. To be able to stop the `Streamer.Binance` process streaming on a specific symbol, we will need to know that process' PID based only on symbol string(ie. "XRPUSDT"). To make that possible, we will need to register every `Streamer.Binance` process with a name that we will be able to "reverse-engineer" based only on symbol string for example: `:"#{__MODULE__}-#{symbol}"`
-- autostart streaming. At the start of streaming on a symbol, we should persist that action as a symbol's streaming setting inside the database. We will need to generate a new Ecto.Repo, configure, create and migrate DB (just like in the last chapter for the `naive` app) to be able to retrieve that list. We will write a logic that will fetch settings of the symbols, autostart the ones that are enabled and place all that logic inside the `Streamer.DynamicStreamerSupervisor` module. We will introduce a [Task](https://hexdocs.pm/elixir/master/Task.html) child process that will utilize the logic from the `Streamer.DynamicStreamerSupervisor` to fetch those enabled symbols and start `Streamer.Binance` processes on startup - we will describe all of this separately in its section in this chapter.
+- start streaming。 这需要在 `Streamer.DynamicStreamerSupervisor` 下启动一个新的 `Streamer.Binance` 进程。我们会把启动该进程的逻辑放进 `Streamer.DynamicStreamerSupervisor` 模块中。
+- stop streaming。为了能够停止在某个特定交易对上运行的 `Streamer.Binance` 进程，我们需要仅凭交易对字符串（例如 “XRPUSDT”）就能知道这个进程的 PID。为了做到这一点，我们需要给每个 `Streamer.Binance` 进程注册一个名字，而且这个名字要能只根据交易对字符串“反推”出来，例如：`:"#{__MODULE__}-#{symbol}"`
+- autostart streaming。在某个交易对上开始 streaming 时，我们应该把这个操作持久化到数据库里，作为该交易对的 streaming settings。为了能够获取这个列表，我们需要生成一个新的 Ecto.Repo，像上一章在 `naive` 应用里那样去配置、创建并迁移数据库。我们会写一段逻辑去读取交易对的 settings，把启用的那些自动启动起来，并把所有这些逻辑都放进 `Streamer.DynamicStreamerSupervisor` 模块中。我们还会引入一个 [Task](https://hexdocs.pm/elixir/master/Task.html) 子进程，利用 `Streamer.DynamicStreamerSupervisor` 的逻辑在启动时读取这些已启用的交易对并启动 `Streamer.Binance` 进程——我们会在本章中单独说明这一部分。
 
-## Register the `Streamer.Binance` processes with names
+## 给 `Streamer.Binance` 进程注册名字
 
-To be able to perform start/stop streaming on a symbol we will first need to be able to figure out the PID of the `Streamer.Binance` process that is streaming that symbol.
+为了能够对某个交易对执行 start/stop streaming，我们首先需要能找出正在为该交易对提供 streaming 的 `Streamer.Binance` 进程的 PID。
 
-The first change that we need to apply will be to register `Streamer.Binance` processes with names by passing the 4th argument to the `WebSockex.start_link/4` function:
+我们要做的第一个改动，是通过给 `WebSockex.start_link/4` 传入第四个参数来为 `Streamer.Binance` 进程注册名字：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/binance.ex
@@ -59,48 +58,48 @@ The first change that we need to apply will be to register `Streamer.Binance` pr
     )
 
     WebSockex.start_link(
-      "#{@stream_endpoint}#{String.downcase(symbol)}@trade", # <= lowercase symbol
+      "#{@stream_endpoint}#{String.downcase(symbol)}@trade", # <= symbol 转为小写
       __MODULE__,
       nil,
-      name: :"#{__MODULE__}-#{String.upcase(symbol)}" # <= uppercase symbol
+      name: :"#{__MODULE__}-#{String.upcase(symbol)}" # <= symbol 转为大写
     )
   end
 ```
 
-A few things worth mentioning here:
+这里有几点值得说明：
 
-- inside the URL we need to use a lowercase symbol
-- we are registering the process using the uppercase symbol so the name will remain consistent with the `naive` application's processes
-- to register the process we are sending a keyword list as the 4th argument to the `start_link/4` function of the `WebSockex` module ([link to source](https://github.com/dominicletz/websockex/blob/master/lib/websockex.ex#L418) - again, no need to be afraid of reading the source code in Elixir, that's the beauty of it)
+- 在 URL 里我们需要使用小写的 symbol
+- 我们用大写 symbol 来注册进程，这样名字就能和 `naive` 应用里的进程保持一致
+- 要完成注册，我们需要像 `WebSockex` 的 `start_link/4` 函数传入一个 keyword list 作为第四个参数（[源码链接](https://github.com/dominicletz/websockex/blob/master/lib/websockex.ex#L418)——在 Elixir 里直接阅读源码并不可怕，这正是它的魅力）
 
-## Set up Ecto inside the `streamer` app
+## 在 `streamer` 应用中配置 Ecto
 
-In the same fashion as in the last chapter, we will need to set up the database inside the `streamer` app. We will use the same Postgres server(docker container) that we've set up inside docker in the last chapter, just a separate database, so there's no need to update the `docker-compose.yml` file.
+和上一章一样，我们需要在 `streamer` 应用中配置数据库。我们会使用上一个章节里在 Docker 中配置好的同一个 Postgres 服务器容器，只是使用另一个数据库，所以不需要更新 `docker-compose.yml` 文件。
 
-As previously, the first step will be to add the Ecto modules and Postgres-related packages into `deps` inside the `mix.exs` file of the `streamer` app.
-Additionally, we will add the `binance` module that we will use to fetch all symbols supported by the exchange
-(to generate default settings as we've done for the `naive` application).
-We can't use `BinanceMock` here as it would cause a circular dependency - BinanceMock depends on the streamer app:
+和之前一样，第一步是在 `streamer` 应用的 `mix.exs` 文件中的 `deps` 里加入 Ecto 模块和 Postgres 相关包。
+另外，我们还会加入 `binance` 模块，用它来获取 exchange 支持的所有 symbol
+（这样就能像在 `naive` 应用里那样生成默认 settings）。
+这里不能用 `BinanceMock`，因为那样会产生循环依赖——BinanceMock 依赖 streamer 应用：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs
   ...
   defp deps do
     [
-      {:binance, "~> 1.0"},    # <= used to retrieve symbols list(exchangeInfo)
-      {:ecto_sql, "~> 3.0"},   # <= added dependency
-      {:ecto_enum, "~> 1.4"},  # <= added dependency
+      {:binance, "~> 1.0"},    # <= 用来获取 symbols 列表（exchangeInfo）
+      {:ecto_sql, "~> 3.0"},   # <= 新增依赖
+      {:ecto_enum, "~> 1.4"},  # <= 新增依赖
       {:jason, "~> 1.2"},
       {:phoenix_pubsub, "~> 2.0"},
-      {:postgrex, ">= 0.0.0"}, # <= added dependency
+      {:postgrex, ">= 0.0.0"}, # <= 新增依赖
       {:websockex, "~> 0.4"}
     ]
   end
 ```
 
-Run `mix deps.get` to install new dependencies.
+运行 `mix deps.get` 安装新依赖。
 
-We can now use the Ecto generator to add a repository to the Streamer application:
+接下来我们使用 Ecto 生成器为 Streamer 应用添加 repository：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/streamer
@@ -111,30 +110,30 @@ $ mix ecto.gen.repo -r Streamer.Repo
 ...
 ```
 
-Update the config to match access details to the Postgres Docker instance:
+更新配置，让它匹配 Postgres Docker 实例的访问参数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
 config :streamer, Streamer.Repo,
-  database: "streamer",   # <= database updated 
-  username: "postgres",   # <= username updated
-  password: "postgres",   # <= password updated
+  database: "streamer",   # <= 数据库更新
+  username: "postgres",   # <= 用户名更新
+  password: "postgres",   # <= 密码更新
   hostname: "localhost"
 
 ...
 
-config :streamer,             # <= added line 
-  ecto_repos: [Streamer.Repo] # <= added line
+config :streamer,             # <= 添加这一行 
+  ecto_repos: [Streamer.Repo] # <= 添加这一行
 ```
 
-The last step will be to update the `children` list of the `Streamer.Application` module:
+最后一步，是更新 `Streamer.Application` 模块里的 `children` 列表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/application.ex
 ...
   def start(_type, _args) do
     children = [
-      {Streamer.Repo, []}, # <= repo added
+      {Streamer.Repo, []}, # <= 添加 repo
       {
         Phoenix.PubSub,
         name: Streamer.PubSub
@@ -143,9 +142,9 @@ The last step will be to update the `children` list of the `Streamer.Application
     ...
 ```
 
-## Create and migrate the DB
+## 创建并迁移数据库
 
-We can now create a new streamer database using the `mix` tool, after that we will be able to generate a migration file that will create the `settings` table:
+现在我们可以使用 `mix` 创建一个新的 streamer 数据库，之后就可以生成 migration 文件来创建 `settings` 表：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.create -r Streamer.Repo
@@ -156,7 +155,7 @@ $ mix ecto.gen.migration create_settings
 * creating priv/repo/migrations/20210203184805_create_settings.exs
 ```
 
-We can safely start just with `id`, `symbol` and `status` columns, where the last one will follow the same enum idea from the previous chapter:
+我们可以从 `id`、`symbol` 和 `status` 三列开始，其中最后一个字段会沿用上一章的 enum 思路：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/priv/repo/migrations/20210203184805_create_settings.exs
@@ -181,17 +180,17 @@ defmodule Streamer.Repo.Migrations.CreateSettings do
 end
 ```
 
-That finishes our work on the migration file. Now we need to add the `StreamingStatusEnum` in the same way as in the last chapter.
-Create a `schema` directory inside `/apps/streamer/lib/streamer/`, then create a new file called `streaming_status_enum.ex` with the enum definition:
+这样 migration 文件就完成了。现在我们需要像上一章一样添加 `StreamingStatusEnum`。
+在 `/apps/streamer/lib/streamer/` 里创建一个 `schema` 目录，然后新建一个 `streaming_status_enum.ex` 文件并写入 enum 定义：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/schema/streaming_status_enum.ex
 import EctoEnum
 
-defenum(Streamer.Schema.StreamingStatusEnum, :streaming_status, [:on, :off])
+defenum(Streamer.Schema.StreamingStatusEnum, :trading_status, [:on, :off])
 ```
 
-Let's run the migration to create the table, unique index, and the enum:
+现在我们运行 migration 来创建表、唯一索引和 enum：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mix ecto.migrate
@@ -203,8 +202,7 @@ Streamer.Repo.Migrations.CreateSettings.change/0 forward
 21:31:56.932 [info]  == Migrated 20210203184805 in 0.0s
 ```
 
-We can now create a schema file for the `settings` table. Inside the                                  
-`/apps/streamer/lib/streamer/schema` directory create a file called `settings.ex`:
+接着我们可以为 `settings` 表创建一个 schema 文件。请在 `/apps/streamer/lib/streamer/schema` 目录下创建 `settings.ex`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/schema/settings.ex
@@ -224,13 +222,13 @@ defmodule Streamer.Schema.Settings do
 end
 ```
 
-We are now ready to query the table but first, we need to insert the default settings into the database.
+现在我们已经可以查询这张表了，但首先，我们需要把默认 settings 插入数据库。
 
-## Seed default settings
+## 为默认 settings 填充数据
 
-As with the settings inside the `naive` application, we will fetch all symbols from binance and bulk insert them into the database.
+和 `naive` 应用里的 settings 一样，我们会从 Binance 获取所有 symbol，并批量插入数据库。
 
-First let's create a new file called `seed_settings.exs` inside the `apps/streamer/priv` directory. As this file is nearly the same as the one from the last chapter I will skip the lengthy explanation - this is the script:
+先在 `apps/streamer/priv` 目录下创建一个名为 `seed_settings.exs` 的新文件。由于这个文件和上一章里的几乎一样，我就不展开冗长说明了——脚本如下：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/priv/seed_settings.exs
@@ -267,7 +265,7 @@ total_count = symbols
 Logger.info("Inserted settings for #{total_count} symbols")
 ```
 
-Don't forget to run the seeding script before progressing forward:
+别忘了在继续往下之前先运行这个 seeding 脚本：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps/streamer
@@ -279,10 +277,9 @@ $ mix run priv/seed_settings.exs
 22:03:51.462 [info] Inserted settings for 1375 symbols
 ```
 
-## Implement the supervision tree and start streaming functionality
+## 实现监督树和 start streaming 功能
 
-Let's start by creating a new file called `dynamic_streamer_supervisor.ex` inside the                          
-`/apps/streamer/lib/streamer` directory. Let's start with a default implementation from the [docs](https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors) (updated with correct module and process names):
+先在 `/apps/streamer/lib/streamer` 目录下创建一个 `dynamic_streamer_supervisor.ex` 文件。我们先从 [文档](https://hexdocs.pm/elixir/master/DynamicSupervisor.html#module-module-based-supervisors) 里的默认实现开始（并更新成正确的模块和进程名）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -303,8 +300,7 @@ defmodule Streamer.DynamicStreamerSupervisor do
 end
 ```
 
-Next, we will add the `start_streaming/1` function at the bottom of the                     
-`Streamer.DynamicStreamerSupervisor` module:
+接下来，我们在 `Streamer.DynamicStreamerSupervisor` 模块的底部添加 `start_streaming/1` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -324,9 +320,9 @@ Next, we will add the `start_streaming/1` function at the bottom of the
   end
 ```
 
-To unpack above - we are checking is there a streamer process already running for the passed symbol and based on the result of that check, we either start the new streaming process(and update the symbol's settings) or just update the symbol's settings.
+展开一下上面的逻辑：我们会检查传入的 symbol 是否已经有 streamer 进程在运行；根据这个检查结果，我们要么启动新的 streaming 进程（并更新该 symbol 的 settings），要么只更新 symbol 的 settings。
 
-Inside the `start_streaming/1` function, we are using 3 helper functions that we need to add at the bottom of the file:
+在 `start_streaming/1` 里，我们还用到了 3 个辅助函数，需要把它们加到文件底部：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -349,10 +345,9 @@ Inside the `start_streaming/1` function, we are using 3 helper functions that we
   end
 ```
 
-The above functions are quite self-explanatory, `get_pid/1` is a convenience wrapper,                  
-`update_streaming_status/2` will update the status field for the passed symbol, `start_streamer/1` will instruct the `Streamer.DynamicStreamerSupervisor` to start a new `Streamer.Binance` process with symbol passed as the first argument.
+上面的函数都很直观：`get_pid/1` 是一个便捷包装，`update_streaming_status/2` 会更新传入 symbol 的 status 字段，`start_streamer/1` 则会指示 `Streamer.DynamicStreamerSupervisor` 启动一个新的 `Streamer.Binance` 进程，symbol 作为第一个参数传入。
 
-The last step to get the above function to work(and future ones in this module) would be to add a `require`, an `import`, and a few `alias`es at the top of the module:
+要让上面的函数工作起来（以及这个模块里后面的函数工作起来），我们还需要在模块顶部添加 `require`、`import` 和几个 `alias`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -366,7 +361,7 @@ The last step to get the above function to work(and future ones in this module) 
 
 
 
-As we added a new `start_streaming/1` logic inside the `Streamer.DynamicStreamerSupervisor`, we need to replace the `start_streaming/1` implementation inside the `Streamer` module:
+随着我们在 `Streamer.DynamicStreamerSupervisor` 里新增了 `start_streaming/1` 逻辑，我们需要替换 `Streamer` 模块里的 `start_streaming/1` 实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer.ex
@@ -380,9 +375,9 @@ As we added a new `start_streaming/1` logic inside the `Streamer.DynamicStreamer
   end
 ```
 
-As we don't need to put any logic inside the `Streamer.start_streaming/1` function, we can just delegate the call straight to the `Streamer.DynamicStreamerSupervisor` module.
+由于 `Streamer.start_streaming/1` 里已经不需要再写任何逻辑，我们只要把调用直接委托给 `Streamer.DynamicStreamerSupervisor` 模块即可。
 
-The last step will be to append the `Streamer.DynamicStreamSupervisor` to the `children` list of the `Streamer.Application`:
+最后一步，是把 `Streamer.DynamicStreamSupervisor` 加到 `Streamer.Application` 模块的 `children` 列表中：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/application.ex
@@ -393,17 +388,19 @@ The last step will be to append the `Streamer.DynamicStreamSupervisor` to the `c
     ]
 ```
 
-At this moment our supervision tree already works and all streamer processes are being monitored by the `Streamer.DynamicStreamerSupervisor`:
+此时我们的监督树已经开始工作，所有 streamer 进程都已经由 `Streamer.DynamicStreamerSupervisor` 监控起来：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_11_03_first_sup_tree.png")
 ```
 
-## Implement the stop functionality
+## 实现 stop 功能
 
-As we can see, we are now registering the `Streamer.Binance` processes with names that contain their symbols. We will be able to retrieve PIDs of those registered processes just by simply passing the symbol string(ie. "XRPUSDT") into `get_pid/1`, which will allow us to then request termination of those processes by the `Streamer.DynamicStreamerSupervisor`.
+如我们所见，现在 `Streamer.Binance` 进程会用包含其 symbol 的名字来注册。
+我们可以仅通过把 symbol 字符串（比如 “XRPUSDT”）传入 `get_pid/1`，就拿到这些已注册进程的 PID，
+从而让 `Streamer.DynamicStreamerSupervisor` 请求终止这些子进程。
 
-Let's write a `stop_streaming/1` logic inside the `Streamer.DynamicStreamerSupervisor` module(put it above first private function):
+我们先在 `Streamer.DynamicStreamerSupervisor` 模块中写一个 `stop_streaming/1` 逻辑（放在第一个私有函数之前）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -427,11 +424,9 @@ Let's write a `stop_streaming/1` logic inside the `Streamer.DynamicStreamerSuper
   end
 ```
 
-`stop_streaming/1` looks very similar to `start_streaming/1`, we are checking is there already a `Streamer.Binance` process registered for that symbol, and we either ask the                       
-`Streamer.DynamicStreamerSupervisor` to terminate it for us (using the                        
-`DynamicSupervisor.terminate_child/2` function + update the status) or just update the status to be `off`.
+`stop_streaming/1` 和 `start_streaming/1` 很像：我们会检查这个 symbol 是否已经有一个 `Streamer.Binance` 进程在运行；如果有，我们就让 `Streamer.DynamicStreamerSupervisor` 终止它（通过 `DynamicSupervisor.terminate_child/2`），再更新状态；如果没有，就只把状态改成 `off`。
 
-We need to update the `Streamer` module to provide the interface to stop streaming on a symbol:
+我们还需要在 `Streamer` 模块中提供一个停止 streaming 的接口：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer.ex
@@ -444,41 +439,39 @@ We need to update the `Streamer` module to provide the interface to stop streami
   ...
 ```
 
-## Implement the autostart streaming functionality
+## 实现 autostart streaming 功能
 
-Currently, when we shut down the Elixir app, settings persist in the database but streamers are not started on the next init.
+目前当我们关闭 Elixir 应用时，settings 还保留在数据库中，但下次启动时并不会自动把 streamer 再启动起来。
 
-To fix this, we will add `autostart_streaming/0` inside the `Streamer.DynamicStreamerSupervisor`.
+为了解决这个问题，我们会在 `Streamer.DynamicStreamerSupervisor` 里添加 `autostart_streaming/0`。
 
-Note: It's very important to differentiate between module and process. We will put our autostarting logic inside the *module* but the `Streamer.DynamicStreamerSupervisor` *process* won't run it.
+注意：区分 module 和 process 非常重要。我们会把 autostart 逻辑放进 *module* 里，但 `Streamer.DynamicStreamerSupervisor` *进程* 本身不会直接执行这段逻辑。
 
-We will introduce a new [Task](https://hexdocs.pm/elixir/master/Task.html) process that will execute all the autostarting logic.
+我们会引入一个新的 [Task](https://hexdocs.pm/elixir/master/Task.html) 进程，让它去执行所有 autostart 逻辑。
 
-That will cover the problem of the Supervisor executing too much business logic (as the Task will execute it), but how will we supervise them together?
-At init both will start, the `Streamer.DynamicStreamerSupervisor` first, and then Task will ask it to start multiple children and that will work fine. The problem occurs when the `Streamer.DynamicStreamerSupervisor` would die because of any reason. Currently, it's supervised using the `one_for_one` strategy(and the `Task` would be as well) which means that it will get started again by the `Streamer.Application` process but at that moment the "autostarting" `Task` won't be there anymore to start streaming on all enabled symbols.
+这样就解决了 Supervisor 直接执行过多业务逻辑的问题（由 Task 来执行）。但它们该如何一起被监督呢？
+在初始化时，它们都会启动：先是 `Streamer.DynamicStreamerSupervisor`，然后 Task 会请求它启动多个子进程，这样没问题。问题出在 `Streamer.DynamicStreamerSupervisor` 因为某种原因挂掉时。当前它使用的是 `one_for_one` 策略（Task 也一样），这意味着它会被 `Streamer.Application` 重新启动，但此时负责“自动启动”的 Task 已经不在了，也就没法把所有已启用的 symbol 再次启动起来。
 
-We can clearly see that whenever the `Streamer.DynamicStreamerSupervisor` will die it needs to be started again *together* with the "autostart" `Task` and this won't fit our current `Streamer.Application`'s strategy.
+我们可以很清楚地看出，一旦 `Streamer.DynamicStreamerSupervisor` 挂掉，它就需要和 “autostart” Task *一起* 重启，而这和当前 `Streamer.Application` 的策略不匹配。
 
-In cases like those, a new level of supervision needs to be introduced that will have a different supervision strategy for those "coupled" processes. We will rename the process name of the `Streamer.Application` (which is currently registered as `Streamer.Supervisor`) to `Streamer.Application`. Then we will introduce the new `Streamer.Supervisor` module and register it under the same name. We will attach both `Streamer.DynamicStreamerSupervisor` and Task to the `Streamer.Supervisor` and assign it with the `rest_for_one` strategy  which will restart the Task whenever           
-`Streamer.DynamicStreamerSupervisor` would die:
+在这种情况下，就需要引入一个新的监督层，用不同的监督策略来管理这些“耦合”的进程。我们会把当前由 `Streamer.Application` 注册的进程名改成 `Streamer.Application`。然后我们引入新的 `Streamer.Supervisor` 模块，并用同样的名字注册它。我们会把 `Streamer.DynamicStreamerSupervisor` 和 Task 都挂到 `Streamer.Supervisor` 下面，并把它设置成 `rest_for_one` 策略，这样只要 `Streamer.DynamicStreamerSupervisor` 挂掉，Task 也会跟着重新启动：
 
 ```{r, fig.align="center", out.width="100%", out.height="50%", echo=FALSE}
 knitr::include_graphics("images/chapter_11_04_new_sup_tree.png")
 ```
 
-Let's start by creating the `autostart_streaming/0` functionality inside the                         
-`Streamer.DynamicStreamerSupervisor`:
+我们先在 `Streamer.DynamicStreamerSupervisor` 里实现 `autostart_streaming/0`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
 
-  # add below after the `init/1` function
+  # 加在 `init/1` 函数后面
   def autostart_streaming do
     fetch_symbols_to_stream()
     |> Enum.map(&start_streaming/1)
   end
 
-  # and this at the end of the module
+  # 然后在模块末尾添加这个私有函数
   defp fetch_symbols_to_stream do
     Repo.all(
       from(s in Settings,
@@ -489,13 +482,13 @@ Let's start by creating the `autostart_streaming/0` functionality inside the
   end
 ```
 
-`autostart_streaming/0` function fetches all symbols from the `settings` table with `status == "on"` then it passes them one by one into the `start_streaming/1` function using `Enum.map/2`.
+`autostart_streaming/0` 会从 `settings` 表里查出所有 `status == "on"` 的 symbol，然后通过 `Enum.map/2` 把它们一个个传入 `start_streaming/1`。
 
-We can now focus on referring to the above autostarting logic inside the new supervisor that we will create now. Let's start by creating a new file called `supervisor.ex` inside the `/apps/streamer/lib/streamer/` directory and fill it with default [Supervisor](https://hexdocs.pm/elixir/master/Supervisor.html#module-module-based-supervisors) implementation:
+现在我们可以继续，把这段 autostart 逻辑接到刚刚创建的新 supervisor 上。先在 `/apps/streamer/lib/streamer/` 目录下创建一个 `supervisor.ex` 文件，并写入默认的 [Supervisor](https://hexdocs.pm/elixir/master/Supervisor.html#module-module-based-supervisors) 实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/supervisor.ex
-defmodule Streamer.Supervisor do # <= updated module name
+defmodule Streamer.Supervisor do # <= 更新后的模块名
   use Supervisor
 
   def start_link(init_arg) do
@@ -512,17 +505,17 @@ defmodule Streamer.Supervisor do # <= updated module name
 end
 ```
 
-We can now update the strategy to `rest_for_one`:
+我们现在可以把策略改成 `rest_for_one`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/supervisor.ex
   def init(_init_arg) do
     ...
-    Supervisor.init(children, strategy: :rest_for_one) # <= strategy updated
+    Supervisor.init(children, strategy: :rest_for_one) # <= 更新策略
   end
 ```
 
-The last step inside our new supervisor will be to add 2 children: `Streamer.DynamicStreamerSupervisor` and `Task` (that will autostart the symbol streamers):
+这个新 supervisor 的最后一步，是添加两个子进程：`Streamer.DynamicStreamerSupervisor` 和 `Task`（它会负责自动启动 symbol streamers）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/supervisor.ex
@@ -538,7 +531,7 @@ The last step inside our new supervisor will be to add 2 children: `Streamer.Dyn
   end
 ```
 
-The final update in this chapter will be to replace the `Streamer.DynamicStreamerSupervisor` as one of the children inside the `Streamer.Application` module and update the name that the application process registers under:
+本章最后的更新，是把 `Streamer.DynamicStreamerSupervisor` 从 `Streamer.Application` 的 children 列表中移除，并把应用进程注册名改掉：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/application.ex
@@ -549,18 +542,18 @@ The final update in this chapter will be to replace the `Streamer.DynamicStreame
         Phoenix.PubSub,
         name: Streamer.PubSub
       },
-      {Streamer.Supervisor, []} # <= updated supervisor
+      {Streamer.Supervisor, []} # <= 更新后的 supervisor
     ]
 
-    opts = [strategy: :one_for_one, name: Streamer.Application] # <= updated name
+    opts = [strategy: :one_for_one, name: Streamer.Application] # <= 更新名称
     ...
 ```
 
 
 
-## Manual testing in IEx
+## 在 IEx 中手动测试
 
-Let's start an IEx session and call the `start_streaming/1` function twice for two different symbols and then exit using double Ctrl+c:
+让我们启动一个 IEx 会话，对两个不同的 symbol 连续调用 `start_streaming/1`，然后通过双击 Ctrl+c 退出：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -573,7 +566,7 @@ iex(2)> Streamer.start_streaming("ETHUSDT")
 {:ok, #PID<0.377.0>}
 ```
 
-Now, open a *new* IEx session and look at the output:
+现在打开一个 *新的* IEx 会话，看看输出：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -583,7 +576,7 @@ iex(1)>
 18:53:50.306 [info]  Starting streaming on ETHUSDT
 ```
 
-We can also confirm that streamer processes are there by using `:observer.start()`:
+我们也可以通过 `:observer.start()` 来确认 streamer 进程确实存在：
 
 ```
 ...
@@ -600,7 +593,7 @@ iex(5)> :observer.start()
 knitr::include_graphics("images/chapter_11_05_finished_tree.png")
 ```
 
-Inside the same IEx session run the following:
+在同一个 IEx 会话中执行下面的命令：
 
 ```{r, engine = 'bash', eval = FALSE}
 iex(6)> Streamer.stop_streaming("XRPUSDT") 
@@ -617,29 +610,29 @@ iex(7)> Streamer.stop_streaming("ETHUSDT")
  }}
 ```
 
-Stop the IEx session and start a new one - streamers shouldn't be autostarted anymore.
+停止 IEx 会话并重新打开一个新的——streamers 这次就不应该再自动启动了。
 
-**The streamer app is now production-ready!** We've added:
+**Streamer 应用现在已经可以投入生产了！** 我们加入了：
 
-- Proper supervision for all `Streamer.Binance` processes via `DynamicSupervisor`
-- Start/stop functionality with database-backed status persistence
-- Automatic streaming resumption on application restart
-- A `rest_for_one` supervision strategy that ensures autostart runs whenever the supervisor restarts
+- 通过 `DynamicSupervisor` 为所有 `Streamer.Binance` 进程提供了正确的监督
+- 带数据库状态持久化的 start/stop 功能
+- 应用重启时自动恢复 streaming
+- 一个 `rest_for_one` 监督策略，确保 supervisor 重启时 autostart 也会重新运行
 
-The supervision tree we built ensures that if any streamer crashes, it gets restarted automatically.
-And if the entire `DynamicStreamerSupervisor` crashes, the autostart Task will run again to restore all enabled streamers.
+我们构建的监督树能确保：如果某个 streamer 崩溃，它会自动重启。
+而如果整个 `DynamicStreamerSupervisor` 崩溃，autostart Task 也会再次运行，把所有已启用的 streamer 恢复回来。
 
-**So, What's Next?**
+**下一步是什么？**
 
-We've given the `streamer` app proper supervision and autostart capabilities.
-Now it's time to do the same for the `naive` trading app - but with an important addition.
+我们已经给 `streamer` 应用加上了正确的监督和自动启动能力。
+现在轮到 `naive` 交易应用也做同样的事了——不过会多一个重要功能。
 
-In the next chapter, we'll implement start, stop, and autostart for trading, plus a new "shutdown" feature.
-Unlike an abrupt stop that kills traders mid-trade, shutdown will let traders finish their current trade cycles before gracefully terminating.
-This is crucial for a real trading system where you don't want to be left holding positions.
+在下一章中，我们会为 trading 实现 start、stop 和 autostart，并加入一个新的 “shutdown” 功能。
+和粗暴停止、直接把 trader 中途杀掉不同，shutdown 会让 trader 先完成当前的交易循环，再优雅地终止。
+这对真实交易系统非常关键，因为你不希望自己还持有未处理的仓位。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_10](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_10)).
+本章源码可以在本书的源码仓库中找到
+（分支：
+[chapter_10](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_10)）。

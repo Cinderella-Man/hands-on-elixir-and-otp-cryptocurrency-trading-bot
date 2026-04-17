@@ -1,82 +1,81 @@
-# Introduce PubSub as a communication method
+# 引入 PubSub 作为通信方式 {#03-introduce-pubsub}
 
-Think of our current communication system as a direct phone call.
-For the `Streamer` to send a message, it needs to know the `Trader`'s exact "phone number"
-- in our case, its process ID or registered name.
-What if we could change this to a radio broadcast instead?
-The `Streamer` simply transmits on a known frequency (a "topic"), and anyone with a radio can tune in - no phone numbers needed.
-In this chapter, we'll do just that by introducing
-the Publish-Subscribe pattern. This pattern lets our `Streamer` broadcast data to a
-topic, and any number of `Trader` processes can tune in. The result?
-A system that's far more flexible and scalable.
+把我们现在的通信系统想成一次直接打电话。
+`Streamer` 要发送消息，就必须知道 `Trader` 的精确“电话号码”——
+在这里就是它的进程 ID 或注册名。
+如果我们把它改成无线电广播会怎样？
+`Streamer` 只需要在一个已知频率（也就是一个“topic”）上发射，任何有收音机的人都能接收——不再需要电话号码。
+在本章里，我们就要引入发布-订阅（Publish-Subscribe）模式来做到这一点。
+这种模式让 `Streamer` 可以把数据广播到某个 topic，而任意数量的 `Trader` 进程都能收听。
+结果就是一个更灵活、可扩展得多的系统。
 
-## Objectives
+## 目标
 
-- Understand the architectural benefits of the Publish-Subscribe (PubSub) pattern.
-- Implement `Phoenix.PubSub` to decouple the `Streamer.Binance` and `Naive.Trader` processes.
+- 理解发布-订阅（PubSub）模式在架构上的好处。
+- 实现 `Phoenix.PubSub`，让 `Streamer.Binance` 和 `Naive.Trader` 解耦。
 
-## Design
+## 设计
 
-First, let's look at the current situation:
+先来看看当前情况：
 
 ```{r, fig.align="center", out.width="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_01_current_situation.png")
 ```
 
-Currently, the `Streamer.Binance` process calls `Naive.send_event/1` to
-send a `cast` message to the single, named `Naive.Trader` process.
+目前，`Streamer.Binance` 进程会调用 `Naive.send_event/1`，
+再向那个唯一、已命名的 `Naive.Trader` 进程发送一条 `cast` 消息。
 
-As our trading strategy grows, we'll need to run multiple `Naive.Trader`
-processes at the same time.
+随着交易策略不断扩展，我们将需要同时运行多个 `Naive.Trader`
+进程。
 
-This immediately presents a problem: our current design relies on a single,
-named trader process, but we can't register multiple processes under the same name.
+这立刻就带来了一个问题：当前设计依赖于一个单独的、带名字的 trader 进程，
+但我们无法把多个进程注册成同一个名字。
 
 ```{r, fig.align="center", out.width="30%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_02_current_situation_failed.png")
 ```
 
-A second, related issue is **tight coupling**.
-The `Streamer` currently has to keep track of exactly which processes need its data
-and how to reach them. Imagine adding a new feature that needs trade events - say, a logging module.
-With our current design, we'd have to modify `Streamer.Binance` to call the logger too.
-Every new consumer means another change to the producer.
-By shifting this responsibility, the `Streamer` can simply broadcast events, and any interested process can listen in on its own terms.
+另一个相关问题是 **紧耦合**。
+`Streamer` 现在必须准确记住到底哪些进程需要它的数据，
+以及如何找到它们。假设我们要加一个新的特性，需要交易事件——比如一个日志模块。
+按照现在的设计，我们就得修改 `Streamer.Binance`，让它也去调用 logger。
+每增加一个消费者，就意味着要改一次生产者。
+如果把这个责任转移出去，`Streamer` 只要负责广播事件，
+任何感兴趣的进程都可以按照自己的方式来监听。
 
-To fix these issues, we'll utilise a Publish-Subscribe (or PubSub) model:
+为了解决这些问题，我们会采用发布-订阅（Publish-Subscribe，也就是 PubSub）模型：
 
 ```{r, fig.align="center", out.width="25%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_03_phoenix_pubsub.png")
 ```
 
-The `Streamer` will **broadcast** events to a specific topic.
-Any process interested in that data can **subscribe** to the topic and will
-automatically receive the messages. This completely decouples the `Streamer` from
-the `Naive` app.
+`Streamer` 会把事件**广播**到一个特定的 topic。
+任何对这些数据感兴趣的进程都可以**订阅**这个 topic，并自动收到消息。
+这样就能把 `Streamer` 和 `Naive` 应用完全解耦。
 
-With this new design, we can easily run multiple traders.
-Each one simply subscribes to the relevant topic to start receiving messages:
+有了这个新设计，我们就可以很容易地同时运行多个 trader。
+每个 trader 只要订阅相关 topic，就能开始接收消息：
 
 ```{r, fig.align="center", out.width="100%", out.height="35%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_04_naive_trader_group.png")
 ```
 
-This decoupled design also opens up future possibilities.
-For example, a separate process could subscribe to the same topic to save data to
-a database for backtesting:
+这种解耦设计也会打开更多未来的可能性。
+比如，另一个独立进程也可以订阅同一个 topic，把数据保存到
+数据库里，用于回测：
 
 ```{r, fig.align="center", out.width="100%", out.height="45%", echo=FALSE}
 knitr::include_graphics("images/chapter_03_05_other_services.png")
 ```
 
-## Implementation
+## 实现
 
-Let's start by adding the [Phoenix.PubSub](https://github.com/phoenixframework/phoenix_pubsub) library
-as a dependency to both the `Streamer` and `Naive` apps.
-The `Streamer` app will act as the publisher (or broadcaster),
-while the `Naive` app will contain our subscribers (the `Naive.Trader` processes).
+我们先把 [Phoenix.PubSub](https://github.com/phoenixframework/phoenix_pubsub) 库
+加到 `Streamer` 和 `Naive` 两个应用的依赖里。
+`Streamer` 应用会充当发布者（或者说广播者），
+而 `Naive` 应用会放我们的订阅者（也就是 `Naive.Trader` 进程）。
 
-As the library's README on GitHub explains, we first need to add `:phoenix_pubsub` as a dependency in each app's `mix.exs` file:
+正如 GitHub 上该库的 README 所说，我们首先需要在每个应用的 `mix.exs` 文件里加上 `:phoenix_pubsub` 依赖：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/mix.exs & /apps/naive/mix.exs
@@ -97,14 +96,14 @@ As the library's README on GitHub explains, we first need to add `:phoenix_pubsu
 <div class="sidequest">
 ```
 
-**Architectural Note - The Dependency Leak:**  Notice what we just did, to make our trading logic work,
-the `naive` app still has a physical dependency on the `streamer` app.
-Even though PubSub is supposed to "decouple" our processes, our project structure is now tightly coupled.
+**架构说明：依赖泄漏**：注意我们刚刚做了什么。为了让交易逻辑工作起来，
+`naive` 应用仍然在物理上依赖 `streamer` 应用。
+即便 PubSub 理论上是用来“解耦”进程的，我们的项目结构仍然是紧耦合的。
 
-This is a prime example of the "umbrella tax". If we ever wanted to move the `naive` trading logic to a
-different server without the streamer,
-we couldn't do it easily because of `{:streamer, in_umbrella: true}` line in our `mix.exs`.
-In Phase 3, we will see how moving to a monolith or a more refined structure can actually simplify these relationships.
+这正是“umbrella 税”的一个典型例子。如果我们哪天想把 `naive` 的交易逻辑迁移到
+一台没有 streamer 的其他服务器上，
+就很难轻松做到，因为 `mix.exs` 里有 `{:streamer, in_umbrella: true}` 这行。
+到了第 3 阶段，我们会看到，迁移到单体或者更精炼的结构，反而可能简化这些关系。
 
 ```{=html}
 </div>
@@ -113,10 +112,10 @@ In Phase 3, we will see how moving to a monolith or a more refined structure can
 \end{sidequest}
 ```
 
-Next, we need to add `Phoenix.PubSub` as a child in our application's supervision tree.
-Since the `Streamer` app is our publisher, it's the logical place to host the PubSub server.
-We'll modify `/apps/streamer/lib/streamer/application.ex` by adding
-it to the list of children:
+接下来，我们需要把 `Phoenix.PubSub` 加到应用的监督树里，作为一个子进程。
+既然 `Streamer` 应用是发布者，那把 PubSub server 放在这里就是最合理的选择。
+我们会修改 `/apps/streamer/lib/streamer/application.ex`，把它
+加到 children 列表中：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/application.ex
@@ -138,11 +137,11 @@ it to the list of children:
 <div class="sidequest">
 ```
 
-**Note: Shared Resources in Umbrellas**
-You might wonder how the `Naive` app will be able to find `Streamer.PubSub` since it lives inside the `Streamer` application.
-Because we are using an umbrella project, all our applications are started within the same Erlang node.
-This means they share the same memory space and process registry. As long as the `Streamer` app has started the PubSub process,
-any other app in our umbrella can "see" and interact with it simply by using its name.
+**注意：umbrella 里的共享资源**
+你可能会好奇，`Naive` 应用怎么能找到位于 `Streamer` 应用内部的 `Streamer.PubSub`。
+因为我们使用的是 umbrella 项目，所有应用都运行在同一个 Erlang 节点里。
+这意味着它们共享同一块内存空间和进程注册表。只要 `Streamer` 应用已经启动了 PubSub 进程，
+umbrella 里的任何其他应用都可以通过它的名字“看到”并与之交互。
 
 ```{=html}
 </div>
@@ -151,13 +150,13 @@ any other app in our umbrella can "see" and interact with it simply by using its
 \end{sidequest}
 ```
 
-`Phoenix.PubSub` ships with `Phoenix.PubSub.PG2` as its default adapter.
-This adapter leverages Erlang's built-in [`pg`](http://erlang.org/doc/man/pg.html) (process groups) module,
-enabling distributed messaging across your cluster.
-The practical implication is significant: your `Streamer` and `Naive` applications could run on
-separate servers and still communicate transparently, as though they were running locally - as long as they're part of the same Erlang cluster.
+`Phoenix.PubSub` 默认带有 `Phoenix.PubSub.PG2` 适配器。
+这个适配器利用了 Erlang 内置的 [`pg`](http://erlang.org/doc/man/pg.html)（进程组）模块，
+从而可以在集群中进行分布式消息传递。
+这带来的实际意义很大：`Streamer` 和 `Naive` 应用即使运行在不同服务器上，
+只要它们属于同一个 Erlang 集群，就仍然可以像在本地一样透明通信。
 
-Now, let's modify the `Streamer` to `broadcast/3` messages to a PubSub topic instead of calling the `Naive` module directly:
+现在，我们来修改 `Streamer`，让它向 PubSub topic 使用 `broadcast/3` 发送消息，而不是直接调用 `Naive` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/binance.ex
@@ -171,7 +170,7 @@ Now, let's modify the `Streamer` to `broadcast/3` messages to a PubSub topic ins
   end
 ```
 
-Inside the trader's `init/1` callback, we need to `subscribe/2` to the `TRADE_EVENTS` topic:
+在 trader 的 `init/1` 回调里，我们需要对 `TRADE_EVENTS` topic 调用 `subscribe/2`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -192,9 +191,9 @@ Inside the trader's `init/1` callback, we need to `subscribe/2` to the `TRADE_EV
 <div class="sidequest">
 ```
 
-**But Wait - What If Messages Arrive Before We Have the Tick Size?**
+**等等——如果消息在我们拿到 tick size 之前就到了怎么办？**
 
-Let's look carefully at what's happening in our updated `init/1`:
+我们仔细看看更新后的 `init/1` 到底发生了什么：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/trader.ex
@@ -223,28 +222,28 @@ Let's look carefully at what's happening in our updated `init/1`:
   end
 ```
 
-We subscribe to trade events in `init/1`, but we don't fetch the `tick_size` until `handle_continue/2` runs.
-What if a trade event arrives in that window? Could we receive a message before our trader is fully initialized?
+我们在 `init/1` 中订阅了交易事件，但要等到 `handle_continue/2` 运行时才去获取 `tick_size`。
+如果这段时间里有交易事件到达怎么办？我们的 trader 会不会在初始化完成之前就收到消息？
 
-This is a great question, and the answer reveals something important about how GenServers work.
+这是个很好的问题，而答案能揭示出 GenServer 工作方式里的一个重要细节。
 
-Here's the actual execution sequence:
+真实的执行顺序如下：
 
-1. `init/1` runs - we subscribe to PubSub and return `{:ok, state, {:continue, :fetch_tick_size}}`
-2. `handle_continue/2` runs - we fetch the `tick_size` from Binance
-3. Only *now* does the GenServer start processing messages from the mailbox
+1. `init/1` 运行——我们订阅 PubSub，并返回 `{:ok, state, {:continue, :fetch_tick_size}}`
+2. `handle_continue/2` 运行——我们从 Binance 获取 `tick_size`
+3. 直到这时，GenServer 才开始处理 mailbox 里的消息
 
-The key insight: **`handle_continue/2` isn't a message that gets queued in your mailbox.**
-It's a direct function call that happens *immediately* after `init/1` returns,
-before the GenServer even looks at its mailbox.
-Think of the `{:continue, ...}` tuple as saying "I'm not done setting up yet."
+关键点在于：**`handle_continue/2` 不是一条会进入 mailbox 的消息。**
+它是在 `init/1` 返回后*立刻*发生的一次直接函数调用，
+甚至在 GenServer 开始查看 mailbox 之前就执行了。
+你可以把 `{:continue, ...}` 这个元组理解成：“我还没完全准备好，请继续帮我做初始化。”
 
-So while trade events might be piling up in the mailbox during steps 1 and 2, they'll wait patiently.
-The GenServer won't call `handle_info/2` until the entire initialization sequence - including all `handle_continue/2` callbacks - is complete.
+所以，即使在第 1 步和第 2 步期间有交易事件堆积到了 mailbox 里，它们也会耐心等待。
+在整个初始化流程完成——包括所有 `handle_continue/2` 回调——之前，GenServer 不会去调用 `handle_info/2`。
 
-This is exactly why `handle_continue/2` exists:
-it lets us perform slow initialization (like network requests) without blocking the supervisor,
-while still guaranteeing our process is fully ready before it handles any real work.
+这正是 `handle_continue/2` 存在的原因：
+它允许我们执行较慢的初始化（比如网络请求），而不会阻塞 supervisor，
+同时还能保证进程在处理任何真正工作之前已经完全准备就绪。
 
 ```{=html}
 </div>
@@ -253,28 +252,28 @@ while still guaranteeing our process is fully ready before it handles any real w
 \end{sidequest}
 ```
 
-Next, we'll replace the `handle_cast/2` callbacks in our `Trader` with `handle_info/2`.
-This change is crucial, and it's important to understand why.
+接下来，我们会把 `Trader` 里的 `handle_cast/2` 回调替换成 `handle_info/2`。
+这个改动非常关键，而且你需要理解为什么要这么做。
 
-When you use `GenServer.cast/2`, it wraps your message with a special `:"$gen_cast"` tag.
-The GenServer recognizes this tag and routes the message to `handle_cast/2`.
-But `Phoenix.PubSub` doesn't use `GenServer.cast/2` - it sends plain Elixir messages directly to your process mailbox using `Process.send/3`.
+当你使用 `GenServer.cast/2` 时，它会给消息包上一层特殊的 `:"$gen_cast"` 标签。
+GenServer 会识别这个标签，并把消息路由到 `handle_cast/2`。
+但 `Phoenix.PubSub` 并不会使用 `GenServer.cast/2`——它会直接用 `Process.send/3` 把普通的 Elixir 消息发到你的进程 mailbox 里。
 
-Without that `:"$gen_cast"` tag, our messages arrive as "untagged" messages.
-Think of `handle_info/2` as the catch-all for anything that isn't a standard call or cast.
-That's exactly where our PubSub messages will land.
+没有 `:"$gen_cast"` 这个标签时，我们收到的就是“未标记”的消息。
+可以把 `handle_info/2` 理解成处理所有不是标准 call 或 cast 的兜底入口。
+PubSub 消息正会落到这里。
 
-Finally, we can remove the `send_event/1` function from the `Naive` module,
-as it's no longer needed.
+最后，我们可以把 `Naive` 模块里的 `send_event/1` 函数删掉了，
+因为它已经不再需要。
 
-With all our code changes in place, it's a good time to run `mix format` to keep
-the codebase consistent and tidy.
+把所有代码改动都完成后，现在是运行 `mix format` 的好时机，
+这样能保持代码库一致、整洁。
 
-Now, let's jump into an `iex` session to test our new broadcast system.
+接下来，我们进入 `iex` 会话来测试新的广播系统。
 
-We'll start a `Streamer` and a `Naive.Trader` for the same `symbol`.
-As you can see in the output below, the `Trader` successfully subscribes to the topic,
-receives events, and completes a full trading cycle:
+我们会启动一个针对同一个 `symbol` 的 `Streamer` 和 `Naive.Trader`。
+从下面的输出可以看到，`Trader` 成功订阅了 topic，
+接收到了事件，并完成了完整的交易循环：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -290,23 +289,21 @@ quantity: 100.00000000
 23:46:56.029 [info]  Trade finished, trader will now exit
 ```
 
-The radio broadcast is live! Our `Streamer` is now sending signals into the ether,
-and our `Trader` is successfully tuning in.
-This decoupling is a major milestone - we've removed the hard dependency between producer and consumer,
-opening the door to the multi-trader system we'll build in the upcoming chapters.
+无线电广播已经开始运作了！我们的 `Streamer` 正在把信号发送到空中，
+而 `Trader` 也成功调到了频道。
+这种解耦是一个重要里程碑——我们已经移除了生产者和消费者之间的硬依赖，
+也为接下来要构建的多 trader 系统打开了大门。
 
-However, we have a major bottleneck in our development process:
-our complete dependence on the live Binance API.
+不过，我们的开发流程里还有一个很大的瓶颈：
+我们完全依赖实时 Binance API。
 
-This makes testing slow, requires a funded account, and makes it difficult to
-reproduce specific market conditions.
+这会让测试变慢，需要有余额的账户，而且很难复现特定的市场条件。
 
-In the next chapter,
-we'll leverage the decoupled architecture we just built to solve this problem.
-We will create a `BinanceMock` application that perfectly mimics the real exchange's
-behavior. This will give us a safe, fast, and free environment to test and refine
-our trading logic without risking a single cent.
+在下一章里，
+我们会利用刚刚建立的解耦架构来解决这个问题。
+我们会创建一个 `BinanceMock` 应用，完美模拟真实交易所的行为。
+这样我们就能在一个安全、快速、免费的环境里测试和改进交易逻辑，
+而不用冒一分钱的风险。
 
-You can find the complete source code for this chapter in the book's repository
-(branch:
-[chapter_03](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_03)).
+本章的完整源代码可以在本书仓库中找到（分支：
+[chapter_03](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_03)）。

@@ -1,52 +1,50 @@
-# Abstract duplicated supervision code
+# 使用宏抽象重复的监督代码 {#12-abstract-duplicated-code-using-macros}
 
-In the previous two chapters, we implemented start, stop, and autostart functionality for both the `streamer` and `naive` applications.
-If you look at the code in `Streamer.DynamicStreamerSupervisor` and `Naive.DynamicSymbolSupervisor`, you'll notice they're almost identical -
-we essentially copy-pasted the same patterns with minor tweaks.
+在前两章里，我们分别为 `streamer` 和 `naive` 应用实现了 start、stop 和 autostart 功能。
+如果你看一下 `Streamer.DynamicStreamerSupervisor` 和 `Naive.DynamicSymbolSupervisor` 里的代码，你会发现它们几乎一模一样——
+本质上就是把同样的模式复制粘贴了一遍，只做了少量调整。
 
-That's a code smell. When we need to fix a bug or add a feature, we'd have to make the same change in multiple places.
-And as we add more applications to our umbrella, the duplication would only grow.
+这就是一种代码异味。当我们需要修复 bug 或添加功能时，就不得不在多个地方做同样的改动。
+而随着 umbrella 里的应用越来越多，这种重复只会越来越严重。
 
-In this chapter, we'll fix this by creating a `Core.ServiceSupervisor` module that extracts the common supervision logic.
-We'll use Elixir's powerful macro system to generate the boilerplate code at compile time.
-By the end, our supervisor modules will be slim wrappers that simply declare their configuration,
-while all the heavy lifting happens in the shared `Core` module.
+这一章里，我们会通过创建一个 `Core.ServiceSupervisor` 模块来解决这个问题，它会提取出通用的监督逻辑。
+我们会使用 Elixir 强大的宏系统，在编译期生成这些样板代码。
+到最后，我们的 supervisor 模块会变成很薄的一层包装，只负责声明自己的配置，
+而所有繁重的工作都会放到共享的 `Core` 模块里完成。
 
-If you've never worked with macros before, here's the key insight: regular functions operate on values at runtime,
-but macros operate on code itself at compile time. Think of macros as "code templates" that Elixir fills in
-and pastes into your modules before your application even starts.
+如果你以前没接触过宏，这里最关键的点是：普通函数处理的是运行时的值，
+而宏处理的是编译期的代码本身。你可以把宏看作“代码模板”，Elixir 会在你的应用真正启动之前，
+把这些模板填充好并粘贴进你的模块里。
 
-This is a great opportunity to explore Elixir metaprogramming.
-We'll use macros to solve our duplication problem, and along the way you'll learn how tools like Phoenix's router work under the hood.
-In the next chapter, we'll discover an even simpler approach - but understanding macros first will make that "aha moment" much more satisfying!
+这正是探索 Elixir 元编程的好机会。
+我们会用宏来解决重复代码问题，同时你也会顺便了解到像 Phoenix 路由器这样的工具底层是怎么工作的。
+在下一章里，我们会发现一种更简单的方法——不过先理解宏，会让那个“恍然大悟”的时刻更有感觉！
 
-## Objectives
-- overview of requirements
-- pseudo generalize `Core.ServiceSupervisor` module
-- utilize pseudo generalized code inside the `Naive.DynamicSymbolSupervisor`
-- implement a truly generic `Core.ServiceSupervisor`
-- use the `Core.ServiceSupervisor` module inside the `streamer` application
+## 目标
+- 了解需求概览
+- 先把 `Core.ServiceSupervisor` 模块做成一个伪泛化版本
+- 在 `Naive.DynamicSymbolSupervisor` 中使用这段伪泛化代码
+- 实现一个真正通用的 `Core.ServiceSupervisor`
+- 在 `streamer` 应用中使用 `Core.ServiceSupervisor` 模块
 
-## Overview of requirements
+## 需求概览
 
-In the last few chapters, we went through adding and modifying the dynamic supervision tree around the `naive` and
-`streamer` applications' workers. Initially, we just copied the implementation from the `streamer` application to
-the `naive` application(with a few minor tweaks like log messages). That wasn't the most sophisticated solution and we will
-address this copy-paste pattern in this chapter.
+在前几章里，我们围绕 `naive` 和 `streamer` 应用的 worker，逐步添加并修改了动态监督树。
+一开始，我们只是把 `streamer` 应用的实现复制到 `naive` 应用里（只做了一些像日志消息之类的小修改）。这并不是最优雅的方案，而这一章我们就要处理这种复制粘贴模式。
 
-We will write an "extension" of the `DynamicSupervisor` that allows us to start, stop and autostart workers.
-Just to keep things simple we will create a new application inside our umbrella project where we will place the logic.
-This will save us from creating a new repo for the time being.
+我们会写一个 `DynamicSupervisor` 的“扩展”，让它可以启动、停止和自动启动 worker。
+为了简单起见，我们会在 umbrella 项目里创建一个新的应用，把这些逻辑放进去。
+这样暂时就不用新建一个独立的 repo 了。
 
-Our new `Core.ServiceSupervisor` module will hold all the logic responsible for starting, stopping, and autostarting worker processes.
-To limit the boilerplate inside the implementation modules(like `Naive.DynamicSymbolSupervisor` or `Streamer.DynamicStreamerSupervisor`)
-we will utilize the `use` macro that will dynamically generate low-level wiring for us.
+我们新的 `Core.ServiceSupervisor` 模块会持有所有负责启动、停止和自动启动 worker 进程的逻辑。
+为了减少实现模块（比如 `Naive.DynamicSymbolSupervisor` 或 `Streamer.DynamicStreamerSupervisor`）里的样板代码，
+我们会使用 `use` 宏，让它自动为我们生成底层连接代码。
 
-## Pseudo generalize Core.ServiceSupervisor module
+## 先把 `Core.ServiceSupervisor` 模块做成伪泛化版本
 
-Let's start by creating a new *non-supervised* application called `core` inside our umbrella project.
-At this moment our "abstraction code" will sit inside it just to keep things simple as otherwise,
-we would need to create a new repo and jump between codebases which we will avoid for the time being:
+我们先在 umbrella 项目里创建一个新的 *非监督* 应用，叫做 `core`。
+目前我们的“抽象代码”就先放在这里，保持简单，因为如果不这样做，
+我们就得再创建一个新的 repo，然后在不同代码库之间来回切换；这件事我们暂时先避免。
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
@@ -63,9 +61,9 @@ $ mix new core
 ...
 ```
 
-We can now create a new directory called `core` inside the `apps/core/lib` directory and a new file called `service_supervisor.ex` inside it where we will put all abstracted starting/stopping/autostarting logic.
+现在我们可以在 `apps/core/lib` 目录下创建一个名为 `core` 的新目录，并在其中创建一个名为 `service_supervisor.ex` 的新文件，把所有抽出来的启动/停止/自动启动逻辑放进去。
 
-Let's start with an empty module:
+我们先从一个空模块开始：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/service_supervisor.ex
@@ -74,8 +72,8 @@ defmodule Core.ServiceSupervisor do
 end
 ```
 
-The first step in our refactoring process will be to move(cut) all of the functions from the `Naive.DynamicSymbolSupervisor`
-(excluding the `start_link/1`, `init/1` and `shutdown_trading/1`) and put them inside the `Core.ServiceSupervisor` module which should look as follows:
+我们这次重构的第一步，是把 `Naive.DynamicSymbolSupervisor` 里的所有函数都移动（剪切）到 `Core.ServiceSupervisor` 模块里——
+但要排除 `start_link/1`、`init/1` 和 `shutdown_trading/1` 这三个函数。移动之后，这个模块大致会长成下面这样：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/service_supervisor.ex
@@ -112,9 +110,9 @@ defmodule Core.ServiceSupervisor do
 end
 ```
 
-All of the above code is `trading`-related - we need to rename functions/logs to be more generic.
+上面这些代码都还是和 `trading` 相关的——我们需要把函数名和日志都改得更通用一些。
 
-Starting with `autostart_trading/0` we can rename it to `autostart_workers/0`:
+先从 `autostart_trading/0` 开始，我们可以把它改名为 `autostart_workers/0`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -126,13 +124,11 @@ Starting with `autostart_trading/0` we can rename it to `autostart_workers/0`:
   ...
 ```
 
-As we updated two functions inside the `autostart_workers/0` we need to update their implementations.
+既然 `autostart_workers/0` 里有两个函数名发生了变化，我们也要相应更新它们的实现。
 
-The `start_trading/1` will become `start_worker/1`, internally we will inline the                      
-`start_symbol_supervisor/1` function(move its contents inside the `start_worker/1` function and remove the `start_symbol_supervisor/1` function)
-as it's used just once inside this module. We also need to rename `update_trading_status/2` to `update_status/2`.
+`start_trading/1` 会改成 `start_worker/1`。在内部，我们还会把 `start_symbol_supervisor/1` 这个函数内联掉——也就是把它的内容直接放进 `start_worker/1` 里，然后删除 `start_symbol_supervisor/1`，因为它在这个模块里只用到一次。我们还需要把 `update_trading_status/2` 重命名为 `update_status/2`。
 
-The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
+`fetch_symbols_to_trade/0` 也会改成 `fetch_symbols_to_start/0`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -162,7 +158,7 @@ The `fetch_symbols_to_trade/0` will get updated to `fetch_symbols_to_start/0`:
   end  
 ```
 
-Inside the above code we updated the `update_trading_status/2` call to `update_status/2` so we need to update the function header to match:
+上面的代码里我们已经把 `update_trading_status/2` 的调用改成了 `update_status/2`，所以函数头也要同步更新：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -172,8 +168,8 @@ Inside the above code we updated the `update_trading_status/2` call to `update_s
   end
 ```
 
-The last function to rename in this module will be `stop_trading/1` to `stop_worker/1`.
-We also need to update calls to `update_trading_status/2` to `update_status/2` as it was renamed:
+这个模块里最后一个要改名的函数是 `stop_trading/1`，它会变成 `stop_worker/1`。
+同时，由于前面已经重命名过，我们也需要把对 `update_trading_status/2` 的调用改成 `update_status/2`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -197,14 +193,14 @@ We also need to update calls to `update_trading_status/2` to `update_status/2` a
   end
 ```
 
-At this moment we have a pseudo-generic implementation of `start_worker/1` and `stop_worker/1` inside the `Core.ServiceSupervisor` module.
-Function names are generic but they still refer to `Repo`, `Settings`, and other modules specific to the `naive` app's implementation.
-we're probably in a worse situation than before we started this refactoring ;)
-but don't fear this was just the first step on the way to abstract away that starting, stopping, and autostarting code.
+到这里，我们在 `Core.ServiceSupervisor` 模块里已经有了一个伪通用的 `start_worker/1` 和 `stop_worker/1` 实现。
+函数名看起来已经很通用了，但它们仍然引用着 `Repo`、`Settings` 以及其他只属于 `naive` 应用实现的模块。
+所以，我们现在的状况可能比重构之前还糟一点 ;)
+不过别担心，这只是把启动、停止和自动启动代码抽象出去的第一步。
 
-## Utilize pseudo generalized code inside the Naive DynamicSymbolSupervisor
+## 在 `Naive.DynamicSymbolSupervisor` 中使用伪泛化代码
 
-Before we jump back to the `naive` application's modules, we need to add the `core` application to the dependencies of the `naive` application:
+在我们回到 `naive` 应用的模块之前，首先需要把 `core` 应用加入 `naive` 应用的依赖里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/mix.exs
@@ -216,12 +212,11 @@ Before we jump back to the `naive` application's modules, we need to add the `co
       ....
 ```
 
-Let's get back to the `Naive.DynamicSymbolSupervisor` where we expect functions that we just cut out to exist like `start_trading/1` or `stop_trading/1`.
+现在我们回到 `Naive.DynamicSymbolSupervisor`，这里我们希望刚刚剪切出去的那些函数，比如 `start_trading/1` 和 `stop_trading/1`，还能继续存在。
 
 
 
-Let's reimplement more generic versions of those functions as just simple calls to the                       
-`Core.ServiceSupervisor` module:
+那就把它们重新实现成更通用的版本，只是简单地调用 `Core.ServiceSupervisor` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -239,7 +234,7 @@ Let's reimplement more generic versions of those functions as just simple calls 
   end
 ```
 
-We also need to update the `shutdown_trading/1` function as we removed all the private functions that it relies on:
+我们还需要更新 `shutdown_trading/1` 函数，因为我们已经移除了它依赖的所有私有函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -260,8 +255,7 @@ We also need to update the `shutdown_trading/1` function as we removed all the p
   end
 ```
 
-As we were moving all the private helper functions we didn't make them public so the                  
-`Naive.DynamicSymbolSupervisor` module can use them - we will fix that now together with temporary aliases/require/imports at the top of the `Core.ServiceSupervisor`:
+在移动这些私有辅助函数的时候，我们并没有把它们设成 public，所以 `Naive.DynamicSymbolSupervisor` 模块现在还不能直接使用它们——我们现在就来修好这个问题，同时把 `Core.ServiceSupervisor` 顶部临时加上的别名、`require` 和 `import` 处理掉：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/service_supervisor.ex
@@ -286,11 +280,11 @@ defmodule Core.ServiceSupervisor do
   end
 ```
 
-As `fetch_symbols_to_start/0` is only used internally by the `Core.ServiceSupervisor` module itself, we don't need to make it public.
+由于 `fetch_symbols_to_start/0` 只会在 `Core.ServiceSupervisor` 模块内部使用，我们没有必要把它做成公有函数。
 
-We can also remove the `alias`es and `import` from the `Naive.DynamicSymbolSupervisor` as it won't need them anymore.
+我们还可以把 `Naive.DynamicSymbolSupervisor` 里的 `alias` 和 `import` 去掉，因为它现在已经不需要它们了。
 
-The next step will be to add `ecto` to the deps of the `core` application as it will make db queries now:
+下一步，是把 `ecto` 加到 `core` 应用的依赖里，因为它现在也要做数据库查询了：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/mix.exs
@@ -301,7 +295,7 @@ The next step will be to add `ecto` to the deps of the `core` application as it 
   end
 ```
 
-As we modified the interface of the `Naive.DynamicSymbolSupervisor`(for example renamed `start_trading/1` to `start_worker/1` and others) we need to modify the `Naive.Supervisor`'s children list - more specifically the Task process:
+由于我们修改了 `Naive.DynamicSymbolSupervisor` 的接口（比如把 `start_trading/1` 改成了 `start_worker/1`，等等），我们还需要修改 `Naive.Supervisor` 的 children 列表——更具体地说，是 Task 进程那一项：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/supervisor.ex
@@ -313,7 +307,7 @@ As we modified the interface of the `Naive.DynamicSymbolSupervisor`(for example 
        ...
 ```
 
-The last step will be to update the interface of the `naive` application:
+最后一步，是更新 `naive` 应用的接口：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive.ex
@@ -338,24 +332,22 @@ The last step will be to update the interface of the `naive` application:
   end
 ```
 
-Believe it or not, but at this moment(ignoring all of the warnings because we created a circular dependency between the `core` and
-the `naive` applications - which we will fix in the next steps) our application *runs* just fine! We are able to start and stop trading,
-autostarting works as well.
+信不信由你——但到这个时点（先忽略所有警告，因为我们在 `core` 和 `naive` 应用之间创建了一个循环依赖，
+不过这会在接下来的步骤里修复），我们的应用*确实*还能正常运行！我们已经能够开始和停止交易，自动启动也能正常工作。
 
-## Implement a truly generic `Core.ServiceSupervisor`
+## 实现一个真正通用的 `Core.ServiceSupervisor`
 
-Ok. Why did we even do this? What we are aiming for is a separation between the interface of our `Naive.DynamicSymbolSupervisor` module
-(like `start_worker/1`, `autostart_workers/0` and `stop_worker/1`) and the implementation which is now placed inside the `Core.ServiceSupervisor` module.
+好吧，我们为什么要这么做？我们的目标，是把 `Naive.DynamicSymbolSupervisor` 模块的接口（比如 `start_worker/1`、`autostart_workers/0` 和 `stop_worker/1`）
+和现在放在 `Core.ServiceSupervisor` 模块里的实现分离开来。
 
-That's all nice and to-some-extent understandable but `Core.ServiceSupervisor` module is *not* a generic module.
-We can't use it inside the `streamer` application to supervise the `Streamer.Binance` processes.
+这都不错，而且在某种程度上也挺好理解，但问题是 `Core.ServiceSupervisor` 模块*还不是*真正通用的。
+我们没法在 `streamer` 应用里直接拿它来监督 `Streamer.Binance` 进程。
 
-So, what's the point? Well, we can make it even more generic!
+那意义何在？其实我们还能把它做得更通用一些！
 
-### First path starting with the `fetch_symbols_to_start/0` function
+### 第一条路径，从 `fetch_symbols_to_start/0` 函数开始
 
-Moving on to full generalization of the `Core.ServiceSupervisor` module. We will start with the helper functions first as they are
-the ones doing the work and they need to be truly generalized first:
+继续把 `Core.ServiceSupervisor` 模块完全泛化。我们先从辅助函数开始，因为真正干活的就是它们，而且它们需要先被真正泛化：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -369,10 +361,9 @@ the ones doing the work and they need to be truly generalized first:
   end
 ```
 
-The `fetch_symbols_to_start/0` function uses `Repo` and `Settings` that are aliased at the top of the                    
-`Core.ServiceSupervisor` module. This just won't work with any other applications as Streamer will require its own `Repo` and `Settings` modules etc.
+`fetch_symbols_to_start/0` 函数使用的是在 `Core.ServiceSupervisor` 模块顶部别名出来的 `Repo` 和 `Settings`。这对其他任何应用都行不通，因为比如 `streamer` 就会需要它自己的 `Repo` 和 `Settings` 模块等等。
 
-To fix that we will *pass* both `repo` and `schema` as arguments to the `fetch_symbols_to_start/0` function which will become `fetch_symbols_to_start/2`:
+为了解决这个问题，我们会把 `repo` 和 `schema` 都作为参数传给 `fetch_symbols_to_start/0`，它也会因此变成 `fetch_symbols_to_start/2`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -383,12 +374,11 @@ To fix that we will *pass* both `repo` and `schema` as arguments to the `fetch_s
         select: s.symbol
       )
     )
-  end
 ```
 
-This will have a knock-on effect on any functions that are using `fetch_symbols_to_start/0` - now they need to use `fetch_symbols_to_start/2` and pass appropriate `Repo` and `Schema` modules.
+这会对所有使用 `fetch_symbols_to_start/0` 的函数产生连锁影响——现在它们都得改成调用 `fetch_symbols_to_start/2`，并传入合适的 `Repo` 和 `Schema` 模块。
 
-So, the `fetch_symbols_to_start/0` is referenced by the `autostart_workers/0` - we will need to modify it to pass the repo and schema to the `fetch_symbols_to_start/2` and as it's inside the `Core.ServiceSupervisor` module it needs to get them passed as arguments:
+所以，`autostart_workers/0` 引用了 `fetch_symbols_to_start/0`——我们需要修改它，把 repo 和 schema 传给 `fetch_symbols_to_start/2`；而且由于它位于 `Core.ServiceSupervisor` 模块内部，所以这些参数也得传给它：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -398,7 +388,7 @@ So, the `fetch_symbols_to_start/0` is referenced by the `autostart_workers/0` - 
   end
 ```
 
-Going even further down the line, `autostart_workers/0` is referenced by the `autostart_workers/0` inside the `Naive.DynamicSymbolSupervisor` module. As this module is(`naive`) application-specific, it is a place where `repo` and `schema` are known from the context - for the `naive` application `repo` is the `Naive.Repo` module and `schema` is the `Naive.Schema.Settings` module:
+再往下看，`autostart_workers/0` 是被 `Naive.DynamicSymbolSupervisor` 模块里的 `autostart_workers/0` 所调用的。由于这个模块是 `naive` 应用专属的，因此 `repo` 和 `schema` 在这里是上下文里已知的——对于 `naive` 应用来说，`repo` 是 `Naive.Repo` 模块，而 `schema` 是 `Naive.Schema.Settings` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -411,14 +401,14 @@ Going even further down the line, `autostart_workers/0` is referenced by the `au
   end
 ```
 
-This finishes the first of multiple paths that we need to follow to fully refactor the `Core.ServiceSupervisor` module.
+这样，我们就完成了为了把 `Core.ServiceSupervisor` 模块完全重构而要走的多条路径中的第一条。
 
 
 
-### Second path starting with the `update_status/2`
+### 第二条路径，从 `update_status/2` 开始
 
-Let's not waste time and start from the other helper function inside the `Core.ServiceSupervisor` module.
-This time we will make the `update_status/2` function fully generic:
+我们别浪费时间，直接从 `Core.ServiceSupervisor` 模块里的另一个辅助函数开始。
+这一次，我们要把 `update_status/2` 完全泛化：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -430,15 +420,13 @@ This time we will make the `update_status/2` function fully generic:
   end
 ```
 
-As previously we added `repo` and `schema` as arguments and modified the body of the function to utilize them
-instead of hardcoded modules(aliased at the top of the `Core.ServiceSupervisor` module).
+和前面一样，我们已经把 `repo` 和 `schema` 作为参数传了进来，并修改了函数体，让它使用这些参数，而不是写死在 `Core.ServiceSupervisor` 模块顶部的那些模块名。
 
-In the same fashion as previously, we need to check "who" is using the `update_status/2` and update those calls to `update_status/4`.
-
+同样地，我们还需要检查到底“谁”在使用 `update_status/2`，并把这些调用都更新成 `update_status/4`。
 
 
-The function is used inside the `start_worker/1` and the `stop_worker/1` inside the                     
-`Core.ServiceSupervisor` module so as previously we need to bubble them up(pass via arguments to both `start_worker/1` and `stop_worker/1` functions):
+
+这个函数在 `Core.ServiceSupervisor` 模块内部的 `start_worker/1` 和 `stop_worker/1` 里都有用到，所以和前面一样，我们需要把参数继续往上传（也就是把它们传给 `start_worker/1` 和 `stop_worker/1` 函数）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -459,11 +447,11 @@ The function is used inside the `start_worker/1` and the `stop_worker/1` inside 
   end
 ```
 
-As we modified both `start_worker/1` and `stop_worker/1` by adding two additional arguments we need to update all references to them and here is where things branch out a bit.
+由于我们给 `start_worker/1` 和 `stop_worker/1` 都新增了两个参数，所以需要把所有引用它们的地方都改掉——这里事情就开始分叉了。
 
 
 
-We will start with `start_worker/1` function(which is now `start_worker/3`) - it's used by the `autostart_workers/2` inside `Core.ServiceSupervisor` module. The `autostart_workers/2` function already has `repo` and `schema` so we can just pass them to the `start_worker/3`:
+我们先从 `start_worker/1` 函数开始（现在它已经变成 `start_worker/3` 了）——它被 `Core.ServiceSupervisor` 模块里的 `autostart_workers/2` 使用。`autostart_workers/2` 函数本身已经有了 `repo` 和 `schema`，所以我们只需要把它们传给 `start_worker/3`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -473,7 +461,7 @@ We will start with `start_worker/1` function(which is now `start_worker/3`) - it
   end
 ```
 
-Both the `start_worker/3` and the `stop_worker/3` function are used by the functions inside the `Naive.DynamicSymbolSupervisor` module. We need to pass the `Repo` and `Schema` in the same fashion as previously with the `autostart_workers/2` function:
+`start_worker/3` 和 `stop_worker/3` 这两个函数都被 `Naive.DynamicSymbolSupervisor` 模块里的函数所使用。我们需要像前面对 `autostart_workers/2` 那样，把 `Repo` 和 `Schema` 也传进去：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -494,13 +482,13 @@ Both the `start_worker/3` and the `stop_worker/3` function are used by the funct
   end
 ```
 
-At this moment there's no code inside the `Core.ServiceSupervisor` module referencing the `alias`ed `Repo` nor `Schema` modules so we can safely remove both aliases - definitely, we are moving in the right direction!
+到这里，`Core.ServiceSupervisor` 模块里已经没有任何代码再引用那些被 `alias` 的 `Repo` 或 `Schema` 模块了，所以我们可以安全地把这两个别名都删掉——很显然，我们正朝着正确的方向前进！
 
-Btw. Our project still works at this stage, we can start/stop trading and it autostarts trading.
+顺便说一句，到这个阶段我们的项目仍然是可用的，我们可以开始/停止交易，而且自动启动也能正常工作。
 
-### Third path starting with the `get_pid/1` function
+### 第三条路径，从 `get_pid/1` 函数开始
 
-Starting again from the most nested helper function - this time the `get_pid/1`:
+我们再从最里面的辅助函数开始——这一次是 `get_pid/1`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -509,7 +497,7 @@ Starting again from the most nested helper function - this time the `get_pid/1`:
   end  
 ```
 
-We can see that it has a hardcoded `Naive.SymbolSupervisor` worker module - we need to make this part dynamic by using the `worker_module` argument:
+可以看到，这里把 `Naive.SymbolSupervisor` 这个 worker 模块写死了——我们需要通过 `worker_module` 参数把这一部分变成动态的：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -518,20 +506,20 @@ We can see that it has a hardcoded `Naive.SymbolSupervisor` worker module - we n
   end
 ```
 
-**Note about atoms usage:** As noted back in Chapter 5, this dynamic atom creation is safe for our finite set of trading symbols,
-but we'll replace it with a Registry-based approach in the next chapter.
+**关于 atom 使用的说明：** 正如第 5 章里提到的，这种动态创建 atom 的方式对于我们有限数量的交易 symbol 来说是安全的，
+不过我们会在下一章用 Registry 的方案把它替换掉。
 
-Moving up to functions that are referencing the `get_pid/1` function, those will be the `start_worker/3` and the `stop_worker/3` function. 
+再往上看，引用了 `get_pid/1` 函数的会是 `start_worker/3` 和 `stop_worker/3` 这两个函数。
 
-As those are the two last functions to be updated, we will look into them more closely to finish our refactoring in this 3rd run.
-At this moment both need to add `worker_module` as both are calling the `get_pid/2` function.
-Looking at both functions we can see two other hardcoded details:
+由于它们是本轮更新中最后两个需要修改的函数，我们会更仔细地看一遍，完成这第三轮重构。
+现在这两个函数都需要加入 `worker_module`，因为它们都在调用 `get_pid/2` 函数。
+看一下这两个函数，我们还能发现另外两个写死的细节：
 
-- inside log message there are words "trading" - we can replace them so we will utilize the `worker_module` and `symbol` arguments
-- there are two references to the `Naive.DynamicSymbolSupervisor` which we will replace with the `module` argument
-- there is one more reference to the `Naive.SymbolSupervisor` module which we will replace with the `worker_module` argument
+- 日志消息里有 “trading” 这些词——我们可以把它们替换掉，改成使用 `worker_module` 和 `symbol` 参数
+- 有两处引用了 `Naive.DynamicSymbolSupervisor`，我们会把它们替换成 `module` 参数
+- 还有一处引用了 `Naive.SymbolSupervisor` 模块，我们会把它替换成 `worker_module` 参数
 
-Let's look at updated functions:
+我们来看一下更新后的函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -572,14 +560,13 @@ Let's look at updated functions:
   end
 ```
 
-Inside both the `start_worker/5` and the `stop_worker/5` functions we modified:
+在 `start_worker/5` 和 `stop_worker/5` 这两个函数里，我们做了这些修改：
 
-- `get_pid/1` to pass the `worker_module`
-- `Logger`'s messages to use the `worker_module` and `symbol`
-- `DynamicSupervisor`'s functions to use the `module` and the `worker_module`
+- `get_pid/1` 现在会传入 `worker_module`
+- `Logger` 的消息会使用 `worker_module` 和 `symbol`
+- `DynamicSupervisor` 的函数会使用 `module` 和 `worker_module`
 
-Again, as we modified `start_worker/5` we need to make the last change inside the                                
-`Core.ServiceSupervisor` module - `autostart_workers/2` uses the `start_worker/5` function:
+同样地，由于我们改动了 `start_worker/5`，还需要在 `Core.ServiceSupervisor` 模块里做最后一个修改——`autostart_workers/2` 现在要使用 `start_worker/5` 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -589,7 +576,7 @@ Again, as we modified `start_worker/5` we need to make the last change inside th
   end
 ```
 
-Just for reference - the final function headers look as follows:
+作为参考，最终的函数头应该是这样的：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -623,7 +610,7 @@ defmodule Core.ServiceSupervisor do
 end
 ```
 
-That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` module, now we need to update the `Naive.DynamicSymbolSupervisor` module to use updated functions(and pass required arguments):
+这样就完成了 `Core.ServiceSupervisor` 模块里的第三轮更新，现在我们需要更新 `Naive.DynamicSymbolSupervisor` 模块，让它使用这些更新后的函数（并传入所需参数）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -690,20 +677,17 @@ That finishes the 3rd round of updates inside the `Core.ServiceSupervisor` modul
   end
 ```
 
-We needed to update references inside the `shutdown_worker/1` function as well, as it calls `get_pid/2` and `update_status/4` functions.
+我们还需要更新 `shutdown_worker/1` 函数内部的引用，因为它调用的是 `get_pid/2` 和 `update_status/4` 函数。
 
-We are now done with refactoring the `Core.ServiceSupervisor` module, it's completely generic and can be used inside both `streamer` and the `naive` applications.
+到这里，我们已经完成了对 `Core.ServiceSupervisor` 模块的重构，它现在已经完全通用，并且可以在 `streamer` 和 `naive` 两个应用中使用。
 
-At this moment, to use the `Core.ServiceSupervisor` module we need to write interface functions in our supervisors
-and pass multiple arguments in each one - we'd essentially be copying those functions into both the `streamer` and `naive` applications again.
-In the next section we will look into how we could leverage Elixir [macros](https://elixir-lang.org/getting-started/meta/macros.html)
-to remove that boilerplate.
+但此时，如果要使用 `Core.ServiceSupervisor` 模块，我们仍然需要在各自的 supervisor 里写接口函数，并且在每个函数里传入多个参数——本质上还是得把这些函数再复制到 `streamer` 和 `naive` 两个应用里一遍。
+下一节里，我们会看看如何利用 Elixir [宏](https://elixir-lang.org/getting-started/meta/macros.html) 来去掉这些样板代码。
 
-## Remove boilerplate using `use` macro
+## 使用 `use` 宏去掉样板代码
 
-Elixir provides a way to `use` other modules.
-The idea is that inside the `Naive.DynamicSymbolSupervisor` module we are `use`ing the `DynamicSupervisor` module
-currently but we could use `Core.ServiceSupervisor`:
+Elixir 提供了一种 `use` 其他模块的方式。
+目前在 `Naive.DynamicSymbolSupervisor` 模块里，我们 `use` 的是 `DynamicSupervisor` 模块，但我们其实也可以 `use` `Core.ServiceSupervisor`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -713,8 +697,8 @@ defmodule Naive.DynamicSymbolSupervisor do
 
 
 
-To be able to `use` the `Core.ServiceSupervisor` module it needs to provide the `__using__/1` macro.
-The simplest content we can use for that macro would be to just use the `DynamicSupervisor` inside:
+要想 `use` `Core.ServiceSupervisor` 模块，它就需要提供 `__using__/1` 宏。
+这个宏最简单的内容，就是在内部直接 `use DynamicSupervisor`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -726,28 +710,24 @@ The simplest content we can use for that macro would be to just use the `Dynamic
   end
 ```
 
-How does this work? Think of `quote` as a "code template" and `unquote` as the "fill in the blank" markers.
+这怎么工作的？你可以把 `quote` 想成“代码模板”，把 `unquote` 想成“填空标记”。
 
-When Elixir compiles a module that `use`s ours, it:
-1. Takes everything inside the `quote ... do ... end` block as a template
-2. Looks for `unquote(...)` calls and replaces them with actual values
-3. Pastes the resulting code into the module that called `use`
+当 Elixir 编译一个 `use` 了我们模块的模块时，它会：
+1. 把 `quote ... do ... end` 里面的内容当成模板
+2. 找出其中的 `unquote(...)` 调用，并把它们替换成实际值
+3. 把生成后的代码粘贴到调用 `use` 的那个模块里
 
-It's similar to string interpolation (`"Hello #{name}"`), but instead of building strings, we're building code.
-The `IO.inspect(opts)` will print at compile time - not runtime - which lets us see what values are being passed in.
-This will become clearer as we work through our first example.
+这有点像字符串插值（`"Hello #{name}"`），只不过我们构建的不是字符串，而是代码。
+`IO.inspect(opts)` 会在编译期打印出来——不是运行时——这样我们就能看到传进来的到底是什么值。
+随着我们继续第一个例子，这一点会变得更清楚。
 
-At this moment(after swapping to `use Core.ServiceSupervisor`) our code still works and it's exactly as
-we would simply have `use DynamicSupervisor` inside the `Naive.DynamicSymbolSupervisor` module -
-as at compilation, it will be swapped to it either way(as per contents of the `__using__/1` macro).
+这时（把 `use` 切换成 `Core.ServiceSupervisor` 之后），我们的代码仍然能正常工作，而且效果和在 `Naive.DynamicSymbolSupervisor` 模块里直接写 `use DynamicSupervisor` 完全一样——因为在编译时，它本来就会根据 `__using__/1` 宏的内容被替换成那样。
 
-As the `autostart_workers/0` function is a part of the boilerplate, we will move it from the `Naive.DynamicSymbolSupervisor` module
-to the `Core.ServiceSupervisor` module inside the `__using__/1` macro. 
+由于 `autostart_workers/0` 函数本身就是样板代码的一部分，我们会把它从 `Naive.DynamicSymbolSupervisor` 模块里移到 `Core.ServiceSupervisor` 模块的 `__using__/1` 宏中。
 
-Ok, but it has all of those other `naive` application-specific arguments - where will we get those?
+好吧，但那些属于 `naive` 应用的专属参数怎么办？我们从哪里拿？
 
-That's what that `opts` argument is for inside the `__using__/1` macro. When we call                            
-`use Core.ServiceSupervisor` we can pass an additional keyword list which will contain all `naive` application-specific details:
+这就是 `__using__/1` 宏里的 `opts` 参数派上用场的地方。当我们调用 `use Core.ServiceSupervisor` 时，可以额外传一个 keyword list，里面会包含所有属于 `naive` 应用的细节：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -759,7 +739,7 @@ defmodule Naive.DynamicSymbolSupervisor do
     worker_module: Naive.SymbolSupervisor
 ```
 
-We can now update the `__using__/1` macro to assign all of those details to variables(instead of using `IO.inspect/1`):
+现在我们可以更新 `__using__/1` 宏，把这些细节都赋值给变量（而不是继续用 `IO.inspect/1`）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -771,11 +751,10 @@ We can now update the `__using__/1` macro to assign all of those details to vari
     ...
 ```
 
-At this moment we can use those *dynamic* values to generate code that will be specific to the implementation module
-for example `autostart_workers/0` that we moved from the `Naive.DynamicSymbolSupervisor` module and
-will need to have different values passed to it(like `Streamer.Binance` as `worker_module`) for the `streamer` application.
-We can see that it requires inserting those dynamic values inside the `autostart_workers/0` but how to dynamically inject arguments -
-`unquote` to the rescue. When we will update the `autostart_workers/0` function from:
+这时我们就可以利用这些 *动态* 值来生成只属于具体实现模块的代码。
+例如，我们从 `Naive.DynamicSymbolSupervisor` 模块里挪出来的 `autostart_workers/0`，在 `streamer` 应用里就需要传入不同的值（比如把 `Streamer.Binance` 作为 `worker_module`）。
+我们可以看出，这就要求把这些动态值插入到 `autostart_workers/0` 里；那要怎么动态注入参数呢？——`unquote` 就派上用场了。
+当我们把 `autostart_workers/0` 函数从下面这个版本更新为：
 
 ```{r, engine = 'elixir', eval = FALSE}
       # sample moved code from the `Naive.DynamicSymbolSupervisor` module
@@ -803,7 +782,7 @@ to:
       end
 ```
 
-At the end, generated code that will be "pasted" to the `Naive.DynamicSymbolSupervisor` module at compile time will be:
+最后，在编译期会被“粘贴”到 `Naive.DynamicSymbolSupervisor` 模块里的生成代码会是：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # compiled code attached to the `Naive.DynamicSymbolSupervisor` module
@@ -817,9 +796,9 @@ At the end, generated code that will be "pasted" to the `Naive.DynamicSymbolSupe
     end
 ```
 
-This way we can dynamically create functions for any application(for the `streamer` application, it will generate function call with the `Streamer.Repo`, `Streamer.Schema.Settings` args, etc).
+这样我们就可以为任意应用动态创建函数了（对于 `streamer` 应用，它会生成带有 `Streamer.Repo`、`Streamer.Schema.Settings` 等参数的函数调用，等等）。
 
-We can apply that to all of the passed variables inside the `autostart_workers/0` function - just for reference full macro will look as follows:
+我们可以把这种方式应用到 `autostart_workers/0` 函数里所有传入的变量上——作为参考，完整的宏会长成这样：
 
 
 ```{r, engine = 'elixir', eval = FALSE}
@@ -845,10 +824,10 @@ We can apply that to all of the passed variables inside the `autostart_workers/0
   end
 ```
 
-You can think of the macro as a sophisticated copy-paste machine.
-It takes the values you passed to `opts`, substitutes them wherever it sees `unquote(...)`,
-and then injects the resulting code block directly into the `Naive.DynamicSymbolSupervisor` at compile-time
- - we can visualize generated/"pasted" code as:
+你可以把这个宏看作一台更高级的复制粘贴机器。
+它会拿到你传进 `opts` 的值，在看到 `unquote(...)` 的地方把它们替换掉，
+然后把生成出来的代码块直接在编译期注入到 `Naive.DynamicSymbolSupervisor` 里——
+我们可以把生成/“粘贴”出来的代码想象成：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # generated by the `__using__/1` macro injected into the `Naive.DynamicSymbolSupervisor`
@@ -864,10 +843,9 @@ and then injects the resulting code block directly into the `Naive.DynamicSymbol
   end
 ```
 
-This is exactly the code that we had before inside the `Naive.DynamicSymbolSupervisor` module but now it's stored away inside the `Core.ServiceSupervisor`'s `__using__/1` macro and it doesn't need to be implemented/copied across twice into two apps anymore.
+这正是我们之前放在 `Naive.DynamicSymbolSupervisor` 模块里的那段代码，只不过现在它被收进了 `Core.ServiceSupervisor` 的 `__using__/1` 宏里，不需要再分别在两个应用里实现/复制一遍了。
 
-We can now follow the same principle and move `start_worker/1` and `stop_worker/1` from the                     
-`Naive.DynamicSymbolSupervisor` module into `__using__/1` macro inside the `Core.ServiceSupervisor` module:
+我们现在可以沿用同样的原则，把 `start_worker/1` 和 `stop_worker/1` 从 `Naive.DynamicSymbolSupervisor` 模块移到 `Core.ServiceSupervisor` 模块里的 `__using__/1` 宏中：
 
 ```{r, engine = 'elixir', eval = FALSE}
       # /apps/core/lib/core/service_supervisor.ex
@@ -893,22 +871,18 @@ We can now follow the same principle and move `start_worker/1` and `stop_worker/
       end
 ```
 
-Here we have a crucial distinction:
-`symbol` is a *runtime* variable that changes with each function call, while `repo`,
-`schema`, etc. are *compile-time* constants that stay fixed for the entire module.
+这里有一个关键区别：
+`symbol` 是一个*运行时*变量，会随着每次函数调用而变化；而 `repo`、`schema` 等则是*编译期*常量，会在整个模块中保持固定。
 
-**Common Pitfall:** If you accidentally `unquote(symbol)`, the macro would try to evaluate `symbol` at compile time -
-when it doesn't exist yet - and you'd get a compilation error.
-The rule of thumb: `unquote` values you know at compile time (from `opts`), leave runtime variables alone.
+**常见坑：** 如果你不小心写成 `unquote(symbol)`，宏就会尝试在编译时去求值 `symbol`——但那时它还不存在——于是你会得到一个编译错误。
+经验法则是：把编译期已知的值（来自 `opts`）用 `unquote` 注入进来，运行时变量则保持原样。
 
-At this moment the `Naive.DynamicSymbolSupervisor` consists of only `start_link/1`, `init/1` and                          
-`shutdown_worker/1`, it's under 50 lines of code and works exactly as before refactoring.
-All of the boilerplate was moved to the `Core.ServiceSupervisor` module.
+到这里，`Naive.DynamicSymbolSupervisor` 只剩下 `start_link/1`、`init/1` 和 `shutdown_worker/1` 了；它的代码不到 50 行，并且和重构之前一样可以正常工作。
+所有样板代码都已经被移到了 `Core.ServiceSupervisor` 模块里。
 
-We left the `shutdown_worker/1` function as it's specific to the `naive` application, but inside it,
-we utilize both the `get_pid/2` and the `update_status/4` functions where we are passing the `naive` application-specific variables(like `Naive.Repo`).
+我们把 `shutdown_worker/1` 留了下来，因为它是 `naive` 应用特有的；不过在这个函数里，我们会用到 `get_pid/2` 和 `update_status/4` 这两个函数，并传入 `naive` 应用专属的变量（比如 `Naive.Repo`）。
 
-To make things even nicer we can create convenience wrappers for those two functions inside the `__using__/1` macro:
+为了让事情更方便一些，我们可以在 `__using__/1` 宏里为这两个函数创建一些便捷包装：
 
 ```{r, engine = 'elixir', eval = FALSE}
       # /apps/core/lib/core/service_supervisor.ex
@@ -930,7 +904,7 @@ To make things even nicer we can create convenience wrappers for those two funct
       end
 ```
 
-As those will get compiled and "pasted" into the `Naive.DynamicSymbolSupervisor` module we can utilize them inside the `shutdown_worker/1` function as they would be much simpler naive application-specific local functions:
+由于这些函数会被编译并“粘贴”到 `Naive.DynamicSymbolSupervisor` 模块里，我们就可以在 `shutdown_worker/1` 函数中直接使用它们，把它们当作更简单的、`naive` 应用本地函数来用：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -951,9 +925,7 @@ As those will get compiled and "pasted" into the `Naive.DynamicSymbolSupervisor`
   end
 ```
 
-And now, a very last change - I promise ;) Both the `start_link/1` and the `init/1` functions are still referencing the `DynamicSupervisor` module
-which could be a little bit confusing - let's swap those calls to use the `Core.ServiceSupervisor` module(both to not confuse people and
-be consistent with the `use` macro):
+接下来还有最后一个改动——我保证真的是最后一个 ;) 现在 `start_link/1` 和 `init/1` 这两个函数仍然在引用 `DynamicSupervisor` 模块，这可能会有点让人困惑——我们把这些调用改成使用 `Core.ServiceSupervisor` 模块（这样既不会让人混淆，也和 `use` 宏保持一致）：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/lib/naive/dynamic_symbol_supervisor.ex
@@ -966,7 +938,7 @@ be consistent with the `use` macro):
   end
 ```
 
-As we don't want/need to do anything different inside the `Core.ServiceSupervisor` module than the `DynamicSupervisor` is doing we can just delegate both of those inside the `Core.ServiceSupervisor` module:
+由于我们在 `Core.ServiceSupervisor` 模块里不需要做任何和 `DynamicSupervisor` 不同的事情，所以我们可以直接在 `Core.ServiceSupervisor` 模块里把这两个函数委托过去：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/lib/core/service_supervisor.ex
@@ -974,12 +946,11 @@ As we don't want/need to do anything different inside the `Core.ServiceSuperviso
   defdelegate init(opts), to: DynamicSupervisor
 ```
 
-That finishes our refactoring of both the `Naive.DynamicSymbolSupervisor` and the                           
-`Core.ServiceSupervisor` modules.
+这样，我们对 `Naive.DynamicSymbolSupervisor` 和 `Core.ServiceSupervisor` 这两个模块的重构就完成了。
 
-## Manual testing in IEx
+## 在 IEx 中手动测试
 
-We can test to confirm that everything works as expected:
+我们可以通过测试来确认一切都按预期工作：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -1014,13 +985,13 @@ ETHUSDT
  }}
 ```
 
-The above test confirms that we can start, stop, and shut down trading on a symbol as well as autostarting of trading works.
+上面的测试确认了：我们可以对某个 symbol 启动、停止并优雅关闭交易，而且自动启动交易也能正常工作。
 
-## Use the `Core.ServiceSupervisor` module inside the `streamer` application
+## 在 `streamer` 应用中使用 `Core.ServiceSupervisor` 模块
 
-As we are happy with the implementation of the `Core.ServiceSupervisor` module we can upgrade the `streamer` application to use it.
+既然我们对 `Core.ServiceSupervisor` 模块的实现已经满意了，就可以把 `streamer` 应用升级为使用它。
 
-We need to start with adding the `core` application to the list of dependencies of the `streamer` application:
+我们需要先把 `core` 应用加入 `streamer` 应用的依赖列表：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/mix.exs
@@ -1031,7 +1002,7 @@ We need to start with adding the `core` application to the list of dependencies 
       ...
 ```
 
-We can now move on to the `Streamer.DynamicStreamerSupervisor` where we will remove everything(really everything including `import`s, `alias`es and even `require`) beside the `start_link/1` and the `init/1`. As with the `Naive.DynamicSymbolSupervisor` we will `use` the `Core.ServiceSupervisor` and pass all required options - *full* implementation of the `Streamer.DynamicStreamerSupervisor` module should look as follows:
+现在我们可以转到 `Streamer.DynamicStreamerSupervisor`，在那里我们会把除 `start_link/1` 和 `init/1` 之外的所有内容都删掉——真的所有内容，包括 `import`、`alias` 甚至 `require`。和 `Naive.DynamicSymbolSupervisor` 一样，我们会 `use` `Core.ServiceSupervisor` 并传入所有必需的选项——`Streamer.DynamicStreamerSupervisor` 模块的*完整*实现应该长成下面这样：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/dynamic_streamer_supervisor.ex
@@ -1052,14 +1023,11 @@ defmodule Streamer.DynamicStreamerSupervisor do
 end
 ```
 
-Not much to add here - we are `use`ing the `Core.ServiceSupervisor` module and
-passing options to it so the macro can generate `streamer` application-specific wrappers
-(like `start_worker/1` or `stop_worker/1` with required repo, schema, etc) around generic logic from the `Core.ServiceSupervisor` module.
+这里没什么可补充的——我们在 `use` `Core.ServiceSupervisor` 模块，并向它传入 options，这样宏就能围绕 `Core.ServiceSupervisor` 里的通用逻辑，生成只属于 `streamer` 应用的包装函数（比如带着所需 repo、schema 等参数的 `start_worker/1` 或 `stop_worker/1`）。
 
-Using the `Core.ServiceSupervisor` module will have an impact on the interface of the                         
-`Streamer.DynamicStreamerSupervisor` as it will now provide functions like `start_worker/1` instead of `start_streaming/1` etc.
+使用 `Core.ServiceSupervisor` 模块会影响 `Streamer.DynamicStreamerSupervisor` 的接口，因为它现在会提供像 `start_worker/1` 这样的函数，而不再是 `start_streaming/1` 之类的函数。
 
-As with the `naive` application, we need to update the Task function inside the `Streamer.Supervisor` module:
+和 `naive` 应用一样，我们还需要更新 `Streamer.Supervisor` 模块里的 Task 函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/supervisor.ex
@@ -1071,7 +1039,7 @@ As with the `naive` application, we need to update the Task function inside the 
       ...
 ```
 
-As well as main `Streamer` module needs to forward calls instead of delegating:
+主 `Streamer` 模块也需要改为转发调用，而不是再使用委托：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/streamer/lib/streamer.ex
@@ -1090,7 +1058,7 @@ As well as main `Streamer` module needs to forward calls instead of delegating:
   end
 ```
 
-We can run a quick test to confirm that indeed everything works as expected:
+我们可以快速跑一个测试，确认一切确实如预期工作：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ iex -S mix
@@ -1119,49 +1087,44 @@ $ iex -S mix
 22:26:30.775 [info]  Starting Elixir.Streamer.Binance worker for LTCUSDT
 ```
 
-This finishes the implementation for both the `streamer` and the `naive` application. We are generating dynamic functions(metaprogramming) using Elixir macros which is a cool exercise to go through and feels like superpowers ;)
+这样，`streamer` 和 `naive` 两个应用的实现就都完成了。我们使用 Elixir 宏生成动态函数（元编程），这是一段很酷的练习，真的会让人感觉像是有超能力 ;)
 
-**We've successfully eliminated the duplication!** Here's what we achieved:
+**我们已经成功消除了重复！** 我们做到了这些：
 
-- Created a generic `Core.ServiceSupervisor` module with fully parameterized functions
-- Used the `__using__/1` macro to generate application-specific wrapper functions at compile time
-- Reduced `Naive.DynamicSymbolSupervisor` to under 50 lines while keeping all functionality
-- Applied the same pattern to `Streamer.DynamicStreamerSupervisor` with just a few lines of configuration
+- 创建了一个通用的 `Core.ServiceSupervisor` 模块，里面的函数都已经完全参数化
+- 使用 `__using__/1` 宏在编译期生成了只属于各个应用的包装函数
+- 在保留全部功能的同时，把 `Naive.DynamicSymbolSupervisor` 减少到了 50 行以内
+- 只用少量配置，就把同样的模式应用到了 `Streamer.DynamicStreamerSupervisor`
 
-The key insight is that macros let us write code that writes code.
-Instead of copying the same functions into every supervisor,
-we define them once with `unquote` placeholders, and Elixir fills in the application-specific values at compile time.
+关键点在于：宏让我们可以编写“生成代码的代码”。
+我们不再把同样的函数复制到每一个 supervisor 里，而是只写一次，并用 `unquote` 作为占位符，Elixir 会在编译期把应用专属的值填进去。
 
-**A learning milestone, not the final destination:**
+**这是一个学习上的里程碑，但不是终点：**
 
-Working through this macro implementation taught us how Elixir's metaprogramming works under the hood -
-and that knowledge will serve us well when reading Phoenix source code or other libraries that use macros heavily.
-However, as the Elixir documentation notes, "macros should only be used as a last resort" because they make debugging harder
-and can confuse developers unfamiliar with the codebase.
+通过这次宏实现，我们理解了 Elixir 的元编程在底层是如何工作的——而这些知识在阅读 Phoenix 源码或其他大量使用宏的库时会非常有用。
+不过，正如 Elixir 文档所说，“宏应该只在最后手段时使用”，因为它们会让调试更困难，也可能让不熟悉代码库的开发者感到困惑。
 
-Here's the good news: in the next chapter, we'll discover that the Registry module provides a simpler way to manage named processes -
-no macros required. We'll use it to build the `data_warehouse` application, and you'll see firsthand how it compares to our macro-based approach.
-By the end of chapter 13, we'll have a cleaner solution that supersedes the `Core.ServiceSupervisor` entirely.
+好消息是：下一章里，我们会发现 Registry 模块提供了一种更简单的方法来管理命名进程——不需要宏。我们会用它来构建 `data_warehouse` 应用，你会亲眼看到它和我们基于宏的方法相比如何。
+到第 13 章结束时，我们会得到一个更简洁的方案，彻底取代 `Core.ServiceSupervisor`。
 
-This is exactly how real-world development works: we try one approach, learn from it, and find something better.
-The macro exercise wasn't wasted - understanding `quote`, `unquote`, and `__using__/1` is valuable Elixir knowledge.
-We just won't need it for this particular problem.
+这正是真实世界开发的样子：我们尝试一种方法，从中学习，然后找到更好的方法。
+这个宏练习并没有白费——理解 `quote`、`unquote` 和 `__using__/1` 这些概念，对 Elixir 来说依然是很有价值的知识。
+只是就这个具体问题而言，我们不再需要它了。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-Our trading bot can now start, stop, and autostart both streaming and trading.
-But we're missing something crucial for any serious trading system: data persistence.
+现在我们的交易机器人已经可以启动、停止，并自动恢复流式接收和交易了。
+但对于任何严肃的交易系统来说，我们还缺少一个关键能力：数据持久化。
 
-In the next chapter, we'll create a `data_warehouse` application that subscribes to trade events and orders,
-storing them in a database. Along the way, we'll discover a simpler pattern for managing dynamic workers using the Registry -
-one that's so clean it will make us question whether we needed macros at all.
-(Spoiler: we'll end up removing the `Core.ServiceSupervisor` module entirely as a challenge exercise!)
+下一章里，我们会创建一个 `data_warehouse` 应用，它会订阅交易事件和订单，并把它们存到数据库里。
+在这个过程中，我们还会发现一种更简单的方式来管理动态 worker——使用 Registry。
+那种方式非常简洁，甚至会让我们开始怀疑自己是不是根本不需要宏。
+（剧透一下：我们最终会把 `Core.ServiceSupervisor` 模块整个删掉，作为一个挑战练习！）
 
-This historical data will be essential for the chapter after that, where we'll implement backtesting -
-running our strategy against past market data to see how it would have performed.
+这些历史数据对后面的章节至关重要；到了下一章之后的那一章，我们会实现回测——
+把我们的策略放到历史市场数据上运行，看看它本来会表现得如何。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[注] 别忘了运行 `mix format`，让代码保持整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
+本章的源代码可以在本书的源代码仓库中找到（分支：
 [chapter_12](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_12)).

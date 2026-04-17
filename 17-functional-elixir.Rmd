@@ -1,69 +1,56 @@
-# Functional Elixir
+# Functional Elixir {#17-functional-elixir}
 
-In the last chapter, we built fast, isolated unit tests using `mox`. 
-We mocked dependencies, verified interactions, and eliminated our reliance 
-on databases and sleeps. The tests run in milliseconds - but here's the uncomfortable truth: 
-we're still testing a lot of side effects.
+在上一章里，我们使用 `mox` 构建了快速、隔离的单元测试。
+我们 mock 了依赖，验证了交互，摆脱了对数据库和 sleep 的依赖。测试可以在毫秒级运行——但这里有个不太舒服的事实：
+我们其实还是在测试很多副作用。
 
-Every expectation we define with `mox` is essentially saying "this function 
-should call that external system with these exact values." We've isolated our code, 
-but we haven't fundamentally changed what it does - it's still all side effects, 
-all the way down.
+我们用 `mox` 定义的每个 expectation，本质上都在说“这个函数应该用这些精确的值调用那个外部系统”。
+我们把代码隔离开了，但并没有从根本上改变它做的事情——它仍然全是副作用，贯穿到底。
 
-What if we could write code that doesn't need mocking at all? Code so pure that 
-testing it is trivial - just call the function and check the output. No setup, 
-no mocks, no expectations. Just input → function → output.
+如果我们能写出不需要任何 mock 的代码，会怎样？如果代码纯到测试变得极其简单——只要调用函数并检查输出即可。没有搭建，没有 mock，没有 expectation。只有输入 → 函数 → 输出。
 
-That's what functional programming gives us. We'll extract the decision-making 
-logic from our `Naive.Trader` into pure functions that take state and events, 
-return decisions. No PubSub calls, no Binance API, no database - just math.
+这就是函数式编程带给我们的东西。我们会把 `Naive.Trader` 里的决策逻辑提取成纯函数，它们接收状态和事件，然后返回决策。没有 PubSub 调用，没有 Binance API，没有数据库——只有数学。
 
-Along the way, we'll see why Elixir's approach to functional programming is 
-pragmatic rather than dogmatic. We'll use `with` for error handling, module 
-attributes for dependency injection, and we'll draw a hard line between 
-"functional" as a useful practice and "functional" as academic category theory.
+在这个过程中，我们会看到 Elixir 对函数式编程的态度并不是教条式的，而是务实的。我们会使用 `with` 处理错误，用模块属性做依赖注入，并且会明确划清“函数式”作为有用实践和“函数式”作为学院派范畴论之间的界限。
 
-## Objectives
-- the reasoning behind the functional approach
-- simplifying by splitting
-- abstracting the "pure" logic
-- dealing with dirty code
-- making dirty code testable
-- the power `with`-in
-- to do or not to do - side effects at the edge
-- final thoughts
+## 目标
+- 函数式方法背后的思路
+- 通过拆分来简化
+- 抽象“纯”逻辑
+- 处理脏代码
+- 让脏代码可测试
+- `with` 的力量
+- 做还是不做——把副作用放在边缘
+- 最后思考
 
-## The reasoning behind the functional approach
+## 函数式方法背后的思路
 
-Across the last 16 chapters, we focused on learning OTP by building a trading system.
-We deliberately delayed the conversation about functional programming to maintain a clear focus on OTP.
-But here's the thing - we've been writing functional code all along.
+在过去 16 章里，我们专注于通过构建交易系统来学习 OTP。
+我们有意延后了函数式编程的讨论，以便先把 OTP 讲清楚。
+但问题在于——我们一直都在写函数式代码。
 
-We use higher-order functions, pattern matching, immutable data. Isn't that functional enough?
+我们使用高阶函数、模式匹配、不可变数据。这难道还不够函数式吗？
 
-Not quite. We're using functional *syntax*, but we haven't embraced functional *design*. 
-Our functions mix business logic with side effects. They make decisions and execute them in the same breath. 
-This makes them harder to test and harder to reason about.
+还不完全是。我们用的是函数式*语法*，但还没有拥抱函数式*设计*。
+我们的函数把业务逻辑和副作用混在一起。它们在同一个动作里既做决策又执行决策。
+这让它们更难测试，也更难推理。
 
-The real value of functional programming isn't academic purity - it's practical testability. 
-Pure functions are trivial to test: call them with inputs, verify outputs. No mocks, no setup, no cleanup. 
+函数式编程的真正价值并不是学院式的纯粹，而是实践上的可测试性。
+纯函数测试起来极其简单：传入输入，验证输出。没有 mock，没有搭建，没有清理。
 
-We'll start from the basics and examine different ways to implement functional concepts, 
-always considering Elixir's specific strengths and weaknesses.
+我们会从基础开始，考察实现函数式概念的不同方式，同时始终考虑 Elixir 自身的优点和弱点。
 
-## Simplifying by splitting
+## 通过拆分来简化
 
-Note: This refactoring might seem tangential to functional programming, but we're doing it now to avoid 
-complexity later. When we extract pure logic in the next section, these simplified callbacks will be 
-much easier to work with.
+注意：这次重构看起来可能和函数式编程关系不大，但我们现在做它，是为了避免后面变得更复杂。等我们在下一节提取纯逻辑时，这些简化过的回调会更容易处理。
 
-Let's look at our strategy inside the `Naive.Trader` module.
-In this section, we will focus on its `handle_info/2` callback function.
+让我们看看 `Naive.Trader` 模块里的策略。
+在这一节中，我们会聚焦它的 `handle_info/2` 回调函数。
 
-We are looking for clauses that do more than "one thing" to split them into multiple clauses:
+我们要找的是那些做了不止“一件事”的子句，把它们拆成多个子句：
 
-- The first callback places a buy order - it has a single responsibility and is easy to follow.
-- The second callback is the one we will focus on. It deals with two things, and we could describe it as a "fetch buy order and place a sell order" function. The "and" in the description clearly indicates that it's really two functions glued together. We will split it into "fetch buy order" and "place a sell order" functions(below code replaces the 2nd `handle_info/2` callback):
+- 第一个回调负责挂买单——它职责单一，也很容易理解。
+- 第二个回调是我们要聚焦的那个。它做了两件事，我们可以把它描述成“获取买单并挂卖单”的函数。描述里的“并”很明显地说明这其实是两个粘在一起的函数。我们会把它拆成“获取买单”和“挂卖单”两个函数（下面的代码替换第 2 个 `handle_info/2` 回调）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -133,16 +120,15 @@ We are looking for clauses that do more than "one thing" to split them into mult
   end
 ```
 
-The first function takes care of placing a sell order. The second one fetches the buy order -
-please note that we needed to enhance the condition to avoid the 
+第一个函数负责挂卖单。第二个函数负责获取买单——请注意，我们需要增强条件，以避免……
 
-We can now move to the next clause.
-Similar to the last one, we could describe it as "fetch the sell order and terminate the trader".
-We will split it into two callbacks: "fetch the sell order" and "terminate trader".
+现在我们可以继续下一条子句。
+和上一条类似，我们可以把它描述成“获取卖单并终止 trader”。
+我们会把它拆成两个回调：“获取卖单”和“终止 trader”。
 
 \newpage
 
-The code below replaces the 5th `handle_info/2` callback:
+下面的代码替换第 5 个 `handle_info/2` 回调：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -194,18 +180,17 @@ The code below replaces the 5th `handle_info/2` callback:
   end
 ```
 
-The first function takes care of terminating the trader. The second function is fetching the sell order.
+第一个函数负责终止 trader。第二个函数负责获取卖单。
 
-That finishes our first refactoring round, but I need to admit that our change has impacted the behaviour of our strategy.
-Each time a buy or sell order gets filled, we will fetch that order from Binance,
-but we **won't** immediately place a sell order nor terminate as it was happening before.
-Instead, only when another event arrives will the trader place a sell order or terminate.
+这样第一轮重构就完成了，但我得承认，我们的修改影响了策略的行为。
+每次买单或卖单成交时，我们都会去 Binance 获取该订单，
+但我们**不会**像之前那样立刻挂出卖单或者终止进程。
+相反，只有当下一条事件到来时，trader 才会挂卖单或者终止。
 
-Changes like this require approval from the business in a work situation,
-but it's a good showcase of the situation where we can propose a solution
-that will simplify the code(the benefits will become evident in the following sections).
+这种变更在现实工作里需要业务方批准，但它很好地展示了这样一种情况：
+我们可以提出一种能让代码更简单的方案（它的好处会在后面的章节里变得明显）。
 
-We can confirm that we have broken our tests by running our integration testsuite:
+我们可以通过运行集成测试套件来确认测试已经坏掉了：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
@@ -220,7 +205,7 @@ $ MIX_ENV=integration mix test.integration
        test/naive_test.exs:85: (test)
 ```
 
-(Subject to acceptance by the business) we will fix the integration test in the following way:
+（在业务方接受的前提下）我们会用下面这种方式修复集成测试：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive_test.exs
@@ -258,24 +243,20 @@ $ MIX_ENV=integration mix test.integration
     assert buy_2 == [Decimal.new("0.431"), "BUY", "NEW"] # <- updated from 0.4309
 ```
 
-We have updated the 2nd order buy price to make our test green again.
+我们把第二次买单的价格改成了 0.431，这样测试又能变绿了。
 
 \newpage
 
-## Abstracting the "pure" logic
+## 抽象“纯”逻辑
 
-In our adventure to make our code more functional, we should strive
-to separate(as much as possible) pure business logic from side effects and boilerplate.
+在让代码更函数式的过程中，我们应该尽可能把纯业务逻辑和副作用、样板代码分离开。
 
-The `Naive.Trader` module is a GenServer that receives trade events via messages.
-Based on them and the current state, using pattern-matching, it decides what action should be performed(place a buy order,
-fetch a buy order, place a sell order, fetch sell order, terminate trader, trigger rebuy or ignore event).
+`Naive.Trader` 模块是一个 GenServer，它通过消息接收交易事件。
+根据这些事件和当前状态，它用模式匹配决定应该执行什么动作：挂买单、获取买单、挂卖单、获取卖单、终止 trader、触发 rebuy，或者忽略事件。
 
-Each of the pattern-matches inside the callback functions' headers is a **strategy** specific business logic
-that got mixed with the fact that it's executed by a GenServer that receives messages.
+回调函数头里的每个模式匹配，都是**策略**特有的业务逻辑，只不过它和 GenServer 收消息这件事混在一起了。
 
-We will create a new file called `strategy.ex` inside the `apps/naive/lib/naive/` directory,
-where we will **copy** all of the `handle_info/2` callback functions from the `Naive.Trader` module:
+我们会在 `apps/naive/lib/naive/` 目录下创建一个新文件 `strategy.ex`，并把 `Naive.Trader` 模块里的所有 `handle_info/2` 回调函数**复制**到那里：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -310,19 +291,16 @@ defmodule Naive.Strategy do
   end
 ```
 
-First, we will rename all of the `handle_info/2` functions inside the `Naive.Strategy` module to `generate_decision/2`.
-Next, we will go through them one by one, leaving the pure parts and limiting them to returning the decision.
+首先，我们会把 `Naive.Strategy` 模块里的所有 `handle_info/2` 函数都重命名成 `generate_decision/2`。
+然后我们会逐个处理它们，保留纯的部分，并把它们限制成只返回决策结果。
 
-### Place a buy order rules
+### 挂买单规则
 
-The first function decides should the trader place a buy order. We can see that price
-and quantity calculations are pure functions based on the incoming data. We will remove everything below those two as it's causing side effects.
+第一个函数决定 trader 是否应该挂买单。我们可以看到，价格和数量的计算都是基于输入数据的纯函数。我们会把这两个计算下面的所有内容都移除，因为那部分会造成副作用。
 
-As now we are dealing with a function generating a decision, we will return a tuple with data that,
-together with state, will be used to place a buy order. 
+既然现在我们在处理的是一个“生成决策”的函数，我们会返回一个元组，里面包含的数据会和 state 一起用于挂买单。
 
-After removing some of the pattern-matching that we used to retrieve data(no longer needed),
-our first function should look like this:
+删掉一些用于获取数据的模式匹配（这些已经不需要了）之后，第一个函数应该像这样：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -343,10 +321,10 @@ our first function should look like this:
     {:place_buy_order, price, quantity}
   end
 ```
-### Place a sell order rules
+### 挂卖单规则
 
-We will follow the same logic for the 2nd clause of the `generate_decision/2` function.
-We will leave only the sell price calculation as it's pure and return a tuple together with the decision:
+我们会对 `generate_decision/2` 函数的第 2 个子句采用同样的逻辑。
+我们只保留卖出价格的计算，因为它是纯逻辑，然后把决策和结果一起返回：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -368,9 +346,9 @@ We will leave only the sell price calculation as it's pure and return a tuple to
   end
 ```
 
-### Fetch the buy order rules
+### 获取买单规则
 
-For the 3rd clause, we will return only an atom as there's no pure logic besides the pattern-match in the header itself:
+对于第 3 个子句，我们只返回一个 atom，因为除了函数头里的模式匹配之外，没有别的纯逻辑：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -391,9 +369,9 @@ For the 3rd clause, we will return only an atom as there's no pure logic besides
   end
 ```
 
-### Terminate trader rules
+### 终止 trader 规则
 
-For the 4th clause, we will indicate that trader needs to terminate:
+对于第 4 个子句，我们会标明 trader 需要终止：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -410,9 +388,11 @@ For the 4th clause, we will indicate that trader needs to terminate:
   end
 ```
 
-### Fetch the sell order rules
+\newpage
 
-For the 5th clause, we will indicate that trader needs to fetch the sell order:
+### 获取卖单规则
+
+对于第 5 个子句，我们会标明 trader 需要获取卖单：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -432,14 +412,12 @@ For the 5th clause, we will indicate that trader needs to fetch the sell order:
   end
 ```
 
-### Trigger rebuy rules
+### 触发 rebuy 规则
 
-Inside the 6th clause, we are dealing with triggering the rebuy.
-Here, we can decide whether rebuy should be triggered and get rid of conditional logic inside further steps.
-We couldn't refactor this function by splitting it (as we've done in the first section)
-as we need to call the `trigger_rebuy?/3` function to check should rebuy be triggered.
-The functions that we refactored in the first section of this chapter were splittable
-as they relied on pattern-matching in the function headers where calling local functions is not allowed):
+在第 6 个子句中，我们处理的是触发 rebuy。
+这里我们可以决定是否应该触发 rebuy，并把后续步骤里的条件逻辑拿掉。
+我们不能像第一节那样通过拆分来重构这个函数，因为我们需要调用 `trigger_rebuy?/3` 函数来检查是否应该触发 rebuy。
+第一节里那些被重构的函数可以拆分，是因为它们依赖的是函数头里的模式匹配，而在函数头里不能调用本地函数）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -464,9 +442,9 @@ as they relied on pattern-matching in the function headers where calling local f
   end
 ```
 
-### The final clause rules
+### 最后一个子句规则
 
-The final (7th) clause will just ignore the trade event as it's of no interest:
+最后（第 7 个）子句只是忽略 trade event，因为它并不重要：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -476,24 +454,20 @@ The final (7th) clause will just ignore the trade event as it's of no interest:
   end
 ```
 
-This finishes the changes to the `generate_decision/2` clauses.
-We extracted a fair amount of logic into an easily testable pure function. We now need to use it inside the `Naive.Trader` module.
+这样 `generate_decision/2` 的修改就完成了。我们已经把相当一部分逻辑提取到了一个容易测试的纯函数里。接下来我们需要把它用回 `Naive.Trader` 模块中。
 
-### Changes to the `Naive.Trader` module
+### 对 `Naive.Trader` 的改动
 
-We will start by moving all of the calculation functions to the `Naive.Strategy` module as
-we are using them from the `generate_decision/2` function. Those will be:
+我们先把所有计算函数移到 `Naive.Strategy` 模块里，因为我们要在 `generate_decision/2` 函数里用到它们。它们包括：
 
 - `calculate_sell_price/3`
 - `calculate_buy_price/3`
 - `calculate_quantity/3`
 - `trigger_rebuy?/3`
 
-They can now be changed to public functions as they are pure and fit the "interface"
-of the `Naive.Strategy` module(it feels ok[and it's safe as they are pure] to "expose" them to be called from other modules).
+它们现在都可以改成 public 函数，因为它们是纯函数，而且符合 `Naive.Strategy` 模块的“接口”定位（它们是纯函数，所以“暴露”给其他模块调用是安全的）。
 
-We need to remember about moving the `Decimal` alias into the `Naive.Strategy` module together with
-a copy of the `TradeEvent` struct alias and add the alias for the `Naive.Trader.State` struct:
+我们还要记得把 `Decimal` 的 alias 放进 `Naive.Strategy` 模块，同时复制 `TradeEvent` 结构体的 alias，并给 `Naive.Trader.State` 结构体加上 alias：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -502,11 +476,9 @@ a copy of the `TradeEvent` struct alias and add the alias for the `Naive.Trader.
   alias Naive.Trader.State
 ```
 
-The next step will be to rename all the `handle_info/2` callback functions inside the `Naive.Trader` module
-to `execute_decision/2`, which we will get back to in a moment.
+下一步是把 `Naive.Trader` 模块里所有 `handle_info/2` 回调函数重命名成 `execute_decision/2`，我们稍后会回头处理它们。
 
-First, we need to add a single `handle_info/2` callback under the `init/1` function that will pattern match
-only the fact that the received message contains the `TradeEvent` struct and the state is the correct `State` struct:
+首先，我们需要在 `init/1` 函数下面添加一个单独的 `handle_info/2` 回调，它只负责模式匹配收到的消息里包含 `TradeEvent` 结构体，以及 state 是正确的 `State` 结构体：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -517,14 +489,12 @@ only the fact that the received message contains the `TradeEvent` struct and the
   end
 ```
 
-So, the `Naive.Strategy` module will decide what the trader server should do based on its pure business logic.
-That decision will be passed forward with the state to the `execute_decision/2` function (at this moment,
-it's just the old `handle_info/2` function renamed, but we will update it next).
+这样，`Naive.Strategy` 模块就会基于纯业务逻辑决定 trader server 应该做什么。
+这个决策会和 state 一起传给 `execute_decision/2` 函数（此时它还只是旧的 `handle_info/2` 函数改了名，但我们接下来会更新它）。
 
-### `Naive.Trader` - place buy order
+### `Naive.Trader` - 挂买单
 
-We will update the `execute_decision/2` function to take a decision + state and execute the correct
-action based on pattern-match of the decision. Starting with the 1st clause, we need to pattern match a tuple:
+我们会更新 `execute_decision/2` 函数，让它接收一个决策 + state，然后根据对决策的模式匹配执行正确动作。先从第 1 个子句开始，我们需要对一个 tuple 做模式匹配：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -552,12 +522,11 @@ action based on pattern-match of the decision. Starting with the 1st clause, we 
   end
 ```
 
-The amount of pattern matching will be much smaller as part of the original callback has been moved inside
-the `Naive.Strategy`'s logic(to calculate the price and quantity).
+因为原来回调里的大部分内容已经移动到 `Naive.Strategy` 的逻辑里（用来计算价格和数量），所以这里需要的模式匹配会少很多。
 
-### `Naive.Trader` - Place a sell order
+### `Naive.Trader` - 挂卖单
 
-In case of placing a sell order, we will pattern match on a tuple containing the `:place_sell_order` atom and slim down on pattern matching:
+如果是挂卖单，我们会对包含 `:place_sell_order` atom 的 tuple 做模式匹配，同时把模式匹配也简化一些：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -586,9 +555,9 @@ In case of placing a sell order, we will pattern match on a tuple containing the
   end
 ```
 
-### `Naive.Trader` - Fetch the buy order
+### `Naive.Trader` - 获取买单
 
-In case of fetching the buy order, we will pattern match on a `:fetch_buy_order` atom and slim down on pattern matching:
+如果是获取买单，我们会对 `:fetch_buy_order` atom 做模式匹配，并进一步简化模式匹配：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -620,9 +589,9 @@ In case of fetching the buy order, we will pattern match on a `:fetch_buy_order`
   end
 ```
 
-### `Naive.Trader` - Terminate the trader
+### `Naive.Trader` - 终止 trader
 
-In case of terminating the trader, we will pattern match on a `:exit` atom and slim down on pattern matching:
+如果是终止 trader，我们会对 `:exit` atom 做模式匹配，并进一步简化：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -640,9 +609,9 @@ In case of terminating the trader, we will pattern match on a `:exit` atom and s
 
 \newpage
 
-### `Naive.Trader` - Fetch the sell order
+### `Naive.Trader` - 获取卖单
 
-In case of fetching the sell order, we will pattern match on a `:fetch_sell_order` atom and slim down on pattern matching:
+如果是获取卖单，我们会对 `:fetch_sell_order` atom 做模式匹配，并进一步简化：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -674,10 +643,9 @@ In case of fetching the sell order, we will pattern match on a `:fetch_sell_orde
   end
 ```
 
-### `Naive.Trader` - Triggering rebuy
+### `Naive.Trader` - 触发 rebuy
 
-In case of triggering the rebuy procedure, we will pattern match on a `:rebuy` atom, slim down on pattern matching and
-simplify the function a fair bit(no branching required anymore - yay!):
+如果是触发 rebuy 过程，我们会对 `:rebuy` atom 做模式匹配，同时把函数简化不少（现在不需要分支了，yay！）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -695,9 +663,9 @@ simplify the function a fair bit(no branching required anymore - yay!):
   end
 ```
 
-### `Naive.Trader` - The final ignore clause
+### `Naive.Trader` - 最后的忽略子句
 
-The final ignore clause will `:skip` all events:
+最后这个忽略子句会对所有事件返回 `:skip`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -706,31 +674,22 @@ The final ignore clause will `:skip` all events:
   end
 ```
 
-The ignore clause finishes our current refactoring round, which showcased that sometimes abstracting pattern matching into
-a separate function is a valid strategy to increase the amount of pure code.
+这样当前这一轮重构就结束了，它展示了有时把模式匹配里的逻辑抽成单独函数，是增加纯代码比例的一种有效策略。
 
-Note: The fact that we could abstract the logic from pattern matches is quite a unique situation to our application.
-I would not advise abstracting GenServer pattern matching into a separate module if dealing with different structs/actions(in our case,
-all our pattern matches were "making a trading decision", it's a single "action", that's why we abstracted them).
+注意：我们之所以能把逻辑从模式匹配中抽出来，是因为这对我们的应用来说是一个比较特殊的情况。如果面对的是不同结构体/动作（在我们的例子里，所有模式匹配本质上都在“做交易决策”，属于同一个“动作”），我不建议把 GenServer 的模式匹配抽到单独模块里。
 
-## Dealing with dirty code
+## 处理脏代码
 
-In the last section, we've split the `handle_info/2` clauses into the `generate_decision/2` and `execute_decision/2` functions.
-That's excellent progress, but we still have the strategy logic inside the `Naive.Trader` module.
+在上一节里，我们把 `handle_info/2` 子句拆成了 `generate_decision/2` 和 `execute_decision/2` 两个函数。
+这已经很不错了，但策略逻辑仍然留在 `Naive.Trader` 模块里。
 
-Let's move the `execute_decision/2` function(together with all the code that it depends on, like the `convert_order_to_order_response/1`,
-`broadcast_order/1`  and `convert_to_order/1` functions as well as a copy of the `require Logger`) from the `Naive.Trader` module
-to the `Naive.Strategy` module.
+让我们把 `execute_decision/2` 函数（以及它依赖的所有代码，比如 `convert_order_to_order_response/1`、`broadcast_order/1`、`convert_to_order/1`，再加上 `require Logger` 的副本）
+从 `Naive.Trader` 模块移动到 `Naive.Strategy` 模块里。
 
-As the `execute_decision/2` function is causing side effects, we don't want it to be called directly from the outside of the module,
-so we will need to make it private.
+由于 `execute_decision/2` 会产生副作用，我们不希望它被模块外部直接调用，所以它需要变成 private。
 
-Changing the `execute_decision/2` function(now inside the `Naive.Strategy` module) to private will cause
-a problem with the `handle_info/2` callback function inside the `Naive.Trader` module as
-it relies on the `execute_decision/2` function to be public.
-The fact that our strategy makes a decision and then executes code based on it is an implementation detail that
-we shouldn't share with the `Naive.Trader` module. That's why we will move the **body** of the `handle_info/2` callback function
-into a new function called `execute/2` inside the `Naive.Strategy` module:
+把 `execute_decision/2` 函数（现在位于 `Naive.Strategy` 模块中）改成 private 后，会给 `Naive.Trader` 模块里的 `handle_info/2` 回调造成问题，因为后者依赖 `execute_decision/2` 是 public。
+我们的策略先做决策，再根据决策执行代码——这其实是实现细节，不应该让 `Naive.Trader` 模块知道。正因如此，我们会把 `handle_info/2` 回调的**函数体**移动到 `Naive.Strategy` 模块里一个叫做 `execute/2` 的新函数中：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -740,9 +699,8 @@ into a new function called `execute/2` inside the `Naive.Strategy` module:
   end
 ```
 
-Before updating the `Naive.Trader` module to use the `execute/2` function, we need to address another issue that
-moving the `execute_decision/2` caused. At this moment, all of the clauses return GenServer specific tuples.
-What we really need to return to the trader is an atom indicating should it continue or terminate together with the updated state:
+在更新 `Naive.Trader` 模块去使用 `execute/2` 函数之前，我们还要解决一个由移动 `execute_decision/2` 引发的另一个问题。此时，所有子句返回的都是 GenServer 专用的元组。
+而我们真正需要返回给 trader 的，是一个表示继续还是终止的 atom，再加上更新后的 state：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -752,8 +710,7 @@ What we really need to return to the trader is an atom indicating should it cont
 :exit # <= previously {:stop, :normal, state} + remove `state` pattern match (once)
 ```
 
-We can now update the `handle_info/2` callback function to call the new "interface" of the `Naive.Strategy` module
-that we just created and act accordingly to the result:
+现在我们可以更新 `handle_info/2` 回调函数，让它调用我们刚刚创建的 `Naive.Strategy` 模块的新“接口”，并根据结果做相应处理：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/trader.ex
@@ -765,30 +722,22 @@ that we just created and act accordingly to the result:
   end
 ```
 
-At this moment, we could just copy/move module attributes from the `Naive.Trader` module to the `Naive.Strategy` module
-and our code would start to work again. Still, before we will do that, we will use this opportunity to look into how to make our dirty code testable.
+此时，我们其实已经可以把 `Naive.Trader` 模块里的模块属性复制到 `Naive.Strategy` 模块里，代码就能重新跑起来。不过在这么做之前，我们要借这个机会看看怎么让脏代码变得可测试。
 
-## Making dirty code testable
+## 让脏代码可测试
 
-Making dirty code testable is very closely linked to injecting dependencies. In the testing environment,
-we would like to use dummy implementations instead of executing the side-effect-causing code to simplify the tests.
-We will look into the different ways that we can pass side-effect-causing "code" into impure functions.
+让脏代码可测试和注入依赖有很强的关系。在测试环境里，我们希望使用 dummy 实现，而不是执行会产生副作用的代码，这样测试就会更简单。我们会看看可以用哪些不同方式，把会产生副作用的“代码”传入不纯函数里。
 
-### Passing functions  arguments
+### 传入函数参数
 
-Functions are first-class citizens in Elixir, which means that we can pass them as arguments to functions.
-This way, we can pass side-effect causing functions into our `Naive.Strategy` module.
+在 Elixir 里，函数是一等公民，这意味着我们可以把函数作为参数传给另一个函数。
+这样，我们就可以把会产生副作用的函数传入 `Naive.Strategy` 模块里。
 
-Let's look at how this would look in practice. We need to look into the `execute_decision/2` function,
-as it's the place where side effects happen. Looking at the 1st clause(responsible for placing a buy order),
-we can see that it's calling the `Logger.info/1`, `Binance.order_limit_buy/4`, `PubSub.broadcast/3`(via the `broadcast_order/1` function)
-and `Leader.notify/2` functions. To make our code easily testable, we would need to be able to pass dummy implementations for all of those.
+我们来看一下在实践里会是什么样子。我们需要看 `execute_decision/2` 函数，因为那里才是副作用发生的地方。看第 1 个子句（负责挂买单），我们会发现它调用了 `Logger.info/1`、`Binance.order_limit_buy/4`、`PubSub.broadcast/3`（通过 `broadcast_order/1` 函数）和 `Leader.notify/2`。要让代码容易测试，我们需要能给这几个调用传入 dummy 实现。
 
-As we aren't calling the `execute_decision/2` directly, we need to pass all of the above functions as arguments
-to the `execute/2` function, which will pass them onward to the `execute_decision/2`.
+由于我们并不是直接调用 `execute_decision/2`，所以需要把上面所有函数作为参数传给 `execute/2`，然后再由它继续传给 `execute_decision/2`。
 
-We can see that even with default values pointing to the "real" implementation, that's still **a lot** of noise to make testing easier.
-It will negatively impact the maintenance of the code - here's an example of what this would look like(don't bother typing it):
+我们可以看到，即使给这些参数加上默认值并指向“真实”实现，依然会有**大量**噪音，才能让测试更容易。这样会对代码维护造成负面影响——下面是一个例子（别真的去手敲它）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -804,28 +753,26 @@ def execute(
   ...
 ```
 
-There are already four functions, and we only took care of side-effects causing functions from the first `execute_decision/2` clause.
-We can easily see how this very quickly becomes just unmanageable as there would be 10+ "injected"
-arguments going from the `execute/2` to `execute_decision/2`, and only some of them would be used in each clause.
+这里已经有四个函数了，而我们只处理了第一个 `execute_decision/2` 子句里的副作用函数。
+我们很容易看出，这种做法会很快变得无法管理，因为 `execute/2` 到 `execute_decision/2` 之间会传递 10 个以上“注入”参数，而且只有部分参数会在每个子句里用到。
 
-Additional downsides:
+另外一些缺点：
 
-- when passing a function as an argument, we need to specify the arity, so when we would like to use more than one arity, we need to pass the function **multiple times with different arities**. An example could be passing `Logger.info/1` and `Logger.info/2`
-- we need to give a name to every passed function, sometimes multiple arities (again, how should variables for `Logger.info/1` and `Logger.info/2` be called? `logger_info_2`?)
-- share amount of arguments negatively impacts code readability
+- 当函数作为参数传递时，我们需要指定 arity，所以如果想用多个 arity，就必须把同一个函数按不同 arity 传多次。例如 `Logger.info/1` 和 `Logger.info/2` 都要分别传
+- 每个传入函数都要起名，而且多 arity 时还要起更多名字（比如 `Logger.info/1` 和 `Logger.info/2` 的变量名该怎么取？`logger_info_2`？）
+- 过多参数会严重影响代码可读性
 
-We can see that passing functions as arguments is just a bad idea in case of making our code testable.
-It will have the opposite effect, decreasing readability making our code difficult to maintain and follow.
+我们可以看到，把函数作为参数传入，在测试代码可测试性这件事上，是个糟糕的主意。
+它反而会适得其反，让代码更难读、更难维护。
 
-Important note: Passing functions as arguments is not always bad! A good example could be when different actions need to be performed based on runtime data.
+重要说明：把函数作为参数并不总是坏事！一个好的例子是，根据运行时数据需要执行不同动作的场景。
 
 \newpage
 
-### Passing grouped functions as a context
+### 把函数按上下文打包传入
 
-The natural next step would be to put all of those functions into some structure like Map or Keyword list.
-Whichever we would choose, we will end up with the same problems of naming keys(this time inside the map/keyword list),
-multiple functions because of different arity but also default values inside each clause of the `execute_decision/2` function:
+自然的下一步，是把这些函数装进一个结构里，比如 Map 或 Keyword list。
+无论选哪个，我们最终都会碰到同样的问题：键名要命名、由于不同 arity 要拆成多个函数、`execute_decision/2` 各个子句里还要有默认值：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -843,15 +790,14 @@ multiple functions because of different arity but also default values inside eac
     leader_notify = Map.get(context, :leader_notify, &Leader.notify/2)
 ```
 
-Again this looks like a bad idea. It's probably marginally better than just sending functions one by one, but not much.
+看起来还是像个坏主意。它也许比直接一个个传函数稍微好一点，但也好不了多少。
 
-### Passing grouped modules as a context
+### 把模块按上下文打包传入
 
-The significant advantage of passing modules as arguments instead of functions is that we no longer
-have a problem with naming keys or caring about different functions' arities.
-There will also be substantially fewer modules used in comparison to functions.
+把模块作为参数传递的一个显著优势是，我们不再需要给键名命名，也不用关心不同函数的 arity。
+相较于函数，涉及的模块数量也会少很多。
 
-Sadly we still need to use the `Map` function to get the modules out of `"context"`:
+可惜的是，我们还是要用 Map 函数从“context”里把模块拿出来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -863,20 +809,17 @@ Sadly we still need to use the `Map` function to get the modules out of `"contex
         } = state,
         %{} = context # <= context added
       ) do
-    logger = Map.get(context, :logger, &Logger) # <= fetch from context
+    logger = Map.get(context, :logger, &Logger)
     binance = Map.get(context, :binance, Binance) # <= fetch from context
     leader = Map.get(context, :leader, &Leader) # <= fetch from context
 ```
 
-This is much better, but we will still need to do a fair amount of additional work to get the modules out.
-Also, our code will be full of the "default" modules(as **each** of the clauses retrieving them from the context will need to specify defaults).
+这已经好很多了，但我们仍然需要做不少额外工作才能把模块取出来。
+而且代码里会充满“默认”模块，因为**每一个**从 context 里取模块的子句都必须指定默认值。
 
-### Injecting modules to module's attributes based on the configuration
+### 根据配置把模块注入到模块属性里
 
-And we finally got there - we have come a full circle.
-This is the approach that we previously used inside the `Naive.Trader` module(you can go ahead and
-add them to the `Naive.Strategy` module as well as remove the `@binance_client` and `@leader`
-from the `Naive.Trader` module as they are no longer needed):
+终于，我们又回到了起点——这就是我们之前在 `Naive.Trader` 模块里已经使用过的方法（你现在也可以把它们加到 `Naive.Strategy` 模块里，并把 `Naive.Trader` 里的 `@binance_client` 和 `@leader` 去掉，因为它们已经不需要了）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/naive/strategy.ex
@@ -889,107 +832,23 @@ defmodule Naive.Strategy do
   @pubsub_client Application.compile_env(:core, :pubsub_client)
 ```
 
-We looked into different ways to inject dependencies to understand their downsides.
+我们之所以考察不同的依赖注入方式，是为了理解它们各自的缺点。
 
-Sometimes, injecting values(like modules) as module attributes can feel like a "global state", "singleton", or similar antipattern.
-We need to understand that each programming language provides different ways to solve common programming problems.
-Dependency injection is one of those common concerns that every language needs to solve, and Elixir solves it by using compile-time modules' attributes.
+有时候，把值（比如模块）通过模块属性注入，可能会感觉像“全局状态”或“单例”之类的反模式。
+我们需要理解的是，不同编程语言提供了解决常见问题的不同方式。依赖注入就是每种语言都要解决的常见问题之一，而 Elixir 是通过编译期模块属性来解决它的。
 
-As long as you use module attributes to inject compile-time dependencies for testing,
-there's just **no better way** to do it in Elixir, and now we know why(based on the issues with the alternative approaches).
+只要你把模块属性用在编译期依赖注入上，用于测试，就真的没有比这更好的方式了——而我们现在也知道原因了（基于前面那些替代方案的问题）。
 
-Together with the module attributes, our code should be now fully functional.
+配合模块属性，我们的代码现在应该已经完全函数式了。
 
-## The power `with`-in
+## `with` 的力量
 
-In the last section, we looked into different ways to inject modules' dependencies to avoid side-effect-causing functions inside the tests.
-Besides side-effect causing functions, in functional programming, error handling is also done in a specific manner.
+上一节里，我们讨论了如何通过把结果包进 `Either` 结构里来进行映射（map）/flatMap，而不管函数结果如何。那如果我们能用同样的思路，避免执行任何代码（副作用）呢？
 
-Many languages introduced concepts like `Either`, which is a struct that can be either `Left`(error result) or `Right`(success result).
-Those quite nicely fit to the standard Elixir results like `{:error, reason}` and `{:ok, result}`.
-Further, those languages provide multiple functions to work with the `Either`, like `map`.
+这就是臭名昭著的 IO Monad 之类、与范畴论相关的抽象背后的基本想法。
 
-```{r, engine = 'elixir', eval = FALSE}
-safeDivide(2, 0) # <= returns Left("Dividing error")
-|> then(Either.map(&(&1 * 2))) # <= still Left("Dividing error")
-
-safeDivide(2, 1) # <= returns Right(2)
-|> then(Either.map(&(&1 * 2))) # <= returns Right(4)
-```
-
-The above code will use hypothetical `Left("Dividing error")` or `Right(result)`. The `Either.map/2` is a special `map` function
-that runs the passed function if it's `Right` or completely ignores it when it's `Left` - it could be visualized as:
-
-```{r, engine = 'elixir', eval = FALSE}
-def map(%Either.Left{} = left, _fun), do: left
-def map(%Either.Right{result: v}, fun), do: %Either.Right{result: fun.(v)}
-```
-
-This is nice and great, but what if the function inside the `Either.map/2` returns another `Either`? Like:
-
-```{r, engine = 'elixir', eval = FALSE}
-safeDivide(2, 1) # <= returns Right(2)
-|> then(Either.map(&(safeDivide(&1, 1)))) # <= now Right(Right(2))!?
-```
-
-Now we need to understand those abstractions to be able to decide whether we should `map` or
-`flatMap`(that's the function that will not wrap the function result into the `Right`):
-
-```{r, engine = 'elixir', eval = FALSE}
-safeDivide(2, 1) # <= returns Right(2)
-|> then(Either.flatMap(&(safeDivide(&1, 1)))) <= still Right(2)
-```
-
-And that is just the beginning of the complexities that those abstractions bring.
-
-Furthermore, let's say that inside the first `Either.map/2` callback, we will have some variable(s) that we would like to use later on.
-We are now deep inside closures world like the following:
-
-```{r, engine = 'elixir', eval = FALSE}
-safeDivide(2, 1) # <= returns Right(2)
-|> then(Either.flatMap(fn res ->
-    # x = some data generated here
-    safeDivide(2, 1)
-    |> then(Either.map(&(&1 * 2)))
-    |> then(Either.map(&(&1 * x))) # <= a clause to have access to x
-  end))
-```
-
-The above example is obviously simplified and silly but should give us a gist of what sort of complexity we will very soon get involved in.
-And, again, we just scratched the surface - there are so many more functions that the `Either` provides.
-Besides, writing code in this fashion in Elixir would cause a lot of friction in the team as it's difficult to find any advantages of using it.
-
-### Idiomatic error handling
-
-To achieve the same results, Elixir provides the `with` statement:
-
-```{r, engine = 'elixir', eval = FALSE}
-  with {:ok, divide_result} <- safeDiv(2,1),
-       {:ok, divide_result_2} <- safeDivide(2, 1)
-  do
-    divide_result_2 * 2 * divide_result
-  else
-    err -> err
-  end
-```
-
-The above code provides **the same** functionality as the one before with `Either`.
-We can clearly understand it **without** any knowledge about how `Either` works, `mapping`, `flatMapping` etc. It's just standard Elixir.
-
-Again, as in the case of module attributes, Elixir provides a pragmatic way of dealing with errors -
-just return a tuple with an `:error` atom. It also provides utility functions like `with` to deal with errors in an idiomatic way.
-There's **no reason** to introduce concepts like `Either` as language has built-in concepts/patterns taking care of error situations.
-
-## Do or not to do
-
-In the last section, we discussed wrapping the results in the `Either` structs to be able to map,
-flatMap on them regardless of the function result. What if we could apply the same principle to avoid executing any code(side effects) at all?
-
-That's the basic idea behind all the category theory related abstractions like the infamous IO Monad.
-
-I won't go into a vast amount of details.
-Still, we can think about it as every time we are calling a *special* `map` or `flatMap`, instead of executing anything,
-it would just wrap whatever was passed to it inside another function and return it like:
+我不会展开讲太多细节。
+不过，我们可以把它理解成：每次调用一个“特殊”的 `map` 或 `flatMap`，它不会立即执行任何东西，而是把传给它的内容再包进另一个函数里，然后把这个函数返回，比如这样：
 
 ```{r, engine = 'elixir', eval = FALSE}
   def map(acc, function) do
@@ -1002,65 +861,55 @@ it would just wrap whatever was passed to it inside another function and return 
   end
 ```
 
-In a nutshell, what we would end up with is a function containing a function containing a function...
-At this moment, I find it very difficult to find any practical reason why somebody would want to do something like this in a dynamically typed language.
+简单说，我们最终得到的是一个函数里套着一个函数、再套着一个函数……
+在这一点上，我很难看出在动态类型语言里为什么有人会想这么做。
 
-In statically typed languages, there's an argument that instead of a function of function etc.,
-we could have a typed object which would indicate what actions can be performed on that future result.
-This is very often praised as a compile-time guarantee of side-effectful code.
+在静态类型语言里，有人会说：与其有函数套函数，不如用一个带类型的对象来表示未来结果上可以执行哪些动作。这种做法经常被赞颂为对有副作用代码的编译期保证。
 
-In Elixir, without strong typing and with a massive impact on how the code is written and how easy it is to understand,
-there's just **no practical** reason to use those concepts beyond toy programs.
-The resulting function would be an untestable blob without introspection support from the BEAM VM.
+但在 Elixir 里，由于没有强类型，再加上它会极大影响代码的写法和可理解性，除了玩具程序之外，真的**没有实际**理由去使用这些概念。
+最终得到的函数会变成一个无法测试的黑盒，而且 BEAM 虚拟机也没法给你更好的内省支持。
 
-## Final thoughts
+## 最后思考
 
-**We've now separated the "what" from the "how" in our trading strategy.** Here's what we accomplished:
+**我们现在已经把交易策略里的“是什么”和“怎么做”分开了。** 我们完成了这些：
 
-- Extracted pure business logic from the `Naive.Trader` into the `Naive.Strategy` module
-- Split complex callbacks into single-responsibility functions that are easier to reason about
-- Created decision-making functions that return data structures instead of causing side effects
-- Wired up dependency injection using compile-time module attributes
-- Used `with` for idiomatic error handling that's clearer than monadic abstractions
+- 把 `Naive.Trader` 里的纯业务逻辑提取到了 `Naive.Strategy` 模块
+- 把复杂回调拆成了职责单一、更容易推理的函数
+- 创建了返回数据结构而不是产生副作用的决策函数
+- 用编译期模块属性实现了依赖注入
+- 用 `with` 处理符合 Elixir 惯例的错误，而不是用 monadic 抽象
 
-The key insight is that functional programming in Elixir isn't about avoiding side effects entirely - 
-it's about knowing where to put them. Our strategy functions are now trivial to test. 
-They take a state and an event, return a decision. No mocks, no setup, just pure logic.
+这里最重要的洞见是：Elixir 里的函数式编程并不是要完全避免副作用——而是要知道把它们放在哪里。
+现在我们的策略函数已经非常容易测试了。
+它们接收一个 state 和一个 event，然后返回一个决策。没有 mock，没有搭建，只有纯逻辑。
 
-The `Naive.Trader` still handles all the dirty work - PubSub, Binance, logging - 
-but now it's a thin shell around pure decision-making. When something breaks, 
-we know exactly where to look: side effects in the trader, logic in the strategy.
+`Naive.Trader` 仍然负责所有脏活——PubSub、Binance、日志——
+但它现在只是纯决策逻辑外面的一层薄壳。当哪里出问题时，
+我们知道该去哪里看：trader 里的副作用，strategy 里的逻辑。
 
-It's worth noting the trade-offs of this approach:
+也值得注意一下这种做法的取舍：
 
-- More modules means more navigation - but each module has a clearer purpose
-- Dependency injection via module attributes feels "global" - but it's the idiomatic Elixir way
-- The separation introduces indirection - but it dramatically improves testability
+- 更多模块意味着更多跳转——但每个模块的职责更清晰
+- 通过模块属性做依赖注入会有点像“全局”——但这是 Elixir 惯用的方式
+- 这种拆分引入了间接层——但它显著提升了可测试性
 
-The pattern we've established - pure logic surrounded by a thin layer of side effects - 
-appears throughout idiomatic Elixir codebases. Phoenix controllers follow it: 
-pure business logic in contexts, side effects (database, HTTP) at the edges.
+我们建立的这种模式——纯逻辑外面包着一层薄薄的副作用壳——在很多 Elixir 代码库里都会出现。
+Phoenix controller 也遵循这个模式：上下文里放纯业务逻辑，边缘处处理副作用（数据库、HTTP）。
 
-**What About Category Theory?**
+**那范畴论怎么办？**
 
-We intentionally avoided introducing monads, functors, and other category theory abstractions. 
-In statically typed languages like Haskell, these abstractions provide compile-time guarantees 
-about side effects. But Elixir's dynamic typing means we'd get all the complexity with none of the guarantees.
+我们有意没有引入 monad、functor 和其他范畴论抽象。
+在 Haskell 这样的静态类型语言里，这些抽象能对副作用提供编译期保证。但 Elixir 是动态类型，这意味着我们只会拿到复杂度，却得不到这些保证。
 
-Languages like OCaml and Clojure - both functional - take the pragmatic approach we've demonstrated: 
-execute side effects where needed, maximize pure functions where possible. As Rich Hickey (Clojure's creator) 
-said: "It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures." 
-That philosophy - simple data, pure transformations - is exactly what we've built.
+像 OCaml 和 Clojure 这样的函数式语言，采取的正是我们演示过的务实做法：需要的时候执行副作用，尽可能多地保留纯函数。正如 Rich Hickey（Clojure 的创建者）所说：“让 100 个函数操作一个数据结构，总比让 10 个函数操作 10 个数据结构更好。” 这种哲学——简单数据、纯转换——正是我们构建出来的东西。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-We've separated pure logic from side effects, but we haven't talked about how many 
-processes we actually need. In the next chapter, we'll examine when to use processes 
-for organization versus when to keep everything in one process with pure functions. 
-We'll build an OHLC indicator and discover that sometimes the simplest solution 
-is just... fewer processes.
+我们已经把纯逻辑和副作用分开了，但还没有讨论我们到底需要多少进程。
+在下一章里，我们会考察什么时候应该用进程来组织，什么时候应该把所有东西都放进一个进程里，用纯函数来解决。
+我们会构建一个 OHLC 指标，并发现有时最简单的解决方案其实就是……更少的进程。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch: [chapter_17](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_17))
+本章源码可以在本书的源代码仓库中找到
+（分支：[chapter_17](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_17)）

@@ -1,71 +1,76 @@
-# End-to-end testing
+# 端到端测试 {#15-end-to-end-testing}
 
-In the last chapter, we built a backtesting system that replays historical trade events through our trading strategy.
-We ran 200K+ events through the system and watched it generate hundreds of orders.
-But we verified everything manually - checking database tables, reading logs, eyeballing results.
+在上一章中，我们构建了一个回测系统，它会把历史交易事件重新通过我们的交易策略跑一遍。
+我们把 20 万+ 条事件跑进系统，看到它生成了数百笔订单。
+但我们都是手动验证的——检查数据库表、阅读日志、目测结果。
 
-Here's the problem with that approach: it doesn't scale.
-Every time we refactor, we'd need to repeat the same manual verification.
-And manual verification has a nasty habit of becoming "skip verification" when deadlines loom.
+这种做法的问题在于：它无法扩展。
+每次我们重构代码，都得重复同样的人工验证流程。
+而手动验证有一个很糟糕的习惯：一旦期限逼近，它就会变成“跳过验证”。
 
-What we need is automated end-to-end testing.
-We'll broadcast carefully crafted trade events and assert that the right orders appear in the database.
-The test will prove our trading flow works - from receiving an event to placing orders.
+我们需要的是自动化的端到端测试。
+我们会广播精心构造的交易事件，并断言数据库里会出现正确的订单。
+这个测试会证明我们的交易流程是正常的——从接收事件到挂出订单。
 
-Along the way, we'll pay off some technical debt.
-Remember when we put PubSub and TradeEvent in the `streamer` app?
-That shortcut is about to cause a dependency cycle, and we'll fix it properly by introducing a `core` application.
+在这个过程中，我们还会偿还一些技术债。
+记得我们把 PubSub 和 TradeEvent 放在 `streamer` 应用里吗？
+这个捷径马上就会引发依赖环，我们会通过引入一个 `core` 应用来正确地解决它。
 
-## Objectives
-- decide on the tested functionality
-- implement basic test
-- introduce environment based config files
-- add convenience aliases
-- cache initial seed data inside a file
-- update seeding scripts to use the BinanceMock
-- introduce the core application
+## 目标
+- 决定要测试的功能
+- 实现基础测试
+- 引入基于环境的配置文件
+- 添加便捷别名
+- 把初始 seed 数据缓存到文件里
+- 更新 seeding 脚本使用 BinanceMock
+- 引入 core 应用
 
-## Decide on the tested functionality
+## 决定要测试的功能
 
-We've reached the stage where we have a working trading system -
-but "it works on my machine" isn't good enough.
-To ensure it keeps working after refactoring,
-we need automated tests.
-We'll start with an end-to-end test that confirms the whole trading flow works: events come in, orders go out, data lands in the database.
+我们已经到了一个阶段：交易系统可以正常工作——
+但“在我机器上能跑”并不够。
+为了确保它在重构之后仍然可用，
+我们需要自动化测试。
+我们会先写一个端到端测试，确认整个交易流程都正常：事件进入、订单输出、数据落入数据库。
 
-To perform tests at this level, we will need to orchestrate databases together with processes and broadcast trade events
-from within the test to cause our trading strategy to place orders.
-We will be able to confirm the right behavior by checking the database after running the test.
+要在这个层级上测试，我们需要把数据库、进程和广播交易事件这几件事协调起来，
+并在测试内部广播交易事件，促使交易策略挂出订单。
+测试运行后，我们可以通过检查数据库来确认行为是否正确。
 
-These tests should be rare in your test suite -
-they're brittle and require substantial effort to set up and maintain.
-My rule of thumb: reserve end-to-end tests for major "happy paths" only.
+这类测试在你的测试套件里应该很少——它们比较脆弱，而且搭建和维护成本都不低。
+我的经验法则是：端到端测试只保留给重要的“happy path”。
 
-Let's look at the current flow of data through our system:
+我们来看看当前系统里的数据流：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_16_01_current_flow.png")
 ```
 
-Currently, the `Streamer.Binance` establishes a WebSocket connection with Binance.
-It decodes the incoming trade events and broadcasts them to PubSub(`TRADE_EVENTS:#{symbol}` topics).
-PubSub then sends them to the `Naive.Trader` processes. As those processes place orders(or orders get filled),
-they broadcast orders to the PubSub(`ORDERS:#{symbol}` topics). The `DataWarehouse.Subscriber.Worker` processes subscribe
-to the broadcasted orders and store them in the database.
+目前，`Streamer.Binance` 会和 Binance 建立 WebSocket 连接。
+它会把进入的交易事件从 JSON 字符串解码出来，然后通过 PubSub（`TRADE_EVENTS:#{symbol}` topics）广播出去。
+接着 PubSub 把它们发送给 `Naive.Trader` 进程。随着这些进程挂单（或者订单成交），
+它们又会把订单广播到 PubSub（`ORDERS:#{symbol}` topics）。`DataWarehouse.Subscriber.Worker` 进程会订阅
+这些广播出来的订单并把它们存到数据库里。
 
-What we could do is to stop all the `Streamer.Binance` processes and broadcast trade events directly from the test.
-We would then be able to fine-tune the prices inside those events to run through the full trade cycle:
+我们可以把这个流程画成这样：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_16_02_test.png")
 ```
 
-This would allow us to fetch orders from the database to confirm that trading indeed happened.
+为了测试回测/端到端流程，我们可以停止所有 `Streamer.Binance` 进程，并直接从测试里广播交易事件。
+然后我们就能微调这些事件里的价格，让它们跑完整个交易循环：
 
-## Implement basic test
+```{r, fig.align="center", out.width="100%", echo=FALSE}
+knitr::include_graphics("images/chapter_16_02_test.png")
+```
 
-We will place our test inside the `NaiveTest` module inside the `apps/naive/test/naive_test.exs` file.
-First, we will need to alias multiple modules that we will use to either initialize or confirm the results:
+这样我们就可以从数据库里取订单，确认交易确实发生过。
+
+## 实现基础测试
+
+我们会把测试放在 `apps/naive/test/naive_test.exs` 文件里的 `NaiveTest` 模块中。
+首先，我们需要给要用到的多个模块加 alias，用来初始化数据或确认结果：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive_test.exs
@@ -77,7 +82,7 @@ First, we will need to alias multiple modules that we will use to either initial
   import Ecto.Query, only: [from: 2]
 ```
 
-Now we can update the generated test to have a tag in front of it:
+现在我们可以给自动生成的测试加一个 tag：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive_test.exs
@@ -85,11 +90,11 @@ Now we can update the generated test to have a tag in front of it:
   @tag integration: true
 ```
 
-We will use this tag to select only this test when we are running the integration tests.
+我们会用这个 tag，在运行集成测试时只选这个测试。
 
 
 
-The first step will be to update the trading settings to values that will cause trading activity:
+第一步是把交易设置更新成能触发交易活动的值：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive_test.exs
@@ -113,7 +118,7 @@ The first step will be to update the trading settings to values that will cause 
       |> Naive.Repo.update()
 ```
 
-As we updated the trading settings, we can now start trading:
+在更新交易设置后，我们现在可以开始交易了：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/test/naive_test.exs
@@ -126,7 +131,7 @@ As we updated the trading settings, we can now start trading:
 
 
 
-Before we start broadcasting events, we need to ensure that the `DataWarehouse` application will store resulting orders into the database:
+在开始广播事件之前，我们需要确保 `DataWarehouse` 应用会把生成的订单存进数据库：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/test/naive_test.exs
@@ -138,9 +143,9 @@ Before we start broadcasting events, we need to ensure that the `DataWarehouse` 
     :timer.sleep(5000)
 ```
 
-Additionally, as seen in the above code, we need to allow some time(5 seconds above) to initialize trading and data storing processes.
+另外，正如上面的代码所示，我们需要留出一些时间（上面用了 5 秒）来初始化交易和数据存储进程。
 
-We can now move on to broadcasting trade events:
+现在我们可以继续广播交易事件了：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/test/naive_test.exs
@@ -185,8 +190,8 @@ We can now move on to broadcasting trade events:
     :timer.sleep(2000)
 ```
 
-The above code will broadcast trade events to the PubSub topic that the trader processes are subscribed to.
-It should cause 3 orders to be placed at specific prices.
+上面的代码会向 trader 进程订阅的 PubSub topic 广播交易事件。
+它应该会在特定价格上触发 3 笔订单。
 
 ```{=latex}
 \begin{sidequest}
@@ -195,10 +200,9 @@ It should cause 3 orders to be placed at specific prices.
 <div class="sidequest">
 ```
 
-**A Note on Testing Timing:** We are using `:timer.sleep/1` here to allow the asynchronous processes
-time to finish their work. In a professional CI/CD environment, this is discouraged because it leads
-to slow and brittle tests (flakiness). A robust solution would involve the test process subscribing
-to the PubSub topic to receive a 'work finished' message or using a polling assertion library to wait *until* the database record exists.
+**关于测试时序的说明：** 这里我们使用 `:timer.sleep/1` 来给异步进程留出完成工作的时间。
+在专业的 CI/CD 环境里，这通常不推荐，因为它会让测试变慢且脆弱（容易 flaky）。
+更稳健的做法是让测试进程订阅 PubSub topic，接收“工作完成”的消息，或者使用轮询断言库，等待数据库记录真正出现。
 
 ```{=html}
 </div>
@@ -207,7 +211,7 @@ to the PubSub topic to receive a 'work finished' message or using a polling asse
 \end{sidequest}
 ```
 
-In the last step, we will confirm this by querying the database:
+最后一步，我们通过查询数据库来确认结果：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # /apps/naive/test/naive_test.exs
@@ -229,8 +233,8 @@ In the last step, we will confirm this by querying the database:
     assert buy_2 == [Decimal.new("0.4309"), "BUY", "NEW"]
 ```
 
-That finishes the test function. The final addition inside the `NaiveTest` module will be to add a private helper function
-that generates trade event for the passed values:
+这样测试函数就完成了。`NaiveTest` 模块里最后还要加一个私有辅助函数，
+它会根据传入的值生成交易事件：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/test/naive_test.exs
@@ -250,8 +254,8 @@ that generates trade event for the passed values:
   end
 ```
 
-This finishes the implementation of the test, but as we are now using DataWarehouse's modules inside the Naive application,
-we need to add `data_warehouse` to the dependencies:
+这样测试的实现就完成了，但因为我们现在在 `Naive` 应用里使用了 DataWarehouse 的模块，
+所以需要把 `data_warehouse` 加到依赖里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/naive/mix.exs
@@ -262,17 +266,17 @@ we need to add `data_warehouse` to the dependencies:
       ...
 ```
 
-We could now run our new integration test, but it would be run against our current(development) databases.
-In addition, as we will need to reset all the data inside them before every test run, it could mean losing data.
-To avoid all of those problems, we will use separate databases for testing.
+现在我们可以直接运行新的集成测试，但它会在我们当前的（开发）数据库上执行。
+此外，因为在每次测试运行前都得重置这些数据，这还可能导致数据丢失。
+为了避免这些问题，我们会为测试单独使用独立数据库。
 
-## Introduce environment based config files
+## 引入基于环境的配置文件
 
-Currently, our new test is running in the test environment (the `MIX_ENV` environmental variable is set to `"test"`
-whenever we run `mix test`), but we do not leverage that fact to configure our application for example: to use test databases as mentioned above.
+现在，我们的新测试运行在 test 环境里（每次运行 `mix test` 时，`MIX_ENV` 环境变量都会被设成 `"test"`），
+但我们并没有利用这一点来给应用配置，比如使用上面提到的测试数据库。
 
-Configuration for our applications lives in `config/config.exs` configuration file. Inside it,
-we have access to the name of the environment, which we will utilize to place an environment based `import_config/1` function:
+我们应用的配置都放在 `config/config.exs` 文件里。在这个文件中，
+我们可以拿到当前环境名，接下来会利用这一点来放一个基于环境的 `import_config/1`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -283,9 +287,9 @@ import_config "#{config_env()}.exs"
 
 
 
-Now we will create multiple config files, one for each environment:
+现在我们会创建多个 config 文件，每个环境一个：
 
-* `/config/dev.exs` for development:
+* `/config/dev.exs` 用于开发：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/dev.exs
@@ -294,14 +298,14 @@ import Config
 
 
 
-* `/config/test.exs` for future "unit" testing:
+* `/config/test.exs` 用于未来的“单元”测试：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
 import Config
 ```
 
-* `/config/integration.exs` for end-to-end testing:
+* `/config/integration.exs` 用于端到端测试：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/integration.exs
@@ -314,7 +318,7 @@ config :naive, Naive.Repo, database: "naive_test"
 config :data_warehouse, DataWarehouse.Repo, database: "data_warehouse_test"
 ```
 
-* `/config/prod.exs` for production:
+* `/config/prod.exs` 用于生产：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/prod.exs
@@ -324,15 +328,15 @@ config :naive,
   binance_client: Binance
 ```
 
-After adding the above environment-based configuration files, our test will use the test databases.
+添加了以上基于环境的配置文件后，我们的测试就会使用 test 数据库。
 
-There's one more remaining problem - we need to set those test databases before each test run,
-and as this process requires multiple steps, it's a little bit cumbersome.
+不过还有一个问题——我们需要在每次测试运行前把这些测试数据库准备好，
+而这个过程涉及多个步骤，还是有点麻烦。
 
-## Add convenience aliases
+## 添加便捷别名
 
-To be able to run our new integration test as easily as possible without bothering ourselves with all the database setup,
-we will introduce aliases in both the `streamer` and `naive` applications that will wrap seeding the databases:
+为了尽可能方便地运行新的集成测试，而不用每次都手动做数据库准备工作，
+我们会在 `streamer` 和 `naive` 两个应用中都加一些别名，封装数据库 seeding：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/mix.exs & /apps/streamer/mix.exs 
@@ -350,7 +354,7 @@ we will introduce aliases in both the `streamer` and `naive` applications that w
   end
 ```
 
-Inside the main `mix.exs` file of our umbrella, we will use those with usual `ecto`'s commands like `ecto.create` and `ecto.migrate`:
+在 umbrella 的主 `mix.exs` 文件里，我们会结合常见的 `ecto` 命令来使用这些别名，比如 `ecto.create` 和 `ecto.migrate`：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /mix.exs 
@@ -377,29 +381,29 @@ Inside the main `mix.exs` file of our umbrella, we will use those with usual `ec
   end
 ```
 
-We can now safely run our test:
+现在我们可以安全地运行测试了：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
 ```
 
-Wait... Why do we need to set the `MIX_ENV` before calling our alias?
+等等……为什么在调用这个别名之前，我们要设置 `MIX_ENV`？
 
-So, as I mentioned earlier, the `mix test` command automatically assigns the `"test"` environment when called.
-However, our alias contains other commands like `mix ecto.create`, which without specifying the environment explicitly,
-would be run using the dev database. So we would set up the dev databases(drop, create, migrate & seed) and then run tests on the test databases.
+正如我前面提到的，`mix test` 命令在调用时会自动把环境设为 `"test"`。
+但我们的别名里还包含其他命令，比如 `mix ecto.create`，如果不显式指定环境，
+它们就会使用 dev 数据库。这样一来，我们就会先把 dev 数据库（drop、create、migrate、seed）准备好，然后再在 test 数据库上跑测试。
 
-So our test is now passing, but it relies on the database being setup upfront, which requires seeding using a couple of requests to the Binance API.
+所以现在测试是通过了，但它依赖于提前把数据库准备好，而这又要求我们通过几次对 Binance API 的请求来 seed 数据。
 
-## Cache initial seed data inside a file
+## 把初始 seed 数据缓存到文件里
 
-Relying on the 3rd party API to be able to seed our database to run tests is a horrible idea.
-However, we can fix that by caching the response JSON in a file.
+依赖第三方 API 来 seed 数据库以运行测试，这是一个非常糟糕的主意。
+不过我们可以通过把响应 JSON 缓存在文件里来解决。
 
-How will this data be tunneled into the test database?
+那这些数据要怎样灌进测试数据库呢？
 
-In the spirit of limiting the change footprint, we could update the `BinanceMock` module to serve the cached data dependent on the flag -
-let's add that flag first:
+为了尽量减少改动范围，我们可以修改 `BinanceMock` 模块，让它根据一个标志来决定是否使用缓存数据——
+我们先把这个标志加上：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -415,10 +419,9 @@ config :binance_mock,
   use_cached_exchange_info: true
 ```
 
-We can see how convenient it is to have a configuration file per environment - we enabled cached exchange info data only for the test environment.
+可以看到，按环境拆分配置文件非常方便——我们只在测试环境里启用了缓存的 exchange info 数据。
 
-Inside the `BinanceMock` module, we can now update the `get_exchange_info/0` function to use this configuration value
-to serve either cached or live exchange info response:
+在 `BinanceMock` 模块里，我们现在可以更新 `get_exchange_info/0` 函数，让它根据这个配置值来返回缓存或实时的 exchange info：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/lib/binance_mock.ex
@@ -448,7 +451,7 @@ to serve either cached or live exchange info response:
   end
 ```
 
-As the `binance_mock` app wasn't using the `jason` package before, we need to add it to dependencies:
+因为 `binance_mock` 应用之前还没用过 `jason` 包，所以我们需要把它加到依赖里：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/binance_mock/mix.exs
@@ -459,10 +462,10 @@ As the `binance_mock` app wasn't using the `jason` package before, we need to ad
       ...
 ```
 
-The above change will take care of flipping between serving the live/cached exchange info data,
-but we still need to manually save the current response to the file (to be used as a cached version later).
+上面的改动会负责在实时/缓存 exchange info 之间切换，
+但我们还需要手动把当前响应保存到文件里（以后作为缓存版本使用）。
 
-Let's open the terminal and create a new `assets` directory and fetch the exchange info data and serialize it to JSON:
+让我们打开终端，创建一个新的 `assets` 目录，并获取 exchange info 数据，再序列化成 JSON：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mkdir apps/binance_mock/test/assets
@@ -476,16 +479,17 @@ iex(3)> File.write("apps/binance_mock/test/assets/exchange_info.json", data)
 :ok
 ```
 
-So we have the BinanceMock updated to serve cached/live responses based on the configuration and cached exchange info response.
+这样，BinanceMock 就已经可以根据配置来提供缓存/实时响应了。
 
-The last step is to ensure that seeding uses the BinanceMock module instead of using Binance directly to leverage the above implementation.
+最后一步，是确保 seeding 也使用 `BinanceMock` 模块，而不是直接使用 `Binance`，
+这样才能利用上面的实现。
 
-## Update seeding scripts to use the BinanceMock
+## 更新 seeding 脚本使用 BinanceMock
 
-The seed settings script for the `Naive` application(apps/naive/priv/seed_settings.exs) already uses the `BinanceMock`.
+`Naive` 应用的 seed settings 脚本（`apps/naive/priv/seed_settings.exs`）本来就已经使用了 `BinanceMock`。
 
-Inside the `Streamer` application (apps/streamer/priv/seed_settings.exs) we can see that the `Binance` module is getting used.
-So we can update the fetching part of the script to the following to fix it:
+在 `Streamer` 应用（`apps/streamer/priv/seed_settings.exs`）里，我们可以看到脚本使用的是 `Binance` 模块。
+所以我们可以把脚本中获取数据的部分改成下面这样：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/priv/seed_settings.exs
@@ -497,7 +501,7 @@ Logger.info("Fetching exchange info from Binance to create streaming settings")
 {:ok, %{symbols: symbols}} = binance_client.get_exchange_info() # <= updated
 ```
 
-We need to update the config to point to the `BinanceMock` for the `streamer` application in the same way as we do for the `naive` application:
+我们还需要像对 `naive` 应用那样，把 `streamer` 应用的配置也指向 `BinanceMock`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -517,7 +521,7 @@ config :streamer,
 
 
 
-as well as swap the `binance` to the `BinanceMock` inside the list of dependencies of the `Streamer` app:
+同时，我们还要把 `Streamer` 应用依赖列表里的 `binance` 换成 `BinanceMock`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/mix.exs
@@ -528,40 +532,37 @@ as well as swap the `binance` to the `BinanceMock` inside the list of dependenci
       ...
 ```
 
-At this moment, we should be ready to run our test using the test database together with cached Binance response:
+此时我们应该已经可以在使用测试数据库和缓存 Binance 响应的情况下运行测试了：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
 ** (Mix) Could not sort dependencies. There are cycles in the dependency graph
 ```
 
-And this is the moment when we will pay for cutting corners in the past. Let me explain.
-When we started this project, as we implemented communication using the PubSub topics,
-we put both the `PubSub` process(in the supervision tree) and the `TradeEvent` struct inside the streamer application.
-The knock-on effect of this decision is that any other app in the umbrella that would like to use either `PubSub` or `TradeEvent` struct
-needs to depend on the `streamer` application:
+这正是我们为过去的偷懒付出的代价。让我解释一下。
+当我们刚开始这个项目、通过 PubSub topics 实现通信时，
+我们把 PubSub 进程（在监督树里）和 TradeEvent 结构体都放进了 streamer 应用里。
+这个决定的连锁效应是：任何想使用 PubSub 或 TradeEvent 结构体的 umbrella 中其他应用，都必须依赖 `streamer` 应用：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_16_03_relying_on_streamer.png")
 ```
 
-As we added the `binance_mock` application as a dependency of the streamer application, we created a dependency cycle.
+当我们把 `binance_mock` 应用作为 `streamer` 应用的依赖时，就制造出了一个依赖环。
 
-This is quite typical in daily work as a software engineer. One of the common problems(besides naming things)
-is deciding where things belong. For example, do PubSub and TradeEvent belong in the Streamer app? Or maybe we should put it in the BinanceMock?
+这在软件工程日常工作中非常常见。一个常见问题（除了给事物命名）就是：东西到底该放在哪儿？比如，PubSub 和 TradeEvent 应该放在 Streamer 应用里吗？还是应该放进 BinanceMock？
 
-I believe they belong in neither - both `streamer` and `binance_mock` are consumers of PubSub and TradeEvent, not owners.
+我认为它们都不属于那里——`streamer` 和 `binance_mock` 都是 PubSub 和 TradeEvent 的消费者，不是拥有者。
 
-What we should do instead is to create a new supervised application where we can attach the PubSub
-to the supervision tree and hold the system-wide structs(like TradeEvent) so every app can depend on it instead of each other:
+更好的做法，是创建一个新的受监督应用，把 PubSub 挂到它的监督树上，并放置系统级别的结构体（比如 TradeEvent），这样每个应用都可以依赖它，而不是彼此依赖：
 
 ```{r, fig.align="center", out.width="100%", echo=FALSE}
 knitr::include_graphics("images/chapter_16_04_core.png")
 ```
 
-## Introduce the Core application
+## 引入 Core 应用
 
-Let's start by creating a new application:
+我们先创建一个新应用：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ cd apps
@@ -569,29 +570,27 @@ $ mix new --sup core
 ...
 ```
 
-We can now create a new directory called `struct` inside the `apps/core/lib/core` directory and move the `TradeEvent` struct
-from the `streamer` app to it(in the same terminal or from the `apps` directory):
+现在我们可以在 `apps/core/lib/core` 目录下创建一个名为 `struct` 的新目录，并把 `streamer` 应用里的 `TradeEvent` 结构体移动过去（同一个终端里或者从 `apps` 目录执行都可以）：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ mkdir core/lib/core/struct
 $ mv streamer/lib/streamer/binance/trade_event.ex core/lib/core/struct
 ```
 
-Now we need to update the module to `Core.Struct.TradeEvent`:
+接下来我们需要把模块名改成 `Core.Struct.TradeEvent`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/struct/trade_event.ex
 defmodule Core.Struct.TradeEvent do
 ```
 
-As we moved the `TradeEvent` struct over to the `Core` application, we need to:
+既然我们已经把 `TradeEvent` 结构体移动到了 `Core` 应用里，我们还需要：
 
-* update all places that reference the `Streamer.Binance.TradeEvent` to `Core.Struct.TradeEvent`
-* add the `core` to the dependencies lists of all apps in the umbrella
-* remove the `streamer` from the dependencies lists of all apps in the umbrella
+* 把所有引用 `Streamer.Binance.TradeEvent` 的地方改成 `Core.Struct.TradeEvent`
+* 把 `core` 加到 umbrella 中所有应用的依赖列表里
+* 从 umbrella 中所有应用的依赖列表里移除 `streamer`
 
-
-The final step will be to move the PubSub process from the supervision tree of the Streamer application to the supervision of the Core application.
+最后一步，是把 PubSub 进程从 Streamer 应用的监督树中移动到 Core 应用的监督树里。
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/streamer/lib/streamer/application.ex
@@ -617,8 +616,8 @@ The final step will be to move the PubSub process from the supervision tree of t
     ]
 ```
 
-As we changed the module name of the PubSub process(from `Streamer.PubSub` to `Core.PubSub`),
-we need to update all the places where it's referenced as well as add the `phoenix_pubsub` package to dependencies of the `core` application:
+因为我们改变了 PubSub 进程的模块名（从 `Streamer.PubSub` 改成 `Core.PubSub`），
+所以我们还需要更新所有引用它的地方，并给 `core` 应用添加 `phoenix_pubsub` 包作为依赖：
 
 ```{r, engine = 'elixir', eval = FALSE}
   # /apps/core/mix.exs
@@ -629,61 +628,63 @@ we need to update all the places where it's referenced as well as add the `phoen
   end
 ```
 
-We can now run our test that will use the test database as well as cached exchange info:
+现在我们可以运行测试了，它会使用测试数据库和缓存的 exchange info：
 
 ```{r, engine = 'bash', eval = FALSE}
 $ MIX_ENV=integration mix test.integration
 ```
 
-We should see a lot of setup log followed by a confirmation:
+我们应该会看到一串 setup 日志，然后出现确认信息：
 
 ```{r, engine = 'bash', eval = FALSE}
 Finished in 0.03 seconds (0.00s async, 0.03s sync)
 1 test, 0 failures, 1 excluded
 ```
 
-This wraps up our implementation of the end-to-end test. In the next chapter, we will see how we would implement a unit test for our trading strategy.
+这样端到端测试的实现就收尾了。下一章里，我们会看看如何为交易策略实现单元测试。
 
-The additional benefit of all the time that we put in the implementation of this test is that we won't need to
-remember how to set up local environment anymore as it's as simple as:
+这项测试实现带来的额外好处是：我们不再需要记住如何搭建本地环境了，因为现在只需要：
 
 ```{r, engine = 'bash', eval = FALSE}
 mix setup
 ```
 
-Yay! :)
+就行了。
 
-**We now have automated end-to-end testing.** Here's what we achieved:
+太棒了！ :)
 
-- Created a test that broadcasts trade events and verifies orders appear in the database
-- Set up environment-based configuration with separate test databases
-- Built convenience aliases (`mix setup`, `mix test.integration`) to make testing painless
-- Fixed a dependency cycle by extracting PubSub and TradeEvent into a new `core` application
+**我们现在已经有了自动化的端到端测试。** 我们完成了这些：
 
-The key insight is that good architecture pays dividends during testing.
-Our pub/sub design meant we could inject test events without modifying production code.
-And extracting shared concerns into `core` not only fixed our cycle - it made the system's structure cleaner.
+- 创建了一个测试，它会广播交易事件并验证订单是否出现在数据库中
+- 配置了基于环境的设置，并使用独立的测试数据库
+- 建立了便捷别名（`mix setup`、`mix test.integration`），让测试变得轻松
+- 通过提取 PubSub 和 TradeEvent 到新的 `core` 应用，修复了依赖环
 
-It's worth noting the downsides of end-to-end tests:
+关键洞见在于：好的架构会在测试阶段带来回报。
+我们的 pub/sub 设计意味着，我们可以注入测试事件，而不必修改生产代码。
+而把共享职责提取到 `core` 中，不仅修复了循环依赖，还让系统结构更清晰。
 
-- lack of visibility over what's broken - most of the time, we will see the result of error but not the error itself
-- requirement of synchronous execution - they rely on the database(s), so they can't be run in parallel
-- randomness/flakiness - as there's no feedback loop, we wait for a hardcoded amount of time, that we assume it's enough to finish initialization/execution - this can randomly fail
+不过端到端测试也有一些缺点：
 
-It's possible to implement a feedback loop and run our tests inside "sandbox" (transaction),
-but it's not worth it as we can invest that time into developing reliable unit tests.
+- 对出问题的地方可见性差——大多数时候我们只会看到错误结果，而不是错误本身
+- 需要同步执行——它们依赖数据库，所以不能并行运行
+- 有随机性/不稳定性——因为没有反馈循环，我们只能等待一个写死的时间，假定它足够完成初始化/执行——这会随机失败
 
-**So, What's Next?**
+虽然可以实现一个反馈循环，并把测试放在“sandbox”（事务）里运行，
+但这并不值得，因为我们可以把时间投入到编写更可靠的单元测试上。
 
-Speaking of unit tests - end-to-end tests are valuable but expensive.
-They're slow, brittle, and when they fail, you're often left guessing where the problem is.
+**那么，下一步是什么？**
 
-In the next chapter, we'll implement proper unit tests using the `mox` library.
-We'll mock dependencies like PubSub and Binance, test our `Naive.Trader` in isolation, and get tests that run in milliseconds instead of seconds.
-The feedback loop will be tight enough that we can actually use TDD.
+说到单元测试——端到端测试很有价值，但代价也很高。
+它们慢、脆弱，而且一旦失败，你往往只能猜问题出在哪。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+在下一章中，我们会使用 `mox` 库实现真正的单元测试。
+我们会 mock 掉 PubSub 和 Binance 这类依赖，单独测试我们的 `Naive.Trader`，
+并得到那些运行只需毫秒而不是秒的测试。
+反馈循环会足够紧密，让我们真的可以用 TDD。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_15](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_15)).
+[Note] 请记得运行 `mix format`，保持代码整洁。
+
+本章的源代码可以在本书的源代码仓库中找到
+（分支：
+[chapter_15](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_15)）。

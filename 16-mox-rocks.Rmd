@@ -1,66 +1,58 @@
-# Mox rocks
+# Mox 很棒 {#16-mox-rocks}
 
-In the last chapter, we built an end-to-end test that broadcasts trade events
-and verifies orders land in the database.
-It works - but it's slow, brittle, and when it fails, we're left guessing
-where the problem is.
+在上一章中，我们构建了一个端到端测试，它会广播交易事件，并验证订单是否落入数据库。
+它是能工作的——但它很慢、很脆弱，而且一旦失败，我们就只能猜哪里出了问题。
 
-Here's the thing about end-to-end tests: they're great for proving the system
-works as a whole, but terrible for developer productivity. Every test run
-requires database setup, process orchestration, and hardcoded sleeps.
-And when something breaks, good luck figuring out which module caused it.
+端到端测试有个问题：它们很适合证明系统整体是通的，但对开发效率很不友好。每次测试运行都需要数据库初始化、进程编排，以及硬编码的 sleep。
+而且一旦哪里坏了，想弄清楚到底是哪个模块出了问题，运气就很重要了。
 
-What we need is fast, focused unit tests. We'll use the `mox` library to mock
-the dependencies of our `Naive.Trader` - PubSub, Binance, the Leader, even Logger.
-Each mock will pattern match on expected values, giving us assertions for free.
-The result? Tests that run in milliseconds, pinpoint failures exactly, and
-don't need a database in sight.
+我们需要的是快速、聚焦的单元测试。我们会使用 `mox` 库来 mock `Naive.Trader` 的依赖——PubSub、Binance、Leader，甚至 Logger。
+每个 mock 都会对期望值做模式匹配，相当于白白帮我们做断言。
+结果会怎样？测试只需几毫秒就能跑完，失败点能精确定位，而且根本不需要数据库。
 
-Along the way, we'll define behaviours for modules that don't have them,
-wire up environment-based configuration, and see why `mox`'s approach to
-mocking is fundamentally better than hand-rolled stubs.
+在这个过程中，我们还会为那些没有 behaviour 的模块定义 behaviour，使用基于环境的配置，并看到为什么 `mox` 的 mock 方式从根本上说比手写 stub 更好。
 
-## Objectives
-- introduction to mock-based tests
-- add the Mox package
-- identify the `Naive.Trader` dependencies
-  * mock the `Binance` module
-  * mock the `NaiveLeader` module
-  * mock the `Phoenix.PubSub` module
-  * mock the `Logger` module
-- implement a test of the `Naive.Trader` module
-- define an alias to run unit tests
+## 目标
+- 介绍基于 mock 的测试
+- 添加 Mox 包
+- 识别 `Naive.Trader` 的依赖
+  * mock `Binance` 模块
+  * mock `NaiveLeader` 模块
+  * mock `Phoenix.PubSub` 模块
+  * mock `Logger` 模块
+- 实现 `Naive.Trader` 模块的测试
+- 定义一个别名来运行单元测试
 
-## Introduction to mock-based tests
+## 介绍基于 mock 的测试
 
-Let's revisit the specific downsides of our end-to-end test from the last chapter:
+我们先回顾上一章端到端测试的具体缺点：
 
-- we will be unable to run more than one end-to-end test in parallel as they rely on the database's state
-- we need to set up the database before every test run
-- we need to start processes in the correct order with the suitable parameters
-- we need to wait a (guessed) hardcoded amount of time that it will take to finish the trading(this is extremely bad as it will cause randomly failing tests as people will make the time shorter to speed up tests)
-- we wouldn't be able to quickly pinpoint which part the error originated from as the test spans over a vast amount of the system
-- logging was polluting our test output
+- 因为依赖数据库状态，我们无法并行运行多个端到端测试
+- 每次测试运行前都要初始化数据库
+- 必须按正确顺序，用合适的参数启动各个进程
+- 我们需要等待一个（猜测的）硬编码时间，等交易完成（这非常糟糕，因为人们为了加速测试会把时间缩短，从而导致测试随机失败）
+- 由于测试覆盖了系统很大一部分，我们无法快速定位错误到底出在哪一块
+- 日志会污染测试输出
 
-How could we fix the above issues?
+我们该怎么修复这些问题？
 
-The most common way is to limit the scope of the test.
-Instead of testing the whole trading flow, we could focus on testing a single `Naive.Trader` process.
+最常见的做法是缩小测试范围。
+与其测试完整交易流程，不如只测试单个 `Naive.Trader` 进程。
 
-Focusing on a single trader process would remove the requirement for starting multiple processes before testing,
-but it would also bring its own challenges.
+只关注一个 trader 进程会去掉测试前启动多个进程的要求，
+但它也会带来自己的挑战。
 
-Let's look at a concrete example:
+我们来看一个具体例子：
 
-When the `Naive.Trader` process starts, it subscribes to the `TRADE_EVENTS:#{symbol}` PubSub topic.
-It also broadcasts updates of the orders it placed to the `ORDERS:#{symbol}` PubSub topic.
+当 `Naive.Trader` 进程启动时，它会订阅 `TRADE_EVENTS:#{symbol}` 这个 PubSub topic。
+它还会把自己挂出的订单更新广播到 `ORDERS:#{symbol}` 这个 PubSub topic。
 
-How could we break the link between the `Naive.Trader` and the PubSub(or any other module it depends on)?
+那我们该如何切断 `Naive.Trader` 和 PubSub（或者它依赖的任何其他模块）之间的联系？
 
-We could utilize the trick that we used for the `Binance` module. We could create a module that provides the same functions as the `PubSub` module.
+我们可以用之前对 `Binance` 模块使用过的技巧。我们可以创建一个模块，它提供与 PubSub 模块相同的函数。
 
-We know that the trader process calls `Phoenix.PubSub.subscribe/2` and `Phoenix.PubSub.broadcast/3` functions.
-We could implement a module that contains the same functions:
+我们知道 trader 进程会调用 `Phoenix.PubSub.subscribe/2` 和 `Phoenix.PubSub.broadcast/3`。
+我们可以实现一个包含相同函数的模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
 defmodule Test.PubSub do
@@ -69,12 +61,12 @@ defmodule Test.PubSub do
 end
 ```
 
-The above module would satisfy the PubSub's functionality required by the `Naive.Trader` module, but this solution comes with a couple of drawbacks:
+上面的模块可以满足 `Naive.Trader` 模块所需的 PubSub 功能，但这个方案有几个缺点：
 
-- it doesn't test the passed values. It just ignores them, which is a missed opportunity to confirm that the PubSub module was called with the expected values
-- we can't define a custom implementation specific to a test. This is possible by extending the implementation with test-related returns(hack!)
+- 它不会检查传入的值。它只是把这些值忽略掉了，这就错失了确认 PubSub 是否以预期值被调用的机会
+- 我们无法为某个特定测试定义自定义实现。要做到这一点，只能靠扩展实现并带上测试相关的返回值（hack！）
 
-Using the `mox` module would fix both of the problems mentioned above. With the `mox` module we can define ad-hoc function implementation per test:
+使用 `mox` 模块可以同时解决上面两个问题。借助 `mox`，我们可以为每个测试单独定义 ad-hoc 的函数实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
     # inside test file
@@ -84,18 +76,18 @@ Using the `mox` module would fix both of the problems mentioned above. With the 
         |> expect(:broadcast, fn (_module, "ORDERS:XRPUSDT", _order) -> :ok end)
 ```
 
-There are multiple benefits to using the `mox` module instead of handcrafting the implementation:
+使用 `mox` 而不是手写实现，有很多好处：
 
-- it allows defining functions that will pattern match values specific to each test(as in the case of the "usual" pattern matching, they will break when called with unexpected values)
-- it allows defining implementations of the mocked functions based on incoming(test-specific) values
-- it can validate that all defined mocked functions have been called by the test
-- it comes with its own tests, so we don't need to test the mocking framework itself - unlike a custom handcrafted implementation that we'd have to maintain and verify
+- 它允许定义能够匹配测试中特定值的函数（就像普通模式匹配一样，传入意外值时会失败）
+- 它允许根据进入的（测试特定）值定义 mock 函数的实现
+- 它可以验证测试中定义的所有 mock 函数是否都被调用了
+- 它自带测试，所以我们不需要自己测试 mocking 框架——不像自定义手写实现那样还得维护和验证
 
-But there's a catch ;)
+但这里有个前提；）
 
-For the `mox` to know what sort of functions the module provides, it needs to know its `behaviour`.
+为了让 `mox` 知道这个模块提供什么函数，它需要知道它的 `behaviour`。
 
-In Elixir, to define a behaviour of the module, we need to add the `@callback` attributes to it:
+在 Elixir 中，要定义一个模块的 behaviour，我们需要给它加上 `@callback` 属性：
 
 ```{r, engine = 'elixir', eval = FALSE}
   defmodule Core.Test.PubSub do
@@ -108,11 +100,9 @@ In Elixir, to define a behaviour of the module, we need to add the `@callback` a
   end
 ```
 
-A `behaviour` can be defined in a separate module if we are working with a 3rd party module
-that doesn't provide it(like in the case of the `Phoenix.PubSub` module).
+如果我们处理的是一个没有提供 behaviour 的第三方模块（比如 `Phoenix.PubSub`），那么 behaviour 可以单独定义在一个模块里。
 
-Note: The additional benefit of using the `behaviours` is that we could tell Elixir that our module *implements* the behaviour
-by adding the `@behaviour` attribute:
+注意：使用 behaviours 的另一个附带好处是，我们可以通过添加 `@behaviour` 属性来告诉 Elixir 我们的模块*实现了*这个 behaviour：
 
 ```{r, engine = 'elixir', eval = FALSE}
 defmodule MyPubSub do
@@ -120,32 +110,29 @@ defmodule MyPubSub do
     ...
 ```
 
-Using the above will cause Elixir to validate at compile time that the `MyPubSub` module
-implements all functions defined inside the `Core.Test.PubSub` module(otherwise it will raise a compilation error).
+使用上面的写法会让 Elixir 在编译期验证 `MyPubSub` 模块是否实现了 `Core.Test.PubSub` 模块中定义的全部函数（否则会抛出编译错误）。
 
-Let's get back to the main topic. We figured out that we could mock all of the modules that the `Naive.Trader` depends on using the `mox` module. 
+让我们回到正题。我们已经弄清楚，可以用 `mox` 模块 mock 掉 `Naive.Trader` 依赖的所有模块。
 
-But, how would we tell the `Naive.Trader` to use the mocked modules instead of the "real" ones when we run tests?
+但当我们运行测试时，怎么告诉 `Naive.Trader` 去使用这些 mock 模块，而不是“真实”模块？
 
-We could make all modules that the `Naive.Trader` depends on be dynamically injected from the configuration(based on the environment).
+我们可以把 `Naive.Trader` 依赖的所有模块都通过配置动态注入（基于环境）。
 
-Another requirement to make `mox` work is to define the mocks upfront using the `Mox.defmock/2` function
-(called in `test_helper.exs`, which runs before tests).
-It will dynamically define a new module that will be limited by the passed behaviour -
-we will only be able to mock functions defined as part of that behaviour inside our tests.
+让 `mox` 工作的另一个要求，是要提前用 `Mox.defmock/2` 函数定义 mock（在 `test_helper.exs` 中，它会在测试前运行）。
+这会动态定义一个新模块，它会被传入的 behaviour 所限制——我们在测试中只能 mock 这个 behaviour 里定义的函数。
 
-To sum up, there are a few steps to get the `mox` running:
+总结一下，使用 `mox` 需要几个步骤：
 
-- implement behaviours that we would like to mock(as most packages [like `Phoenix.PubSub`] don't include them)
-- define mock modules using the `Mox.defmock` function
-- modify the application's configuration to use the mocked module(s)
-- specify mocked module's expectation inside the test
+- 为我们想要 mock 的模块实现 behaviours（因为大多数包 [比如 `Phoenix.PubSub`] 都没有）
+- 使用 `Mox.defmock` 函数定义 mock 模块
+- 修改应用配置以使用这些 mock 模块
+- 在测试里指定 mock 模块的期望值
 
-That's the full mental model. Now let's see how each step plays out in practice.
+这就是完整的心智模型。现在让我们看看这些步骤在实践里是怎么展开的。
 
-## Add the `mox` package
+## 添加 `mox` 包
 
-First let's add the `mox` package to the `naive` application's dependencies:
+首先，我们把 `mox` 包加入 `naive` 应用的依赖里：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/mix.exs
@@ -157,14 +144,13 @@ First let's add the `mox` package to the `naive` application's dependencies:
       ...
 ```
 
-We can now run `mix deps.get` to fetch the `mox` package.
+现在我们可以运行 `mix deps.get` 来拉取 `mox` 包。
 
-[Note] As we will add the `mox`'s mocking code into the `test_helper.exs` file, we need to
-make `mox` available in all test environments(both `test` and `integration`).
+[Note] 由于我们会把 `mox` 的 mock 代码加到 `test_helper.exs` 文件里，所以需要让 `mox` 在所有测试环境里都可用（`test` 和 `integration`）。
 
-## Identify the `Naive.Trader` dependencies
+## 识别 `Naive.Trader` 的依赖
 
-Let's investigate the `Naive.Trader` module(`/apps/naive/lib/naive/trader.ex`). We are looking for all calls to other modules - we can see:
+让我们检查 `Naive.Trader` 模块（`/apps/naive/lib/naive/trader.ex`）。我们要找的是所有调用其他模块的地方——可以看到：
 
 - `Logger.info/1`
 - `Phoenix.PubSub.subscribe/2`
@@ -174,21 +160,21 @@ Let's investigate the `Naive.Trader` module(`/apps/naive/lib/naive/trader.ex`). 
 - `@binance_client.order_limit_sell/4`
 - `Phoenix.PubSub.broadcast/3`
 
-So the `Naive.Trader` relies on four modules:
+所以 `Naive.Trader` 依赖四个模块：
 
 - `Logger`
 - `Phoenix.PubSub`
 - `Naive.Leader`
-- `@binance_client`(either `Binance` or `BinanceMock`)
+- `@binance_client`（或者 `Binance`，或者 `BinanceMock`）
 
-We will need to work through them one by one.
+我们要一个个处理。
 
-### Mock the `Binance` module
+### mock `Binance` 模块
 
-Let's start with the binance client, as it's already a dynamic value based on the configuration.
+先从 binance client 开始，因为它本身就是基于配置的动态值。
 
-Neither the `Binance` nor the `BinanceMock`(our dummy implementation) module provides a behaviour -
-let's fix that by defining the `@callback` attributes at the top of the `BinanceMock` module before the structs:
+`Binance` 和 `BinanceMock`（我们的假实现）都没有提供 behaviour——
+我们先在 `BinanceMock` 模块顶部、struct 之前定义 `@callback` 属性来修复这个问题：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -229,11 +215,11 @@ let's fix that by defining the `@callback` attributes at the top of the `Binance
             ) :: {:ok, %Order{}} | {:error, term}
 ```
 
-In the above code, we added three `@callback` attributes that define the binance client behaviour.
-For clarity, we defined a distinct type for each of the arguments.
+上面的代码里，我们加了三个 `@callback` 属性来定义 binance client 的 behaviour。
+为了清晰起见，我们为每个参数都定义了单独的类型。
 
-As we now have a binance client behaviour defined,
-we can use it to define a mock using the `Mox.defmock/2` function inside the `test_helper.exs` file of the `naive` application:
+现在我们已经定义了 binance client behaviour，
+可以在 `naive` 应用的 `test_helper.exs` 文件里用 `Mox.defmock/2` 定义一个 mock：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
@@ -244,12 +230,11 @@ Application.ensure_all_started(:mox) #1
 Mox.defmock(Test.BinanceMock, for: BinanceMock) #2
 ```
 
-First(#1), we need to ensure that the `mox` application has been started. Then(#2),
-we can tell the `mox` package to define the `Test.BinanceMock` module based on the `BinanceMock` behaviour.
+首先（#1），我们需要确保 `mox` 应用已经启动。然后（#2），
+可以告诉 `mox` 包，基于 `BinanceMock` behaviour 定义 `Test.BinanceMock` 模块。
 
-As we defined the binance client behaviour and mock, we can update our configuration to use them.
-We want to keep using the `BinanceMock` module in the development environment, but for the `test` environment,
-we would like to set the mocked module generated by the `mox` package:
+既然我们已经定义了 binance client behaviour 和 mock，就可以修改配置，让它使用它们。
+开发环境里我们仍然想继续使用 `BinanceMock` 模块，但在 `test` 环境里，我们希望使用 `mox` 包生成的 mock 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
@@ -257,10 +242,9 @@ config :naive,
   binance_client: Test.BinanceMock
 ``` 
 
-### Mock the `NaiveLeader` module
+### mock `NaiveLeader` 模块
 
-We can now move back to the `Naive.Trader` module to update all the hardcoded references to the `Naive.Leader` module
-with a dynamic attribute called `@leader` and add this attribute at the top of the module:
+现在我们回到 `Naive.Trader` 模块，把所有写死的 `Naive.Leader` 引用改成一个动态属性 `@leader`，并把这个属性加到模块顶部：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/trader.ex
@@ -275,8 +259,8 @@ with a dynamic attribute called `@leader` and add this attribute at the top of t
   ...
 ```
 
-As with the `BinanceMock`(our dummy implementation) module, the `Naive.Leader` module doesn't provide a behaviour -
-let's fix that by defining the `@callback` attributes at the top of the module:
+和 `BinanceMock`（我们的假实现）模块一样，`Naive.Leader` 模块也没有提供 behaviour——
+我们先在模块顶部定义 `@callback` 属性来修复它：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/leader.ex
@@ -285,23 +269,22 @@ let's fix that by defining the `@callback` attributes at the top of the module:
   @callback notify(event_type, %Trader.State{}) :: :ok
 ```
 
-In the above code, we added a single `@callback` attribute that defines the naive leader behaviour.
-For clarity, we defined a distinct type for the `event_type` argument.
+上面的代码里，我们加了一个 `@callback` 属性来定义 naive leader behaviour。
+为了清晰起见，我们为 `event_type` 参数定义了一个单独的类型。
 
-As we now have a naive leader behaviour defined, we can use it to define a mock using the `Mox.defmock/2` function
-inside the `test_helper.exs` file of the `naive` application:
+既然现在已经有了 naive leader behaviour，我们就可以在 `naive` 应用的 `test_helper.exs` 文件里用 `Mox.defmock/2` 定义 mock：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
 Mox.defmock(Test.Naive.LeaderMock, for: Naive.Leader)
 ``` 
 
-In the above code, we've told the `mox` package to define the `Test.Naive.LeaderMock` module based on the `Naive.Leader` behaviour.
+上面的代码告诉 `mox` 包，基于 `Naive.Leader` behaviour 定义 `Test.Naive.LeaderMock` 模块。
 
-We are moving on to the configuration.
-As the `Naive.Leader` wasn't part of the configuration, we need to add it to the default config and test config files.
+接下来我们处理配置。
+因为 `Naive.Leader` 原本不在配置里，我们需要把它加到默认配置和 test 配置文件中。
 
-First, let's add the `:leader` key inside the `config :naive` in the default `/config/config.exs` configuration file:
+先在默认的 `/config/config.exs` 中的 `config :naive` 里添加 `:leader` 键：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -312,8 +295,7 @@ config :naive,
   ...
 ``` 
 
-and then we need to apply the same update to the `/config/test.exs` configuration file
-(it will point to the module generated by the `mox` package - `Test.Naive.LeaderMock`):
+然后我们在 `/config/test.exs` 文件里做同样的更新（它会指向 `mox` 包生成的模块 `Test.Naive.LeaderMock`）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
@@ -326,14 +308,11 @@ config :naive,
 
 
 
-### Mock the `Phoenix.PubSub` module
+### mock `Phoenix.PubSub` 模块
 
-Mocking the `Phoenix.PubSub` dependency inside the `Naive.Trader` module will look very similar to the last two mocked modules.
+在 `Naive.Trader` 模块里 mock `Phoenix.PubSub` 依赖，和前两个模块非常类似。
 
-
-
-Inside the `Naive.Trader` module we need to update all the references to the `Phoenix.PubSub` to an `@pubsub_client` attribute
-with value dependent on the configuration:
+在 `Naive.Trader` 模块里，我们需要把所有对 `Phoenix.PubSub` 的引用改成一个 `@pubsub_client` 属性，这个属性的值也基于配置：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/trader.ex
@@ -353,10 +332,10 @@ with value dependent on the configuration:
   ...
 ```
 
-The `Phoenix.PubSub` module doesn't provide a behaviour. As we can't modify its source,
-we need to create a new module to define the PubSub behaviour.
-This is the same `Core.Test.PubSub` module we used as an example earlier - now we'll actually create it.
-Let's add a new file called `test.ex` inside the `/apps/core/lib/core` directory with the following behaviour definition:
+`Phoenix.PubSub` 模块没有提供 behaviour。因为我们不能修改它的源码，
+所以我们需要创建一个新模块来定义 PubSub behaviour。
+这和前面举过例子的 `Core.Test.PubSub` 模块是一样的——现在我们真的来创建它。
+我们在 `/apps/core/lib/core` 目录下创建一个名为 `test.ex` 的新文件，里面写入如下 behaviour 定义：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/test.ex
@@ -372,20 +351,20 @@ defmodule Core.Test do
 end
 ```
 
-As previously, we defined a couple of callbacks and additional types for each of their arguments.
+和之前一样，我们为每个参数定义了几个回调和附加类型。
 
 
 
-Next, we will use the above behaviour to define a mock using the `Mox.defmock/2` function inside the `test_helper.exs` file of the `naive` application:
+接下来，我们使用上面的 behaviour 在 `naive` 应用的 `test_helper.exs` 中通过 `Mox.defmock/2` 定义 mock：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
 Mox.defmock(Test.PubSubMock, for: Core.Test.PubSub)
 ``` 
 
-In the above code, we've told the `mox` package to define the `Test.PubSubMock` module based on the `Core.Test.PubSub` behaviour.
+上面的代码告诉 `mox` 包，基于 `Core.Test.PubSub` behaviour 定义 `Test.PubSubMock` 模块。
 
-The final step will be to append the `:core, :pubsub_client` configuration to the `/config/config.exs` file:
+最后一步，是把 `:core, :pubsub_client` 配置追加到 `/config/config.exs` 文件中：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -393,7 +372,7 @@ config :core,                  # <= added
   pubsub_client: Phoenix.PubSub # <= added
 ``` 
 
-and the test `/config/test.exs` configuration file:
+以及 test 版的 `/config/test.exs` 配置文件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
@@ -401,21 +380,21 @@ config :core,                  # <= added
   pubsub_client: Test.PubSubMock # <= added
 ```
 
-### Mock the `Logger` module
+### mock `Logger` 模块
 
-Before we dive in, we should ask ourselves: why mock the `Logger` module?
+在开始之前，我们应该先问自己：为什么要 mock `Logger` 模块？
 
-We could raise the logging level to `error` and be done with it.
-Yes, that would fix all debug/info/warning logs,
-but we would also miss an opportunity to confirm a few details (depends on what's necessary for our use case):
+我们当然可以把日志级别调成 `error`，这样就完了。
+是，这样确实能挡掉所有 debug/info/warning 日志，
+但我们也会错失确认一些细节的机会（这取决于我们的使用场景需不需要）：
 
-- you can ensure that the log was called when the tested function was run
-- you can pattern match the logging level
-- you can check the message. This could be useful if you don't want to put sensitive information like banking details etc. inside log messages
+- 你可以确保在被测函数运行时日志确实被调用了
+- 你可以对日志级别进行模式匹配
+- 你可以检查消息内容。如果你不想把银行信息之类的敏感内容写进日志，这会很有用
 
-Mocking the `Logger` dependency inside the `Naive.Trader` module will follow the same steps as the previous updates.
+在 `Naive.Trader` 模块里 mock `Logger` 依赖，步骤和前面几个模块一样。
 
-Inside the `Naive.Trader` module we need to update all the references to the `Logger` to an `@logger` attribute with value dependent on the configuration:
+在 `Naive.Trader` 模块里，我们需要把所有对 `Logger` 的引用改成一个 `@logger` 属性，这个属性也基于配置：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/lib/trader.ex
@@ -440,10 +419,8 @@ Inside the `Naive.Trader` module we need to update all the references to the `Lo
   ...
 ```
 
-The `Logger` module doesn't provide a behaviour. As we can't modify its source,
-we need to create a new module to define the Logger behaviour.
-Let's place it inside the `Core.Test` namespace in the `/apps/core/lib/core/test.ex` file
-side by side with the PubSub behaviour with the following definition:
+`Logger` 模块没有提供 behaviour。因为我们不能修改它的源码，
+所以我们需要在 `/apps/core/lib/core/test.ex` 文件里、和 PubSub behaviour 并排创建一个新的模块来定义 Logger behaviour：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/core/lib/core/test.ex
@@ -457,20 +434,20 @@ defmodule Core.Test do
 end
 ```
 
-As previously, we defined a callback and additional type for the `message` argument.
+和之前一样，我们为 `message` 参数定义了一个回调和附加类型。
 
-Next, we will use the above behaviour to define a mock using the `Mox.defmock/2` function inside the `test_helper.exs` file of the `naive` application:
+接下来，我们使用上面的 behaviour，在 `naive` 应用的 `test_helper.exs` 中通过 `Mox.defmock/2` 定义 mock：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/test_helper.exs
 Mox.defmock(Test.LoggerMock, for: Core.Test.Logger)
 ``` 
 
-In the above code, we've told the `mox` package to define the `Test.LoggerMock` module based on the `Core.Test.Logger` behaviour.
+上面的代码告诉 `mox` 包，基于 `Core.Test.Logger` behaviour 定义 `Test.LoggerMock` 模块。
 
 
 
-The final step will be to append the `:core, :logger` configuration to the `/config/config.exs` file:
+最后一步，是把 `:core, :logger` 配置追加到 `/config/config.exs` 文件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/config.exs
@@ -479,7 +456,7 @@ config :core,
   pubsub_client: Phoenix.PubSub
 ``` 
 
-and the test `/config/test.exs` configuration file:
+以及 test 版 `/config/test.exs` 文件：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /config/test.exs
@@ -488,17 +465,17 @@ config :core,
   pubsub_client: Test.PubSubMock
 ```
 
-This finishes mocking all four dependencies.
-Every external module the `Naive.Trader` relies on is now based on configuration values.
-We can progress to writing the test.
+这样就完成了对四个依赖的 mock。
+`Naive.Trader` 依赖的所有外部模块，现在都基于配置值了。
+我们可以继续写测试。
 
-## Implement a test of the `Naive.Trader` module 
+## 实现 `Naive.Trader` 模块的测试 
 
-Finally, we can implement the unit test for the `Naive.Trader` module.
+最后，我们可以为 `Naive.Trader` 模块实现单元测试了。
 
-We will create a folder called `naive` inside the `/apps/naive/test` directory and a new file called `trader_test.exs` inside it. 
+我们会在 `/apps/naive/test` 目录下创建一个名为 `naive` 的文件夹，并在其中创建一个名为 `trader_test.exs` 的新文件。 
 
-Let's start with an empty skeleton of the test tagged as `unit`:
+先写一个空的测试骨架，并标记为 `unit`：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
@@ -512,7 +489,7 @@ defmodule Naive.TraderTest do
 end
 ```
 
-Let's add the `mox` related code above the `@tag :unit` line:
+我们在 `@tag :unit` 这一行上方加上 `mox` 相关代码：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
@@ -522,13 +499,13 @@ Let's add the `mox` related code above the `@tag :unit` line:
   setup :verify_on_exit!       # <= 3
 ```
 
-In the above code, we are:
+上面的代码里，我们：
 
-- importing the `mox` module so we will be able to use functions like `expect/3`
-- we use `set_mox_from_context` because our test is not running in `async: true mode`, Mox allows us to share expectations globally. This is crucial because the `Naive.Trader` runs in a separate process from the test. If we ran this test asynchronously, the Trader process would crash because it wouldn't have permission to call the mocks defined by the test process(unless we explicitly granted allowances).
-- telling `mox` to verify that all the mocks defined in the tests have been called from within those tests. Otherwise, it will flag such cases as test errors
+- 导入 `mox` 模块，这样才能使用 `expect/3` 之类的函数
+- 使用 `set_mox_from_context`，因为我们的测试不是 `async: true` 模式运行。Mox 允许我们全局共享 expectations。这很关键，因为 `Naive.Trader` 是在一个独立于测试的进程里运行的。如果我们异步运行这个测试，Trader 进程会因为没有权限调用测试进程定义的 mocks 而崩溃（除非我们显式授予 allowance）
+- 告诉 `mox` 去验证测试里定义的所有 mocks 是否都被调用了。否则，它会把这种情况标成测试错误
 
-Inside our test, we need to define implementations for all the functions that the `Naive.Trader` relies on:
+在测试内部，我们需要为 `Naive.Trader` 依赖的所有函数定义实现：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
@@ -563,23 +540,20 @@ Inside our test, we need to define implementations for all the functions that th
     ...
 ```
 
-It's important to note that we defined the mocked function with expected values in the above code.
-We expect our test to subscribe to the trade events topic and broadcast to the orders topic(#1).
-We are also expecting that the process will place an order at the exact values that we calculated upfront.
-This way, our mock becomes an integral part of the test,
-asserting that the correct values will be passed to other parts of the system(dependencies of the `Naive.Trader` module).
+需要注意的是，上面的 mocked 函数都定义了期望值。
+我们期望测试会订阅 trade events topic，并向 orders topic 广播（#1）。
+我们也期望订单会以我们事先算好的精确数值被挂出。
+这样一来，我们的 mock 就成了测试的一部分，
+它会断言正确的值已经传给了系统其他部分（也就是 `Naive.Trader` 模块的依赖）。
 
-Another "trick"(#3) that we can use in our mocks is to leverage the fact that we can send
-a message to the test process from within the mocked function.
-We will use this idea to know precisely when the trader process finished its work as the `notify/2` is
-the last function call inside the process' callback(`handle_info/2` inside the `Naive.Trader` module).
-We will assert that we should receive the message, and the test will be waiting for it before exiting(the default timeout is 100ms)
-instead of using hardcoded `sleep` to "hack" it to work.
+我们还能在 mocks 里使用的另一个“技巧”（#3），是利用 mocked 函数向测试进程发送消息。
+我们会借此精确知道 trader 进程什么时候完成了工作，因为 `notify/2` 是这个进程回调里的最后一个函数调用（`Naive.Trader` 模块里的 `handle_info/2`）。
+我们会断言应该收到这条消息，测试会在退出前等待它（默认超时是 100ms），而不是靠硬编码 `sleep` 去“碰运气”。
 
-The final part(#4) tells the `mox` package that `Logger.info/1` will be called twice inside the test.
-The `mox` will verify the number of calls to the mocked function and error if it doesn't match the expected amount.
+最后一部分（#4）告诉 `mox` 包，`Logger.info/1` 会在测试里被调用两次。
+`mox` 会验证被 mock 函数的调用次数是否正确，如果不匹配就报错。
 
-The second part of the test is preparing the initial state for the `Naive.Trader` process, generating a trade event and sending it to the process:
+测试的第二部分，是准备 `Naive.Trader` 进程的初始状态，生成一个 trade event 并把它发送给进程：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
@@ -595,9 +569,9 @@ The second part of the test is preparing the initial state for the `Naive.Trader
   end
 ```
 
-As described above, the `assert_receive/1` function will cause the test to wait for the message for 100ms before quitting.
+如上所述，`assert_receive/1` 会让测试等待这条消息最多 100ms 再退出。
 
-Here are the helper functions that we used to generate the initial trader state and trade event:
+下面是我们用来生成初始 trader 状态和 trade event 的辅助函数：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
@@ -636,10 +610,9 @@ Here are the helper functions that we used to generate the initial trader state 
   end
 ```
 
-The above code finishes the implementation of the test, but inside the test we used functions from the `BinanceMock` module that are currently private.
+上面的代码完成了测试的实现，但在测试里我们用到了 `BinanceMock` 模块中的函数，而它们目前还是私有的。
 
-We need to update the module by making the `generate_fake_order/4` and
-`convert_order_to_order_response/1` functions public(and moving them up in the module, so they are next to other public functions):
+我们需要修改这个模块，把 `generate_fake_order/4` 和 `convert_order_to_order_response/1` 函数变成 public（并把它们往上移，放到其他 public 函数旁边）：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -658,12 +631,12 @@ We need to update the module by making the `generate_fake_order/4` and
 ...
 ```
 
-We updated both of the methods to public and moved them up after the `get_order/3` function.
+我们已经把这两个方法都改成 public，并把它们移到了 `get_order/3` 函数后面。
 
-## Define an alias to run unit tests
+## 定义一个别名来运行单元测试
 
-Our unit test should be run without running the whole application, so we need to run it with the `--no-start` argument.
-We should also select unit tests by tag(`--only unit`). Let's create an alias that will hide those details:
+我们的单元测试应该在不启动整个应用的情况下运行，所以需要在运行时加上 `--no-start` 参数。
+我们还应该通过 tag（`--only unit`）来选择 unit 测试。我们可以创建一个 alias，把这些细节隐藏起来：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /mix.exs
@@ -677,13 +650,13 @@ We should also select unit tests by tag(`--only unit`). Let's create an alias th
   end
 ```
 
-We can now run our test using a terminal:
+现在我们可以在终端里这样运行测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 MIX_ENV=test mix test.unit
 ```
 
-We should see the following error:
+我们应该会看到下面这个错误：
 
 ```{r, engine = 'bash', eval = FALSE}
 21:22:03.811 [error] GenServer #PID<0.641.0> terminating
@@ -692,15 +665,14 @@ We should see the following error:
        associated with the given name, possibly because its application isn't started
 ```
 
-One of the `BinanceMock` module's functions is sending a message to generate a unique id to the process
-that doesn't exist(as we are running our tests without starting the supervision tree[the `--no-start` argument]).
+`BinanceMock` 模块中的一个函数正在向一个不存在的进程发送消息来生成唯一 id（因为我们运行测试时没有启动监督树 `[--no-start 参数]`）。
 
-There are two ways to handle this issue:
+处理这个问题有两种方式：
 
-- inside the `/apps/naive/test/test_helper.exs` file we could ensure that the `BinanceMock` is up and running by adding `Application.ensure_all_started(:binance_mock)` function call - this is a hack
-- we could refactor the `BinanceMock.generate_fake_order/4` to accept `order_id` as an argument instead of sending the message internally - this should be a much better solution. Let's give it a shot.
+- 在 `/apps/naive/test/test_helper.exs` 文件里通过添加 `Application.ensure_all_started(:binance_mock)` 来确保 `BinanceMock` 正在运行——这是一种 hack
+- 把 `BinanceMock.generate_fake_order/4` 重构成接收 `order_id` 作为参数，而不是在内部发送消息——这显然是更好的办法。我们试试看。
 
-First, let's update the `BinanceMock` module:
+先更新 `BinanceMock` 模块：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/binance_mock/lib/binance_mock.ex
@@ -721,7 +693,7 @@ First, let's update the `BinanceMock` module:
       )
 ```
 
-Now we need to update our test to pass some dummy order id from the mocked function:
+现在我们需要更新测试，让 mocked 函数传入一个假的 order id：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /apps/naive/test/naive/trader_test.exs
@@ -736,10 +708,9 @@ Now we need to update our test to pass some dummy order id from the mocked funct
         "BUY"
       )
    ...
-  end
 ```
 
-We can now rerun our test:
+现在我们可以重新运行测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 MIX_ENV=test mix test.unit
@@ -748,9 +719,9 @@ Finished in 0.1 seconds (0.00s async, 0.1s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-Congrats! We just successfully tested placing an order without any dependencies.
+恭喜！我们刚刚成功在没有任何依赖的情况下测试了下单。
 
-To avoid explicitly passing the `MIX_ENV=test` environment variable, we will add the preferred environment for our alias inside the `mix.exs` file:
+为了避免每次都手动传 `MIX_ENV=test` 环境变量，我们可以在 `mix.exs` 文件里给这个 alias 指定 preferred environment：
 
 ```{r, engine = 'elixir', eval = FALSE}
 # /mix.exs
@@ -760,7 +731,7 @@ To avoid explicitly passing the `MIX_ENV=test` environment variable, we will add
   end
 ```
 
-Now we can run our tests by:
+现在我们可以这样运行测试：
 
 ```{r, engine = 'bash', eval = FALSE}
 mix test.unit
@@ -769,38 +740,36 @@ Finished in 0.06 seconds (0.00s async, 0.06s sync)
 1 tests, 0 failures (1 excluded)
 ```
 
-**We now have fast, isolated unit tests powered by `mox`.** Here's what we achieved:
+**我们现在拥有了由 `mox` 驱动的快速、隔离的单元测试。** 我们完成了这些：
 
-- Defined behaviours for modules that lacked them (`BinanceMock`, `Naive.Leader`, `Phoenix.PubSub`, `Logger`)
-- Used `Mox.defmock/2` to generate mock modules constrained by those behaviours
-- Wired up environment-based configuration so tests use mocks while dev uses real modules
-- Built a test for `Naive.Trader` that verifies the exact values passed to every dependency
-- Eliminated hardcoded `sleep` calls by using a message-passing feedback loop from mock to test
+- 为那些缺少 behaviour 的模块定义了 behaviours（`BinanceMock`、`Naive.Leader`、`Phoenix.PubSub`、`Logger`）
+- 使用 `Mox.defmock/2` 生成受这些 behaviours 约束的 mock 模块
+- 配置了基于环境的设置，让测试使用 mocks，而开发环境使用真实模块
+- 为 `Naive.Trader` 构建了一个测试，精确验证传给每个依赖的值
+- 通过从 mock 向测试发送消息，去掉了硬编码的 `sleep` 调用
 
-The key insight is that `mox` turns your mocks into assertions.
-Instead of just stubbing out dependencies, each mock expectation verifies
-that the right function was called with the right arguments.
-Your mocks are doing double duty - enabling isolation *and* validating correctness.
+这里最重要的洞见是：`mox` 会把你的 mocks 变成断言。
+它不只是把依赖 stub 掉，而是把每个 mock expectation 都变成了一个验证点：
+右不正确的函数调用，右不正确的参数，都能被检查出来。
+你的 mocks 同时承担了两种职责——既实现隔离，又验证正确性。
 
-It's worth noting the trade-offs of the `mox` approach:
+值得注意的是 `mox` 方案的取舍：
 
-- behaviours must be defined for every module you want to mock - this is upfront work, but it pays off as a form of documentation
-- module attributes are resolved at compile time, so you can't swap implementations mid-test without recompilation
-- mocked tests don't catch integration issues - that's what our end-to-end test from the last chapter is for
+- 你想 mock 的每个模块都必须先定义 behaviour——这是前置工作，但它也以文档化的形式回报你
+- 模块属性在编译期求值，所以你不能在不重新编译的情况下，在测试过程中切换实现
+- 被 mock 的测试无法发现集成问题——这正是上一章的端到端测试负责的部分
 
-The two testing approaches complement each other: end-to-end tests prove the system works,
-`mox` tests prove each piece works correctly in isolation.
+这两种测试方式是互补的：端到端测试证明系统整体可用，
+`mox` 测试证明每一块在隔离状态下都能正确工作。
 
-**So, What's Next?**
+**那么，下一步是什么？**
 
-We've been building OTP processes and testing them, but we haven't talked much about
-functional programming itself. In the next chapter, we'll look at how to separate
-pure business logic from side effects.
-We'll extract our trading strategy's decision-making into pure functions
-that are trivial to test - no mocks needed at all.
+我们一直在构建 OTP 进程并测试它们，但还没怎么谈函数式编程本身。
+在下一章，我们会看看如何把纯业务逻辑和副作用分离开来。
+我们会把交易策略的决策逻辑提取成纯函数，这些函数极其容易测试——完全不需要 mock。
 
-[Note] Please remember to run `mix format` to keep things nice and tidy.
+[Note] 请记得运行 `mix format`，保持代码整洁。
 
-The source code for this chapter can be found in the book's source code repository
-(branch:
-[chapter_16](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_16)).
+本章源码可以在本书的源代码仓库中找到
+（分支：
+[chapter_16](https://github.com/Cinderella-Man/hands-on-elixir-and-otp-cryptocurrency-trading-bot-source-code/tree/chapter_16)）。
