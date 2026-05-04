@@ -668,8 +668,10 @@ In this section, we will focus on its <code>handle_info/2</code> callback functi
 <span id="cb374-63"><a href="functional-elixir.html#cb374-63" tabindex="-1"></a>    <span class="ot">@leader</span><span class="op">.</span>notify<span class="fu">(</span><span class="va">:trader_state_updated</span>, new_state<span class="fu">)</span></span>
 <span id="cb374-64"><a href="functional-elixir.html#cb374-64" tabindex="-1"></a>    <span class="fu">{</span><span class="va">:noreply</span>, new_state<span class="fu">}</span></span>
 <span id="cb374-65"><a href="functional-elixir.html#cb374-65" tabindex="-1"></a>  <span class="kw">end</span></span></code></pre></div>
-<p>The first function takes care of placing a sell order. The second one fetches the buy order -
-please note that we needed to enhance the condition to avoid the</p>
+<p>The first function takes care of placing a sell order. The second one fetches the buy order.</p>
+<p>Notice how carefully we had to set up the pattern matching here. We need to guarantee that these callbacks fire in the correct chronological order (fetching first, then selling) and execute exactly once.</p>
+<p>In the first clause, we pattern match on <code>status: "FILLED"</code> so we don’t jump the gun and try to sell before the buy order is completely finished. We also check that <code>sell_order: nil</code> to ensure we don’t accidentally place multiple sell orders.</p>
+<p>In the second clause, we use the <code>when trade_price &lt;= buy_price</code> guard. This is crucial - without it, our bot would trigger a fetch request on every single incoming trade event! It restricts the fetch to only happen when the market price actually drops to our target. We also pattern match on <code>sell_order: nil</code> to smoothly skip this clause if we are already further down the trading flow.</p>
 <p>We can now move to the next clause.
 Similar to the last one, we could describe it as “fetch the sell order and terminate the trader”.
 We will split it into two callbacks: “fetch the sell order” and “terminate trader”.</p>
