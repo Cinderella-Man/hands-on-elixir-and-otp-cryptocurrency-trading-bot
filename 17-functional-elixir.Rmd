@@ -133,8 +133,13 @@ We are looking for clauses that do more than "one thing" to split them into mult
   end
 ```
 
-The first function takes care of placing a sell order. The second one fetches the buy order -
-please note that we needed to enhance the condition to avoid the 
+The first function takes care of placing a sell order. The second one fetches the buy order. 
+
+Notice how carefully we had to set up the pattern matching here. We need to guarantee that these callbacks fire in the correct chronological order (fetching first, then selling) and execute exactly once.
+
+In the first clause, we pattern match on `status: "FILLED"` so we don't jump the gun and try to sell before the buy order is completely finished. We also check that `sell_order: nil` to ensure we don't accidentally place multiple sell orders. 
+
+In the second clause, we use the `when trade_price <= buy_price` guard. This is crucial - without it, our bot would trigger a fetch request on every single incoming trade event! It restricts the fetch to only happen when the market price actually drops to our target. We also pattern match on `sell_order: nil` to smoothly skip this clause if we are already further down the trading flow.
 
 We can now move to the next clause.
 Similar to the last one, we could describe it as "fetch the sell order and terminate the trader".
